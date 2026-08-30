@@ -4948,7 +4948,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Current approach:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Can&#39;t project individual fields efficiently, so we fetch everything:</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Can't project individual fields efficiently, so we fetch everything:</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span>
 </code></pre></div>
 <p><strong>Result:</strong> We send 20+ fields to the client even though they only requested 3.</p>
@@ -4969,24 +4969,24 @@
 <h3 id="flow-comparison">Flow Comparison<a class="headerlink" href="#flow-comparison" title="Permanent link">&para;</a></h3>
 <p><strong>Current (No Filtering):</strong></p>
 <div class="highlight"><pre><span></span><code>PostgreSQL:  SELECT data::text FROM users
-             ↓ Returns: {&quot;id&quot;:&quot;1&quot;,&quot;first_name&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;...&quot;,&quot;bio&quot;:&quot;...&quot;,&quot;created_at&quot;:&quot;...&quot;,...}
+             ↓ Returns: {"id":"1","first_name":"Alice","email":"...","bio":"...","created_at":"...",...}
 
 Python:      json_strings = [row[0] for row in rows]
 
 Rust:        Build response with ALL fields
-             ↓ {&quot;data&quot;:{&quot;users&quot;:[{&quot;id&quot;:&quot;1&quot;,&quot;firstName&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;...&quot;,&quot;bio&quot;:&quot;...&quot;}]}}
+             ↓ {"data":{"users":[{"id":"1","firstName":"Alice","email":"...","bio":"..."}]}}
 
 Client:      Receives ALL 20 fields (wastes bandwidth)
 </code></pre></div>
 <p><strong>With Rust Field Projection:</strong></p>
 <div class="highlight"><pre><span></span><code>PostgreSQL:  SELECT data::text FROM users
-             ↓ Returns: {&quot;id&quot;:&quot;1&quot;,&quot;first_name&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;...&quot;,&quot;bio&quot;:&quot;...&quot;,&quot;created_at&quot;:&quot;...&quot;,...}
+             ↓ Returns: {"id":"1","first_name":"Alice","email":"...","bio":"...","created_at":"...",...}
 
 Python:      json_strings = [row[0] for row in rows]
-             field_selection = [&quot;id&quot;, &quot;first_name&quot;, &quot;email&quot;]  ← From GraphQL AST
+             field_selection = ["id", "first_name", "email"]  ← From GraphQL AST
 
 Rust:        Parse each JSON → Filter to requested fields → Rebuild
-             ↓ {&quot;data&quot;:{&quot;users&quot;:[{&quot;id&quot;:&quot;1&quot;,&quot;firstName&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;...&quot;}]}}  ← Only 3 fields!
+             ↓ {"data":{"users":[{"id":"1","firstName":"Alice","email":"..."}]}}  ← Only 3 fields!
 
 Client:      Receives ONLY requested fields (saves 85% bandwidth)
 </code></pre></div>
@@ -4997,7 +4997,7 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <div class="highlight"><pre><span></span><code><span class="c1"># src/fraiseql/core/ast_parser.py (existing code)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">extract_field_paths_from_info</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">transform_path</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract requested fields from GraphQL query.</span>
+<span class="w">    </span><span class="sd">"""Extract requested fields from GraphQL query.</span>
 
 <span class="sd">    Example:</span>
 <span class="sd">        query {</span>
@@ -5009,8 +5009,8 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="sd">        }</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        [&quot;id&quot;, &quot;first_name&quot;, &quot;email&quot;]  # snake_case</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">        ["id", "first_name", "email"]  # snake_case</span>
+<span class="sd">    """</span>
     <span class="c1"># ... existing implementation ...</span>
 </code></pre></div>
 <p><strong>Usage in repository (field_selection is MANDATORY):</strong></p>
@@ -5030,17 +5030,17 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 
     <span class="c1"># Convert FieldPath objects to simple list of field names</span>
     <span class="n">field_selection</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">path</span><span class="o">.</span><span class="n">field</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;field&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="n">path</span><span class="o">.</span><span class="n">field</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">'field'</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">field_paths</span>
     <span class="p">]</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">field_selection</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Field selection is empty for </span><span class="si">{</span><span class="n">view_name</span><span class="si">}</span><span class="s2">. &quot;</span>
-            <span class="s2">&quot;This is a security requirement - GraphQL info must provide field selection.&quot;</span>
+            <span class="sa">f</span><span class="s2">"Field selection is empty for </span><span class="si">{</span><span class="n">view_name</span><span class="si">}</span><span class="s2">. "</span>
+            <span class="s2">"This is a security requirement - GraphQL info must provide field selection."</span>
         <span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Field selection for </span><span class="si">{</span><span class="n">view_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">field_selection</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Field selection for </span><span class="si">{</span><span class="n">view_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">field_selection</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># Pass to Rust pipeline (field_selection is REQUIRED parameter)</span>
     <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
@@ -5068,7 +5068,7 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
     <span class="n">field_selection</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>  <span class="c1"># ← REQUIRED parameter (not Optional)</span>
     <span class="n">is_list</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RustResponseBytes</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute query and build HTTP response with MANDATORY field projection in Rust.</span>
+<span class="w">    </span><span class="sd">"""Execute query and build HTTP response with MANDATORY field projection in Rust.</span>
 
 <span class="sd">    SECURITY: field_selection is REQUIRED. Never send unrequested fields to clients.</span>
 
@@ -5079,17 +5079,17 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="sd">        field_name: GraphQL field name for wrapping</span>
 <span class="sd">        type_name: GraphQL type for transformation (optional)</span>
 <span class="sd">        field_selection: List of field names to include (snake_case) - REQUIRED</span>
-<span class="sd">                        Example: [&quot;id&quot;, &quot;first_name&quot;, &quot;email&quot;]</span>
+<span class="sd">                        Example: ["id", "first_name", "email"]</span>
 <span class="sd">                        This is a SECURITY REQUIREMENT, not optional.</span>
 <span class="sd">        is_list: True for arrays, False for single objects</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: If field_selection is empty (security violation)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">field_selection</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">&quot;field_selection is required for security. &quot;</span>
-            <span class="s2">&quot;Cannot send unfiltered JSONB data to clients.&quot;</span>
+            <span class="s2">"field_selection is required for security. "</span>
+            <span class="s2">"Cannot send unfiltered JSONB data to clients."</span>
         <span class="p">)</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
@@ -5166,12 +5166,12 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">new_map</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Map</span><span class="p">::</span><span class="n">new</span><span class="p">();</span>
 
 <span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="kd">let</span><span class="w"> </span><span class="nb">Some</span><span class="p">(</span><span class="n">tn</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">type_name</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">new_map</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">&quot;__typename&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="n">Value</span><span class="p">::</span><span class="nb">String</span><span class="p">(</span><span class="n">tn</span><span class="p">.</span><span class="n">to_string</span><span class="p">()));</span>
+<span class="w">                </span><span class="n">new_map</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="s">"__typename"</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="n">Value</span><span class="p">::</span><span class="nb">String</span><span class="p">(</span><span class="n">tn</span><span class="p">.</span><span class="n">to_string</span><span class="p">()));</span>
 <span class="w">            </span><span class="p">}</span>
 
 <span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">key</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">map</span><span class="p">.</span><span class="n">iter_mut</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="kd">let</span><span class="w"> </span><span class="n">camel_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">snake_to_camel</span><span class="p">(</span><span class="n">key</span><span class="p">);</span>
-<span class="w">                </span><span class="n">transform_and_project_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="nb">None</span><span class="p">,</span><span class="w"> </span><span class="nb">None</span><span class="p">);</span><span class="w"> </span><span class="c1">// Don&#39;t project nested</span>
+<span class="w">                </span><span class="n">transform_and_project_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span><span class="w"> </span><span class="nb">None</span><span class="p">,</span><span class="w"> </span><span class="nb">None</span><span class="p">);</span><span class="w"> </span><span class="c1">// Don't project nested</span>
 <span class="w">                </span><span class="n">new_map</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">camel_key</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">.</span><span class="n">clone</span><span class="p">());</span>
 <span class="w">            </span><span class="p">}</span>
 
@@ -5196,10 +5196,10 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="sd">///</span>
 <span class="sd">/// # Example</span>
 <span class="sd">/// ```</span>
-<span class="sd">/// let json = r#&quot;{&quot;id&quot;:&quot;1&quot;,&quot;first_name&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;a@ex.com&quot;,&quot;bio&quot;:&quot;Long bio...&quot;}&quot;#;</span>
-<span class="sd">/// let fields = vec![&quot;id&quot;, &quot;first_name&quot;, &quot;email&quot;];</span>
-<span class="sd">/// let result = build_list_response(vec![json], &quot;users&quot;, Some(&quot;User&quot;), Some(fields));</span>
-<span class="sd">/// // Result only includes: {&quot;id&quot;:&quot;1&quot;,&quot;firstName&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;a@ex.com&quot;}</span>
+<span class="sd">/// let json = r#"{"id":"1","first_name":"Alice","email":"a@ex.com","bio":"Long bio..."}"#;</span>
+<span class="sd">/// let fields = vec!["id", "first_name", "email"];</span>
+<span class="sd">/// let result = build_list_response(vec![json], "users", Some("User"), Some(fields));</span>
+<span class="sd">/// // Result only includes: {"id":"1","firstName":"Alice","email":"a@ex.com"}</span>
 <span class="sd">/// // Excludes: bio (not requested)</span>
 <span class="sd">/// ```</span>
 <span class="cp">#[pyfunction]</span>
@@ -5219,33 +5219,33 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">with_capacity</span><span class="p">(</span><span class="n">capacity</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Step 2: Build GraphQL response structure</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#&quot;{&quot;data&quot;:{&quot;#</span><span class="p">);</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">&#39;&quot;&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#"{"data":{"#</span><span class="p">);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">'"'</span><span class="p">);</span>
 <span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#&quot;&quot;:[#);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#"":[#);</span>
 
 <span class="s">    // Step 3: Process each row with field projection</span>
 <span class="s">    for (i, row) in json_strings.iter().enumerate() {</span>
 <span class="s">        if i &gt; 0 {</span>
-<span class="s">            buffer.push(&#39;,&#39;);</span>
+<span class="s">            buffer.push(',');</span>
 <span class="s">        }</span>
 
 <span class="s">        // Parse JSON</span>
 <span class="s">        let mut value: Value = serde_json::from_str(row)</span>
-<span class="s">            .map_err(|e| PyRuntimeError::new_err(format!(&quot;Failed to parse JSON: {}&quot;, e)))?;</span>
+<span class="s">            .map_err(|e| PyRuntimeError::new_err(format!("Failed to parse JSON: {}", e)))?;</span>
 
 <span class="s">        // Transform and project</span>
 <span class="s">        transform_and_project_value(&amp;mut value, type_name, field_set.as_ref());</span>
 
 <span class="s">        // Serialize back</span>
 <span class="s">        let row_json = serde_json::to_string(&amp;value)</span>
-<span class="s">            .map_err(|e| PyRuntimeError::new_err(format!(&quot;Failed to serialize: {}&quot;, e)))?;</span>
+<span class="s">            .map_err(|e| PyRuntimeError::new_err(format!("Failed to serialize: {}", e)))?;</span>
 
 <span class="s">        buffer.push_str(&amp;row_json);</span>
 <span class="s">    }</span>
 
 <span class="s">    // Step 4: Close GraphQL structure</span>
-<span class="s">    buffer.push_str(&quot;]}}&quot;);</span>
+<span class="s">    buffer.push_str("]}}");</span>
 
 <span class="s">    Ok(buffer.into_bytes())</span>
 <span class="s">}</span>
@@ -5263,24 +5263,24 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 
 <span class="s">    let mut buffer = String::with_capacity(json_string.len() + 100);</span>
 
-<span class="s">    buffer.push_str(r#&quot;{&quot;data&quot;:{&quot;#</span><span class="p">);</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">&#39;&quot;&#39;</span><span class="p">);</span>
+<span class="s">    buffer.push_str(r#"{"data":{"#</span><span class="p">);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">'"'</span><span class="p">);</span>
 <span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#&quot;&quot;:#);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#"":#);</span>
 
 <span class="s">    // Parse JSON</span>
 <span class="s">    let mut value: Value = serde_json::from_str(&amp;json_string)</span>
-<span class="s">        .map_err(|e| PyRuntimeError::new_err(format!(&quot;Failed to parse JSON: {}&quot;, e)))?;</span>
+<span class="s">        .map_err(|e| PyRuntimeError::new_err(format!("Failed to parse JSON: {}", e)))?;</span>
 
 <span class="s">    // ALWAYS project - no bypass path</span>
 <span class="s">    transform_and_project_value(&amp;mut value, type_name, &amp;field_set);</span>
 
 <span class="s">    // Serialize back</span>
 <span class="s">    let json = serde_json::to_string(&amp;value)</span>
-<span class="s">        .map_err(|e| PyRuntimeError::new_err(format!(&quot;Failed to serialize: {}&quot;, e)))?;</span>
+<span class="s">        .map_err(|e| PyRuntimeError::new_err(format!("Failed to serialize: {}", e)))?;</span>
 
 <span class="s">    buffer.push_str(&amp;json);</span>
-<span class="s">    buffer.push_str(&quot;}}&quot;);</span>
+<span class="s">    buffer.push_str("}}");</span>
 
 <span class="s">    Ok(buffer.into_bytes())</span>
 <span class="s">}</span>
@@ -5291,57 +5291,57 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 
 <span class="s">    #[test]</span>
 <span class="s">    fn test_field_projection() {</span>
-<span class="s">        let json = r#&quot;{&quot;id&quot;:&quot;1&quot;,&quot;first_name&quot;:&quot;Alice&quot;,&quot;email&quot;:&quot;a@ex.com&quot;,&quot;bio&quot;:&quot;Long bio&quot;,&quot;created_at&quot;:&quot;2024-01-01&quot;}&quot;#</span><span class="p">;</span>
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;first_name&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;email&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">()];</span>
+<span class="s">        let json = r#"{"id":"1","first_name":"Alice","email":"a@ex.com","bio":"Long bio","created_at":"2024-01-01"}"#</span><span class="p">;</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="s">"id"</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">"first_name"</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">"email"</span><span class="p">.</span><span class="n">to_string</span><span class="p">()];</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">build_list_response</span><span class="p">(</span>
 <span class="w">            </span><span class="fm">vec!</span><span class="p">[</span><span class="n">json</span><span class="p">.</span><span class="n">to_string</span><span class="p">()],</span>
-<span class="w">            </span><span class="s">&quot;users&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="s">&quot;User&quot;</span><span class="p">),</span>
+<span class="w">            </span><span class="s">"users"</span><span class="p">,</span>
+<span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="s">"User"</span><span class="p">),</span>
 <span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="n">fields</span><span class="p">),</span>
 <span class="w">        </span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from_utf8</span><span class="p">(</span><span class="n">result</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">parsed</span><span class="p">:</span><span class="w"> </span><span class="nc">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">from_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">response</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">parsed</span><span class="p">[</span><span class="s">&quot;data&quot;</span><span class="p">][</span><span class="s">&quot;users&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">parsed</span><span class="p">[</span><span class="s">"data"</span><span class="p">][</span><span class="s">"users"</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
 
 <span class="w">        </span><span class="c1">// Should include requested fields</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;firstName&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span><span class="w">  </span><span class="c1">// Transformed to camelCase</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;email&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;__typename&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"id"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"firstName"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span><span class="w">  </span><span class="c1">// Transformed to camelCase</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"email"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"__typename"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
 
 <span class="w">        </span><span class="c1">// Should NOT include non-requested fields</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;bio&quot;</span><span class="p">).</span><span class="n">is_none</span><span class="p">());</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;createdAt&quot;</span><span class="p">).</span><span class="n">is_none</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"bio"</span><span class="p">).</span><span class="n">is_none</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"createdAt"</span><span class="p">).</span><span class="n">is_none</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="cp">#[test]</span>
 <span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">test_all_fields_requested_still_projects</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// SECURITY: Even when requesting all fields, we still project</span>
 <span class="w">        </span><span class="c1">// This ensures the API contract is enforced</span>
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">r#&quot;{&quot;id&quot;:&quot;1&quot;,&quot;first_name&quot;:&quot;Alice&quot;,&quot;bio&quot;:&quot;Bio&quot;}&quot;#</span><span class="p">;</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">r#"{"id":"1","first_name":"Alice","bio":"Bio"}"#</span><span class="p">;</span>
 
 <span class="w">        </span><span class="c1">// Request all 3 fields explicitly</span>
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="s">&quot;id&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;first_name&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;bio&quot;</span><span class="p">.</span><span class="n">to_string</span><span class="p">()];</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">vec!</span><span class="p">[</span><span class="s">"id"</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">"first_name"</span><span class="p">.</span><span class="n">to_string</span><span class="p">(),</span><span class="w"> </span><span class="s">"bio"</span><span class="p">.</span><span class="n">to_string</span><span class="p">()];</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">build_list_response</span><span class="p">(</span>
 <span class="w">            </span><span class="fm">vec!</span><span class="p">[</span><span class="n">json</span><span class="p">.</span><span class="n">to_string</span><span class="p">()],</span>
-<span class="w">            </span><span class="s">&quot;users&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="s">&quot;User&quot;</span><span class="p">),</span>
+<span class="w">            </span><span class="s">"users"</span><span class="p">,</span>
+<span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="s">"User"</span><span class="p">),</span>
 <span class="w">            </span><span class="n">fields</span><span class="p">,</span>
 <span class="w">        </span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from_utf8</span><span class="p">(</span><span class="n">result</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">parsed</span><span class="p">:</span><span class="w"> </span><span class="nc">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">from_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">response</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">parsed</span><span class="p">[</span><span class="s">&quot;data&quot;</span><span class="p">][</span><span class="s">&quot;users&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">parsed</span><span class="p">[</span><span class="s">"data"</span><span class="p">][</span><span class="s">"users"</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
 
 <span class="w">        </span><span class="c1">// Should include all requested fields</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;id&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;firstName&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;bio&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"id"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"firstName"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"bio"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
 
 <span class="w">        </span><span class="c1">// Should only include exactly 4 fields: 3 requested + __typename</span>
 <span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">as_object</span><span class="p">().</span><span class="n">unwrap</span><span class="p">().</span><span class="n">len</span><span class="p">(),</span><span class="w"> </span><span class="mi">4</span><span class="p">);</span>
@@ -5351,23 +5351,23 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="w">    </span><span class="k">fn</span><span class="w"> </span><span class="nf">test_empty_field_selection_not_allowed</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="c1">// Empty field selection should be caught by Python layer</span>
 <span class="w">        </span><span class="c1">// But Rust should handle it gracefully if it somehow gets through</span>
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">r#&quot;{&quot;id&quot;:&quot;1&quot;,&quot;first_name&quot;:&quot;Alice&quot;}&quot;#</span><span class="p">;</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">r#"{"id":"1","first_name":"Alice"}"#</span><span class="p">;</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">build_list_response</span><span class="p">(</span>
 <span class="w">            </span><span class="fm">vec!</span><span class="p">[</span><span class="n">json</span><span class="p">.</span><span class="n">to_string</span><span class="p">()],</span>
-<span class="w">            </span><span class="s">&quot;users&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="s">&quot;User&quot;</span><span class="p">),</span>
+<span class="w">            </span><span class="s">"users"</span><span class="p">,</span>
+<span class="w">            </span><span class="nb">Some</span><span class="p">(</span><span class="s">"User"</span><span class="p">),</span>
 <span class="w">            </span><span class="fm">vec!</span><span class="p">[],</span><span class="w">  </span><span class="c1">// Empty field selection</span>
 <span class="w">        </span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">from_utf8</span><span class="p">(</span><span class="n">result</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">parsed</span><span class="p">:</span><span class="w"> </span><span class="nc">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">from_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">response</span><span class="p">).</span><span class="n">unwrap</span><span class="p">();</span>
 
-<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">parsed</span><span class="p">[</span><span class="s">&quot;data&quot;</span><span class="p">][</span><span class="s">&quot;users&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">parsed</span><span class="p">[</span><span class="s">"data"</span><span class="p">][</span><span class="s">"users"</span><span class="p">][</span><span class="mi">0</span><span class="p">];</span>
 
 <span class="w">        </span><span class="c1">// Empty selection = only __typename (security: exclude all fields)</span>
 <span class="w">        </span><span class="fm">assert_eq!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">as_object</span><span class="p">().</span><span class="n">unwrap</span><span class="p">().</span><span class="n">len</span><span class="p">(),</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
-<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">&quot;__typename&quot;</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
+<span class="w">        </span><span class="fm">assert!</span><span class="p">(</span><span class="n">user</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="s">"__typename"</span><span class="p">).</span><span class="n">is_some</span><span class="p">());</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5377,25 +5377,25 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <p><strong>Example: User with 20 fields in JSONB</strong></p>
 <p>Without field projection:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;firstName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;lastName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Smith&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;bio&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Long biography text that spans multiple lines...&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;avatar&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://cdn.example.com/avatars/very-long-url...&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;preferences&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;theme&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;dark&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;language&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;en&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;updated_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;stats&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;login_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1234</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;last_login&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"lastName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Smith"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"bio"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Long biography text that spans multiple lines..."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"avatar"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://cdn.example.com/avatars/very-long-url..."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"preferences"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"theme"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dark"</span><span class="p">,</span><span class="w"> </span><span class="nt">"language"</span><span class="p">:</span><span class="w"> </span><span class="s2">"en"</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="nt">"updated_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"stats"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"login_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">1234</span><span class="p">,</span><span class="w"> </span><span class="nt">"last_login"</span><span class="p">:</span><span class="w"> </span><span class="s2">"..."</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">},</span>
 <span class="w">  </span><span class="err">...</span><span class="mi">15</span><span class="w"> </span><span class="err">more</span><span class="w"> </span><span class="kc">f</span><span class="err">ields...</span>
 <span class="p">}</span>
 <span class="c1">// Total size: ~2KB per user</span>
 </code></pre></div>
 <p>With field projection (client only requests <code>id</code>, <code>firstName</code>, <code>email</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;firstName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User&quot;</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span>
 <span class="p">}</span>
 <span class="c1">// Total size: ~150 bytes per user</span>
 </code></pre></div>
@@ -5471,38 +5471,38 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">field_set</span><span class="p">:</span><span class="w"> </span><span class="nc">HashSet</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">field_selection</span><span class="p">.</span><span class="n">into_iter</span><span class="p">().</span><span class="n">collect</span><span class="p">();</span>
 
 <span class="w">    </span><span class="c1">// SECURITY: ALWAYS filter to requested fields</span>
-<span class="w">    </span><span class="c1">// No &quot;skip projection&quot; path - this is a security requirement</span>
+<span class="w">    </span><span class="c1">// No "skip projection" path - this is a security requirement</span>
 
 <span class="w">    </span><span class="c1">// Step 1: Pre-allocate buffer</span>
 <span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">capacity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">estimate_capacity</span><span class="p">(</span><span class="o">&amp;</span><span class="n">json_strings</span><span class="p">,</span><span class="w"> </span><span class="n">field_name</span><span class="p">);</span>
 <span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">buffer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">String</span><span class="p">::</span><span class="n">with_capacity</span><span class="p">(</span><span class="n">capacity</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">// Step 2: Build GraphQL response structure</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#&quot;{&quot;data&quot;:{&quot;#</span><span class="p">);</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">&#39;&quot;&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">r#"{"data":{"#</span><span class="p">);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">'"'</span><span class="p">);</span>
 <span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="n">r</span><span class="p">#</span><span class="s">&quot;&quot;</span><span class="p">:[#);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="n">r</span><span class="p">#</span><span class="s">""</span><span class="p">:[#);</span>
 
 <span class="w">    </span><span class="c1">// Step 3: Process each row with MANDATORY field projection</span>
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">row</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">json_strings</span><span class="p">.</span><span class="n">iter</span><span class="p">().</span><span class="n">enumerate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">&#39;,&#39;</span><span class="p">);</span>
+<span class="w">            </span><span class="n">buffer</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="sc">','</span><span class="p">);</span>
 <span class="w">        </span><span class="p">}</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">value</span><span class="p">:</span><span class="w"> </span><span class="nc">Value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">from_str</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
-<span class="w">            </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">PyRuntimeError</span><span class="p">::</span><span class="n">new_err</span><span class="p">(</span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;Failed to parse JSON: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">)))</span><span class="o">?</span><span class="p">;</span>
+<span class="w">            </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">PyRuntimeError</span><span class="p">::</span><span class="n">new_err</span><span class="p">(</span><span class="fm">format!</span><span class="p">(</span><span class="s">"Failed to parse JSON: {}"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">)))</span><span class="o">?</span><span class="p">;</span>
 
 <span class="w">        </span><span class="c1">// ALWAYS project - no bypass path</span>
 <span class="w">        </span><span class="n">transform_and_project_value</span><span class="p">(</span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">type_name</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">field_set</span><span class="p">);</span>
 
 <span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">row_json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">serde_json</span><span class="p">::</span><span class="n">to_string</span><span class="p">(</span><span class="o">&amp;</span><span class="n">value</span><span class="p">)</span>
-<span class="w">            </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">PyRuntimeError</span><span class="p">::</span><span class="n">new_err</span><span class="p">(</span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;Failed to serialize: {}&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">)))</span><span class="o">?</span><span class="p">;</span>
+<span class="w">            </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">PyRuntimeError</span><span class="p">::</span><span class="n">new_err</span><span class="p">(</span><span class="fm">format!</span><span class="p">(</span><span class="s">"Failed to serialize: {}"</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">)))</span><span class="o">?</span><span class="p">;</span>
 
 <span class="w">        </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="o">&amp;</span><span class="n">row_json</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Step 4: Close GraphQL structure</span>
-<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">&quot;]}}&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">buffer</span><span class="p">.</span><span class="n">push_str</span><span class="p">(</span><span class="s">"]}}"</span><span class="p">);</span>
 
 <span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">into_bytes</span><span class="p">())</span>
 <span class="p">}</span>
@@ -5529,15 +5529,15 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 </code></pre></div>
 <p><strong>Without mandatory projection:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;firstName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;ssn&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;123-45-6789&quot;</span><span class="w">  </span><span class="err">←</span><span class="w"> </span><span class="err">LEAKED!</span><span class="w"> </span><span class="err">Privacy</span><span class="w"> </span><span class="err">viola</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">!</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"ssn"</span><span class="p">:</span><span class="w"> </span><span class="s2">"123-45-6789"</span><span class="w">  </span><span class="err">←</span><span class="w"> </span><span class="err">LEAKED!</span><span class="w"> </span><span class="err">Privacy</span><span class="w"> </span><span class="err">viola</span><span class="kc">t</span><span class="err">io</span><span class="kc">n</span><span class="err">!</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>With mandatory projection:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;1&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;firstName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span>
+<span class="w">  </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span>
 <span class="w">  </span><span class="c1">// ssn correctly excluded - not in field_selection</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5549,25 +5549,25 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <div class="highlight"><pre><span></span><code><span class="c1"># fraiseql/config.py</span>
 
 <span class="c1"># SECURITY: Field projection is MANDATORY and ALWAYS enabled</span>
-<span class="c1"># There is no &quot;disable&quot; option - this is a security requirement</span>
+<span class="c1"># There is no "disable" option - this is a security requirement</span>
 
 <span class="c1"># Optional: Enable debug logging to see which fields are filtered</span>
 <span class="n">FIELD_PROJECTION_LOG_FILTERED</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Set to True for debugging</span>
 
 <span class="c1"># Example log output when enabled:</span>
-<span class="c1"># DEBUG: Projected fields for users query: [&quot;id&quot;, &quot;first_name&quot;, &quot;email&quot;]</span>
-<span class="c1"># DEBUG: Filtered out 17 fields: [&quot;ssn&quot;, &quot;password_hash&quot;, &quot;internal_notes&quot;, ...]</span>
+<span class="c1"># DEBUG: Projected fields for users query: ["id", "first_name", "email"]</span>
+<span class="c1"># DEBUG: Filtered out 17 fields: ["ssn", "password_hash", "internal_notes", ...]</span>
 </code></pre></div>
 <h3 id="for-testingdebugging-only">For Testing/Debugging Only<a class="headerlink" href="#for-testingdebugging-only" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Development/debugging mode - see what&#39;s being filtered</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Development/debugging mode - see what's being filtered</span>
 <span class="n">FIELD_PROJECTION_LOG_FILTERED</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="n">FIELD_PROJECTION_LOG_LEVEL</span> <span class="o">=</span> <span class="s2">&quot;DEBUG&quot;</span>
+<span class="n">FIELD_PROJECTION_LOG_LEVEL</span> <span class="o">=</span> <span class="s2">"DEBUG"</span>
 
 <span class="c1"># Example detailed log output:</span>
 <span class="c1"># DEBUG: Field projection for users (query_id=abc123):</span>
-<span class="c1">#   - Requested: [&quot;id&quot;, &quot;first_name&quot;, &quot;email&quot;] (3 fields)</span>
+<span class="c1">#   - Requested: ["id", "first_name", "email"] (3 fields)</span>
 <span class="c1">#   - Available in JSONB: 20 fields</span>
-<span class="c1">#   - Filtered out: [&quot;ssn&quot;, &quot;password_hash&quot;, &quot;internal_notes&quot;, ...] (17 fields)</span>
+<span class="c1">#   - Filtered out: ["ssn", "password_hash", "internal_notes", ...] (17 fields)</span>
 <span class="c1">#   - Bandwidth saved: 1.8KB per row (90%)</span>
 </code></pre></div>
 <h3 id="no-disable-option">No "Disable" Option<a class="headerlink" href="#no-disable-option" title="Permanent link">&para;</a></h3>
@@ -5594,7 +5594,7 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <ol>
 <li><strong>Python extracts field selection:</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="n">field_selection</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;first_name&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="n">field_selection</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">"first_name"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">]</span>
 </code></pre></div>
 <ol>
 <li><strong>PostgreSQL returns full JSONB:</strong></li>
@@ -5605,17 +5605,17 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <ol>
 <li><strong>Rust receives full JSON:</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="s2">&quot;1&quot;</span><span class="p">,</span><span class="nt">&quot;first_name&quot;</span><span class="p">:</span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="nt">&quot;bio&quot;</span><span class="p">:</span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="nt">&quot;avatar&quot;</span><span class="p">:</span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="err">...</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"1"</span><span class="p">,</span><span class="nt">"first_name"</span><span class="p">:</span><span class="s2">"Alice"</span><span class="p">,</span><span class="nt">"email"</span><span class="p">:</span><span class="s2">"..."</span><span class="p">,</span><span class="nt">"bio"</span><span class="p">:</span><span class="s2">"..."</span><span class="p">,</span><span class="nt">"avatar"</span><span class="p">:</span><span class="s2">"..."</span><span class="p">,</span><span class="err">...</span><span class="p">}</span>
 </code></pre></div>
 <ol>
 <li><strong>Rust filters to requested fields:</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="s2">&quot;1&quot;</span><span class="p">,</span><span class="nt">&quot;first_name&quot;</span><span class="p">:</span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="s2">&quot;...&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"1"</span><span class="p">,</span><span class="nt">"first_name"</span><span class="p">:</span><span class="s2">"Alice"</span><span class="p">,</span><span class="nt">"email"</span><span class="p">:</span><span class="s2">"..."</span><span class="p">}</span>
 </code></pre></div>
 <ol>
 <li><strong>Rust transforms:</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="s2">&quot;1&quot;</span><span class="p">,</span><span class="nt">&quot;firstName&quot;</span><span class="p">:</span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="s2">&quot;User&quot;</span><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"id"</span><span class="p">:</span><span class="s2">"1"</span><span class="p">,</span><span class="nt">"firstName"</span><span class="p">:</span><span class="s2">"Alice"</span><span class="p">,</span><span class="nt">"email"</span><span class="p">:</span><span class="s2">"..."</span><span class="p">,</span><span class="nt">"__typename"</span><span class="p">:</span><span class="s2">"User"</span><span class="p">}</span>
 </code></pre></div>
 <ol>
 <li><strong>Client receives only what was requested:</strong></li>
@@ -5726,7 +5726,7 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <span class="w">    </span><span class="n">company</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">id</span>
 <span class="w">      </span><span class="n">name</span>
-<span class="w">      </span><span class="c"># Don&#39;t need company.address, company.employees, etc.</span>
+<span class="w">      </span><span class="c"># Don't need company.address, company.employees, etc.</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -5739,10 +5739,10 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 
 <span class="c1">// Example:</span>
 <span class="c1">// FieldSelection {</span>
-<span class="c1">//     fields: [&quot;id&quot;, &quot;first_name&quot;, &quot;company&quot;],</span>
+<span class="c1">//     fields: ["id", "first_name", "company"],</span>
 <span class="c1">//     nested: {</span>
-<span class="c1">//         &quot;company&quot;: FieldSelection {</span>
-<span class="c1">//             fields: [&quot;id&quot;, &quot;name&quot;],</span>
+<span class="c1">//         "company": FieldSelection {</span>
+<span class="c1">//             fields: ["id", "name"],</span>
 <span class="c1">//             nested: {}</span>
 <span class="c1">//         }</span>
 <span class="c1">//     }</span>
@@ -5784,8 +5784,8 @@ Client:      Receives ONLY requested fields (saves 85% bandwidth)
 <li>⚠️ <strong>Never skip</strong> - Privacy violations can't be "optimized away"</li>
 </ul>
 <p><strong>Real-world impact:</strong></p>
-<div class="highlight"><pre><span></span><code>Without projection: &quot;Oops, we leaked SSN in 0.1% of responses&quot;
-With projection:    &quot;Mathematically impossible to leak unrequested fields&quot;
+<div class="highlight"><pre><span></span><code>Without projection: "Oops, we leaked SSN in 0.1% of responses"
+With projection:    "Mathematically impossible to leak unrequested fields"
 </code></pre></div>
 <p>The minimal performance cost (+33μs per 100 rows) is <strong>infinitely</strong> worth the security guarantee.</p>
 

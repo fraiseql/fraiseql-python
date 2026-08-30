@@ -5177,7 +5177,7 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/test_vector_e2e.py:129-150</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_vector_order_by_distance</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">vector_test_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test ordering results by vector distance using GraphQL input objects.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test ordering results by vector distance using GraphQL input objects."""</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">381</span>
 
@@ -5185,18 +5185,18 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.graphql_order_by_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorOrderBy</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;test_documents&quot;</span><span class="p">,</span>
+        <span class="s2">"test_documents"</span><span class="p">,</span>
         <span class="c1"># Create VectorOrderBy input object</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">cosine_distance</span><span class="o">=</span><span class="n">query_embedding</span><span class="p">)},</span>
+        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">cosine_distance</span><span class="o">=</span><span class="n">query_embedding</span><span class="p">)},</span>
         <span class="n">limit</span><span class="o">=</span><span class="mi">3</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;test_documents&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"test_documents"</span><span class="p">)</span>
 
     <span class="c1"># Should return documents ordered by cosine distance</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
     <span class="c1"># First result should be Python Programming (identical embedding)</span>
-    <span class="k">assert</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Python Programming&quot;</span>
+    <span class="k">assert</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Python Programming"</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: Test should fail because VectorOrderBy input object is not being properly converted to OrderBy SQL in the repository layer.</p>
 <p><strong>GREEN Phase</strong>:</p>
@@ -5238,32 +5238,32 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/unit/sql/where/operators/test_vector_operators.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_l1_distance_filter</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test L1/Manhattan distance operator generation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test L1/Manhattan distance operator generation."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.where.operators.vectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_l1_distance_sql</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
 
-    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;data -&gt; &#39;embedding&#39;&quot;</span><span class="p">)</span>
+    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"data -&gt; 'embedding'"</span><span class="p">)</span>
     <span class="n">vector</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">build_l1_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">,</span> <span class="n">vector</span><span class="p">)</span>
 
-    <span class="c1"># Should generate: (data -&gt; &#39;embedding&#39;)::vector &lt;+&gt; &#39;[0.1,0.2,0.3]&#39;::vector</span>
-    <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;(data -&gt; &#39;embedding&#39;)::vector &lt;+&gt; &#39;[0.1,0.2,0.3]&#39;::vector&quot;</span>
+    <span class="c1"># Should generate: (data -&gt; 'embedding')::vector &lt;+&gt; '[0.1,0.2,0.3]'::vector</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="s2">"(data -&gt; 'embedding')::vector &lt;+&gt; '[0.1,0.2,0.3]'::vector"</span>
     <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: <code>ImportError: cannot import name 'build_l1_distance_sql'</code></p>
 <p><strong>GREEN Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: src/fraiseql/sql/where/operators/vectors.py:49-57</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_l1_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for L1/Manhattan distance using PostgreSQL &lt;+&gt; operator.</span>
+<span class="w">    </span><span class="sd">"""Build SQL for L1/Manhattan distance using PostgreSQL &lt;+&gt; operator.</span>
 
-<span class="sd">    Generates: column &lt;+&gt; &#39;[0.1,0.2,...]&#39;::vector</span>
+<span class="sd">    Generates: column &lt;+&gt; '[0.1,0.2,...]'::vector</span>
 <span class="sd">    Returns distance: sum of absolute differences</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">"["</span> <span class="o">+</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"]"</span>
     <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span>
-        <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::vector &lt;+&gt; &quot;</span><span class="p">),</span>
-        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::vector&quot;</span><span class="p">)</span>
+        <span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::vector &lt;+&gt; "</span><span class="p">),</span>
+        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::vector"</span><span class="p">)</span>
     <span class="p">])</span>
 </code></pre></div>
 <p><strong>REFACTOR Phase</strong>:</p>
@@ -5282,11 +5282,11 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/graphql/schema/test_vector_filter.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vector_filter_includes_l1_distance</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that VectorFilter includes l1_distance field.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test that VectorFilter includes l1_distance field."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.graphql_where_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorFilter</span>
 
     <span class="c1"># VectorFilter should have l1_distance field</span>
-    <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">VectorFilter</span><span class="p">,</span> <span class="s1">&#39;l1_distance&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">VectorFilter</span><span class="p">,</span> <span class="s1">'l1_distance'</span><span class="p">)</span>
 
     <span class="c1"># Should accept list[float]</span>
     <span class="n">filter_input</span> <span class="o">=</span> <span class="n">VectorFilter</span><span class="p">(</span><span class="n">l1_distance</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
@@ -5298,7 +5298,7 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <span class="c1"># Update VectorFilter input type to include l1_distance</span>
 <span class="nd">@fraise_input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorFilter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter input for vector/embedding fields using pgvector distance operators.</span>
+<span class="w">    </span><span class="sd">"""Filter input for vector/embedding fields using pgvector distance operators.</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">        cosine_distance: Cosine distance (0.0 = identical, 2.0 = opposite)</span>
@@ -5306,7 +5306,7 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <span class="sd">        l1_distance: L1/Manhattan distance (sum of absolute differences)</span>
 <span class="sd">        inner_product: Negative inner product (more negative = more similar)</span>
 <span class="sd">        isnull: Check if vector is NULL</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cosine_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">l2_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">l1_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># NEW</span>
@@ -5330,17 +5330,17 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/test_vector_e2e.py</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_vector_l1_distance_filter</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">vector_test_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test filtering documents by L1/Manhattan distance.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test filtering documents by L1/Manhattan distance."""</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">381</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;test_documents&quot;</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;l1_distance&quot;</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+        <span class="s2">"test_documents"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"l1_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="mi">5</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;test_documents&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"test_documents"</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: May fail with "Unknown operator: l1_distance" or similar</p>
@@ -5372,19 +5372,19 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/unit/sql/test_order_by_vector.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_l1_distance_order_by</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test ORDER BY L1 distance SQL generation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test ORDER BY L1 distance SQL generation."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.order_by_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderBy</span>
 
     <span class="n">order</span> <span class="o">=</span> <span class="n">OrderBy</span><span class="p">(</span>
-        <span class="n">field</span><span class="o">=</span><span class="s2">&quot;embedding.l1_distance&quot;</span><span class="p">,</span>
+        <span class="n">field</span><span class="o">=</span><span class="s2">"embedding.l1_distance"</span><span class="p">,</span>
         <span class="n">value</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span>
     <span class="p">)</span>
 
     <span class="n">sql</span> <span class="o">=</span> <span class="n">order</span><span class="o">.</span><span class="n">to_sql</span><span class="p">()</span>
 
-    <span class="c1"># Should generate: (data -&gt; &#39;embedding&#39;) &lt;+&gt; &#39;[0.1,0.2,0.3]&#39;::vector ASC</span>
-    <span class="k">assert</span> <span class="s2">&quot;&lt;+&gt;&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="s2">&quot;[0.1,0.2,0.3]&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+    <span class="c1"># Should generate: (data -&gt; 'embedding') &lt;+&gt; '[0.1,0.2,0.3]'::vector ASC</span>
+    <span class="k">assert</span> <span class="s2">"&lt;+&gt;"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="s2">"[0.1,0.2,0.3]"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: L1 distance not recognized in <code>_build_vector_distance_sql</code></p>
 <p><strong>GREEN Phase</strong>:</p>
@@ -5393,18 +5393,18 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <span class="k">def</span><span class="w"> </span><span class="nf">_build_vector_distance_sql</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">operator</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sql</span><span class="o">.</span><span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for vector distance ordering.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build SQL for vector distance ordering."""</span>
     <span class="c1"># Map operator names to PostgreSQL operators</span>
-    <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span>
-        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;&lt;=&gt;&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">&quot;l2_distance&quot;</span><span class="p">:</span>
-        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;&lt;-&gt;&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">&quot;l1_distance&quot;</span><span class="p">:</span>  <span class="c1"># NEW</span>
-        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;&lt;+&gt;&quot;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">&quot;inner_product&quot;</span><span class="p">:</span>
-        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;&lt;#&gt;&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">"cosine_distance"</span><span class="p">:</span>
+        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"&lt;=&gt;"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">"l2_distance"</span><span class="p">:</span>
+        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"&lt;-&gt;"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">"l1_distance"</span><span class="p">:</span>  <span class="c1"># NEW</span>
+        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"&lt;+&gt;"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s2">"inner_product"</span><span class="p">:</span>
+        <span class="n">pg_operator_sql</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"&lt;#&gt;"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown vector distance operator: </span><span class="si">{</span><span class="n">operator</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown vector distance operator: </span><span class="si">{</span><span class="n">operator</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># ... rest of implementation</span>
 </code></pre></div>
@@ -5424,7 +5424,7 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/graphql/schema/test_vector_order_by.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vector_order_by_includes_l1</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that VectorOrderBy includes l1_distance field.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test that VectorOrderBy includes l1_distance field."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.graphql_order_by_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorOrderBy</span>
 
     <span class="n">order_input</span> <span class="o">=</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">l1_distance</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
@@ -5435,14 +5435,14 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <div class="highlight"><pre><span></span><code><span class="c1"># File: src/fraiseql/sql/graphql_order_by_generator.py:28-46</span>
 <span class="nd">@fraise_input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorOrderBy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Order by input for vector/embedding fields using pgvector distance operators.</span>
+<span class="w">    </span><span class="sd">"""Order by input for vector/embedding fields using pgvector distance operators.</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">        cosine_distance: Order by cosine distance</span>
 <span class="sd">        l2_distance: Order by L2/Euclidean distance</span>
 <span class="sd">        l1_distance: Order by L1/Manhattan distance</span>
 <span class="sd">        inner_product: Order by negative inner product</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cosine_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">l2_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">l1_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># NEW</span>
@@ -5464,24 +5464,24 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/test_vector_e2e.py</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_vector_l1_end_to_end</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">vector_test_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test L1 distance for both WHERE and ORDER BY.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test L1 distance for both WHERE and ORDER BY."""</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">381</span>
 
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.graphql_order_by_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorOrderBy</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;test_documents&quot;</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;l1_distance&quot;</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">l1_distance</span><span class="o">=</span><span class="n">query_embedding</span><span class="p">)},</span>
+        <span class="s2">"test_documents"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"l1_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">l1_distance</span><span class="o">=</span><span class="n">query_embedding</span><span class="p">)},</span>
         <span class="n">limit</span><span class="o">=</span><span class="mi">3</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;test_documents&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"test_documents"</span><span class="p">)</span>
 
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span>
     <span class="c1"># Results should be ordered by L1 distance</span>
-    <span class="k">assert</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Python Programming&quot;</span>
+    <span class="k">assert</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Python Programming"</span>
 </code></pre></div>
 <p><strong>GREEN Phase</strong>: Should pass if all previous cycles completed successfully</p>
 <p><strong>REFACTOR Phase</strong>:</p>
@@ -5512,35 +5512,35 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/unit/sql/where/operators/test_vector_operators.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_hamming_distance_filter</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test Hamming distance operator for bit vectors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test Hamming distance operator for bit vectors."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.where.operators.vectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_hamming_distance_sql</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
 
-    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;data -&gt; &#39;fingerprint&#39;&quot;</span><span class="p">)</span>
+    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"data -&gt; 'fingerprint'"</span><span class="p">)</span>
     <span class="c1"># Hamming works on bit vectors, represented as strings</span>
-    <span class="n">bit_vector</span> <span class="o">=</span> <span class="s2">&quot;101010&quot;</span>  <span class="c1"># 6-bit vector</span>
+    <span class="n">bit_vector</span> <span class="o">=</span> <span class="s2">"101010"</span>  <span class="c1"># 6-bit vector</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">build_hamming_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">,</span> <span class="n">bit_vector</span><span class="p">)</span>
 
-    <span class="c1"># Should generate: (data -&gt; &#39;fingerprint&#39;)::bit &lt;~&gt; &#39;101010&#39;::bit</span>
-    <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;(data -&gt; &#39;fingerprint&#39;)::bit &lt;~&gt; &#39;101010&#39;::bit&quot;</span>
+    <span class="c1"># Should generate: (data -&gt; 'fingerprint')::bit &lt;~&gt; '101010'::bit</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="s2">"(data -&gt; 'fingerprint')::bit &lt;~&gt; '101010'::bit"</span>
     <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: <code>ImportError: cannot import name 'build_hamming_distance_sql'</code></p>
 <p><strong>GREEN Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: src/fraiseql/sql/where/operators/vectors.py:58-68</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_hamming_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for Hamming distance using PostgreSQL &lt;~&gt; operator.</span>
+<span class="w">    </span><span class="sd">"""Build SQL for Hamming distance using PostgreSQL &lt;~&gt; operator.</span>
 
-<span class="sd">    Generates: column &lt;~&gt; &#39;101010&#39;::bit</span>
+<span class="sd">    Generates: column &lt;~&gt; '101010'::bit</span>
 <span class="sd">    Returns distance: number of differing bits</span>
 
 <span class="sd">    Note: Hamming distance works on bit type vectors, not float vectors.</span>
 <span class="sd">    Use for categorical features, fingerprints, or binary similarity.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span>
-        <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::bit &lt;~&gt; &quot;</span><span class="p">),</span>
-        <span class="n">Literal</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::bit&quot;</span><span class="p">)</span>
+        <span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::bit &lt;~&gt; "</span><span class="p">),</span>
+        <span class="n">Literal</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::bit"</span><span class="p">)</span>
     <span class="p">])</span>
 </code></pre></div>
 <p><strong>REFACTOR Phase</strong>:</p>
@@ -5559,34 +5559,34 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/unit/sql/where/operators/test_vector_operators.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_jaccard_distance_filter</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test Jaccard distance operator for bit vectors.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test Jaccard distance operator for bit vectors."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.where.operators.vectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_jaccard_distance_sql</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
 
-    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;data -&gt; &#39;features&#39;&quot;</span><span class="p">)</span>
-    <span class="n">bit_vector</span> <span class="o">=</span> <span class="s2">&quot;111000&quot;</span>
+    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"data -&gt; 'features'"</span><span class="p">)</span>
+    <span class="n">bit_vector</span> <span class="o">=</span> <span class="s2">"111000"</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">build_jaccard_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">,</span> <span class="n">bit_vector</span><span class="p">)</span>
 
-    <span class="c1"># Should generate: (data -&gt; &#39;features&#39;)::bit &lt;%&gt; &#39;111000&#39;::bit</span>
-    <span class="n">expected</span> <span class="o">=</span> <span class="s2">&quot;(data -&gt; &#39;features&#39;)::bit &lt;%&gt; &#39;111000&#39;::bit&quot;</span>
+    <span class="c1"># Should generate: (data -&gt; 'features')::bit &lt;%&gt; '111000'::bit</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="s2">"(data -&gt; 'features')::bit &lt;%&gt; '111000'::bit"</span>
     <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="n">expected</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: <code>ImportError: cannot import name 'build_jaccard_distance_sql'</code></p>
 <p><strong>GREEN Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: src/fraiseql/sql/where/operators/vectors.py:69-79</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">build_jaccard_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for Jaccard distance using PostgreSQL &lt;%&gt; operator.</span>
+<span class="w">    </span><span class="sd">"""Build SQL for Jaccard distance using PostgreSQL &lt;%&gt; operator.</span>
 
-<span class="sd">    Generates: column &lt;%&gt; &#39;111000&#39;::bit</span>
+<span class="sd">    Generates: column &lt;%&gt; '111000'::bit</span>
 <span class="sd">    Returns distance: 1 - (intersection / union) for bit sets</span>
 
 <span class="sd">    Note: Jaccard distance works on bit type vectors for set similarity.</span>
 <span class="sd">    Useful for recommendation systems, tag similarity, feature matching.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span>
-        <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::bit &lt;%&gt; &quot;</span><span class="p">),</span>
-        <span class="n">Literal</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::bit&quot;</span><span class="p">)</span>
+        <span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::bit &lt;%&gt; "</span><span class="p">),</span>
+        <span class="n">Literal</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::bit"</span><span class="p">)</span>
     <span class="p">])</span>
 </code></pre></div>
 <p><strong>REFACTOR Phase</strong>:</p>
@@ -5605,23 +5605,23 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/graphql/schema/test_vector_filter.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vector_filter_binary_operators</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that VectorFilter supports binary vector operators.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test that VectorFilter supports binary vector operators."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.graphql_where_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">VectorFilter</span>
 
     <span class="c1"># Should support hamming_distance with string input</span>
-    <span class="n">filter_input</span> <span class="o">=</span> <span class="n">VectorFilter</span><span class="p">(</span><span class="n">hamming_distance</span><span class="o">=</span><span class="s2">&quot;101010&quot;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">filter_input</span><span class="o">.</span><span class="n">hamming_distance</span> <span class="o">==</span> <span class="s2">&quot;101010&quot;</span>
+    <span class="n">filter_input</span> <span class="o">=</span> <span class="n">VectorFilter</span><span class="p">(</span><span class="n">hamming_distance</span><span class="o">=</span><span class="s2">"101010"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">filter_input</span><span class="o">.</span><span class="n">hamming_distance</span> <span class="o">==</span> <span class="s2">"101010"</span>
 
     <span class="c1"># Should support jaccard_distance with string input</span>
-    <span class="n">filter_input2</span> <span class="o">=</span> <span class="n">VectorFilter</span><span class="p">(</span><span class="n">jaccard_distance</span><span class="o">=</span><span class="s2">&quot;111000&quot;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">filter_input2</span><span class="o">.</span><span class="n">jaccard_distance</span> <span class="o">==</span> <span class="s2">&quot;111000&quot;</span>
+    <span class="n">filter_input2</span> <span class="o">=</span> <span class="n">VectorFilter</span><span class="p">(</span><span class="n">jaccard_distance</span><span class="o">=</span><span class="s2">"111000"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">filter_input2</span><span class="o">.</span><span class="n">jaccard_distance</span> <span class="o">==</span> <span class="s2">"111000"</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: <code>AttributeError: 'VectorFilter' has no attributes for binary operators</code></p>
 <p><strong>GREEN Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: src/fraiseql/sql/graphql_where_generator.py</span>
 <span class="nd">@fraise_input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorFilter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter input for vector/embedding fields.</span>
+<span class="w">    </span><span class="sd">"""Filter input for vector/embedding fields.</span>
 
 <span class="sd">    Supports both continuous (float) and binary (bit) vector operations.</span>
 
@@ -5637,7 +5637,7 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 
 <span class="sd">    Other:</span>
 <span class="sd">        isnull: Check if vector is NULL</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="c1"># Float vector operators</span>
     <span class="n">cosine_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">l2_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5645,8 +5645,8 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
     <span class="n">inner_product</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="c1"># Binary vector operators</span>
-    <span class="n">hamming_distance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># NEW - bit string like &quot;101010&quot;</span>
-    <span class="n">jaccard_distance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># NEW - bit string like &quot;111000&quot;</span>
+    <span class="n">hamming_distance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># NEW - bit string like "101010"</span>
+    <span class="n">jaccard_distance</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># NEW - bit string like "111000"</span>
 
     <span class="c1"># Common</span>
     <span class="n">isnull</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5666,16 +5666,16 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <h4 id="tdd-cycle-34-integration-tests-for-binary-operators">TDD Cycle 3.4: Integration Tests for Binary Operators<a class="headerlink" href="#tdd-cycle-34-integration-tests-for-binary-operators" title="Permanent link">&para;</a></h4>
 <p><strong>RED Phase</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># File: tests/integration/test_vector_binary.py</span>
-<span class="sd">&quot;&quot;&quot;Integration tests for binary vector operators (Hamming, Jaccard).&quot;&quot;&quot;</span>
+<span class="sd">"""Integration tests for binary vector operators (Hamming, Jaccard)."""</span>
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">binary_vector_test_setup</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up test database with bit vector columns.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Set up test database with bit vector columns."""</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;CREATE EXTENSION IF NOT EXISTS vector;&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CREATE EXTENSION IF NOT EXISTS vector;"</span><span class="p">)</span>
 
         <span class="c1"># Create table with bit vector column</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            DROP TABLE IF EXISTS test_fingerprints CASCADE;</span>
 <span class="s2">            CREATE TABLE test_fingerprints (</span>
 <span class="s2">                id UUID PRIMARY KEY,</span>
@@ -5683,31 +5683,31 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 <span class="s2">                fingerprint bit(64),  -- 64-bit vector</span>
 <span class="s2">                tenant_id UUID</span>
 <span class="s2">            )</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">)</span>
 
         <span class="c1"># Insert test data with bit vectors</span>
         <span class="n">test_data</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
-                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;550e8400-e29b-41d4-a716-446655440001&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Item A&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;fingerprint&quot;</span><span class="p">:</span> <span class="s2">&quot;1111000011110000111100001111000011110000111100001111000011110000&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">,</span>
+                <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"550e8400-e29b-41d4-a716-446655440001"</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Item A"</span><span class="p">,</span>
+                <span class="s2">"fingerprint"</span><span class="p">:</span> <span class="s2">"1111000011110000111100001111000011110000111100001111000011110000"</span><span class="p">,</span>
+                <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
             <span class="p">},</span>
             <span class="p">{</span>
-                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;550e8400-e29b-41d4-a716-446655440002&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Item B&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;fingerprint&quot;</span><span class="p">:</span> <span class="s2">&quot;1111111100000000111111110000000011111111000000001111111100000000&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">,</span>
+                <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"550e8400-e29b-41d4-a716-446655440002"</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Item B"</span><span class="p">,</span>
+                <span class="s2">"fingerprint"</span><span class="p">:</span> <span class="s2">"1111111100000000111111110000000011111111000000001111111100000000"</span><span class="p">,</span>
+                <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
             <span class="p">},</span>
         <span class="p">]</span>
 
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">test_data</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">"""</span>
 <span class="sd">                INSERT INTO test_fingerprints (id, name, fingerprint, tenant_id)</span>
 <span class="sd">                VALUES (%s, %s, %s::bit(64), %s)</span>
-<span class="sd">                &quot;&quot;&quot;</span><span class="p">,</span>
-                <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;fingerprint&quot;</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]),</span>
+<span class="sd">                """</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"fingerprint"</span><span class="p">],</span> <span class="n">item</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]),</span>
             <span class="p">)</span>
 
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
@@ -5715,35 +5715,35 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_hamming_distance_filter</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">binary_vector_test_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test filtering by Hamming distance.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test filtering by Hamming distance."""</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
-    <span class="n">query_fingerprint</span> <span class="o">=</span> <span class="s2">&quot;1111000011110000111100001111000011110000111100001111000011110000&quot;</span>
+    <span class="n">query_fingerprint</span> <span class="o">=</span> <span class="s2">"1111000011110000111100001111000011110000111100001111000011110000"</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;test_fingerprints&quot;</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fingerprint&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;hamming_distance&quot;</span><span class="p">:</span> <span class="n">query_fingerprint</span><span class="p">}},</span>
+        <span class="s2">"test_fingerprints"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"fingerprint"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"hamming_distance"</span><span class="p">:</span> <span class="n">query_fingerprint</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="mi">5</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;test_fingerprints&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"test_fingerprints"</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
     <span class="c1"># Item A should match exactly (Hamming distance = 0)</span>
-    <span class="k">assert</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Item A&quot;</span>
+    <span class="k">assert</span> <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Item A"</span>
 
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_jaccard_distance_filter</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">binary_vector_test_setup</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test filtering by Jaccard distance.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test filtering by Jaccard distance."""</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
-    <span class="n">query_fingerprint</span> <span class="o">=</span> <span class="s2">&quot;1111000011110000111100001111000011110000111100001111000011110000&quot;</span>
+    <span class="n">query_fingerprint</span> <span class="o">=</span> <span class="s2">"1111000011110000111100001111000011110000111100001111000011110000"</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;test_fingerprints&quot;</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fingerprint&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;jaccard_distance&quot;</span><span class="p">:</span> <span class="n">query_fingerprint</span><span class="p">}},</span>
+        <span class="s2">"test_fingerprints"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"fingerprint"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"jaccard_distance"</span><span class="p">:</span> <span class="n">query_fingerprint</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="mi">5</span>
     <span class="p">)</span>
 
-    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;test_fingerprints&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"test_fingerprints"</span><span class="p">)</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 </code></pre></div>
 <p><strong>Expected Failure</strong>: Operators not registered in WHERE clause generation</p>
@@ -5842,12 +5842,12 @@ GraphQL Input (VectorOrderBy) → ORDER BY SQL (order_by_generator.py) → Postg
 
 <span class="c1"># Find similar fingerprints</span>
 <span class="n">similar</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;image_fingerprints&quot;</span><span class="p">,</span>
+    <span class="s2">"image_fingerprints"</span><span class="p">,</span>
     <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;fingerprint&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;hamming_distance&quot;</span><span class="p">:</span> <span class="n">query_fingerprint</span><span class="p">},</span>
-        <span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;portraits&quot;</span><span class="p">}</span>
+        <span class="s2">"fingerprint"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"hamming_distance"</span><span class="p">:</span> <span class="n">query_fingerprint</span><span class="p">},</span>
+        <span class="s2">"category"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"portraits"</span><span class="p">}</span>
     <span class="p">},</span>
-    <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;fingerprint&quot;</span><span class="p">:</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">hamming_distance</span><span class="o">=</span><span class="n">query_fingerprint</span><span class="p">)},</span>
+    <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"fingerprint"</span><span class="p">:</span> <span class="n">VectorOrderBy</span><span class="p">(</span><span class="n">hamming_distance</span><span class="o">=</span><span class="n">query_fingerprint</span><span class="p">)},</span>
     <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
 <span class="p">)</span>
 </code></pre></div>

@@ -5071,7 +5071,7 @@ followed by your declared arguments. Annotate the return type as
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream task changes for a single project.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Stream task changes for a single project."""</span>
     <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">):</span>
         <span class="k">yield</span> <span class="n">task</span>
 </code></pre></div>
@@ -5100,12 +5100,12 @@ view (<code>v_*</code>), and yields it.</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_task_change</span><span class="p">()</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="k">trigger</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="c1">-- Announce the affected task&#39;s public id on a per-project channel.</span>
+<span class="w">    </span><span class="c1">-- Announce the affected task's public id on a per-project channel.</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;task_changes&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'task_changes'</span><span class="p">,</span>
 <span class="w">        </span><span class="n">json_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;project_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_project</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;task_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span>
+<span class="w">            </span><span class="s1">'project_id'</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">fk_project</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'task_id'</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span>
 <span class="w">        </span><span class="p">)::</span><span class="nb">text</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
@@ -5126,15 +5126,15 @@ view (<code>v_*</code>), and yields it.</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream task changes for one project via LISTEN/NOTIFY.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Stream task changes for one project via LISTEN/NOTIFY."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">&quot;task_changes&quot;</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">"task_changes"</span><span class="p">):</span>
         <span class="n">event</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;project_id&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">"project_id"</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
             <span class="k">continue</span>  <span class="c1"># not our project — skip</span>
 
-        <span class="n">task</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_task&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">event</span><span class="p">[</span><span class="s2">&quot;task_id&quot;</span><span class="p">])</span>
+        <span class="n">task</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_task"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">event</span><span class="p">[</span><span class="s2">"task_id"</span><span class="p">])</span>
         <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">task</span>
 </code></pre></div>
@@ -5154,12 +5154,12 @@ projection (<code>tv_*</code>), poll a read view on an interval and yield only w
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">task_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream task changes for one project by polling a view.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Stream task changes for one project by polling a view."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">seen</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># task id -&gt; last-seen updated_at</span>
 
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">tasks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_task&quot;</span><span class="p">,</span> <span class="n">fk_project</span><span class="o">=</span><span class="n">project_id</span><span class="p">)</span>
+        <span class="n">tasks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_task"</span><span class="p">,</span> <span class="n">fk_project</span><span class="o">=</span><span class="n">project_id</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">seen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">!=</span> <span class="n">task</span><span class="o">.</span><span class="n">updated_at</span><span class="p">:</span>
                 <span class="n">seen</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">updated_at</span>
@@ -5184,7 +5184,7 @@ and (when applicable) a loaded <code>project</code>/<code>resource</code>.</p>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
-<span class="nd">@subscription_filter</span><span class="p">(</span><span class="s2">&quot;project.is_public or user.has_access&quot;</span><span class="p">)</span>
+<span class="nd">@subscription_filter</span><span class="p">(</span><span class="s2">"project.is_public or user.has_access"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">project_updates</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="k">async</span> <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">watch_project_tasks</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">project_id</span><span class="p">):</span>
         <span class="k">yield</span> <span class="n">task</span>
@@ -5273,10 +5273,10 @@ access gates expressed inline.</p>
 <p>Connect over WebSocket with a <code>graphql-transport-ws</code> client (the
 <a href="https://github.com/enisdenjo/graphql-ws"><code>graphql-ws</code></a> library is the common
 choice; the legacy <code>graphql-ws</code> Apollo protocol is also accepted).</p>
-<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;graphql-ws&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createClient</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'graphql-ws'</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">createClient</span><span class="p">({</span>
-<span class="w">  </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;ws://localhost:8000/graphql&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">'ws://localhost:8000/graphql'</span><span class="p">,</span>
 <span class="w">  </span><span class="nx">connectionParams</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">Authorization</span><span class="o">:</span><span class="w"> </span><span class="sb">`Bearer </span><span class="si">${</span><span class="nx">token</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span>
 <span class="w">  </span><span class="p">},</span>
@@ -5294,11 +5294,11 @@ choice; the legacy <code>graphql-ws</code> Apollo protocol is also accepted).</p
 <span class="sb">`</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">unsubscribe</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">subscribe</span><span class="p">(</span>
-<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="nx">subscription</span><span class="p">,</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">projectId</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;...&#39;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span><span class="w"> </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="nx">subscription</span><span class="p">,</span><span class="w"> </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">projectId</span><span class="o">:</span><span class="w"> </span><span class="s1">'...'</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
 <span class="w">  </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">next</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;task changed&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">taskUpdates</span><span class="p">),</span>
-<span class="w">    </span><span class="nx">error</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;subscription error&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">),</span>
-<span class="w">    </span><span class="nx">complete</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;subscription complete&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">next</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">payload</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'task changed'</span><span class="p">,</span><span class="w"> </span><span class="nx">payload</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">taskUpdates</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">error</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">err</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">'subscription error'</span><span class="p">,</span><span class="w"> </span><span class="nx">err</span><span class="p">),</span>
+<span class="w">    </span><span class="nx">complete</span><span class="o">:</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'subscription complete'</span><span class="p">),</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="p">);</span>
 

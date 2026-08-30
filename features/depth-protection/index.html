@@ -4827,7 +4827,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># Traditional approach: Runtime analysis</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">depth_limit_middleware</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">calculate_depth</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_depth</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">GraphQLDepthError</span><span class="p">(</span><span class="s2">&quot;Query too deep&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">GraphQLDepthError</span><span class="p">(</span><span class="s2">"Query too deep"</span><span class="p">)</span>
 
 <span class="c1"># Still allows crafting deep queries that get rejected</span>
 <span class="n">query</span> <span class="p">{</span>
@@ -4857,16 +4857,16 @@
 <span class="w">    </span><span class="c1">-- Posts with limited comment depth</span>
 <span class="w">    </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
 <span class="w">            </span><span class="c1">-- Comments limited to 2 levels deep</span>
-<span class="w">            </span><span class="s1">&#39;comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'comments'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;text&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'text'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
 <span class="w">                        </span><span class="c1">-- No deeper nesting allowed</span>
-<span class="w">                        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+<span class="w">                        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
 <span class="w">                    </span><span class="p">)</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">c</span>
@@ -4895,7 +4895,7 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c"># This query fails at schema level - field doesn&#39;t exist</span>
+<span class="c"># This query fails at schema level - field doesn't exist</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
@@ -4923,9 +4923,9 @@
 
 <span class="c1"># Field cost calculation</span>
 <span class="n">FIELD_COSTS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s1">&#39;User&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="s1">&#39;Post&#39;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="s1">&#39;Comment&#39;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="s1">'User'</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s1">'Post'</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s1">'Comment'</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
 <span class="p">}</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">calculate_complexity</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">multipliers</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
@@ -4944,12 +4944,12 @@
 <span class="w">    </span><span class="c1">-- Limited posts per user</span>
 <span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
 <span class="w">            </span><span class="c1">-- Limited comments per post</span>
-<span class="w">            </span><span class="s1">&#39;recent_comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'recent_comments'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
-<span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;text&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">)</span>
+<span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'text'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">)</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">c</span>
 <span class="w">                </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">post_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span>
@@ -5011,7 +5011,7 @@
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">user_profile</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">bio</span><span class="p">,</span>
-<span class="w">    </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">posts</span>
+<span class="w">    </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">posts</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">u</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">bio</span><span class="p">;</span>
@@ -5022,18 +5022,18 @@
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="o">*</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'comments'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;text&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                            </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">                            </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
-<span class="w">                                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
+<span class="w">                        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'text'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">                            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                            </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">                            </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">                                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
 <span class="w">                                </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="n">cp</span>
 <span class="w">                                </span><span class="k">WHERE</span><span class="w"> </span><span class="n">cp</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">id</span>
 <span class="w">                                </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">3</span>
@@ -5061,9 +5061,9 @@
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">-- Limited comments with pagination info</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;items&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'items'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
-<span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;text&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">)</span>
+<span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'text'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">c</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">post_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span>
@@ -5071,12 +5071,12 @@
 <span class="w">            </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">            </span><span class="k">OFFSET</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;has_more&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'has_more'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">c</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">post_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;total_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'total_count'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">c</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">post_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span>
@@ -5087,13 +5087,13 @@
 <h2 id="migration-from-runtime-protection">Migration from Runtime Protection<a class="headerlink" href="#migration-from-runtime-protection" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-analyze-current-query-patterns">Step 1: Analyze Current Query Patterns<a class="headerlink" href="#step-1-analyze-current-query-patterns" title="Permanent link">&para;</a></h3>
 <p>Identify your most complex queries and their depth requirements:</p>
-<div class="highlight"><pre><span></span><code><span class="c"># Analyze this query&#39;s depth requirements</span>
+<div class="highlight"><pre><span></span><code><span class="c"># Analyze this query's depth requirements</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">UserDashboard</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">comments</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">author</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="n">name</span><span class="w">  </span><span class="c"># What&#39;s the maximum depth needed?</span>
+<span class="w">          </span><span class="n">name</span><span class="w">  </span><span class="c"># What's the maximum depth needed?</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5109,16 +5109,16 @@
 <span class="w">    </span><span class="c1">-- Exactly 5 posts per user</span>
 <span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
 <span class="w">            </span><span class="c1">-- Exactly 3 comments per post</span>
-<span class="w">            </span><span class="s1">&#39;comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'comments'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;text&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+<span class="w">                        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'text'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="nb">text</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">cu</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
 <span class="w">                    </span><span class="p">)</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">comments</span><span class="w"> </span><span class="k">c</span>
@@ -5170,7 +5170,7 @@
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>✅ FraiseQL:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c"># Impossible to craft - schema doesn&#39;t allow it</span>
+<div class="highlight"><pre><span></span><code><span class="c"># Impossible to craft - schema doesn't allow it</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>

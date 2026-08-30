@@ -5303,10 +5303,10 @@ at ETL time so the read view is a single standalone table.</p>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">-- Example data content:</span>
 <span class="w">    </span><span class="c1">-- {</span>
-<span class="w">    </span><span class="c1">--   &quot;category&quot;: &quot;Electronics&quot;,</span>
-<span class="w">    </span><span class="c1">--   &quot;region&quot;: &quot;North America&quot;,</span>
-<span class="w">    </span><span class="c1">--   &quot;product_name&quot;: &quot;Laptop Pro&quot;,</span>
-<span class="w">    </span><span class="c1">--   &quot;customer_segment&quot;: &quot;Enterprise&quot;</span>
+<span class="w">    </span><span class="c1">--   "category": "Electronics",</span>
+<span class="w">    </span><span class="c1">--   "region": "North America",</span>
+<span class="w">    </span><span class="c1">--   "product_name": "Laptop Pro",</span>
+<span class="w">    </span><span class="c1">--   "customer_segment": "Enterprise"</span>
 <span class="w">    </span><span class="c1">-- }</span>
 
 <span class="w">    </span><span class="c1">-- Denormalized filters (indexed SQL columns for fast WHERE)</span>
@@ -5339,7 +5339,7 @@ special "fact table" decorator parameter:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_sales&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_sales"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Sale</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
@@ -5368,7 +5368,7 @@ standard PostgreSQL ones: <code>COUNT</code>, <code>SUM</code>, <code>AVG</code>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
 
 <span class="c1">-- SLOW: aggregation on a JSONB field (avoid this)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
 </code></pre></div>
 <p>The JSONB form must cast text to numeric per row and cannot use a plain numeric index, so it
 is dramatically slower on large tables.</p>
@@ -5393,11 +5393,11 @@ dimension).</p>
 </ul>
 <p><strong>Query pattern</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_revenue</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="denormalized-filters-indexed-sql-columns">Denormalized Filters (Indexed SQL Columns)<a class="headerlink" href="#denormalized-filters-indexed-sql-columns" title="Permanent link">&para;</a></h3>
 <p><strong>Purpose</strong>: fast <code>WHERE</code> filtering (avoid JSONB for high-selectivity filters).</p>
@@ -5413,11 +5413,11 @@ dimension).</p>
 <p><strong>Why denormalized?</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- FAST: indexed SQL column filter, uses the composite index</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;uuid-123&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2024-01-01&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'uuid-123'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">'2024-01-01'</span><span class="p">;</span>
 
 <span class="c1">-- SLOWER: JSONB filter for a high-selectivity exact match (avoid this)</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;uuid-123&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'uuid-123'</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="no-joins-principle">No Joins Principle<a class="headerlink" href="#no-joins-principle" title="Permanent link">&para;</a></h2>
@@ -5443,14 +5443,14 @@ directly without joining other tables at query time.</p>
 <span class="c1">-- CORRECT: dimensions denormalized into JSONB at ETL time</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">revenue</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_segment&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">segment</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'product_category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_segment'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">segment</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="etl-process-managed-by-the-dba-data-team">ETL Process (Managed by the DBA / Data Team)<a class="headerlink" href="#etl-process-managed-by-the-dba-data-team" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Step 1: ETL loads the raw transaction</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">staging_sales</span><span class="w"> </span><span class="p">(</span><span class="n">transaction_id</span><span class="p">,</span><span class="w"> </span><span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span><span class="p">)</span>
-<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;txn-001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;prod-123&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;cust-456&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">.</span><span class="mi">99</span><span class="p">);</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'txn-001'</span><span class="p">,</span><span class="w"> </span><span class="s1">'prod-123'</span><span class="p">,</span><span class="w"> </span><span class="s1">'cust-456'</span><span class="p">,</span><span class="w"> </span><span class="mi">99</span><span class="p">.</span><span class="mi">99</span><span class="p">);</span>
 
 <span class="c1">-- Step 2: ETL enriches with dimensional data from td_* tables</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="p">(</span>
@@ -5469,10 +5469,10 @@ directly without joining other tables at query time.</p>
 <span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
 <span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">cost</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;product_category&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;customer_segment&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">segment</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;customer_region&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">region</span>
+<span class="w">        </span><span class="s1">'product_category'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'product_name'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'customer_segment'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">segment</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'customer_region'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">region</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w">  </span><span class="c1">-- denormalization happens here</span>
 <span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">product_id</span><span class="p">,</span>
@@ -5502,12 +5502,12 @@ only queries the resulting view at runtime.</p>
 <p>For example, a GraphQL selection grouping by <code>category</code> and <code>region</code> and summing <code>revenue</code>
 produces, at runtime, SQL equivalent to:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="p">;</span>
 </code></pre></div>
 <p>See <a href="../aggregation-model/">Aggregation Model</a> for the full <code>GROUP BY</code> / <code>HAVING</code> /
 <code>FILTER</code> semantics.</p>
@@ -5524,12 +5524,12 @@ produces, at runtime, SQL equivalent to:</p>
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Conditional aggregates over JSONB dimensions</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">&#39;{&quot;region&quot;: &quot;North America&quot;}&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">na_revenue</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">&#39;{&quot;region&quot;: &quot;Europe&quot;}&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">eu_revenue</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">'{"region": "North America"}'</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">na_revenue</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">'{"region": "Europe"}'</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">eu_revenue</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;category&#39;</span><span class="w">  </span><span class="c1">-- has the &#39;category&#39; key</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">'category'</span><span class="w">  </span><span class="c1">-- has the 'category' key</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="pre-aggregated-fact-tables-same-structure-coarser-granularity">Pre-Aggregated Fact Tables = Same Structure, Coarser Granularity<a class="headerlink" href="#pre-aggregated-fact-tables-same-structure-coarser-granularity" title="Permanent link">&para;</a></h2>
@@ -5561,13 +5561,13 @@ coarser granularity. Use the <code>tf_</code> prefix with a descriptive suffix.<
 <div class="highlight"><pre><span></span><code><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tf_sales_daily</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">day</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">,</span><span class="w"> </span><span class="n">transaction_count</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
-<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span><span class="p">,</span>
 <span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">quantity</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">quantity</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">transaction_count</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">()</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="w">  </span><span class="c1">-- can preserve dimensions if needed</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tf_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span>
 <span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="k">day</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span>
 <span class="w">    </span><span class="n">revenue</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
 <span class="w">    </span><span class="n">quantity</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
@@ -5633,7 +5633,7 @@ your view SQL.</p>
 
 <span class="c1">-- Expression index for a frequently-queried dimension</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_sales_category</span>
-<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">));</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tf_sales</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">));</span>
 </code></pre></div>
 <p><strong>Don't over-index</strong>:</p>
 <ul>

@@ -5755,7 +5755,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_tracing</span><span class="p">,</span> <span class="n">TracingConfig</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
@@ -5763,10 +5763,10 @@
 <span class="p">)</span>
 
 <span class="c1"># Prometheus metrics + /metrics endpoint</span>
-<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">))</span>
 
 <span class="c1"># OpenTelemetry distributed tracing</span>
-<span class="n">setup_tracing</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">TracingConfig</span><span class="p">(</span><span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
+<span class="n">setup_tracing</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">TracingConfig</span><span class="p">(</span><span class="n">service_name</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">))</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run the app</span>
 uvicorn<span class="w"> </span>myapp:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
@@ -5801,11 +5801,11 @@ curl<span class="w"> </span>http://localhost:8000/metrics
 <p>The response is standard Prometheus text. With the default <code>namespace="fraiseql"</code> you will see series such as:</p>
 <div class="highlight"><pre><span></span><code># HELP fraiseql_graphql_queries_total Total number of GraphQL queries
 # TYPE fraiseql_graphql_queries_total counter
-fraiseql_graphql_queries_total{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 1250
+fraiseql_graphql_queries_total{operation_type="query",operation_name="users"} 1250
 # HELP fraiseql_graphql_query_duration_seconds GraphQL query execution time in seconds
 # TYPE fraiseql_graphql_query_duration_seconds histogram
-fraiseql_graphql_query_duration_seconds_sum{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 29.4
-fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,operation_name=&quot;users&quot;} 1250
+fraiseql_graphql_query_duration_seconds_sum{operation_type="query",operation_name="users"} 29.4
+fraiseql_graphql_query_duration_seconds_count{operation_type="query",operation_name="users"} 1250
 </code></pre></div>
 <blockquote>
 <p>Metrics collection requires the optional <code>prometheus_client</code> dependency. If it is not installed, <code>setup_metrics</code> degrades gracefully and the <code>/metrics</code> endpoint returns placeholder output.</p>
@@ -5818,12 +5818,12 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="n">tracer</span> <span class="o">=</span> <span class="n">setup_tracing</span><span class="p">(</span>
     <span class="n">app</span><span class="p">,</span>
     <span class="n">TracingConfig</span><span class="p">(</span>
-        <span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
-        <span class="n">service_version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
-        <span class="n">deployment_environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+        <span class="n">service_name</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">,</span>
+        <span class="n">service_version</span><span class="o">=</span><span class="s2">"1.0.0"</span><span class="p">,</span>
+        <span class="n">deployment_environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
         <span class="n">sample_rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>                      <span class="c1"># 1.0 = 100% sampling</span>
-        <span class="n">export_format</span><span class="o">=</span><span class="s2">&quot;otlp&quot;</span><span class="p">,</span>                 <span class="c1"># &quot;otlp&quot;, &quot;jaeger&quot;, or &quot;zipkin&quot;</span>
-        <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">&quot;http://otel-collector:4317&quot;</span><span class="p">,</span>
+        <span class="n">export_format</span><span class="o">=</span><span class="s2">"otlp"</span><span class="p">,</span>                 <span class="c1"># "otlp", "jaeger", or "zipkin"</span>
+        <span class="n">export_endpoint</span><span class="o">=</span><span class="s2">"http://otel-collector:4317"</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5839,7 +5839,7 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 
 <span class="c1"># Propagate the current trace into a downstream HTTP call</span>
 <span class="n">headers</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">.</span><span class="n">inject_context</span><span class="p">({})</span>
-<span class="c1"># headers now contains a &quot;traceparent&quot; entry when propagation is enabled</span>
+<span class="c1"># headers now contains a "traceparent" entry when propagation is enabled</span>
 </code></pre></div>
 <p>The W3C <code>traceparent</code> format is:</p>
 <div class="highlight"><pre><span></span><code>traceparent: 00-{32-hex-trace-id}-{16-hex-span-id}-{trace-flags}
@@ -5859,21 +5859,21 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="n">tracer</span> <span class="o">=</span> <span class="n">get_tracer</span><span class="p">()</span>
 
 <span class="c1"># Trace a database query (sets db.system=postgresql, db.statement, etc.)</span>
-<span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace_database_query</span><span class="p">(</span><span class="s2">&quot;SELECT&quot;</span><span class="p">,</span> <span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;SELECT data FROM v_user&quot;</span><span class="p">):</span>
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace_database_query</span><span class="p">(</span><span class="s2">"SELECT"</span><span class="p">,</span> <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"SELECT data FROM v_user"</span><span class="p">):</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 
 <span class="c1"># Trace a GraphQL operation</span>
-<span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace_graphql_query</span><span class="p">(</span><span class="s2">&quot;GetUser&quot;</span><span class="p">,</span> <span class="n">query_text</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
+<span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace_graphql_query</span><span class="p">(</span><span class="s2">"GetUser"</span><span class="p">,</span> <span class="n">query_text</span><span class="p">,</span> <span class="n">variables</span><span class="p">):</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">execute</span><span class="p">(</span><span class="n">query_text</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span>
 </code></pre></div>
 <p>Decorator helpers are also exported for convenience:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.tracing</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace_graphql_operation</span><span class="p">,</span> <span class="n">trace_database_query</span>
 
-<span class="nd">@trace_graphql_operation</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="s2">&quot;GetUser&quot;</span><span class="p">)</span>
+<span class="nd">@trace_graphql_operation</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="s2">"GetUser"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_get_user</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="o">...</span>
 
-<span class="nd">@trace_database_query</span><span class="p">(</span><span class="s2">&quot;SELECT&quot;</span><span class="p">,</span> <span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@trace_database_query</span><span class="p">(</span><span class="s2">"SELECT"</span><span class="p">,</span> <span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_users</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
     <span class="o">...</span>
 </code></pre></div>
@@ -5884,13 +5884,13 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="n">metrics</span> <span class="o">=</span> <span class="n">get_metrics</span><span class="p">()</span>
 <span class="k">if</span> <span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">metrics</span><span class="o">.</span><span class="n">record_query</span><span class="p">(</span>
-        <span class="n">operation_type</span><span class="o">=</span><span class="s2">&quot;query&quot;</span><span class="p">,</span>
-        <span class="n">operation_name</span><span class="o">=</span><span class="s2">&quot;GetUser&quot;</span><span class="p">,</span>
+        <span class="n">operation_type</span><span class="o">=</span><span class="s2">"query"</span><span class="p">,</span>
+        <span class="n">operation_name</span><span class="o">=</span><span class="s2">"GetUser"</span><span class="p">,</span>
         <span class="n">duration_ms</span><span class="o">=</span><span class="mf">45.0</span><span class="p">,</span>
         <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">metrics</span><span class="o">.</span><span class="n">record_db_query</span><span class="p">(</span><span class="n">query_type</span><span class="o">=</span><span class="s2">&quot;SELECT&quot;</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">duration_ms</span><span class="o">=</span><span class="mf">12.0</span><span class="p">)</span>
-    <span class="n">metrics</span><span class="o">.</span><span class="n">record_cache_hit</span><span class="p">(</span><span class="n">cache_type</span><span class="o">=</span><span class="s2">&quot;result&quot;</span><span class="p">)</span>
+    <span class="n">metrics</span><span class="o">.</span><span class="n">record_db_query</span><span class="p">(</span><span class="n">query_type</span><span class="o">=</span><span class="s2">"SELECT"</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">duration_ms</span><span class="o">=</span><span class="mf">12.0</span><span class="p">)</span>
+    <span class="n">metrics</span><span class="o">.</span><span class="n">record_cache_hit</span><span class="p">(</span><span class="n">cache_type</span><span class="o">=</span><span class="s2">"result"</span><span class="p">)</span>
 </code></pre></div>
 <p>The <code>with_metrics(...)</code> decorator records timing and success/failure automatically for <code>"query"</code> / <code>"mutation"</code> operation types.</p>
 <hr />
@@ -5944,9 +5944,9 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">MetricsConfig</span><span class="p">(</span>
     <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
-    <span class="n">metrics_path</span><span class="o">=</span><span class="s2">&quot;/metrics&quot;</span><span class="p">,</span>
-    <span class="n">exclude_paths</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;/metrics&quot;</span><span class="p">,</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span> <span class="s2">&quot;/ready&quot;</span><span class="p">,</span> <span class="s2">&quot;/startup&quot;</span><span class="p">},</span>
+    <span class="n">namespace</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">,</span>
+    <span class="n">metrics_path</span><span class="o">=</span><span class="s2">"/metrics"</span><span class="p">,</span>
+    <span class="n">exclude_paths</span><span class="o">=</span><span class="p">{</span><span class="s2">"/metrics"</span><span class="p">,</span> <span class="s2">"/health"</span><span class="p">,</span> <span class="s2">"/ready"</span><span class="p">,</span> <span class="s2">"/startup"</span><span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Key metrics</strong> (shown with the default <code>fraiseql</code> namespace):</p>
@@ -5966,14 +5966,14 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <p><strong>Purpose</strong>: Contextual logging for debugging and analysis.</p>
 <p>FraiseQL emits standard Python <code>logging</code> records. Configure JSON output (for example with <code>python-json-logger</code>) so each line carries request context and timing:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-16T15:30:45.123Z&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GraphQL query executed&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GetUser&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user123&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">23.5</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;db_queries&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;cache_hit&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-01-16T15:30:45.123Z"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INFO"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GraphQL query executed"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GetUser"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user123"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mf">23.5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"db_queries"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"cache_hit"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Set the level via <code>logging.basicConfig(level=...)</code> or your logging config. Security-relevant events are emitted as structured JSON by the security audit logger (see <a href="#5-security-audit-logging">Security Audit Logging</a>).</p>
@@ -5996,9 +5996,9 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="n">collector</span> <span class="o">=</span> <span class="n">init_query_stats</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
 
 <span class="c1"># Later — top queries by total execution time</span>
-<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">get_stats</span><span class="p">(</span><span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;total_exec_time&quot;</span><span class="p">)</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">get_stats</span><span class="p">(</span><span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"total_exec_time"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">query_preview</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span><span class="si">}</span><span class="s2">  calls=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">calls</span><span class="si">}</span><span class="s2">  mean=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">mean_exec_time_ms</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">query_preview</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span><span class="si">}</span><span class="s2">  calls=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">calls</span><span class="si">}</span><span class="s2">  mean=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">mean_exec_time_ms</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 </code></pre></div>
 <p>Valid <code>order_by</code> values: <code>total_exec_time</code>, <code>mean_exec_time</code>, <code>calls</code>, <code>cache_hit_ratio</code>. The collector degrades gracefully (returns an empty list) when <code>pg_stat_statements</code> is not installed. The companion health check <code>check_query_stats</code> reports whether the extension is available.</p>
 <h3 id="5-security-audit-logging">5. Security Audit Logging<a class="headerlink" href="#5-security-audit-logging" title="Permanent link">&para;</a></h3>
@@ -6009,16 +6009,16 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="n">security</span> <span class="o">=</span> <span class="n">get_security_logger</span><span class="p">()</span>
 
 <span class="n">security</span><span class="o">.</span><span class="n">log_auth_failure</span><span class="p">(</span>
-    <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;invalid_token&quot;</span><span class="p">,</span>
-    <span class="n">ip_address</span><span class="o">=</span><span class="s2">&quot;203.0.113.42&quot;</span><span class="p">,</span>
-    <span class="n">attempted_username</span><span class="o">=</span><span class="s2">&quot;alice&quot;</span><span class="p">,</span>
+    <span class="n">reason</span><span class="o">=</span><span class="s2">"invalid_token"</span><span class="p">,</span>
+    <span class="n">ip_address</span><span class="o">=</span><span class="s2">"203.0.113.42"</span><span class="p">,</span>
+    <span class="n">attempted_username</span><span class="o">=</span><span class="s2">"alice"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">security</span><span class="o">.</span><span class="n">log_authorization_denied</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user123&quot;</span><span class="p">,</span>
-    <span class="n">resource</span><span class="o">=</span><span class="s2">&quot;Order&quot;</span><span class="p">,</span>
-    <span class="n">action</span><span class="o">=</span><span class="s2">&quot;read&quot;</span><span class="p">,</span>
-    <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;missing role&quot;</span><span class="p">,</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user123"</span><span class="p">,</span>
+    <span class="n">resource</span><span class="o">=</span><span class="s2">"Order"</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">"read"</span><span class="p">,</span>
+    <span class="n">reason</span><span class="o">=</span><span class="s2">"missing role"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><code>SecurityEventType</code> covers authentication (<code>AUTH_SUCCESS</code>, <code>AUTH_FAILURE</code>, …), authorization (<code>AUTHZ_DENIED</code>, <code>AUTHZ_FIELD_DENIED</code>, …), rate limiting, CSRF, query security (complexity/depth/timeout), and system events. The log file path defaults to <code>security_events.log</code> and can be overridden with <code>FRAISEQL_SECURITY_LOG_PATH</code>.</p>
@@ -6027,13 +6027,13 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_error_tracker</span>
 
 <span class="c1"># At startup, with your psycopg AsyncConnectionPool</span>
-<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span> <span class="n">release_version</span><span class="o">=</span><span class="s2">&quot;1.0.0&quot;</span><span class="p">)</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span> <span class="n">release_version</span><span class="o">=</span><span class="s2">"1.0.0"</span><span class="p">)</span>
 
 <span class="c1"># Capture an exception with context</span>
 <span class="k">try</span><span class="p">:</span>
     <span class="k">await</span> <span class="n">risky_operation</span><span class="p">()</span>
 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-    <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request_data</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"request"</span><span class="p">:</span> <span class="n">request_data</span><span class="p">})</span>
 </code></pre></div>
 <p>Errors are grouped by fingerprint, store full stack traces and request/user context, and can be correlated with OpenTelemetry <code>trace_id</code>/<code>span_id</code>.</p>
 <h3 id="7-health-and-readiness-checks">7. Health and Readiness Checks<a class="headerlink" href="#7-health-and-readiness-checks" title="Permanent link">&para;</a></h3>
@@ -6052,12 +6052,12 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="p">)</span>
 
 <span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;pool&quot;</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;query_stats&quot;</span><span class="p">,</span> <span class="n">check_query_stats</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"database"</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"pool"</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"query_stats"</span><span class="p">,</span> <span class="n">check_query_stats</span><span class="p">)</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
-<span class="c1"># {&quot;status&quot;: &quot;healthy&quot; | &quot;degraded&quot;, &quot;checks&quot;: {...}}</span>
+<span class="c1"># {"status": "healthy" | "degraded", "checks": {...}}</span>
 </code></pre></div>
 <p><code>check_database</code> and <code>check_pool_stats</code> read the app's connection pool via <code>fraiseql.fastapi.dependencies.get_db_pool</code>. You can expose <code>health.run_checks()</code> from a custom FastAPI route if you want a single aggregated report.</p>
 <h2 id="integration-patterns">Integration Patterns<a class="headerlink" href="#integration-patterns" title="Permanent link">&para;</a></h2>
@@ -6071,22 +6071,22 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
     <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
-<span class="n">setup_tracing</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">TracingConfig</span><span class="p">(</span><span class="n">service_name</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span> <span class="n">deployment_environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">))</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">))</span>
+<span class="n">setup_tracing</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">TracingConfig</span><span class="p">(</span><span class="n">service_name</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">,</span> <span class="n">deployment_environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">))</span>
 
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">init_observability</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">pool</span> <span class="o">=</span> <span class="n">get_db_pool</span><span class="p">()</span>
     <span class="n">init_query_stats</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
-    <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">)</span>
+    <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="pattern-2-capture-and-correlate-errors">Pattern 2: Capture and correlate errors<a class="headerlink" href="#pattern-2-capture-and-correlate-errors" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_error_tracker</span><span class="p">,</span> <span class="n">get_metrics</span>
@@ -6100,25 +6100,25 @@ fraiseql_graphql_query_duration_seconds_count{operation_type=&quot;query&quot;,o
         <span class="k">if</span> <span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">metrics</span><span class="o">.</span><span class="n">record_error</span><span class="p">(</span>
                 <span class="n">error_type</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
-                <span class="n">error_code</span><span class="o">=</span><span class="s2">&quot;HANDLER_ERROR&quot;</span><span class="p">,</span>
+                <span class="n">error_code</span><span class="o">=</span><span class="s2">"HANDLER_ERROR"</span><span class="p">,</span>
                 <span class="n">operation</span><span class="o">=</span><span class="n">operation_name</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">tracker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">operation_name</span><span class="p">})</span>
+            <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"operation"</span><span class="p">:</span> <span class="n">operation_name</span><span class="p">})</span>
         <span class="k">raise</span>
 </code></pre></div>
 <h3 id="pattern-3-performance-analysis-dashboard">Pattern 3: Performance analysis dashboard<a class="headerlink" href="#pattern-3-performance-analysis-dashboard" title="Permanent link">&para;</a></h3>
 <p>Real-time monitoring with Grafana:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># 1. Configure the Grafana datasource</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:3000/api/datasources<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<span class="s1">    &quot;name&quot;: &quot;Prometheus&quot;,</span>
-<span class="s1">    &quot;type&quot;: &quot;prometheus&quot;,</span>
-<span class="s1">    &quot;url&quot;: &quot;http://prometheus:9090&quot;,</span>
-<span class="s1">    &quot;access&quot;: &quot;proxy&quot;,</span>
-<span class="s1">    &quot;isDefault&quot;: true</span>
-<span class="s1">  }&#39;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "name": "Prometheus",</span>
+<span class="s1">    "type": "prometheus",</span>
+<span class="s1">    "url": "http://prometheus:9090",</span>
+<span class="s1">    "access": "proxy",</span>
+<span class="s1">    "isDefault": true</span>
+<span class="s1">  }'</span>
 
 <span class="c1"># 2. Build panels from fraiseql_* series, e.g.:</span>
 <span class="c1">#    rate(fraiseql_graphql_queries_total[5m])</span>
@@ -6136,7 +6136,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">          </span><span class="no">(rate(fraiseql_graphql_queries_errors[5m]) /</span>
 <span class="w">           </span><span class="no">rate(fraiseql_graphql_queries_total[5m])) &gt; 0.05</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GraphQL</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">above</span><span class="nv"> </span><span class="s">5%&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"GraphQL</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">above</span><span class="nv"> </span><span class="s">5%"</span>
 
 <span class="w">      </span><span class="c1"># High latency (p95)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighLatency</span>
@@ -6144,7 +6144,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">          </span><span class="no">histogram_quantile(0.95,</span>
 <span class="w">            </span><span class="no">rate(fraiseql_graphql_query_duration_seconds_bucket[5m])) &gt; 0.5</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;p95</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">above</span><span class="nv"> </span><span class="s">500ms&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"p95</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">above</span><span class="nv"> </span><span class="s">500ms"</span>
 </code></pre></div>
 <h2 id="deployment-configuration">Deployment Configuration<a class="headerlink" href="#deployment-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="docker-compose-development">Docker Compose (Development)<a class="headerlink" href="#docker-compose-development" title="Permanent link">&para;</a></h3>
@@ -6153,7 +6153,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
 <span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">uvicorn myapp:app --host 0.0.0.0 --port 8000</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8000:8000"</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://user:pass@postgres:5432/db</span>
 <span class="w">      </span><span class="nt">FRAISEQL_ENVIRONMENT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">development</span>
@@ -6170,16 +6170,16 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">  </span><span class="nt">prometheus</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prom/prometheus:latest</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;9090:9090&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"9090:9090"</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml</span>
 <span class="w">    </span><span class="nt">command</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&#39;--config.file=/etc/prometheus/prometheus.yml&#39;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">'--config.file=/etc/prometheus/prometheus.yml'</span>
 
 <span class="w">  </span><span class="nt">grafana</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/grafana:latest</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3000:3000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"3000:3000"</span>
 <span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheus</span>
 
@@ -6191,7 +6191,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
 <span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/metrics</span>
 <span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;app:8000&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"app:8000"</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <h3 id="kubernetes-production">Kubernetes (Production)<a class="headerlink" href="#kubernetes-production" title="Permanent link">&para;</a></h3>
 <p>Run the app with uvicorn and wire the probes to the built-in endpoints:</p>
@@ -6212,7 +6212,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">app</span>
 <span class="w">          </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-fraiseql-app:latest</span>
-<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;uvicorn&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;myapp:app&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--host&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;0.0.0.0&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;--port&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;8000&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">          </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"uvicorn"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"myapp:app"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"--host"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"0.0.0.0"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"--port"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"8000"</span><span class="p p-Indicator">]</span>
 <span class="w">          </span><span class="nt">ports</span><span class="p">:</span>
 <span class="w">            </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">containerPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
 <span class="w">          </span><span class="nt">env</span><span class="p">:</span>

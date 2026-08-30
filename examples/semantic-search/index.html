@@ -5075,7 +5075,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
 
 <span class="c1"># Configure OpenAI (or your preferred embedding provider)</span>
-<span class="n">openai</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">&quot;your-api-key&quot;</span>
+<span class="n">openai</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="s2">"your-api-key"</span>
 
 <span class="nd">@fraise_type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
@@ -5090,38 +5090,38 @@
 </code></pre></div>
 <h2 id="embedding-generation">Embedding Generation<a class="headerlink" href="#embedding-generation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_embedding</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate embeddings using OpenAI&#39;s API.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Generate embeddings using OpenAI's API."""</span>
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai</span><span class="o">.</span><span class="n">Embedding</span><span class="o">.</span><span class="n">acreate</span><span class="p">(</span>
         <span class="nb">input</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
-        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;text-embedding-ada-002&quot;</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">"text-embedding-ada-002"</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;embedding&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"embedding"</span><span class="p">]</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_document_embedding</span><span class="p">(</span><span class="n">doc</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate embedding for a document combining title and content.&quot;&quot;&quot;</span>
-    <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">    </span><span class="sd">"""Generate embedding for a document combining title and content."""</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">'title'</span><span class="p">]</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">'content'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="data-ingestion">Data Ingestion<a class="headerlink" href="#data-ingestion" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ingest_documents</span><span class="p">(</span><span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span> <span class="n">documents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest documents with embeddings into the database.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Ingest documents with embeddings into the database."""</span>
 
     <span class="c1"># Generate embeddings for all documents</span>
     <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">:</span>
         <span class="n">embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_document_embedding</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
-        <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;embedding&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">embedding</span>
+        <span class="n">doc</span><span class="p">[</span><span class="s1">'embedding'</span><span class="p">]</span> <span class="o">=</span> <span class="n">embedding</span>
 
-    <span class="c1"># Bulk insert (you&#39;d implement this based on your data source)</span>
+    <span class="c1"># Bulk insert (you'd implement this based on your data source)</span>
     <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            INSERT INTO documents (title, content, embedding, category, tags)</span>
 <span class="s2">            VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">::vector, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span>
-            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">],</span>
-            <span class="n">doc</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">],</span>
-            <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;embedding&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">]&quot;</span><span class="p">,</span>
-            <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;category&#39;</span><span class="p">),</span>
-            <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tags&#39;</span><span class="p">,</span> <span class="p">[])</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="p">(</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">'title'</span><span class="p">],</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s1">'content'</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">doc</span><span class="p">[</span><span class="s1">'embedding'</span><span class="p">])</span><span class="si">}</span><span class="s2">]"</span><span class="p">,</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'category'</span><span class="p">),</span>
+            <span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'tags'</span><span class="p">,</span> <span class="p">[])</span>
         <span class="p">))</span>
 </code></pre></div>
 <h2 id="basic-semantic-search">Basic Semantic Search<a class="headerlink" href="#basic-semantic-search" title="Permanent link">&para;</a></h2>
@@ -5130,28 +5130,28 @@
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Perform semantic search on documents.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Perform semantic search on documents."""</span>
 
     <span class="c1"># Generate embedding for the search query</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="c1"># Search using vector similarity</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;documents&quot;</span><span class="p">,</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">query_embedding</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span>
             <span class="p">}</span>
         <span class="p">},</span>
         <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">query_embedding</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span>
             <span class="p">}</span>
         <span class="p">},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;documents&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"documents"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="advanced-search-features">Advanced Search Features<a class="headerlink" href="#advanced-search-features" title="Permanent link">&para;</a></h2>
 <h3 id="hybrid-search-vector-text">Hybrid Search (Vector + Text)<a class="headerlink" href="#hybrid-search-vector-text" title="Permanent link">&para;</a></h3>
@@ -5162,74 +5162,74 @@
     <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Combine vector similarity with traditional filters.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Combine vector similarity with traditional filters."""</span>
 
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="c1"># Build where clause</span>
     <span class="n">where_clause</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">query_embedding</span>
+        <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span>
         <span class="p">}</span>
     <span class="p">}</span>
 
     <span class="c1"># Add category filter if specified</span>
     <span class="k">if</span> <span class="n">category</span><span class="p">:</span>
-        <span class="n">where_clause</span><span class="p">[</span><span class="s2">&quot;category&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="n">category</span><span class="p">}</span>
+        <span class="n">where_clause</span><span class="p">[</span><span class="s2">"category"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">category</span><span class="p">}</span>
 
     <span class="c1"># Add tags filter if specified</span>
     <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
-        <span class="n">where_clause</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;overlap&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">}</span>  <span class="c1"># PostgreSQL array overlap</span>
+        <span class="n">where_clause</span><span class="p">[</span><span class="s2">"tags"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"overlap"</span><span class="p">:</span> <span class="n">tags</span><span class="p">}</span>  <span class="c1"># PostgreSQL array overlap</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;documents&quot;</span><span class="p">,</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="n">where_clause</span><span class="p">,</span>
         <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">query_embedding</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span>
             <span class="p">}</span>
         <span class="p">},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;documents&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"documents"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="search-with-different-distance-metrics">Search with Different Distance Metrics<a class="headerlink" href="#search-with-different-distance-metrics" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_with_distance_metric</span><span class="p">(</span>
     <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;cosine&quot;</span><span class="p">,</span>
+    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cosine"</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search using different distance metrics.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Search using different distance metrics."""</span>
 
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="c1"># Choose distance operator based on metric</span>
     <span class="n">distance_operators</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;cosine&quot;</span><span class="p">:</span> <span class="s2">&quot;cosine_distance&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;l2&quot;</span><span class="p">:</span> <span class="s2">&quot;l2_distance&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;inner_product&quot;</span><span class="p">:</span> <span class="s2">&quot;inner_product&quot;</span>
+        <span class="s2">"cosine"</span><span class="p">:</span> <span class="s2">"cosine_distance"</span><span class="p">,</span>
+        <span class="s2">"l2"</span><span class="p">:</span> <span class="s2">"l2_distance"</span><span class="p">,</span>
+        <span class="s2">"inner_product"</span><span class="p">:</span> <span class="s2">"inner_product"</span>
     <span class="p">}</span>
 
-    <span class="n">operator</span> <span class="o">=</span> <span class="n">distance_operators</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="s2">&quot;cosine_distance&quot;</span><span class="p">)</span>
+    <span class="n">operator</span> <span class="o">=</span> <span class="n">distance_operators</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">metric</span><span class="p">,</span> <span class="s2">"cosine_distance"</span><span class="p">)</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;documents&quot;</span><span class="p">,</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span>
                 <span class="n">operator</span><span class="p">:</span> <span class="n">query_embedding</span>
             <span class="p">}</span>
         <span class="p">},</span>
         <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span>
                 <span class="n">operator</span><span class="p">:</span> <span class="n">query_embedding</span>
             <span class="p">}</span>
         <span class="p">},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;documents&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"documents"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="rag-system-implementation">RAG System Implementation<a class="headerlink" href="#rag-system-implementation" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_relevant_context</span><span class="p">(</span>
@@ -5238,7 +5238,7 @@
     <span class="n">max_tokens</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve relevant context for RAG systems.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Retrieve relevant context for RAG systems."""</span>
 
     <span class="c1"># Search for relevant documents</span>
     <span class="n">documents</span> <span class="o">=</span> <span class="k">await</span> <span class="n">semantic_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">question</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
@@ -5249,28 +5249,28 @@
 
     <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">:</span>
         <span class="c1"># Estimate tokens (rough approximation)</span>
-        <span class="n">content_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">*</span> <span class="mf">1.3</span>  <span class="c1"># Rough token estimate</span>
+        <span class="n">content_tokens</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s1">'content'</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">*</span> <span class="mf">1.3</span>  <span class="c1"># Rough token estimate</span>
 
         <span class="k">if</span> <span class="n">total_tokens</span> <span class="o">+</span> <span class="n">content_tokens</span> <span class="o">&gt;</span> <span class="n">max_tokens</span><span class="p">:</span>
             <span class="k">break</span>
 
-        <span class="n">context_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Document: </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">context_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Document: </span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">'title'</span><span class="p">]</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">doc</span><span class="p">[</span><span class="s1">'content'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="n">total_tokens</span> <span class="o">+=</span> <span class="n">content_tokens</span>
 
-    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_parts</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">context_parts</span><span class="p">)</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rag_query</span><span class="p">(</span>
     <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span>
     <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">llm_client</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Complete RAG query: retrieve context and generate answer.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Complete RAG query: retrieve context and generate answer."""</span>
 
     <span class="c1"># Retrieve relevant context</span>
     <span class="n">context</span> <span class="o">=</span> <span class="k">await</span> <span class="n">retrieve_relevant_context</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">question</span><span class="p">)</span>
 
     <span class="c1"># Generate answer using LLM with context</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""</span>
 <span class="s2">    Based on the following context, answer the question.</span>
 
 <span class="s2">    Context:</span>
@@ -5279,7 +5279,7 @@
 <span class="s2">    Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span>
 
 <span class="s2">    Answer:</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm_client</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">response</span>
@@ -5358,7 +5358,7 @@
 <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">semantic_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 
 <span class="c1"># Combine with other filters to reduce search space</span>
-<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">hybrid_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s2">&quot;technical&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">hybrid_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="s2">"technical"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># Use async processing for batch operations</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_search</span><span class="p">(</span><span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
@@ -5373,16 +5373,16 @@
 <span class="c1"># Sample documents</span>
 <span class="n">SAMPLE_DOCUMENTS</span> <span class="o">=</span> <span class="p">[</span>
     <span class="p">{</span>
-        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Python Programming Guide&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Python is a high-level programming language known for its simplicity and readability...&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="s2">&quot;programming&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span> <span class="s2">&quot;programming&quot;</span><span class="p">,</span> <span class="s2">&quot;tutorial&quot;</span><span class="p">]</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Python Programming Guide"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Python is a high-level programming language known for its simplicity and readability..."</span><span class="p">,</span>
+        <span class="s2">"category"</span><span class="p">:</span> <span class="s2">"programming"</span><span class="p">,</span>
+        <span class="s2">"tags"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"python"</span><span class="p">,</span> <span class="s2">"programming"</span><span class="p">,</span> <span class="s2">"tutorial"</span><span class="p">]</span>
     <span class="p">},</span>
     <span class="p">{</span>
-        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Machine Learning Basics&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;Machine learning is a subset of artificial intelligence that enables computers to learn...&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="s2">&quot;ml&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;machine-learning&quot;</span><span class="p">,</span> <span class="s2">&quot;ai&quot;</span><span class="p">,</span> <span class="s2">&quot;data-science&quot;</span><span class="p">]</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Machine Learning Basics"</span><span class="p">,</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="s2">"Machine learning is a subset of artificial intelligence that enables computers to learn..."</span><span class="p">,</span>
+        <span class="s2">"category"</span><span class="p">:</span> <span class="s2">"ml"</span><span class="p">,</span>
+        <span class="s2">"tags"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"machine-learning"</span><span class="p">,</span> <span class="s2">"ai"</span><span class="p">,</span> <span class="s2">"data-science"</span><span class="p">]</span>
     <span class="p">},</span>
     <span class="c1"># ... more documents</span>
 <span class="p">]</span>
@@ -5398,17 +5398,17 @@
     <span class="k">await</span> <span class="n">ingest_documents</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">SAMPLE_DOCUMENTS</span><span class="p">)</span>
 
     <span class="c1"># Perform searches</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">semantic_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="s2">&quot;programming languages&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> documents&quot;</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">semantic_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="s2">"programming languages"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2"> documents"</span><span class="p">)</span>
 
     <span class="n">hybrid_results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">hybrid_search</span><span class="p">(</span>
         <span class="n">repo</span><span class="p">,</span>
-        <span class="s2">&quot;artificial intelligence&quot;</span><span class="p">,</span>
-        <span class="n">category</span><span class="o">=</span><span class="s2">&quot;ml&quot;</span>
+        <span class="s2">"artificial intelligence"</span><span class="p">,</span>
+        <span class="n">category</span><span class="o">=</span><span class="s2">"ml"</span>
     <span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hybrid_results</span><span class="p">)</span><span class="si">}</span><span class="s2"> ML documents&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hybrid_results</span><span class="p">)</span><span class="si">}</span><span class="s2"> ML documents"</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <h2 id="distance-semantics-explanation">Distance Semantics Explanation<a class="headerlink" href="#distance-semantics-explanation" title="Permanent link">&para;</a></h2>
@@ -5441,8 +5441,8 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
 <p><strong>Slow queries without indexes</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check if your queries use the index</span>
 <span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">documents</span>
-<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">embedding</span><span class="w"> </span><span class="o">&lt;=&gt;</span><span class="w"> </span><span class="s1">&#39;[...]&#39;</span><span class="p">::</span><span class="n">vector</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
-<span class="c1">-- Should show &quot;Index Scan&quot; not &quot;Seq Scan&quot;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">embedding</span><span class="w"> </span><span class="o">&lt;=&gt;</span><span class="w"> </span><span class="s1">'[...]'</span><span class="p">::</span><span class="n">vector</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="c1">-- Should show "Index Scan" not "Seq Scan"</span>
 </code></pre></div>
 <p><strong>Dimension mismatches</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check vector dimensions</span>
@@ -5462,29 +5462,29 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="n">product_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find products similar to a given product.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Find products similar to a given product."""</span>
 
-    <span class="c1"># Get the source product&#39;s embedding</span>
-    <span class="n">source_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;products&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">product_id</span><span class="p">)}})</span>
-    <span class="n">source_products</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">source_result</span><span class="p">,</span> <span class="s2">&quot;products&quot;</span><span class="p">)</span>
+    <span class="c1"># Get the source product's embedding</span>
+    <span class="n">source_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"products"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">product_id</span><span class="p">)}})</span>
+    <span class="n">source_products</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">source_result</span><span class="p">,</span> <span class="s2">"products"</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">source_products</span><span class="p">:</span>
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="n">source_embedding</span> <span class="o">=</span> <span class="n">source_products</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;embedding&quot;</span><span class="p">]</span>
+    <span class="n">source_embedding</span> <span class="o">=</span> <span class="n">source_products</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"embedding"</span><span class="p">]</span>
 
     <span class="c1"># Find similar products (excluding the source product)</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;products&quot;</span><span class="p">,</span>
+        <span class="s2">"products"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;neq&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">product_id</span><span class="p">)},</span>  <span class="c1"># Exclude source product</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">source_embedding</span><span class="p">}</span>
+            <span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"neq"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">product_id</span><span class="p">)},</span>  <span class="c1"># Exclude source product</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">source_embedding</span><span class="p">}</span>
         <span class="p">},</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">source_embedding</span><span class="p">}},</span>
+        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">source_embedding</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;products&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"products"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="content-deduplication">Content Deduplication<a class="headerlink" href="#content-deduplication" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">find_duplicate_content</span><span class="p">(</span>
@@ -5492,7 +5492,7 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.95</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find documents with similar content using embeddings.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Find documents with similar content using embeddings."""</span>
 
     <span class="c1"># Generate embedding for the content</span>
     <span class="n">content_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
@@ -5500,23 +5500,23 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="c1"># Find documents with high similarity (low distance)</span>
     <span class="c1"># Cosine distance &lt; 0.1 means similarity &gt; 0.95</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;documents&quot;</span><span class="p">,</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">content_embedding</span><span class="p">}</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">content_embedding</span><span class="p">}</span>
         <span class="p">},</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">content_embedding</span><span class="p">}},</span>
+        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">content_embedding</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
     <span class="p">)</span>
 
-    <span class="n">documents</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;documents&quot;</span><span class="p">)</span>
+    <span class="n">documents</span> <span class="o">=</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"documents"</span><span class="p">)</span>
 
     <span class="c1"># Filter by similarity threshold</span>
     <span class="n">similar_docs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">documents</span><span class="p">:</span>
         <span class="c1"># Calculate similarity from distance</span>
-        <span class="n">similarity</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">similarity</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">doc</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cosine_distance"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">similarity</span> <span class="o">&gt;=</span> <span class="n">threshold</span><span class="p">:</span>
-            <span class="n">doc</span><span class="p">[</span><span class="s2">&quot;similarity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">similarity</span>
+            <span class="n">doc</span><span class="p">[</span><span class="s2">"similarity"</span><span class="p">]</span> <span class="o">=</span> <span class="n">similarity</span>
             <span class="n">similar_docs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">doc</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">similar_docs</span>
@@ -5528,23 +5528,23 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="n">text_query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search documents using image embeddings, optionally combined with text.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Search documents using image embeddings, optionally combined with text."""</span>
 
-    <span class="n">where_clause</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;image_embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">image_embedding</span><span class="p">}}</span>
+    <span class="n">where_clause</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"image_embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">image_embedding</span><span class="p">}}</span>
 
     <span class="c1"># Add text search if provided</span>
     <span class="k">if</span> <span class="n">text_query</span><span class="p">:</span>
         <span class="n">text_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">text_query</span><span class="p">)</span>
-        <span class="n">where_clause</span><span class="p">[</span><span class="s2">&quot;embedding&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">text_embedding</span><span class="p">}</span>
+        <span class="n">where_clause</span><span class="p">[</span><span class="s2">"embedding"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">text_embedding</span><span class="p">}</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;documents&quot;</span><span class="p">,</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="n">where_clause</span><span class="p">,</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;image_embedding&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;cosine_distance&quot;</span><span class="p">:</span> <span class="n">image_embedding</span><span class="p">}},</span>
+        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"image_embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">image_embedding</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;documents&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">extract_graphql_data</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"documents"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="advanced-patterns">Advanced Patterns<a class="headerlink" href="#advanced-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="query-expansion">Query Expansion<a class="headerlink" href="#query-expansion" title="Permanent link">&para;</a></h3>
@@ -5553,7 +5553,7 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">expand_terms</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search with query expansion for better results.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Search with query expansion for better results."""</span>
 
     <span class="c1"># Generate embedding for original query</span>
     <span class="n">base_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
@@ -5585,7 +5585,7 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
 <span class="n">embedding_cache</span> <span class="o">=</span> <span class="n">TTLCache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_cached_embedding</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get embedding with caching to reduce API calls.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get embedding with caching to reduce API calls."""</span>
 
     <span class="n">cache_key</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
@@ -5603,7 +5603,7 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="n">queries</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Process multiple semantic searches in parallel.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Process multiple semantic searches in parallel."""</span>
 
     <span class="c1"># Generate embeddings in parallel</span>
     <span class="n">embeddings</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
@@ -5625,16 +5625,16 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">openai_semantic_search</span><span class="p">(</span>
     <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;text-embedding-ada-002&quot;</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"text-embedding-ada-002"</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Semantic search using OpenAI embeddings.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Semantic search using OpenAI embeddings."""</span>
 
     <span class="c1"># Generate embedding</span>
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai</span><span class="o">.</span><span class="n">Embedding</span><span class="o">.</span><span class="n">acreate</span><span class="p">(</span>
         <span class="nb">input</span><span class="o">=</span><span class="n">query</span><span class="p">,</span>
         <span class="n">model</span><span class="o">=</span><span class="n">model</span>
     <span class="p">)</span>
-    <span class="n">embedding</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;embedding&quot;</span><span class="p">]</span>
+    <span class="n">embedding</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"embedding"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">semantic_search</span><span class="p">(</span><span class="n">repo</span><span class="p">,</span> <span class="n">embedding</span><span class="p">)</span>
 </code></pre></div>
@@ -5644,16 +5644,16 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cohere_semantic_search</span><span class="p">(</span>
     <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;embed-english-v3.0&quot;</span>
+    <span class="n">model</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"embed-english-v3.0"</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Semantic search using Cohere embeddings.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Semantic search using Cohere embeddings."""</span>
 
-    <span class="n">co</span> <span class="o">=</span> <span class="n">cohere</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;your-api-key&quot;</span><span class="p">)</span>
+    <span class="n">co</span> <span class="o">=</span> <span class="n">cohere</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="s2">"your-api-key"</span><span class="p">)</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="n">co</span><span class="o">.</span><span class="n">embed</span><span class="p">(</span>
         <span class="n">texts</span><span class="o">=</span><span class="p">[</span><span class="n">query</span><span class="p">],</span>
         <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
-        <span class="n">input_type</span><span class="o">=</span><span class="s2">&quot;search_query&quot;</span>
+        <span class="n">input_type</span><span class="o">=</span><span class="s2">"search_query"</span>
     <span class="p">)</span>
 
     <span class="n">embedding</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">embeddings</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -5663,13 +5663,13 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sentence_transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">SentenceTransformer</span>
 
 <span class="c1"># Load model once</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="s1">&#39;all-MiniLM-L6-v2&#39;</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SentenceTransformer</span><span class="p">(</span><span class="s1">'all-MiniLM-L6-v2'</span><span class="p">)</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">local_semantic_search</span><span class="p">(</span>
     <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Semantic search using local Sentence Transformers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Semantic search using local Sentence Transformers."""</span>
 
     <span class="c1"># Generate embedding locally (no API calls)</span>
     <span class="n">embedding</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -5684,7 +5684,7 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">runs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark search performance.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark search performance."""</span>
 
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">generate_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
@@ -5698,10 +5698,10 @@ brew<span class="w"> </span>install<span class="w"> </span>pgvector<span class="
         <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;avg_time&quot;</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
-        <span class="s2">&quot;min_time&quot;</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
-        <span class="s2">&quot;max_time&quot;</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
-        <span class="s2">&quot;runs&quot;</span><span class="p">:</span> <span class="n">runs</span>
+        <span class="s2">"avg_time"</span><span class="p">:</span> <span class="nb">sum</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
+        <span class="s2">"min_time"</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
+        <span class="s2">"max_time"</span><span class="p">:</span> <span class="nb">max</span><span class="p">(</span><span class="n">times</span><span class="p">),</span>
+        <span class="s2">"runs"</span><span class="p">:</span> <span class="n">runs</span>
     <span class="p">}</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

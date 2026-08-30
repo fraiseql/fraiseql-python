@@ -4876,7 +4876,7 @@
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">startup</span><span class="p">():</span>
     <span class="c1"># Reuse existing database pool</span>
     <span class="n">pool</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">db_pool</span>
@@ -4884,7 +4884,7 @@
     <span class="c1"># Initialize cache backend (auto-creates UNLOGGED table)</span>
     <span class="n">postgres_cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span>
         <span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
-        <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">,</span>
+        <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">,</span>
         <span class="n">auto_initialize</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 
@@ -4900,13 +4900,13 @@
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_graphql_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
         <span class="n">pool</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">db_pool</span><span class="p">,</span>
-        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
+        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
-        <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">repo</span><span class="p">,</span>  <span class="c1"># ← Direct repository</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span>
+        <span class="s2">"request"</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
+        <span class="s2">"db"</span><span class="p">:</span> <span class="n">repo</span><span class="p">,</span>  <span class="c1"># ← Direct repository</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span>
     <span class="p">}</span>
 </code></pre></div>
 <p><strong>After</strong>:</p>
@@ -4915,7 +4915,7 @@
 <span class="k">def</span><span class="w"> </span><span class="nf">get_graphql_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="n">base_repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
         <span class="n">pool</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">db_pool</span><span class="p">,</span>
-        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>  <span class="c1"># REQUIRED!</span>
+        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>  <span class="c1"># REQUIRED!</span>
     <span class="p">)</span>
 
     <span class="c1"># Wrap with caching</span>
@@ -4925,15 +4925,15 @@
     <span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
-        <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">cached_repo</span><span class="p">,</span>  <span class="c1"># ← Cached repository</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span>
+        <span class="s2">"request"</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
+        <span class="s2">"db"</span><span class="p">:</span> <span class="n">cached_repo</span><span class="p">,</span>  <span class="c1"># ← Cached repository</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span>
     <span class="p">}</span>
 </code></pre></div>
 <h3 id="step-4-verify-tenant_id-in-context">Step 4: Verify tenant_id in Context<a class="headerlink" href="#step-4-verify-tenant_id-in-context" title="Permanent link">&para;</a></h3>
 <p><strong>CRITICAL FOR MULTI-TENANT APPS</strong>: Ensure <code>tenant_id</code> is always in repository context.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: tenant_id in context</span>
-<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
+<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
 
 <span class="c1"># ❌ WRONG: Missing tenant_id (security risk!)</span>
 <span class="n">context</span><span class="o">=</span><span class="p">{}</span>
@@ -4941,7 +4941,7 @@
 <p><strong>Why this matters</strong>: Without <code>tenant_id</code>, all tenants share the same cache keys, leading to data leakage between tenants!</p>
 <p><strong>Verify</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check that tenant_id is in context</span>
-<span class="k">assert</span> <span class="n">base_repo</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;tenant_id required!&quot;</span>
+<span class="k">assert</span> <span class="n">base_repo</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"tenant_id required!"</span>
 </code></pre></div>
 <h3 id="step-5-add-cache-cleanup-optional-but-recommended">Step 5: Add Cache Cleanup (Optional but Recommended)<a class="headerlink" href="#step-5-add-cache-cleanup-optional-but-recommended" title="Permanent link">&para;</a></h3>
 <p>Schedule periodic cleanup of expired entries:</p>
@@ -4949,37 +4949,37 @@
 
 <span class="n">scheduler</span> <span class="o">=</span> <span class="n">AsyncIOScheduler</span><span class="p">()</span>
 
-<span class="nd">@scheduler</span><span class="o">.</span><span class="n">scheduled_job</span><span class="p">(</span><span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+<span class="nd">@scheduler</span><span class="o">.</span><span class="n">scheduled_job</span><span class="p">(</span><span class="s2">"interval"</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_expired_cache</span><span class="p">():</span>
     <span class="n">cache_backend</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">result_cache</span><span class="o">.</span><span class="n">backend</span>
     <span class="n">cleaned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache_backend</span><span class="o">.</span><span class="n">cleanup_expired</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">cleaned</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cleaned </span><span class="si">{</span><span class="n">cleaned</span><span class="si">}</span><span class="s2"> expired cache entries&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cleaned </span><span class="si">{</span><span class="n">cleaned</span><span class="si">}</span><span class="s2"> expired cache entries"</span><span class="p">)</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start_scheduler</span><span class="p">():</span>
     <span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;shutdown&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"shutdown"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop_scheduler</span><span class="p">():</span>
     <span class="n">scheduler</span><span class="o">.</span><span class="n">shutdown</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="migration-for-non-multi-tenant-apps">Migration for Non-Multi-Tenant Apps<a class="headerlink" href="#migration-for-non-multi-tenant-apps" title="Permanent link">&para;</a></h2>
 <p>If your app is single-tenant or doesn't use <code>tenant_id</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Option 1: Use a constant tenant_id</span>
-<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;single-tenant&quot;</span><span class="p">}</span>
+<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"single-tenant"</span><span class="p">}</span>
 
-<span class="c1"># Option 2: Don&#39;t set tenant_id (cache keys won&#39;t include it)</span>
+<span class="c1"># Option 2: Don't set tenant_id (cache keys won't include it)</span>
 <span class="n">context</span><span class="o">=</span><span class="p">{}</span>  <span class="c1"># OK for single-tenant apps</span>
 
 <span class="c1"># Option 3: Use another identifier (user_id, org_id, etc.)</span>
-<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">organization_id</span><span class="p">}</span>
+<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">organization_id</span><span class="p">}</span>
 </code></pre></div>
 <h2 id="gradual-rollout-strategy">Gradual Rollout Strategy<a class="headerlink" href="#gradual-rollout-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="phase-1-monitoring-only">Phase 1: Monitoring Only<a class="headerlink" href="#phase-1-monitoring-only" title="Permanent link">&para;</a></h3>
 <p>Enable caching but bypass it initially to verify no issues:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># All queries skip cache</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <p>Monitor logs for:</p>
 <ul>
@@ -4990,16 +4990,16 @@
 <h3 id="phase-2-selective-caching">Phase 2: Selective Caching<a class="headerlink" href="#phase-2-selective-caching" title="Permanent link">&para;</a></h3>
 <p>Enable caching for low-risk, read-heavy queries:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Cache rarely-changing data</span>
-<span class="n">countries</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;countries&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+<span class="n">countries</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"countries"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
 
 <span class="c1"># Skip cache for frequently-changing data</span>
-<span class="n">orders</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;orders&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">orders</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"orders"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="phase-3-full-rollout">Phase 3: Full Rollout<a class="headerlink" href="#phase-3-full-rollout" title="Permanent link">&para;</a></h3>
 <p>Once confident, enable caching by default:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Caching automatic (no skip_cache flag)</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>
-<span class="n">products</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;products&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users"</span><span class="p">)</span>
+<span class="n">products</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"products"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="verification-checklist">Verification Checklist<a class="headerlink" href="#verification-checklist" title="Permanent link">&para;</a></h2>
 <p>After migration, verify:</p>
@@ -5010,50 +5010,50 @@
 <span class="c1">-- Check cache table is UNLOGGED</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">relpersistence</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_class</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">relname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">;</span>
-<span class="c1">-- Should return &#39;u&#39; (unlogged)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">relname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'fraiseql_cache'</span><span class="p">;</span>
+<span class="c1">-- Should return 'u' (unlogged)</span>
 </code></pre></div>
 <h3 id="2-cache-keys-include-tenant_id">2. Cache Keys Include tenant_id<a class="headerlink" href="#2-cache-keys-include-tenant_id" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheKeyBuilder</span>
 
 <span class="n">key_builder</span> <span class="o">=</span> <span class="n">CacheKeyBuilder</span><span class="p">()</span>
 <span class="n">cache_key</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
-    <span class="n">query_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="n">repo</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">),</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">}</span>
+    <span class="n">query_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="n">repo</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">),</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}</span>
 <span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">cache_key</span><span class="p">)</span>
-<span class="c1"># Should include tenant_id: &quot;fraiseql:tenant-123:users:status:active&quot;</span>
+<span class="c1"># Should include tenant_id: "fraiseql:tenant-123:users:status:active"</span>
 </code></pre></div>
 <h3 id="3-cache-hits-working">3. Cache Hits Working<a class="headerlink" href="#3-cache-hits-working" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># First query (cache miss)</span>
-<span class="n">result1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
+<span class="n">result1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
 
 <span class="c1"># Second query (cache hit)</span>
-<span class="n">result2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
+<span class="n">result2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
 
 <span class="c1"># Results should be identical</span>
 <span class="k">assert</span> <span class="n">result1</span> <span class="o">==</span> <span class="n">result2</span>
 </code></pre></div>
 <h3 id="4-cache-statistics">4. Cache Statistics<a class="headerlink" href="#4-cache-statistics" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">result_cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;hit_rate&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_entries&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hits: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;misses&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'hit_rate'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'total_entries'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hits: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'hits'</span><span class="p">]</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'misses'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="troubleshooting-migration-issues">Troubleshooting Migration Issues<a class="headerlink" href="#troubleshooting-migration-issues" title="Permanent link">&para;</a></h2>
 <h3 id="issue-tenant_id-missing-from-context">Issue: "tenant_id missing from context"<a class="headerlink" href="#issue-tenant_id-missing-from-context" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: Cache keys don't include tenant_id</p>
 <p><strong>Fix</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ensure tenant middleware runs BEFORE GraphQL</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tenant_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
     <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolve_tenant</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
 <span class="c1"># Then use in repository context</span>
-<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
+<span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
 </code></pre></div>
 <h3 id="issue-cache-table-not-found">Issue: "Cache table not found"<a class="headerlink" href="#issue-cache-table-not-found" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: <code>PostgresCacheError: relation "fraiseql_cache" does not exist</code></p>
@@ -5081,12 +5081,12 @@
 <p><strong>Symptom</strong>: Cache returns old data after mutations</p>
 <p><strong>Fix</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ensure mutations use cached_repo (auto-invalidates)</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;update_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="o">...</span><span class="p">})</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"update_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="o">...</span><span class="p">})</span>
 
 <span class="c1"># Or manually invalidate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheKeyBuilder</span>
 <span class="n">key_builder</span> <span class="o">=</span> <span class="n">CacheKeyBuilder</span><span class="p">()</span>
-<span class="n">pattern</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+<span class="n">pattern</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="performance-expectations">Performance Expectations<a class="headerlink" href="#performance-expectations" title="Permanent link">&para;</a></h2>

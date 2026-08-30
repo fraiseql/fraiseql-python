@@ -4780,7 +4780,7 @@ createdb<span class="w"> </span>your_database_name
 psql<span class="w"> </span>your_database_name<span class="w"> </span>&lt;<span class="w"> </span>schema.sql
 
 <span class="c1"># Verify views exist</span>
-psql<span class="w"> </span>your_database_name<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;\dv v_*&quot;</span>
+psql<span class="w"> </span>your_database_name<span class="w"> </span>-c<span class="w"> </span><span class="s2">"\dv v_*"</span>
 </code></pre></div>
 <p><strong>Prevention</strong>: Always run schema setup before starting your app</p>
 <hr />
@@ -4795,7 +4795,7 @@ pip<span class="w"> </span>install<span class="w"> </span>fraiseql<span class="o
 uv<span class="w"> </span>add<span class="w"> </span>fraiseql
 
 <span class="c1"># Verify installation</span>
-python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import fraiseql; print(&#39;FraiseQL installed!&#39;)&quot;</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import fraiseql; print('FraiseQL installed!')"</span>
 </code></pre></div>
 <p><strong>Prevention</strong>: Use virtual environments and check <code>pip list | grep fraiseql</code></p>
 <hr />
@@ -4815,7 +4815,7 @@ brew<span class="w"> </span>services<span class="w"> </span>start<span class="w"
 psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-d<span class="w"> </span>postgres
 
 <span class="c1"># Check your connection string in app.py</span>
-<span class="c1"># Should be: &quot;postgresql://user:password@localhost:5432/dbname&quot;</span>
+<span class="c1"># Should be: "postgresql://user:password@localhost:5432/dbname"</span>
 </code></pre></div>
 <p><strong>Prevention</strong>: Use <code>pg_isready -h localhost</code> to test connectivity</p>
 <hr />
@@ -4827,10 +4827,10 @@ psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># Check your view definition</span>
-<span class="n">psql</span> <span class="n">your_db</span> <span class="o">-</span><span class="n">c</span> <span class="s2">&quot;SELECT * FROM v_note LIMIT 1;&quot;</span>
+<span class="n">psql</span> <span class="n">your_db</span> <span class="o">-</span><span class="n">c</span> <span class="s2">"SELECT * FROM v_note LIMIT 1;"</span>
 
 <span class="c1"># Compare with Python type</span>
-<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_note&quot;</span><span class="p">)</span>
+<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_note"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Note</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>        <span class="c1"># Must match database column type</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>      <span class="c1"># Must match database column type</span>
@@ -4851,7 +4851,7 @@ from<span class="w"> </span>fraiseql.fastapi<span class="w"> </span>import<span 
 
 <span class="nv">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>FastAPI<span class="o">()</span>
 <span class="nv">router</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>FraiseQLRouter<span class="o">(</span><span class="nv">repo</span><span class="o">=</span>repo,<span class="w"> </span><span class="nv">schema</span><span class="o">=</span>fraiseql.build_schema<span class="o">())</span>
-app.include_router<span class="o">(</span>router,<span class="w"> </span><span class="nv">prefix</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="o">)</span><span class="w">  </span><span class="c1"># This creates /graphql endpoint</span>
+app.include_router<span class="o">(</span>router,<span class="w"> </span><span class="nv">prefix</span><span class="o">=</span><span class="s2">"/graphql"</span><span class="o">)</span><span class="w">  </span><span class="c1"># This creates /graphql endpoint</span>
 
 <span class="c1"># Run server</span>
 uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
@@ -4863,16 +4863,16 @@ uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload<span clas
 <p><strong>Cause</strong>: No data in database or view not returning data</p>
 <p><strong>Solution</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check table has data</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT COUNT(*) FROM tb_note;&quot;</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT COUNT(*) FROM tb_note;"</span>
 
 <span class="c1"># Check view returns data</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT * FROM v_note;&quot;</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT * FROM v_note;"</span>
 
 <span class="c1"># If view is empty, check view definition</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;\d+ v_note;&quot;</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"\d+ v_note;"</span>
 
 <span class="c1"># Add sample data</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;INSERT INTO tb_note (title, content) VALUES (&#39;Test&#39;, &#39;Content&#39;);&quot;</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"INSERT INTO tb_note (title, content) VALUES ('Test', 'Content');"</span>
 </code></pre></div>
 <p><strong>Prevention</strong>: Always populate test data after schema creation</p>
 <hr />
@@ -4881,11 +4881,11 @@ psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </
 <p><strong>Cause</strong>: Database user lacks permissions</p>
 <p><strong>Solution</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Create user with permissions</span>
-psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;CREATE USER myuser WITH PASSWORD &#39;mypass&#39;;&quot;</span>
-psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;GRANT ALL PRIVILEGES ON DATABASE mydb TO myuser;&quot;</span>
+psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-c<span class="w"> </span><span class="s2">"CREATE USER myuser WITH PASSWORD 'mypass';"</span>
+psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> </span>-c<span class="w"> </span><span class="s2">"GRANT ALL PRIVILEGES ON DATABASE mydb TO myuser;"</span>
 
 <span class="c1"># Or use postgres user</span>
-<span class="c1"># Connection string: &quot;postgresql://postgres:password@localhost:5432/mydb&quot;</span>
+<span class="c1"># Connection string: "postgresql://postgres:password@localhost:5432/mydb"</span>
 </code></pre></div>
 <p><strong>Prevention</strong>: Use database superuser for development</p>
 <hr />
@@ -4894,11 +4894,11 @@ psql<span class="w"> </span>-U<span class="w"> </span>postgres<span class="w"> <
 <p><strong>Cause</strong>: Database schema not updated after adding fields</p>
 <p><strong>Solution</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Add the missing column</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;ALTER TABLE tb_note ADD COLUMN tags TEXT[] DEFAULT &#39;{}&#39;;&quot;</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"ALTER TABLE tb_note ADD COLUMN tags TEXT[] DEFAULT '{}';"</span>
 
 <span class="c1"># Update the view</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;DROP VIEW v_note;&quot;</span>
-psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;CREATE VIEW v_note AS SELECT jsonb_build_object(&#39;id&#39;, id, &#39;title&#39;, title, &#39;content&#39;, content, &#39;tags&#39;, tags) as data FROM tb_note;&quot;</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"DROP VIEW v_note;"</span>
+psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </span><span class="s2">"CREATE VIEW v_note AS SELECT jsonb_build_object('id', id, 'title', title, 'content', content, 'tags', tags) as data FROM tb_note;"</span>
 
 <span class="c1"># Restart your Python app</span>
 </code></pre></div>
@@ -4924,7 +4924,7 @@ psql<span class="w"> </span>your_db<span class="w"> </span>-c<span class="w"> </
 <p><strong>Cause</strong>: Schema file not in current directory or wrong path</p>
 <p><strong>Solution</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Find your schema file</span>
-find<span class="w"> </span>.<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;schema.sql&quot;</span>
+find<span class="w"> </span>.<span class="w"> </span>-name<span class="w"> </span><span class="s2">"schema.sql"</span>
 
 <span class="c1"># Use absolute path</span>
 psql<span class="w"> </span>mydb<span class="w"> </span>&lt;<span class="w"> </span>/full/path/to/schema.sql
@@ -4955,7 +4955,7 @@ psql<span class="w"> </span>mydb<span class="w"> </span>&lt;<span class="w"> </s
 python<span class="w"> </span>-m<span class="w"> </span>py_compile<span class="w"> </span>app.py
 
 <span class="c1"># Check imports work</span>
-python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import app; print(&#39;App imports OK&#39;)&quot;</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import app; print('App imports OK')"</span>
 
 <span class="c1"># Run with verbose output</span>
 uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload<span class="w"> </span>--log-level<span class="w"> </span>debug

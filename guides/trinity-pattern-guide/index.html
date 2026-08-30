@@ -4946,18 +4946,18 @@
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">       </span><span class="c1">-- Direct column for WHERE filtering</span>
 <span class="w">    </span><span class="n">pk_post</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Only if other views JOIN to this</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w">           </span><span class="c1">-- ✅ Public UUID</span>
-<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="c1">-- ✅ Human slug</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span>
-<span class="w">        </span><span class="c1">-- ❌ No &#39;pk_post&#39; here!</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w">           </span><span class="c1">-- ✅ Public UUID</span>
+<span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="c1">-- ✅ Human slug</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span>
+<span class="w">        </span><span class="c1">-- ❌ No 'pk_post' here!</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="graphql-type-definition">GraphQL Type Definition<a class="headerlink" href="#graphql-type-definition" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>          <span class="c1"># ✅ Public</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># ✅ Public</span>
@@ -4973,19 +4973,19 @@
 <span class="w">    </span><span class="n">v_user_pk</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Resolve identifiers</span>
-<span class="w">    </span><span class="n">v_user_pk</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">core</span><span class="p">.</span><span class="n">get_pk_user</span><span class="p">(</span><span class="n">p_input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;user_id&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">v_user_pk</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">core</span><span class="p">.</span><span class="n">get_pk_user</span><span class="p">(</span><span class="n">p_input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- Create post</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_user_pk</span><span class="p">,</span><span class="w"> </span><span class="n">p_input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;content&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_user_pk</span><span class="p">,</span><span class="w"> </span><span class="n">p_input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p_input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Sync projection table</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_post</span><span class="p">(</span><span class="n">v_post_id</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;post_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'post_id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -4997,9 +4997,9 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;pk_user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">pk_user</span><span class="p">,</span><span class="w">  </span><span class="c1">-- ❌ Security risk!</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
+<span class="w">        </span><span class="s1">'pk_user'</span><span class="p">,</span><span class="w"> </span><span class="n">pk_user</span><span class="p">,</span><span class="w">  </span><span class="c1">-- ❌ Security risk!</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
@@ -5010,8 +5010,8 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">          </span><span class="c1">-- ✅ Only public fields</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">          </span><span class="c1">-- ✅ Only public fields</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
@@ -5049,16 +5049,16 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- WRONG</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
-<span class="c1">-- ❌ No direct &#39;id&#39; column for WHERE filtering</span>
+<span class="c1">-- ❌ No direct 'id' column for WHERE filtering</span>
 </code></pre></div>
 <p><strong>Fix</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- CORRECT</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- ✅ Direct column for WHERE id = $1</span>
-<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="mistake-5-wrong-variable-naming">❌ Mistake 5: Wrong Variable Naming<a class="headerlink" href="#mistake-5-wrong-variable-naming" title="Permanent link">&para;</a></h3>
@@ -5140,10 +5140,10 @@ SELECT
     id,
     pk_category,  -- ✅ Needed for ltree operations
     jsonb_build_object(
-        &#39;id&#39;, id::text,
-        &#39;identifier&#39;, identifier,
-        &#39;name&#39;, name,
-        &#39;path&#39;, path::text
+        'id', id::text,
+        'identifier', identifier,
+        'name', name,
+        'path', path::text
     ) as data
 FROM tb_category;
 </code></pre></div>
@@ -5159,7 +5159,7 @@ FROM tb_category;
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
 <span class="c1">-- Projection table (materialized cache)</span>

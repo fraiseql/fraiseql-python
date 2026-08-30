@@ -4826,7 +4826,7 @@
 <span class="w">    </span><span class="n">slug</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">content</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">excerpt</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">is_published</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
 <span class="w">    </span><span class="n">published_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
@@ -4856,13 +4856,13 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;__typename&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;bio&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;avatarUrl&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">avatar_url</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'__typename'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'bio'</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'avatarUrl'</span><span class="p">,</span><span class="w"> </span><span class="n">avatar_url</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
@@ -4874,17 +4874,17 @@
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;__typename&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Post&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;slug&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">slug</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;excerpt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">excerpt</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;tags&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">tags</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;isPublished&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;publishedAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'__typename'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Post'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'slug'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">slug</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'excerpt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">excerpt</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'tags'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">tags</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'isPublished'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'publishedAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_author</span><span class="p">;</span>
@@ -4896,32 +4896,32 @@
 <span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="p">,</span>
 <span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;__typename&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Comment&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_author</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;post&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'__typename'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Comment'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_author</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'post'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                </span><span class="s1">&#39;__typename&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Post&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
+<span class="w">                </span><span class="s1">'__typename'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Post'</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;replies&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'replies'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
 <span class="w">            </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                    </span><span class="s1">&#39;__typename&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Comment&#39;</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">fk_author</span><span class="p">)</span>
+<span class="w">                    </span><span class="s1">'__typename'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Comment'</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">fk_author</span><span class="p">)</span>
 <span class="w">                </span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="n">r</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">fk_parent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">            </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span><span class="p">;</span>
@@ -4933,22 +4933,22 @@
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;__typename&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Post&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;slug&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">slug</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;excerpt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">excerpt</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;tags&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">tags</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;isPublished&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;publishedAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_author</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;comments&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'__typename'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Post'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'slug'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">slug</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'excerpt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">excerpt</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'tags'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">tags</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'isPublished'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'publishedAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_author</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'comments'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
 <span class="w">            </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">created_at</span><span class="p">)</span>
 <span class="w">             </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_comment</span>
 <span class="w">             </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">fk_parent</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">            </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="p">;</span>
@@ -4959,7 +4959,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -4968,16 +4968,16 @@
     <span class="n">avatar_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_comment&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_comment"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Comment</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
     <span class="n">author</span><span class="p">:</span> <span class="n">User</span>
-    <span class="n">post</span><span class="p">:</span> <span class="s2">&quot;Post&quot;</span>
-    <span class="n">replies</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Comment&quot;</span><span class="p">]</span>
+    <span class="n">post</span><span class="p">:</span> <span class="s2">"Post"</span>
+    <span class="n">replies</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">"Comment"</span><span class="p">]</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
@@ -4997,7 +4997,7 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_post</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get single post with all nested data.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get single post with all nested data."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
@@ -5006,7 +5006,7 @@
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
     <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List posts with filtering and pagination.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""List posts with filtering and pagination."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 </code></pre></div>
 <h2 id="mutations">Mutations<a class="headerlink" href="#mutations" title="Permanent link">&para;</a></h2>
@@ -5017,7 +5017,7 @@
 <span class="w">    </span><span class="n">p_title</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p_content</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p_excerpt</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p_tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p_is_published</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">false</span>
 <span class="p">)</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
@@ -5031,13 +5031,13 @@
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_author_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_author_pk</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Author not found: %&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_author_id</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Author not found: %'</span><span class="p">,</span><span class="w"> </span><span class="n">p_author_id</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Generate slug</span>
-<span class="w">    </span><span class="n">v_slug</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">lower</span><span class="p">(</span><span class="n">regexp_replace</span><span class="p">(</span><span class="n">p_title</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[^a-zA-Z0-9]+&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;g&#39;</span><span class="p">));</span>
-<span class="w">    </span><span class="n">v_slug</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">trim</span><span class="p">(</span><span class="k">both</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">v_slug</span><span class="p">);</span>
-<span class="w">    </span><span class="n">v_slug</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_slug</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;-&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">substr</span><span class="p">(</span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
+<span class="w">    </span><span class="n">v_slug</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">lower</span><span class="p">(</span><span class="n">regexp_replace</span><span class="p">(</span><span class="n">p_title</span><span class="p">,</span><span class="w"> </span><span class="s1">'[^a-zA-Z0-9]+'</span><span class="p">,</span><span class="w"> </span><span class="s1">'-'</span><span class="p">,</span><span class="w"> </span><span class="s1">'g'</span><span class="p">));</span>
+<span class="w">    </span><span class="n">v_slug</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">trim</span><span class="p">(</span><span class="k">both</span><span class="w"> </span><span class="s1">'-'</span><span class="w"> </span><span class="k">from</span><span class="w"> </span><span class="n">v_slug</span><span class="p">);</span>
+<span class="w">    </span><span class="n">v_slug</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_slug</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'-'</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">substr</span><span class="p">(</span><span class="n">md5</span><span class="p">(</span><span class="n">random</span><span class="p">()::</span><span class="nb">text</span><span class="p">),</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- Insert post</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span>
@@ -5077,7 +5077,7 @@
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_author_pk</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">v_post_pk</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;Author or post not found&#39;</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Author or post not found'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert comment</span>
@@ -5109,12 +5109,12 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create new blog post.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create new blog post."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_comment</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">CreateCommentInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Comment</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add comment to post.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Add comment to post."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 </code></pre></div>
 <h2 id="application-setup">Application Setup<a class="headerlink" href="#application-setup" title="Permanent link">&para;</a></h2>
@@ -5124,7 +5124,7 @@
 
 <span class="c1"># Initialize app</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">,</span> <span class="s2">&quot;postgresql://localhost/blog&quot;</span><span class="p">),</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">,</span> <span class="s2">"postgresql://localhost/blog"</span><span class="p">),</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
     <span class="n">enable_playground</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
@@ -5142,14 +5142,14 @@
     <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">repo</span> <span class="o">=</span> <span class="n">PsycopgRepository</span><span class="p">(</span><span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;repo&quot;</span><span class="p">:</span> <span class="n">repo</span><span class="p">,</span>
-            <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Tenant-ID&quot;</span><span class="p">),</span>
-            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-User-ID&quot;</span><span class="p">),</span>  <span class="c1"># From auth middleware</span>
+            <span class="s2">"repo"</span><span class="p">:</span> <span class="n">repo</span><span class="p">,</span>
+            <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-Tenant-ID"</span><span class="p">),</span>
+            <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-User-ID"</span><span class="p">),</span>  <span class="c1"># From auth middleware</span>
         <span class="p">}</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <h3 id="graphql-queries">GraphQL Queries<a class="headerlink" href="#graphql-queries" title="Permanent link">&para;</a></h3>

@@ -4899,10 +4899,10 @@
 <p>The <code>refresh_schema()</code> method allows you to rebuild the GraphQL schema after making database changes. This is primarily useful for testing scenarios where you need to create database objects dynamically.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app_with_custom_mutations</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">db_url</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;App with dynamically created mutations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""App with dynamically created mutations."""</span>
     <span class="c1"># Create database functions</span>
     <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">db_url</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            CREATE FUNCTION my_test_mutation()</span>
 <span class="s2">            RETURNS mutation_response</span>
 <span class="s2">            LANGUAGE plpgsql AS $$</span>
@@ -4910,7 +4910,7 @@
 <span class="s2">                RETURN mutation_success(NULL::integer);</span>
 <span class="s2">            END;</span>
 <span class="s2">            $$;</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
     <span class="c1"># Refresh schema to discover new function</span>
@@ -4954,7 +4954,7 @@
 </ul>
 <p><strong>Total</strong>: ~50-200ms per refresh</p>
 <p><strong>Recommended pattern</strong>: Use class-scoped fixtures to refresh once per test class, not per test function.</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">)</span>  <span class="c1"># ← Class scope, not function</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"class"</span><span class="p">)</span>  <span class="c1"># ← Class scope, not function</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app_with_mutations</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">db_url</span><span class="p">):</span>
     <span class="c1"># Setup...</span>
     <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>
@@ -4969,25 +4969,25 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 
 
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"class"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app_with_test_mutations</span><span class="p">(</span><span class="n">blog_simple_app</span><span class="p">,</span> <span class="n">blog_simple_db_url</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create test mutations and refresh schema.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create test mutations and refresh schema."""</span>
 
     <span class="c1"># Create test database function</span>
     <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">blog_simple_db_url</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            CREATE OR REPLACE FUNCTION test_error_handling()</span>
 <span class="s2">            RETURNS mutation_response</span>
 <span class="s2">            LANGUAGE plpgsql AS $$</span>
 <span class="s2">            BEGIN</span>
 <span class="s2">                RETURN mutation_validation_error(</span>
-<span class="s2">                    &#39;Test error message&#39;,</span>
-<span class="s2">                    &#39;TestEntity&#39;,</span>
+<span class="s2">                    'Test error message',</span>
+<span class="s2">                    'TestEntity',</span>
 <span class="s2">                    NULL</span>
 <span class="s2">                );</span>
 <span class="s2">            END;</span>
 <span class="s2">            $$;</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
 
     <span class="c1"># Define Python wrapper mutation</span>
@@ -4995,15 +4995,15 @@
 
     <span class="nd">@mutation</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_error_handling</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test mutation that calls the database function.&quot;&quot;&quot;</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="n">DatabaseQuery</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM test_error_handling()&quot;</span><span class="p">,</span> <span class="p">[])</span>
+<span class="w">        </span><span class="sd">"""Test mutation that calls the database function."""</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">DatabaseQuery</span><span class="p">(</span><span class="s2">"SELECT * FROM test_error_handling()"</span><span class="p">,</span> <span class="p">[])</span>
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="p">{}</span>
 
     <span class="c1"># Add to refresh config and refresh</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">blog_simple_app</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="s2">&quot;_fraiseql_refresh_config&quot;</span><span class="p">):</span>
-        <span class="n">blog_simple_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">_fraiseql_refresh_config</span><span class="p">[</span><span class="s2">&quot;original_mutations&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">blog_simple_app</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="s2">"_fraiseql_refresh_config"</span><span class="p">):</span>
+        <span class="n">blog_simple_app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">_fraiseql_refresh_config</span><span class="p">[</span><span class="s2">"original_mutations"</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="n">test_error_handling</span>
         <span class="p">)</span>
 
@@ -5013,7 +5013,7 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">TestErrorHandling</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test error handling with dynamic mutations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test error handling with dynamic mutations."""</span>
 
     <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_mutation_error_response</span><span class="p">(</span>
@@ -5021,22 +5021,22 @@
         <span class="n">app_with_test_mutations</span><span class="p">,</span>
         <span class="n">blog_simple_graphql_client</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Test that mutations return proper error structure.&quot;&quot;&quot;</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Test that mutations return proper error structure."""</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">            mutation {</span>
 <span class="s2">                testErrorHandling {</span>
 <span class="s2">                    status</span>
 <span class="s2">                    message</span>
 <span class="s2">                }</span>
 <span class="s2">            }</span>
-<span class="s2">        &quot;&quot;&quot;</span>
+<span class="s2">        """</span>
 
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">blog_simple_graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
-        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;errors&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;testErrorHandling&quot;</span><span class="p">]</span>
-        <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;validation:&quot;</span>
-        <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Test error message&quot;</span>
+        <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"errors"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"testErrorHandling"</span><span class="p">]</span>
+        <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"validation:"</span>
+        <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">"message"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Test error message"</span>
 </code></pre></div>
 <h2 id="schema-testing-utilities">Schema Testing Utilities<a class="headerlink" href="#schema-testing-utilities" title="Permanent link">&para;</a></h2>
 <p>FraiseQL provides utilities in <code>fraiseql.testing</code> for schema manipulation during tests.</p>
@@ -5054,7 +5054,7 @@
 <p>Complete cleanup including caches and FastAPI dependencies. Use this for thorough teardown in test fixtures.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">clear_fraiseql_state</span>
 
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;session&quot;</span><span class="p">,</span> <span class="n">autouse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"session"</span><span class="p">,</span> <span class="n">autouse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_after_tests</span><span class="p">():</span>
     <span class="k">yield</span>
     <span class="n">clear_fraiseql_state</span><span class="p">()</span>
@@ -5073,21 +5073,21 @@
     <span class="n">expect_new_types</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Verify new types were added</span>
 <span class="p">)</span>
 
-<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;lost_types&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1"># No types lost</span>
-<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;new_types&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>    <span class="c1"># New types discovered</span>
-<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;preserved_types&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>  <span class="c1"># Existing types kept</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"lost_types"</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span>  <span class="c1"># No types lost</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"new_types"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>    <span class="c1"># New types discovered</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"preserved_types"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span>  <span class="c1"># Existing types kept</span>
 </code></pre></div>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="1-minimize-refresh-calls">1. Minimize Refresh Calls<a class="headerlink" href="#1-minimize-refresh-calls" title="Permanent link">&para;</a></h3>
 <p>Each refresh costs ~50-200ms. Use class-scoped fixtures:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ GOOD: Refresh once per class</span>
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;class&quot;</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"class"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app_with_mutations</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">db_url</span><span class="p">):</span>
     <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>
     <span class="k">yield</span> <span class="n">app</span>
 
 <span class="c1"># ❌ BAD: Refresh for every test</span>
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">&quot;function&quot;</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">scope</span><span class="o">=</span><span class="s2">"function"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app_with_mutations</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">db_url</span><span class="p">):</span>
     <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>  <span class="c1"># Called 10 times for 10 tests!</span>
     <span class="k">yield</span> <span class="n">app</span>
@@ -5095,19 +5095,19 @@
 <h3 id="2-create-functions-before-refresh">2. Create Functions Before Refresh<a class="headerlink" href="#2-create-functions-before-refresh" title="Permanent link">&para;</a></h3>
 <p>Schema refresh only discovers what exists in the database at refresh time:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ GOOD: Create then refresh</span>
-<span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;CREATE FUNCTION my_func() ...&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CREATE FUNCTION my_func() ..."</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>  <span class="c1"># Discovers my_func</span>
 
 <span class="c1"># ❌ BAD: Refresh then create</span>
 <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>
-<span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;CREATE FUNCTION my_func() ...&quot;</span><span class="p">)</span>  <span class="c1"># Not in schema!</span>
+<span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CREATE FUNCTION my_func() ..."</span><span class="p">)</span>  <span class="c1"># Not in schema!</span>
 </code></pre></div>
 <h3 id="3-clean-up-is-automatic">3. Clean Up is Automatic<a class="headerlink" href="#3-clean-up-is-automatic" title="Permanent link">&para;</a></h3>
 <p>Database fixtures handle cleanup automatically. No need to drop functions manually:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ GOOD: Let fixture handle cleanup</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">my_fixture</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">db_url</span><span class="p">):</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;CREATE FUNCTION ...&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CREATE FUNCTION ..."</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>
     <span class="k">yield</span> <span class="n">app</span>
     <span class="c1"># Database dropped automatically</span>
@@ -5115,15 +5115,15 @@
 <span class="c1"># ❌ UNNECESSARY: Manual cleanup</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">my_fixture</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">db_url</span><span class="p">):</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;CREATE FUNCTION test_func() ...&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CREATE FUNCTION test_func() ..."</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">refresh_schema</span><span class="p">()</span>
     <span class="k">yield</span> <span class="n">app</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DROP FUNCTION test_func()&quot;</span><span class="p">)</span>  <span class="c1"># Not needed</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DROP FUNCTION test_func()"</span><span class="p">)</span>  <span class="c1"># Not needed</span>
 </code></pre></div>
 <h3 id="4-enable-debug-logging">4. Enable Debug Logging<a class="headerlink" href="#4-enable-debug-logging" title="Permanent link">&para;</a></h3>
 <p>Schema refresh includes validation in debug mode:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
 <span class="c1"># Now refresh will log:</span>
 <span class="c1"># - Cache clearing operations</span>

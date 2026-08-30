@@ -4763,13 +4763,13 @@
 <span class="w">    </span><span class="c1">-- Your logic here</span>
 
 <span class="w">    </span><span class="c1">-- Success</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;created&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Thing created&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'created'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Thing created'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="k">NEW</span><span class="p">);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">EXCEPTION</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;failed:error&#39;</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'failed:error'</span><span class="p">;</span>
 <span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">;</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
@@ -4842,27 +4842,27 @@
 <h2 id="error-patterns">Error Patterns<a class="headerlink" href="#error-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="pattern-1-auto-generated-simple">Pattern 1: Auto-Generated (Simple)<a class="headerlink" href="#pattern-1-auto-generated-simple" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Just set status and message</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Email is required&#39;</span><span class="p">;</span>
-<span class="c1">-- Rust auto-generates: errors[{code: 422, identifier: &quot;validation&quot;, ...}]</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Email is required'</span><span class="p">;</span>
+<span class="c1">-- Rust auto-generates: errors[{code: 422, identifier: "validation", ...}]</span>
 </code></pre></div>
 <h3 id="pattern-2-explicit-multiple-errors">Pattern 2: Explicit Multiple Errors<a class="headerlink" href="#pattern-2-explicit-multiple-errors" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Build errors array manually</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Multiple validation errors&#39;</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Multiple validation errors'</span><span class="p">;</span>
 <span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">'errors'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalid_email&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email format invalid&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;details&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;field&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'invalid_email'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email format invalid'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'details'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'field'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">        </span><span class="p">),</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;password_weak&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Password too short&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;details&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;field&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;password&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'password_weak'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Password too short'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'details'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'field'</span><span class="p">,</span><span class="w"> </span><span class="s1">'password'</span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="p">);</span>
@@ -4871,48 +4871,48 @@
 <h2 id="common-patterns">Common Patterns<a class="headerlink" href="#common-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="input-validation">Input Validation<a class="headerlink" href="#input-validation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Extract and validate</span>
-<span class="n">user_email</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">;</span>
-<span class="k">IF</span><span class="w"> </span><span class="n">user_email</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">user_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">&#39;@&#39;</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Valid email required&#39;</span><span class="p">;</span>
+<span class="n">user_email</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">;</span>
+<span class="k">IF</span><span class="w"> </span><span class="n">user_email</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">user_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'@'</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Valid email required'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="not-found-check">Not Found Check<a class="headerlink" href="#not-found-check" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">user_record</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_id</span><span class="p">;</span>
 <span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;not_found:user&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;User %s not found&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'not_found:user'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">'User %s not found'</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="duplicate-check">Duplicate Check<a class="headerlink" href="#duplicate-check" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">user_email</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;conflict:duplicate&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Email already registered&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'conflict:duplicate'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Email already registered'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="conditional-update-optimistic-locking">Conditional Update (Optimistic Locking)<a class="headerlink" href="#conditional-update-optimistic-locking" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">UPDATE</span><span class="w"> </span><span class="n">machines</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;running&#39;</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">machine_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="k">UPDATE</span><span class="w"> </span><span class="n">machines</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'running'</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">machine_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'idle'</span>
 <span class="n">RETURNING</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">machine_record</span><span class="p">;</span>
 
 <span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;noop:already_running&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Machine already running&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'noop:already_running'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Machine already running'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="mutation_response-fields">mutation_response Fields<a class="headerlink" href="#mutation_response-fields" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TYPE</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w">           </span><span class="c1">-- Required: &#39;created&#39;, &#39;failed:*&#39;, etc.</span>
+<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w">           </span><span class="c1">-- Required: 'created', 'failed:*', etc.</span>
 <span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w">          </span><span class="c1">-- Required: Human-readable message</span>
 <span class="w">    </span><span class="n">entity_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w">        </span><span class="c1">-- Optional: ID of affected entity</span>
-<span class="w">    </span><span class="n">entity_type</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w">      </span><span class="c1">-- Optional: &#39;User&#39;, &#39;Post&#39;, etc.</span>
+<span class="w">    </span><span class="n">entity_type</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w">      </span><span class="c1">-- Optional: 'User', 'Post', etc.</span>
 <span class="w">    </span><span class="n">entity</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span><span class="w">          </span><span class="c1">-- Optional: Full entity data</span>
-<span class="w">    </span><span class="n">updated_fields</span><span class="w"> </span><span class="nb">text</span><span class="p">[],</span><span class="w"> </span><span class="c1">-- Optional: [&#39;name&#39;, &#39;email&#39;]</span>
+<span class="w">    </span><span class="n">updated_fields</span><span class="w"> </span><span class="nb">text</span><span class="p">[],</span><span class="w"> </span><span class="c1">-- Optional: ['name', 'email']</span>
 <span class="w">    </span><span class="k">cascade</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span><span class="w">         </span><span class="c1">-- Optional: Related changes</span>
 <span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">jsonb</span><span class="w">         </span><span class="c1">-- Optional: Extra context, explicit errors</span>
 <span class="p">);</span>
@@ -4948,31 +4948,31 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- Validate response before returning</span>
 <span class="n">PERFORM</span><span class="w"> </span><span class="n">mutation_assert</span><span class="p">(</span>
 <span class="w">    </span><span class="n">validate_mutation_response</span><span class="p">(</span><span class="k">result</span><span class="p">),</span>
-<span class="w">    </span><span class="s1">&#39;Response validation failed&#39;</span>
+<span class="w">    </span><span class="s1">'Response validation failed'</span>
 <span class="p">);</span>
 
 <span class="c1">-- Build error object for metadata.errors</span>
 <span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">        </span><span class="n">build_error_object</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalid_email&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email format invalid&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;field&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">))</span>
+<span class="w">    </span><span class="s1">'errors'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
+<span class="w">        </span><span class="n">build_error_object</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">'invalid_email'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email format invalid'</span><span class="p">,</span>
+<span class="w">            </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'field'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">))</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="p">);</span>
 </code></pre></div>
 <hr />
 <h2 id="graphql-response-structure">GraphQL Response Structure<a class="headerlink" href="#graphql-response-structure" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;createUser&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CreateUserError&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w">              </span><span class="c1">// ← Root: Quick access</span>
-<span class="w">      </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;validation:&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Email required&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w">             </span><span class="c1">// ← Array: Structured iteration</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;identifier&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;validation&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Email required&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;details&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateUserError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w">              </span><span class="c1">// ← Root: Quick access</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validation:"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Email required"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w">             </span><span class="c1">// ← Array: Structured iteration</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"identifier"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validation"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Email required"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"details"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="w">      </span><span class="p">}]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
@@ -4983,13 +4983,13 @@
 <hr />
 <h2 id="quick-debugging">Quick Debugging<a class="headerlink" href="#quick-debugging" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test function directly in psql</span>
-SELECT<span class="w"> </span>*<span class="w"> </span>FROM<span class="w"> </span>create_user<span class="o">(</span><span class="s1">&#39;{&quot;name&quot;: &quot;John&quot;}&#39;</span>::jsonb<span class="o">)</span><span class="p">;</span>
+SELECT<span class="w"> </span>*<span class="w"> </span>FROM<span class="w"> </span>create_user<span class="o">(</span><span class="s1">'{"name": "John"}'</span>::jsonb<span class="o">)</span><span class="p">;</span>
 
 <span class="c1"># Check raw JSON output</span>
-SELECT<span class="w"> </span>row_to_json<span class="o">(</span>create_user<span class="o">(</span><span class="s1">&#39;{&quot;name&quot;: &quot;John&quot;}&#39;</span>::jsonb<span class="o">))</span><span class="p">;</span>
+SELECT<span class="w"> </span>row_to_json<span class="o">(</span>create_user<span class="o">(</span><span class="s1">'{"name": "John"}'</span>::jsonb<span class="o">))</span><span class="p">;</span>
 
 <span class="c1"># Validate status string format</span>
-SELECT<span class="w"> </span>status<span class="w"> </span>~<span class="w"> </span><span class="s1">&#39;^(created|updated|deleted|failed|not_found|conflict|noop)(:.+)?$&#39;</span><span class="p">;</span>
+SELECT<span class="w"> </span>status<span class="w"> </span>~<span class="w"> </span><span class="s1">'^(created|updated|deleted|failed|not_found|conflict|noop)(:.+)?$'</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

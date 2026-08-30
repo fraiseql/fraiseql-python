@@ -4730,10 +4730,10 @@
 <h3 id="fk-based-nested-filters">FK-Based Nested Filters<a class="headerlink" href="#fk-based-nested-filters" title="Permanent link">&para;</a></h3>
 <p>Used when filtering by a related object's ID, leveraging foreign key columns.</p>
 <p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;machine&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="n">machine_uuid</span><span class="p">}}}</span>
+<div class="highlight"><pre><span></span><code><span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"machine"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">machine_uuid</span><span class="p">}}}</span>
 </code></pre></div>
 <p><strong>Generated SQL</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">allocations</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">machine_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01451122-5021-0000-5000-000000000072&#39;</span><span class="p">::</span><span class="n">uuid</span>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">allocations</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">machine_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'01451122-5021-0000-5000-000000000072'</span><span class="p">::</span><span class="n">uuid</span>
 </code></pre></div>
 <p><strong>When to use</strong>:</p>
 <ul>
@@ -4744,11 +4744,11 @@
 <h3 id="jsonb-based-nested-filters">JSONB-Based Nested Filters<a class="headerlink" href="#jsonb-based-nested-filters" title="Permanent link">&para;</a></h3>
 <p>Used when filtering by fields within JSONB-stored related objects.</p>
 <p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;machine&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;contains&quot;</span><span class="p">:</span> <span class="s2">&quot;Printer&quot;</span><span class="p">}}}</span>
+<div class="highlight"><pre><span></span><code><span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"machine"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"contains"</span><span class="p">:</span> <span class="s2">"Printer"</span><span class="p">}}}</span>
 </code></pre></div>
 <p><strong>Generated SQL</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">allocations</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;machine&#39;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%Printer%&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'machine'</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%Printer%'</span>
 </code></pre></div>
 <p><strong>When to use</strong>:</p>
 <ul>
@@ -4760,16 +4760,16 @@
 <p>You can combine both approaches in a single filter.</p>
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">where</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;machine&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="n">machine_uuid</span><span class="p">},</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;contains&quot;</span><span class="p">:</span> <span class="s2">&quot;Printer&quot;</span><span class="p">}</span>
+    <span class="s2">"machine"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">machine_uuid</span><span class="p">},</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"contains"</span><span class="p">:</span> <span class="s2">"Printer"</span><span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Generated SQL</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">allocations</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">machine_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;01451122-5021-0000-5000-000000000072&#39;</span><span class="p">::</span><span class="n">uuid</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;machine&#39;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%Printer%&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">machine_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'01451122-5021-0000-5000-000000000072'</span><span class="p">::</span><span class="n">uuid</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'machine'</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%Printer%'</span>
 </code></pre></div>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h3>
@@ -4824,7 +4824,7 @@
 <li>
 <p>Consider adding JSONB indexes for frequently filtered paths:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_machine_name</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">allocations</span>
-<span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;machine&#39;</span><span class="p">));</span>
+<span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'machine'</span><span class="p">));</span>
 </code></pre></div>
 </li>
 </ol>

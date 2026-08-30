@@ -5246,11 +5246,11 @@ Prototypes   Apps       Apps      Apps
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A user in the system.&quot;&quot;&quot;</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;User ID&quot;</span><span class="p">)</span>
-    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Unique username&quot;</span><span class="p">)</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Email address&quot;</span><span class="p">)</span>
-    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Account creation date&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""A user in the system."""</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"User ID"</span><span class="p">)</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Unique username"</span><span class="p">)</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Email address"</span><span class="p">)</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Account creation date"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="query-resolvers-srcqueries">Query Resolvers (<code>src/queries/</code>)<a class="headerlink" href="#query-resolvers-srcqueries" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># src/queries/user_queries.py</span>
@@ -5262,18 +5262,18 @@ Prototypes   Apps       Apps      Apps
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserQueries</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User-related query operations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User-related query operations."""</span>
 
-    <span class="n">users</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;List all users&quot;</span><span class="p">)</span>
-    <span class="n">user_by_username</span><span class="p">:</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Find user by username&quot;</span><span class="p">)</span>
+    <span class="n">users</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"List all users"</span><span class="p">)</span>
+    <span class="n">user_by_username</span><span class="p">:</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Find user by username"</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_user_by_username</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="mutation-handlers-srcmutations">Mutation Handlers (<code>src/mutations/</code>)<a class="headerlink" href="#mutation-handlers-srcmutations" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># src/mutations/user_mutations.py</span>
@@ -5286,23 +5286,23 @@ Prototypes   Apps       Apps      Apps
 
 <span class="nd">@input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Input for creating a new user.&quot;&quot;&quot;</span>
-    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Desired username&quot;</span><span class="p">)</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Email address&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Input for creating a new user."""</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Desired username"</span><span class="p">)</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Email address"</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserMutations</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User-related mutation operations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User-related mutation operations."""</span>
 
-    <span class="n">create_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Create a new user account&quot;</span><span class="p">)</span>
+    <span class="n">create_user</span><span class="p">:</span> <span class="n">User</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Create a new user account"</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_create_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">):</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
-            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"username"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
         <span class="p">})</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="main-application-srcmainpy">Main Application (<code>src/main.py</code>)<a class="headerlink" href="#main-application-srcmainpy" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># src/main.py</span>
@@ -5318,24 +5318,24 @@ Prototypes   Apps       Apps      Apps
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">QueryRoot</span><span class="p">(</span><span class="n">UserQueries</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Root query type combining all query operations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Root query type combining all query operations."""</span>
     <span class="k">pass</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MutationRoot</span><span class="p">(</span><span class="n">UserMutations</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Root mutation type combining all mutation operations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Root mutation type combining all mutation operations."""</span>
     <span class="k">pass</span>
 
 <span class="c1"># Create the FastAPI app</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">QueryRoot</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">MutationRoot</span><span class="p">],</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;FRAISEQL_DATABASE_URL&quot;</span><span class="p">),</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"FRAISEQL_DATABASE_URL"</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="database-organization">Database Organization<a class="headerlink" href="#database-organization" title="Permanent link">&para;</a></h2>
 <h3 id="schema-files-migrations">Schema Files (<code>migrations/</code>)<a class="headerlink" href="#schema-files-migrations" title="Permanent link">&para;</a></h3>

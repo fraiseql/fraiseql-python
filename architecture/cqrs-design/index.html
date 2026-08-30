@@ -4917,26 +4917,26 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>GraphQL Type</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A user in the system.</span>
+<span class="w">    </span><span class="sd">"""A user in the system.</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">        id: Unique user identifier</span>
-<span class="sd">        name: User&#39;s full name</span>
-<span class="sd">        email: User&#39;s email address</span>
+<span class="sd">        name: User's full name</span>
+<span class="sd">        email: User's email address</span>
 <span class="sd">        created_at: When the user was created</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -4976,18 +4976,18 @@
 <span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email is required&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email is required'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Check uniqueness</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_email</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email already exists&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email already exists'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
@@ -4998,8 +4998,8 @@
 
 <span class="w">    </span><span class="c1">-- Success response</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'userId'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -5011,17 +5011,17 @@
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new user.</span>
+<span class="w">    </span><span class="sd">"""Create a new user.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        name: User&#39;s full name</span>
-<span class="sd">        email: User&#39;s email address</span>
+<span class="sd">        name: User's full name</span>
+<span class="sd">        email: User's email address</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        CreateUserResult with success status and user ID or error message</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;SELECT fn_create_user($1, $2)&quot;</span><span class="p">,</span>
+        <span class="s2">"SELECT fn_create_user($1, $2)"</span><span class="p">,</span>
         <span class="n">name</span><span class="p">,</span>
         <span class="n">email</span>
     <span class="p">)</span>
@@ -5102,11 +5102,11 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID only</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
@@ -5142,7 +5142,7 @@
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Query (read)</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">_eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;john@example.com&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">_eq</span><span class="p">:</span><span class="w"> </span><span class="s">"john@example.com"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">email</span>
@@ -5177,7 +5177,7 @@
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Mutation (write)</span>
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;John Doe&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;john@example.com&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"John Doe"</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"john@example.com"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">success</span>
 <span class="w">    </span><span class="n">userId</span>
 <span class="w">    </span><span class="n">error</span>
@@ -5225,10 +5225,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID relationship</span>
-<span class="w">        </span><span class="s1">&#39;postId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID relationship</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">content</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'userId'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID relationship</span>
+<span class="w">        </span><span class="s1">'postId'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Public UUID relationship</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">content</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_user</span><span class="w">      </span><span class="c1">-- Fast integer join</span>
@@ -5253,7 +5253,7 @@
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">pk_user</span><span class="p">,</span><span class="w"> </span><span class="n">pk_post</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_pk_user</span><span class="p">,</span><span class="w"> </span><span class="n">v_pk_post</span><span class="p">,</span><span class="w"> </span><span class="n">p_content</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5305,32 +5305,32 @@
 <span class="w">    </span><span class="c1">-- Validation error</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email is required&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;VALIDATION_ERROR&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email is required'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'VALIDATION_ERROR'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Business rule error</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_email</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email already exists&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;DUPLICATE_EMAIL&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email already exists'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'DUPLICATE_EMAIL'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Success</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="p">);</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
 
 <span class="k">EXCEPTION</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="c1">-- Database error</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;DATABASE_ERROR&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'DATABASE_ERROR'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -5426,7 +5426,7 @@
 <ol>
 <li><strong>Return JSONB from functions</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;userId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">);</span><span class="w">  </span><span class="c1">-- ✅ Structured</span>
+<div class="highlight"><pre><span></span><code><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'userId'</span><span class="p">,</span><span class="w"> </span><span class="n">v_id</span><span class="p">);</span><span class="w">  </span><span class="c1">-- ✅ Structured</span>
 </code></pre></div>
 <ol>
 <li><strong>Expose only public <code>id</code> in views</strong></li>
@@ -5448,7 +5448,7 @@
 <ol>
 <li><strong>Don't write INSERT/UPDATE in application code</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO tb_user ...&quot;</span><span class="p">)</span>  <span class="o">--</span> <span class="err">❌</span> <span class="n">Use</span> <span class="n">fn_create_user</span><span class="p">()</span>
+<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"INSERT INTO tb_user ..."</span><span class="p">)</span>  <span class="o">--</span> <span class="err">❌</span> <span class="n">Use</span> <span class="n">fn_create_user</span><span class="p">()</span>
 </code></pre></div>
 <ol>
 <li><strong>Don't expose <code>pk_*</code> in views</strong></li>

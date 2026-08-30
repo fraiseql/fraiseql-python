@@ -4832,12 +4832,12 @@
 <p>This guide provides practical tools and techniques for benchmarking your FraiseQL application, identifying bottlenecks, and measuring improvements.</p>
 <hr />
 <h2 id="quick-benchmark-script">Quick Benchmark Script<a class="headerlink" href="#quick-benchmark-script" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""</span>
 <span class="sd">Complete FraiseQL benchmarking script.</span>
 
 <span class="sd">Requirements:</span>
 <span class="sd">- pip install fraiseql psycopg asyncio timeit</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -4847,12 +4847,12 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="c1"># Configure your application</span>
-<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">&quot;postgresql://localhost/mydb&quot;</span>
+<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">"postgresql://localhost/mydb"</span>
 <span class="n">ITERATIONS</span> <span class="o">=</span> <span class="mi">100</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">BenchmarkResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark result with statistics.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark result with statistics."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">times</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -4866,7 +4866,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">p99</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">times</span><span class="p">)[</span><span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.99</span><span class="p">)]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"""</span>
 <span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span>
 <span class="s2">  Mean:   </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">mean</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms</span>
 <span class="s2">  Median: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">median</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms</span>
@@ -4875,11 +4875,11 @@
 <span class="s2">  Min:    </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">min</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms</span>
 <span class="s2">  Max:    </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms</span>
 <span class="s2">  StdDev: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">stdev</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_query</span><span class="p">(</span><span class="n">pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">iterations</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">ITERATIONS</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark a GraphQL query.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark a GraphQL query."""</span>
     <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">iterations</span><span class="p">):</span>
@@ -4894,70 +4894,70 @@
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_simple_query</span><span class="p">(</span><span class="n">pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark simple query (10 fields, 100 rows).&quot;&quot;&quot;</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark simple query (10 fields, 100 rows)."""</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">        SELECT id, name, email, created_at, status,</span>
 <span class="s2">               role, avatar_url, bio, updated_at, last_login</span>
 <span class="s2">        FROM users</span>
 <span class="s2">        LIMIT 100;</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
     <span class="n">times</span> <span class="o">=</span> <span class="k">await</span> <span class="n">benchmark_query</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">&quot;Simple Query (10 fields, 100 rows)&quot;</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">"Simple Query (10 fields, 100 rows)"</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_nested_query</span><span class="p">(</span><span class="n">pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark nested query with relationships.&quot;&quot;&quot;</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark nested query with relationships."""</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">        SELECT</span>
 <span class="s2">            u.id, u.name, u.email,</span>
 <span class="s2">            jsonb_agg(</span>
 <span class="s2">                jsonb_build_object(</span>
-<span class="s2">                    &#39;id&#39;, p.id,</span>
-<span class="s2">                    &#39;title&#39;, p.title,</span>
-<span class="s2">                    &#39;content&#39;, p.content</span>
+<span class="s2">                    'id', p.id,</span>
+<span class="s2">                    'title', p.title,</span>
+<span class="s2">                    'content', p.content</span>
 <span class="s2">                )</span>
 <span class="s2">            ) as posts</span>
 <span class="s2">        FROM users u</span>
 <span class="s2">        LEFT JOIN posts p ON p.user_id = u.id</span>
 <span class="s2">        GROUP BY u.id, u.name, u.email</span>
 <span class="s2">        LIMIT 50;</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
     <span class="n">times</span> <span class="o">=</span> <span class="k">await</span> <span class="n">benchmark_query</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">&quot;Nested Query (User + Posts)&quot;</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">"Nested Query (User + Posts)"</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_large_result</span><span class="p">(</span><span class="n">pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark large result set (1000 rows).&quot;&quot;&quot;</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark large result set (1000 rows)."""</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">        SELECT id, name, email, status, created_at</span>
 <span class="s2">        FROM users</span>
 <span class="s2">        LIMIT 1000;</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
     <span class="n">times</span> <span class="o">=</span> <span class="k">await</span> <span class="n">benchmark_query</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">&quot;Large Result (1000 rows)&quot;</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">"Large Result (1000 rows)"</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_aggregation</span><span class="p">(</span><span class="n">pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BenchmarkResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark aggregation query.&quot;&quot;&quot;</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark aggregation query."""</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">        SELECT</span>
 <span class="s2">            status,</span>
 <span class="s2">            COUNT(*) as count,</span>
 <span class="s2">            AVG(EXTRACT(EPOCH FROM (NOW() - created_at))) as avg_age_seconds</span>
 <span class="s2">        FROM users</span>
 <span class="s2">        GROUP BY status;</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
     <span class="n">times</span> <span class="o">=</span> <span class="k">await</span> <span class="n">benchmark_query</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">query</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">&quot;Aggregation Query&quot;</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">BenchmarkResult</span><span class="p">(</span><span class="s2">"Aggregation Query"</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_benchmarks</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run all benchmarks.&quot;&quot;&quot;</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;FraiseQL Performance Benchmarks&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Iterations: </span><span class="si">{</span><span class="n">ITERATIONS</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Database: </span><span class="si">{</span><span class="n">DATABASE_URL</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Run all benchmarks."""</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"FraiseQL Performance Benchmarks"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Iterations: </span><span class="si">{</span><span class="n">ITERATIONS</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Database: </span><span class="si">{</span><span class="n">DATABASE_URL</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">()</span>
 
     <span class="c1"># Create connection pool</span>
@@ -4980,39 +4980,39 @@
             <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
         <span class="c1"># Summary</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Summary:&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total queries: </span><span class="si">{</span><span class="n">ITERATIONS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Average query time: </span><span class="si">{</span><span class="n">mean</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">mean</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">results</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"Summary:"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Total queries: </span><span class="si">{</span><span class="n">ITERATIONS</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Average query time: </span><span class="si">{</span><span class="n">mean</span><span class="p">([</span><span class="n">r</span><span class="o">.</span><span class="n">mean</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">results</span><span class="p">])</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"="</span> <span class="o">*</span> <span class="mi">60</span><span class="p">)</span>
 
     <span class="k">finally</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_benchmarks</span><span class="p">())</span>
 </code></pre></div>
 <hr />
 <h2 id="graphql-specific-benchmarks">GraphQL-Specific Benchmarks<a class="headerlink" href="#graphql-specific-benchmarks" title="Permanent link">&para;</a></h2>
 <h3 id="benchmark-graphql-queries">Benchmark GraphQL Queries<a class="headerlink" href="#benchmark-graphql-queries" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Benchmark GraphQL query execution.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""Benchmark GraphQL query execution."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gql</span><span class="w"> </span><span class="kn">import</span> <span class="n">gql</span><span class="p">,</span> <span class="n">Client</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">gql.transport.aiohttp</span><span class="w"> </span><span class="kn">import</span> <span class="n">AIOHTTPTransport</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-<span class="n">GRAPHQL_URL</span> <span class="o">=</span> <span class="s2">&quot;http://localhost:8000/graphql&quot;</span>
+<span class="n">GRAPHQL_URL</span> <span class="o">=</span> <span class="s2">"http://localhost:8000/graphql"</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_graphql</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Benchmark GraphQL queries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Benchmark GraphQL queries."""</span>
     <span class="n">transport</span> <span class="o">=</span> <span class="n">AIOHTTPTransport</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">GRAPHQL_URL</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="n">transport</span><span class="p">,</span> <span class="n">fetch_schema_from_transport</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
         <span class="c1"># Simple query</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="n">gql</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="n">gql</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            query {</span>
 <span class="s2">              users(limit: 100) {</span>
 <span class="s2">                id</span>
@@ -5020,7 +5020,7 @@
 <span class="s2">                email</span>
 <span class="s2">              }</span>
 <span class="s2">            }</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">)</span>
 
         <span class="n">times</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
@@ -5029,9 +5029,9 @@
             <span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
             <span class="n">times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GraphQL Query Performance:&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Mean: </span><span class="si">{</span><span class="n">mean</span><span class="p">(</span><span class="n">times</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  P95:  </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">times</span><span class="p">)[</span><span class="mi">95</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"GraphQL Query Performance:"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Mean: </span><span class="si">{</span><span class="n">mean</span><span class="p">(</span><span class="n">times</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  P95:  </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">times</span><span class="p">)[</span><span class="mi">95</span><span class="p">]</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">benchmark_graphql</span><span class="p">())</span>
@@ -5042,25 +5042,25 @@
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>locust
 </code></pre></div>
 <h3 id="locust-test-script">Locust Test Script<a class="headerlink" href="#locust-test-script" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""</span>
 <span class="sd">locustfile.py - Load testing for FraiseQL GraphQL API</span>
 
 <span class="sd">Run: locust -f locustfile.py --host=http://localhost:8000</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">locust</span><span class="w"> </span><span class="kn">import</span> <span class="n">HttpUser</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">between</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FraiseQLUser</span><span class="p">(</span><span class="n">HttpUser</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simulates GraphQL API user.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Simulates GraphQL API user."""</span>
 
     <span class="n">wait_time</span> <span class="o">=</span> <span class="n">between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 
     <span class="nd">@task</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">query_users</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Query users list (most common operation).&quot;&quot;&quot;</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Query users list (most common operation)."""</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">            query {</span>
 <span class="s2">              users(limit: 20) {</span>
 <span class="s2">                id</span>
@@ -5068,19 +5068,19 @@
 <span class="s2">                email</span>
 <span class="s2">              }</span>
 <span class="s2">            }</span>
-<span class="s2">        &quot;&quot;&quot;</span>
+<span class="s2">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
-            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">},</span>
-            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+            <span class="s2">"/graphql"</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="n">query</span><span class="p">},</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">}</span>
         <span class="p">)</span>
 
     <span class="nd">@task</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">query_user_with_posts</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Query user with nested posts.&quot;&quot;&quot;</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Query user with nested posts."""</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">            query {</span>
-<span class="s2">              user(id: &quot;550e8400-e29b-41d4-a716-446655440000&quot;) {</span>
+<span class="s2">              user(id: "550e8400-e29b-41d4-a716-446655440000") {</span>
 <span class="s2">                id</span>
 <span class="s2">                name</span>
 <span class="s2">                email</span>
@@ -5090,21 +5090,21 @@
 <span class="s2">                }</span>
 <span class="s2">              }</span>
 <span class="s2">            }</span>
-<span class="s2">        &quot;&quot;&quot;</span>
+<span class="s2">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
-            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">},</span>
-            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+            <span class="s2">"/graphql"</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="n">query</span><span class="p">},</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">}</span>
         <span class="p">)</span>
 
     <span class="nd">@task</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">mutation_create_post</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create post mutation.&quot;&quot;&quot;</span>
-        <span class="n">mutation</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Create post mutation."""</span>
+        <span class="n">mutation</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">            mutation {</span>
 <span class="s2">              createPost(input: {</span>
-<span class="s2">                title: &quot;Test Post&quot;</span>
-<span class="s2">                content: &quot;Load test content&quot;</span>
+<span class="s2">                title: "Test Post"</span>
+<span class="s2">                content: "Load test content"</span>
 <span class="s2">              }) {</span>
 <span class="s2">                status</span>
 <span class="s2">                message</span>
@@ -5114,11 +5114,11 @@
 <span class="s2">                }</span>
 <span class="s2">              }</span>
 <span class="s2">            }</span>
-<span class="s2">        &quot;&quot;&quot;</span>
+<span class="s2">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
-            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">mutation</span><span class="p">},</span>
-            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">}</span>
+            <span class="s2">"/graphql"</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="n">mutation</span><span class="p">},</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">}</span>
         <span class="p">)</span>
 </code></pre></div>
 <h3 id="run-load-test">Run Load Test<a class="headerlink" href="#run-load-test" title="Permanent link">&para;</a></h3>
@@ -5134,37 +5134,37 @@ locust<span class="w"> </span>-f<span class="w"> </span>locustfile.py<span class
 <hr />
 <h2 id="database-query-analysis">Database Query Analysis<a class="headerlink" href="#database-query-analysis" title="Permanent link">&para;</a></h2>
 <h3 id="explain-analyze">EXPLAIN ANALYZE<a class="headerlink" href="#explain-analyze" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Analyze query execution plans.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""Analyze query execution plans."""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_query</span><span class="p">(</span><span class="n">pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run EXPLAIN ANALYZE on query.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Run EXPLAIN ANALYZE on query."""</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="n">explain_query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">explain_query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">explain_query</span><span class="p">)</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
 
         <span class="c1"># Parse execution plan</span>
         <span class="n">plan_data</span> <span class="o">=</span> <span class="n">plan</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">execution_time</span> <span class="o">=</span> <span class="n">plan_data</span><span class="p">[</span><span class="s1">&#39;Execution Time&#39;</span><span class="p">]</span>
-        <span class="n">planning_time</span> <span class="o">=</span> <span class="n">plan_data</span><span class="p">[</span><span class="s1">&#39;Planning Time&#39;</span><span class="p">]</span>
+        <span class="n">execution_time</span> <span class="o">=</span> <span class="n">plan_data</span><span class="p">[</span><span class="s1">'Execution Time'</span><span class="p">]</span>
+        <span class="n">planning_time</span> <span class="o">=</span> <span class="n">plan_data</span><span class="p">[</span><span class="s1">'Planning Time'</span><span class="p">]</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query: </span><span class="si">{</span><span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Planning Time: </span><span class="si">{</span><span class="n">planning_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Execution Time: </span><span class="si">{</span><span class="n">execution_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total Time: </span><span class="si">{</span><span class="n">planning_time</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">execution_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Query: </span><span class="si">{</span><span class="n">query</span><span class="p">[:</span><span class="mi">50</span><span class="p">]</span><span class="si">}</span><span class="s2">..."</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Planning Time: </span><span class="si">{</span><span class="n">planning_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Execution Time: </span><span class="si">{</span><span class="n">execution_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  Total Time: </span><span class="si">{</span><span class="n">planning_time</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">execution_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">plan_data</span>
 
 
 <span class="c1"># Example usage</span>
-<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">&quot;postgresql://localhost/mydb&quot;</span>
+<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">"postgresql://localhost/mydb"</span>
 <span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">conninfo</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">)</span>
 
-<span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;SELECT * FROM users WHERE status = &#39;active&#39; LIMIT 100&quot;</span>
+<span class="n">query</span> <span class="o">=</span> <span class="s2">"SELECT * FROM users WHERE status = 'active' LIMIT 100"</span>
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">analyze_query</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">query</span><span class="p">))</span>
 </code></pre></div>
 <h3 id="pg_stat_statements">pg_stat_statements<a class="headerlink" href="#pg_stat_statements" title="Permanent link">&para;</a></h3>
@@ -5179,7 +5179,7 @@ locust<span class="w"> </span>-f<span class="w"> </span>locustfile.py<span class
 <span class="w">    </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">avg_ms</span><span class="p">,</span>
 <span class="w">    </span><span class="n">max_exec_time</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">max_ms</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%pg_stat_statements%&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'%pg_stat_statements%'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_exec_time</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
 
@@ -5189,7 +5189,7 @@ locust<span class="w"> </span>-f<span class="w"> </span>locustfile.py<span class
 <hr />
 <h2 id="continuous-monitoring">Continuous Monitoring<a class="headerlink" href="#continuous-monitoring" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-metrics">Prometheus Metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Export Prometheus metrics.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""Export Prometheus metrics."""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">Histogram</span><span class="p">,</span> <span class="n">generate_latest</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
@@ -5197,15 +5197,15 @@ locust<span class="w"> </span>-f<span class="w"> </span>locustfile.py<span class
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 
 <span class="c1"># Define metrics</span>
-<span class="n">graphql_requests</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">&#39;graphql_requests_total&#39;</span><span class="p">,</span> <span class="s1">&#39;Total GraphQL requests&#39;</span><span class="p">)</span>
-<span class="n">graphql_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span><span class="s1">&#39;graphql_duration_seconds&#39;</span><span class="p">,</span> <span class="s1">&#39;GraphQL query duration&#39;</span><span class="p">)</span>
-<span class="n">database_queries</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">&#39;database_queries_total&#39;</span><span class="p">,</span> <span class="s1">&#39;Total database queries&#39;</span><span class="p">)</span>
+<span class="n">graphql_requests</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">'graphql_requests_total'</span><span class="p">,</span> <span class="s1">'Total GraphQL requests'</span><span class="p">)</span>
+<span class="n">graphql_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span><span class="s1">'graphql_duration_seconds'</span><span class="p">,</span> <span class="s1">'GraphQL query duration'</span><span class="p">)</span>
+<span class="n">database_queries</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">'database_queries_total'</span><span class="p">,</span> <span class="s1">'Total database queries'</span><span class="p">)</span>
 
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">metrics_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect metrics for each request.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;/graphql&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Collect metrics for each request."""</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">"/graphql"</span><span class="p">:</span>
         <span class="n">graphql_requests</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
 
         <span class="k">with</span> <span class="n">graphql_duration</span><span class="o">.</span><span class="n">time</span><span class="p">():</span>
@@ -5216,9 +5216,9 @@ locust<span class="w"> </span>-f<span class="w"> </span>locustfile.py<span class
     <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/metrics&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/metrics"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">metrics</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expose Prometheus metrics.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Expose Prometheus metrics."""</span>
     <span class="k">return</span> <span class="n">generate_latest</span><span class="p">()</span>
 </code></pre></div>
 <hr />

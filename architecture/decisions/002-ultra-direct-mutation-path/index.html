@@ -5139,7 +5139,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 
 <span class="c1"># For GraphQL execution (non-HTTP mode):</span>
 <span class="n">graphql_response</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">to_json</span><span class="p">()</span>
-<span class="n">mutation_result</span> <span class="o">=</span> <span class="n">graphql_response</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="n">field_name</span><span class="p">]</span>
+<span class="n">mutation_result</span> <span class="o">=</span> <span class="n">graphql_response</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="n">field_name</span><span class="p">]</span>
 <span class="k">return</span> <span class="n">mutation_result</span>  <span class="c1"># Dict with GraphQL structure</span>
 </code></pre></div>
 <p><strong>Problems:</strong></p>
@@ -5185,12 +5185,12 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 <span class="w">    </span><span class="c1">-- ... existing logic ...</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;SUCCESS&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Customer deleted&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;customer&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_customer</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;affected_orders&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_affected_orders</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;deleted_customer_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">customer_id</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'SUCCESS'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Customer deleted'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'customer'</span><span class="p">,</span><span class="w"> </span><span class="n">v_customer</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'affected_orders'</span><span class="p">,</span><span class="w"> </span><span class="n">v_affected_orders</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'deleted_customer_id'</span><span class="p">,</span><span class="w"> </span><span class="n">customer_id</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -5207,24 +5207,24 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
     <span class="n">input_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">object</span><span class="p">],</span>
     <span class="n">type_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RawJSONResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute a PostgreSQL function and return raw JSON (no parsing).</span>
+<span class="w">    </span><span class="sd">"""Execute a PostgreSQL function and return raw JSON (no parsing).</span>
 
 <span class="sd">    This is the ultra-direct path for mutations:</span>
 <span class="sd">    PostgreSQL JSONB::text → Rust transform → RawJSONResult → Client</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        function_name: Fully qualified function name (e.g., &#39;app.delete_customer&#39;)</span>
+<span class="sd">        function_name: Fully qualified function name (e.g., 'app.delete_customer')</span>
 <span class="sd">        input_data: Dictionary to pass as JSONB to the function</span>
 <span class="sd">        type_name: GraphQL type name for Rust __typename injection</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        RawJSONResult with transformed JSON (camelCase + __typename)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
     <span class="c1"># Validate function name to prevent SQL injection</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">function_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">isalnum</span><span class="p">():</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid function name: </span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">function_name</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"_"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">isalnum</span><span class="p">():</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Invalid function name: </span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
@@ -5235,7 +5235,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
             <span class="c1"># Execute function and get JSONB as text (no Python parsing!)</span>
             <span class="c1"># The ::text cast ensures we get a string, not a parsed dict</span>
             <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;SELECT </span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">(%s::jsonb)::text&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"SELECT </span><span class="si">{</span><span class="n">function_name</span><span class="si">}</span><span class="s2">(%s::jsonb)::text"</span><span class="p">,</span>
                 <span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">input_data</span><span class="p">),),</span>
             <span class="p">)</span>
             <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
@@ -5243,9 +5243,9 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
             <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span> <span class="ow">or</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="c1"># Return error response as raw JSON</span>
                 <span class="n">error_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-                    <span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-                    <span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;INTERNAL_ERROR&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Function returned null&quot;</span>
+                    <span class="s2">"success"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">"code"</span><span class="p">:</span> <span class="s2">"INTERNAL_ERROR"</span><span class="p">,</span>
+                    <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Function returned null"</span>
                 <span class="p">})</span>
                 <span class="k">return</span> <span class="n">RawJSONResult</span><span class="p">(</span><span class="n">error_json</span><span class="p">,</span> <span class="n">transformed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -5255,7 +5255,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
             <span class="c1"># Apply Rust transformation if type provided</span>
             <span class="k">if</span> <span class="n">type_name</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;🦀 Transforming mutation result with Rust (type: </span><span class="si">{</span><span class="n">type_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="sa">f</span><span class="s2">"🦀 Transforming mutation result with Rust (type: </span><span class="si">{</span><span class="n">type_name</span><span class="si">}</span><span class="s2">)"</span>
                 <span class="p">)</span>
 
                 <span class="c1"># Use Rust transformer (same as queries!)</span>
@@ -5268,13 +5268,13 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
                     <span class="c1"># Rust will inject __typename and convert to camelCase</span>
                     <span class="n">transformed_json</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">json_string</span><span class="p">,</span> <span class="n">type_name</span><span class="p">)</span>
 
-                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;✅ Rust transformation completed&quot;</span><span class="p">)</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"✅ Rust transformation completed"</span><span class="p">)</span>
                     <span class="k">return</span> <span class="n">RawJSONResult</span><span class="p">(</span><span class="n">transformed_json</span><span class="p">,</span> <span class="n">transformed</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
                 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;⚠️  Rust transformation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;returning original JSON&quot;</span>
+                        <span class="sa">f</span><span class="s2">"⚠️  Rust transformation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, "</span>
+                        <span class="sa">f</span><span class="s2">"returning original JSON"</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="n">RawJSONResult</span><span class="p">(</span><span class="n">json_string</span><span class="p">,</span> <span class="n">transformed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
@@ -5294,31 +5294,31 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 <div class="highlight"><pre><span></span><code><span class="c1"># src/fraiseql/mutations/mutation_decorator.py</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">create_resolver</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the GraphQL resolver function.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create the GraphQL resolver function."""</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolver</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-generated resolver for PostgreSQL mutation.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Auto-generated resolver for PostgreSQL mutation."""</span>
         <span class="c1"># Get database connection</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;db&quot;</span><span class="p">)</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"db"</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">db</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;No database connection in context&quot;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"No database connection in context"</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
         <span class="c1"># Convert input to dict</span>
         <span class="n">input_data</span> <span class="o">=</span> <span class="n">_to_dict</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
 
         <span class="c1"># Call prepare_input hook if defined</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mutation_class</span><span class="p">,</span> <span class="s2">&quot;prepare_input&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mutation_class</span><span class="p">,</span> <span class="s2">"prepare_input"</span><span class="p">):</span>
             <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mutation_class</span><span class="o">.</span><span class="n">prepare_input</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
 
         <span class="c1"># Build function name</span>
-        <span class="n">full_function_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function_name</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">full_function_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">function_name</span><span class="si">}</span><span class="s2">"</span>
 
         <span class="c1"># 🚀 ULTRA-DIRECT PATH: Use raw JSON execution</span>
         <span class="c1"># Check if db supports raw JSON execution</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s2">&quot;execute_function_raw_json&quot;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="s2">"execute_function_raw_json"</span><span class="p">):</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Using ultra-direct mutation path for </span><span class="si">{</span><span class="n">full_function_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="sa">f</span><span class="s2">"Using ultra-direct mutation path for </span><span class="si">{</span><span class="n">full_function_name</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
 
             <span class="c1"># Determine type name (use success type for transformer)</span>
@@ -5335,19 +5335,19 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
                 <span class="c1"># Return RawJSONResult directly</span>
                 <span class="c1"># FastAPI will recognize this and return it without serialization</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;✅ Ultra-direct mutation completed: </span><span class="si">{</span><span class="n">full_function_name</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">"✅ Ultra-direct mutation completed: </span><span class="si">{</span><span class="n">full_function_name</span><span class="si">}</span><span class="s2">"</span>
                 <span class="p">)</span>
                 <span class="k">return</span> <span class="n">raw_result</span>
 
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Ultra-direct mutation path failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;falling back to standard path&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Ultra-direct mutation path failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">, "</span>
+                    <span class="sa">f</span><span class="s2">"falling back to standard path"</span>
                 <span class="p">)</span>
                 <span class="c1"># Fall through to standard path</span>
 
         <span class="c1"># 🐌 FALLBACK: Standard path (parsing + serialization)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using standard mutation path for </span><span class="si">{</span><span class="n">full_function_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Using standard mutation path for </span><span class="si">{</span><span class="n">full_function_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">context_params</span><span class="p">:</span>
             <span class="c1"># ... existing context handling ...</span>
@@ -5387,7 +5387,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 
 <span class="k">impl</span><span class="w"> </span><span class="n">SchemaRegistry</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">transform</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">,</span><span class="w"> </span><span class="n">json</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">,</span><span class="w"> </span><span class="n">root_type</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">PyResult</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="c1">// 1. Parse JSON (Rust&#39;s serde_json - ultra fast)</span>
+<span class="w">        </span><span class="c1">// 1. Parse JSON (Rust's serde_json - ultra fast)</span>
 <span class="w">        </span><span class="c1">// 2. Look up type schema from registry</span>
 <span class="w">        </span><span class="c1">// 3. Inject __typename recursively</span>
 <span class="w">        </span><span class="c1">// 4. Convert snake_case → camelCase recursively</span>
@@ -5407,7 +5407,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 <div class="highlight"><pre><span></span><code><span class="c1"># FastAPI (EXISTING CODE)</span>
 
 <span class="c1"># In your GraphQL endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">graphql_endpoint</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">execute_graphql</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">variables</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
 
@@ -5415,7 +5415,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">RawJSONResult</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
             <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">json_string</span><span class="p">,</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span>
         <span class="p">)</span>
 
     <span class="c1"># Otherwise, serialize normally</span>
@@ -5428,7 +5428,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 <div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────────────────────────────┐
 │ 1. GraphQL Request                                                │
 │    mutation {                                                     │
-│      deleteCustomer(input: {customerId: &quot;uuid-123&quot;}) {           │
+│      deleteCustomer(input: {customerId: "uuid-123"}) {           │
 │        success                                                    │
 │        customer { id email __typename }                          │
 │        affectedOrders { id status __typename }                   │
@@ -5439,9 +5439,9 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 ┌──────────────────────────────────────────────────────────────────┐
 │ 2. Python: mutation_decorator.resolver()                         │
 │    - Calls: db.execute_function_raw_json(                        │
-│        &quot;app.delete_customer&quot;,                                    │
-│        {&quot;customer_id&quot;: &quot;uuid-123&quot;},                              │
-│        type_name=&quot;DeleteCustomerSuccess&quot;                         │
+│        "app.delete_customer",                                    │
+│        {"customer_id": "uuid-123"},                              │
+│        type_name="DeleteCustomerSuccess"                         │
 │      )                                                            │
 └──────────────────────────────────────────────────────────────────┘
                               ↓
@@ -5451,25 +5451,25 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 │    - PostgreSQL returns JSONB as TEXT string                     │
 │    - NO Python dict parsing!                                     │
 │    Result (string):                                              │
-│    &#39;{&quot;success&quot;:true,&quot;customer&quot;:{&quot;id&quot;:&quot;uuid-123&quot;,...},...}&#39;       │
+│    '{"success":true,"customer":{"id":"uuid-123",...},...}'       │
 └──────────────────────────────────────────────────────────────────┘
                               ↓
 ┌──────────────────────────────────────────────────────────────────┐
-│ 4. Rust: transformer.transform(json_str, &quot;DeleteCustomerSuccess&quot;)│
-│    Input:  {&quot;success&quot;: true, &quot;customer&quot;: {&quot;id&quot;: &quot;...&quot;, ...}}     │
+│ 4. Rust: transformer.transform(json_str, "DeleteCustomerSuccess")│
+│    Input:  {"success": true, "customer": {"id": "...", ...}}     │
 │    Output: {                                                      │
-│      &quot;__typename&quot;: &quot;DeleteCustomerSuccess&quot;,                      │
-│      &quot;success&quot;: true,                                            │
-│      &quot;customer&quot;: {                                               │
-│        &quot;__typename&quot;: &quot;Customer&quot;,                                 │
-│        &quot;id&quot;: &quot;uuid-123&quot;,                                         │
-│        &quot;email&quot;: &quot;john@example.com&quot;,                              │
-│        &quot;firstName&quot;: &quot;John&quot;  ← camelCase!                         │
+│      "__typename": "DeleteCustomerSuccess",                      │
+│      "success": true,                                            │
+│      "customer": {                                               │
+│        "__typename": "Customer",                                 │
+│        "id": "uuid-123",                                         │
+│        "email": "john@example.com",                              │
+│        "firstName": "John"  ← camelCase!                         │
 │      },                                                           │
-│      &quot;affectedOrders&quot;: [{                                        │
-│        &quot;__typename&quot;: &quot;Order&quot;,                                    │
-│        &quot;id&quot;: &quot;order-1&quot;,                                          │
-│        &quot;status&quot;: &quot;cancelled&quot;                                     │
+│      "affectedOrders": [{                                        │
+│        "__typename": "Order",                                    │
+│        "id": "order-1",                                          │
+│        "status": "cancelled"                                     │
 │      }]                                                           │
 │    }                                                              │
 │    Duration: ~100 microseconds (Rust speed!)                     │
@@ -5487,7 +5487,7 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 │    if isinstance(result, RawJSONResult):                         │
 │        return Response(                                          │
 │            content=result.json_string,                           │
-│            media_type=&quot;application/json&quot;                         │
+│            media_type="application/json"                         │
 │        )                                                          │
 │    - Direct HTTP response, no serialization!                     │
 └──────────────────────────────────────────────────────────────────┘
@@ -5495,20 +5495,20 @@ Success/Error dataclass → GraphQL serializer → JSON → Client
 ┌──────────────────────────────────────────────────────────────────┐
 │ 7. Client Receives                                               │
 │    {                                                              │
-│      &quot;data&quot;: {                                                    │
-│        &quot;deleteCustomer&quot;: {                                       │
-│          &quot;__typename&quot;: &quot;DeleteCustomerSuccess&quot;,                  │
-│          &quot;success&quot;: true,                                        │
-│          &quot;customer&quot;: {                                           │
-│            &quot;__typename&quot;: &quot;Customer&quot;,                             │
-│            &quot;id&quot;: &quot;uuid-123&quot;,                                     │
-│            &quot;email&quot;: &quot;john@example.com&quot;,                          │
-│            &quot;firstName&quot;: &quot;John&quot;                                   │
+│      "data": {                                                    │
+│        "deleteCustomer": {                                       │
+│          "__typename": "DeleteCustomerSuccess",                  │
+│          "success": true,                                        │
+│          "customer": {                                           │
+│            "__typename": "Customer",                             │
+│            "id": "uuid-123",                                     │
+│            "email": "john@example.com",                          │
+│            "firstName": "John"                                   │
 │          },                                                       │
-│          &quot;affectedOrders&quot;: [{                                    │
-│            &quot;__typename&quot;: &quot;Order&quot;,                                │
-│            &quot;id&quot;: &quot;order-1&quot;,                                      │
-│            &quot;status&quot;: &quot;cancelled&quot;                                 │
+│          "affectedOrders": [{                                    │
+│            "__typename": "Order",                                │
+│            "id": "order-1",                                      │
+│            "status": "cancelled"                                 │
 │          }]                                                       │
 │        }                                                          │
 │      }                                                            │
@@ -5619,10 +5619,10 @@ TOTAL: ~51ms
 <span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_success</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_code</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_message</span>
-<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p_data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">);</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="n">p_success</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="n">p_code</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="n">p_message</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p_data</span><span class="p">,</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5668,14 +5668,14 @@ TOTAL: ~51ms
 <h2 id="testing-strategy">🔬 Testing Strategy<a class="headerlink" href="#testing-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="test-1-simple-mutation"><strong>Test 1: Simple Mutation</strong><a class="headerlink" href="#test-1-simple-mutation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_delete_customer_ultra_direct</span><span class="p">(</span><span class="n">db</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test ultra-direct mutation path.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test ultra-direct mutation path."""</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function_raw_json</span><span class="p">(</span>
-        <span class="s2">&quot;app.delete_customer&quot;</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;customer_id&quot;</span><span class="p">:</span> <span class="s2">&quot;uuid-123&quot;</span><span class="p">},</span>
-        <span class="n">type_name</span><span class="o">=</span><span class="s2">&quot;DeleteCustomerSuccess&quot;</span>
+        <span class="s2">"app.delete_customer"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"customer_id"</span><span class="p">:</span> <span class="s2">"uuid-123"</span><span class="p">},</span>
+        <span class="n">type_name</span><span class="o">=</span><span class="s2">"DeleteCustomerSuccess"</span>
     <span class="p">)</span>
 
-    <span class="c1"># Verify it&#39;s a RawJSONResult</span>
+    <span class="c1"># Verify it's a RawJSONResult</span>
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">RawJSONResult</span><span class="p">)</span>
 
     <span class="c1"># Verify transformation happened</span>
@@ -5683,15 +5683,15 @@ TOTAL: ~51ms
 
     <span class="c1"># Parse JSON to verify structure</span>
     <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">json_string</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;DeleteCustomerSuccess&quot;</span>
-    <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;customer&quot;</span><span class="p">][</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Customer&quot;</span>
-    <span class="k">assert</span> <span class="s2">&quot;firstName&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;customer&quot;</span><span class="p">]</span>  <span class="c1"># camelCase</span>
-    <span class="k">assert</span> <span class="s2">&quot;first_name&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;customer&quot;</span><span class="p">]</span>  <span class="c1"># no snake_case</span>
+    <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"DeleteCustomerSuccess"</span>
+    <span class="k">assert</span> <span class="n">data</span><span class="p">[</span><span class="s2">"customer"</span><span class="p">][</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Customer"</span>
+    <span class="k">assert</span> <span class="s2">"firstName"</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">"customer"</span><span class="p">]</span>  <span class="c1"># camelCase</span>
+    <span class="k">assert</span> <span class="s2">"first_name"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">"customer"</span><span class="p">]</span>  <span class="c1"># no snake_case</span>
 </code></pre></div>
 <h3 id="test-2-end-to-end-graphql"><strong>Test 2: End-to-End GraphQL</strong><a class="headerlink" href="#test-2-end-to-end-graphql" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_mutation_e2e_ultra_direct</span><span class="p">(</span><span class="n">graphql_client</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test complete mutation flow with ultra-direct path.&quot;&quot;&quot;</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test complete mutation flow with ultra-direct path."""</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">        mutation DeleteCustomer($id: ID!) {</span>
 <span class="s2">            deleteCustomer(input: {customerId: $id}) {</span>
 <span class="s2">                __typename</span>
@@ -5709,48 +5709,48 @@ TOTAL: ~51ms
 <span class="s2">                }</span>
 <span class="s2">            }</span>
 <span class="s2">        }</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;uuid-123&quot;</span><span class="p">})</span>
+<span class="s2">    """</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"uuid-123"</span><span class="p">})</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;deleteCustomer&quot;</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"deleteCustomer"</span><span class="p">]</span>
 
     <span class="c1"># Verify GraphQL-native format</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;DeleteCustomerSuccess&quot;</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;customer&quot;</span><span class="p">][</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Customer&quot;</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;customer&quot;</span><span class="p">][</span><span class="s2">&quot;firstName&quot;</span><span class="p">]</span>  <span class="c1"># camelCase</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"DeleteCustomerSuccess"</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">"customer"</span><span class="p">][</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Customer"</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">"customer"</span><span class="p">][</span><span class="s2">"firstName"</span><span class="p">]</span>  <span class="c1"># camelCase</span>
 
     <span class="c1"># Verify affected orders</span>
-    <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;affectedOrders&quot;</span><span class="p">]:</span>
-        <span class="k">assert</span> <span class="n">order</span><span class="p">[</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Order&quot;</span>
+    <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">"affectedOrders"</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="n">order</span><span class="p">[</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Order"</span>
 </code></pre></div>
 <h3 id="test-3-performance-benchmark"><strong>Test 3: Performance Benchmark</strong><a class="headerlink" href="#test-3-performance-benchmark" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">benchmark_mutation_paths</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compare standard vs. ultra-direct mutation performance.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Compare standard vs. ultra-direct mutation performance."""</span>
 
     <span class="c1"># Warmup</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
-        <span class="k">await</span> <span class="n">delete_customer_standard</span><span class="p">(</span><span class="s2">&quot;uuid-test&quot;</span><span class="p">)</span>
-        <span class="k">await</span> <span class="n">delete_customer_ultra_direct</span><span class="p">(</span><span class="s2">&quot;uuid-test&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">delete_customer_standard</span><span class="p">(</span><span class="s2">"uuid-test"</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">delete_customer_ultra_direct</span><span class="p">(</span><span class="s2">"uuid-test"</span><span class="p">)</span>
 
     <span class="c1"># Benchmark standard path</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
-        <span class="k">await</span> <span class="n">delete_customer_standard</span><span class="p">(</span><span class="s2">&quot;uuid-test&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">delete_customer_standard</span><span class="p">(</span><span class="s2">"uuid-test"</span><span class="p">)</span>
     <span class="n">standard_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
 
     <span class="c1"># Benchmark ultra-direct path</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
-        <span class="k">await</span> <span class="n">delete_customer_ultra_direct</span><span class="p">(</span><span class="s2">&quot;uuid-test&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">delete_customer_ultra_direct</span><span class="p">(</span><span class="s2">"uuid-test"</span><span class="p">)</span>
     <span class="n">direct_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
 
     <span class="n">speedup</span> <span class="o">=</span> <span class="n">standard_time</span> <span class="o">/</span> <span class="n">direct_time</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Standard: </span><span class="si">{</span><span class="n">standard_time</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Direct:   </span><span class="si">{</span><span class="n">direct_time</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Speedup:  </span><span class="si">{</span><span class="n">speedup</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">x faster&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Standard: </span><span class="si">{</span><span class="n">standard_time</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Direct:   </span><span class="si">{</span><span class="n">direct_time</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Speedup:  </span><span class="si">{</span><span class="n">speedup</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">x faster"</span><span class="p">)</span>
 
-    <span class="k">assert</span> <span class="n">speedup</span> <span class="o">&gt;</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;Ultra-direct path should be &gt;2x faster&quot;</span>
+    <span class="k">assert</span> <span class="n">speedup</span> <span class="o">&gt;</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">"Ultra-direct path should be &gt;2x faster"</span>
 </code></pre></div>
 <hr />
 <h2 id="developer-experience">🎨 Developer Experience<a class="headerlink" href="#developer-experience" title="Permanent link">&para;</a></h2>
@@ -5759,7 +5759,7 @@ TOTAL: ~51ms
 <div class="highlight"><pre><span></span><code><span class="c1"># mutations.py (UNCHANGED)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutation</span>
 
-<span class="nd">@mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">&quot;app.delete_customer&quot;</span><span class="p">)</span>
+<span class="nd">@mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"app.delete_customer"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeleteCustomer</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">DeleteCustomerInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">DeleteCustomerSuccess</span>

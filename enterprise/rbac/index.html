@@ -5944,14 +5944,14 @@ tags: ["documentation", "reference"]</p>
     <span class="nb">id</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;read_email&quot;</span><span class="p">)</span>
+    <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="s2">"read_email"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only users with user:read_email permission can access&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Only users with user:read_email permission can access"""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">email_value</span>
 
-    <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+    <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">salary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only admins can see salary&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Only admins can see salary"""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">salary_value</span>
 </code></pre></div>
 <hr />
@@ -6006,17 +6006,17 @@ Next request checks version, refreshes if needed
 <h3 id="domain-versioning">Domain Versioning<a class="headerlink" href="#domain-versioning" title="Permanent link">&para;</a></h3>
 <p>FraiseQL uses domain versioning for automatic cache invalidation:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Each domain has a version</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;role&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'role'</span><span class="p">;</span>
 
 <span class="c1">-- When a role changes:</span>
 <span class="k">UPDATE</span><span class="w"> </span><span class="n">domain_versions</span>
 <span class="k">SET</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;role&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'role'</span><span class="p">;</span>
 
 <span class="c1">-- On permission lookup:</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">permission_cache</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">?</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;role&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'role'</span><span class="p">);</span>
 </code></pre></div>
 <hr />
 <h2 id="core-concepts">Core Concepts<a class="headerlink" href="#core-concepts" title="Permanent link">&para;</a></h2>
@@ -6049,8 +6049,8 @@ Next request checks version, refreshes if needed
 <div class="highlight"><pre><span></span><code><span class="nd">@strawberry</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Permission</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">ID</span>
-    <span class="n">resource</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># e.g., &quot;user&quot;, &quot;product&quot;, &quot;order&quot;</span>
-    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># e.g., &quot;create&quot;, &quot;read&quot;, &quot;update&quot;, &quot;delete&quot;</span>
+    <span class="n">resource</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># e.g., "user", "product", "order"</span>
+    <span class="n">action</span><span class="p">:</span> <span class="nb">str</span>    <span class="c1"># e.g., "create", "read", "update", "delete"</span>
     <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">constraints</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>  <span class="c1"># Optional JSONB constraints</span>
 </code></pre></div>
@@ -6061,10 +6061,10 @@ order.create, order.read, order.update, order.delete
 </code></pre></div>
 <p><strong>Constraints</strong> (optional JSONB):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;own_data_only&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;max_records&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;time_restricted&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;9-17&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;department_only&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;engineering&quot;</span>
+<span class="w">  </span><span class="nt">"own_data_only"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"max_records"</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"time_restricted"</span><span class="p">:</span><span class="w"> </span><span class="s2">"9-17"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"department_only"</span><span class="p">:</span><span class="w"> </span><span class="s2">"engineering"</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="user-roles">User Roles<a class="headerlink" href="#user-roles" title="Permanent link">&para;</a></h3>
@@ -6089,7 +6089,7 @@ Check request-level cache
     └─ MISS → Check PostgreSQL cache
             ├─ HIT → Load to request cache (0.1-0.3ms)
             └─ MISS → Resolve from role hierarchy
-                    ├─ Fetch user&#39;s roles (0.1ms)
+                    ├─ Fetch user's roles (0.1ms)
                     ├─ Fetch all inherited roles (via CTE) (1-10ms)
                     ├─ Fetch all permissions (0.5-2ms)
                     ├─ Cache in request memory (&lt; 1 µs)
@@ -6101,35 +6101,35 @@ Total cached: &lt; 0.5ms
 <h3 id="api-methods">API Methods<a class="headerlink" href="#api-methods" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Get all permissions for a user</span>
 <span class="n">permissions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-456&quot;</span><span class="p">,</span>  <span class="c1"># Optional, for multi-tenant</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user-123"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"tenant-456"</span><span class="p">,</span>  <span class="c1"># Optional, for multi-tenant</span>
     <span class="n">use_cache</span><span class="o">=</span><span class="kc">True</span>           <span class="c1"># Use caching (recommended)</span>
 <span class="p">)</span>
 
 <span class="c1"># Check single permission</span>
 <span class="n">has_perm</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-    <span class="n">resource</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-    <span class="n">action</span><span class="o">=</span><span class="s2">&quot;update&quot;</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user-123"</span><span class="p">,</span>
+    <span class="n">resource</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">"update"</span>
 <span class="p">)</span>
 
 <span class="c1"># Check with exception</span>
 <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">check_permission</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-    <span class="n">resource</span><span class="o">=</span><span class="s2">&quot;order&quot;</span><span class="p">,</span>
-    <span class="n">action</span><span class="o">=</span><span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user-123"</span><span class="p">,</span>
+    <span class="n">resource</span><span class="o">=</span><span class="s2">"order"</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">"delete"</span><span class="p">,</span>
     <span class="n">raise_on_deny</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Raises PermissionDenied if false</span>
 <span class="p">)</span>
 
-<span class="c1"># Get user&#39;s direct roles</span>
+<span class="c1"># Get user's direct roles</span>
 <span class="n">roles</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_user_roles</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-456&quot;</span>  <span class="c1"># Optional</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user-123"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"tenant-456"</span>  <span class="c1"># Optional</span>
 <span class="p">)</span>
 
 <span class="c1"># Get all permissions for a role (including inherited)</span>
 <span class="n">perms</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_role_permissions</span><span class="p">(</span>
-    <span class="n">role_id</span><span class="o">=</span><span class="s2">&quot;role-789&quot;</span><span class="p">,</span>
+    <span class="n">role_id</span><span class="o">=</span><span class="s2">"role-789"</span><span class="p">,</span>
     <span class="n">include_inherited</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -6139,21 +6139,21 @@ Total cached: &lt; 0.5ms
 <div class="highlight"><pre><span></span><code><span class="c1"># Define roles via GraphQL mutations</span>
 <span class="n">mutation</span> <span class="n">CreateRoles</span> <span class="p">{</span>
   <span class="c1"># Create system admin role</span>
-  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="n">isSystem</span><span class="p">:</span> <span class="n">true</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span> <span class="n">isSystem</span><span class="p">:</span> <span class="n">true</span><span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
     <span class="n">name</span>
   <span class="p">}</span>
 
   <span class="c1"># Create department roles</span>
-  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;sales_team&quot;</span><span class="p">,</span> <span class="n">parentRoleId</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">"sales_team"</span><span class="p">,</span> <span class="n">parentRoleId</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
   <span class="p">}</span>
 
-  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;sales_manager&quot;</span><span class="p">,</span> <span class="n">parentRoleId</span><span class="p">:</span> <span class="s2">&quot;sales_team&quot;</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">"sales_manager"</span><span class="p">,</span> <span class="n">parentRoleId</span><span class="p">:</span> <span class="s2">"sales_team"</span><span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
   <span class="p">}</span>
 
-  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;sales_director&quot;</span><span class="p">,</span> <span class="n">parentRoleId</span><span class="p">:</span> <span class="s2">&quot;sales_manager&quot;</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">"sales_director"</span><span class="p">,</span> <span class="n">parentRoleId</span><span class="p">:</span> <span class="s2">"sales_manager"</span><span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
   <span class="p">}</span>
 <span class="p">}</span>
@@ -6180,10 +6180,10 @@ sales_director
 <h3 id="assigning-roles-to-users">Assigning Roles to Users<a class="headerlink" href="#assigning-roles-to-users" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">mutation</span> <span class="n">AssignRole</span> <span class="p">{</span>
   <span class="n">assignRoleToUser</span><span class="p">(</span>
-    <span class="n">userId</span><span class="p">:</span> <span class="s2">&quot;user-123&quot;</span>
-    <span class="n">roleId</span><span class="p">:</span> <span class="s2">&quot;sales_manager&quot;</span>
-    <span class="n">tenantId</span><span class="p">:</span> <span class="s2">&quot;tenant-456&quot;</span>
-    <span class="n">expiresAt</span><span class="p">:</span> <span class="s2">&quot;2025-12-31T23:59:59Z&quot;</span>
+    <span class="n">userId</span><span class="p">:</span> <span class="s2">"user-123"</span>
+    <span class="n">roleId</span><span class="p">:</span> <span class="s2">"sales_manager"</span>
+    <span class="n">tenantId</span><span class="p">:</span> <span class="s2">"tenant-456"</span>
+    <span class="n">expiresAt</span><span class="p">:</span> <span class="s2">"2025-12-31T23:59:59Z"</span>
   <span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
     <span class="n">user</span> <span class="p">{</span>
@@ -6201,7 +6201,7 @@ sales_director
 <p><strong>Expiration</strong>: Optional time-based role revocation.</p>
 <h3 id="querying-role-hierarchy">Querying Role Hierarchy<a class="headerlink" href="#querying-role-hierarchy" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">query</span> <span class="n">GetRoleHierarchy</span> <span class="p">{</span>
-  <span class="n">role</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;role-789&quot;</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">role</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">"role-789"</span><span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
     <span class="n">name</span>
     <span class="n">parentRole</span> <span class="p">{</span>
@@ -6238,14 +6238,14 @@ sales_director
     <span class="nb">id</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;read_email&quot;</span><span class="p">)</span>
+    <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="s2">"read_email"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only accessible to users with user:read_email permission&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Only accessible to users with user:read_email permission"""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">email_value</span>
 
-    <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;read_salary&quot;</span><span class="p">)</span>
+    <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="s2">"read_salary"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">salary</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only accessible to users with user:read_salary permission&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Only accessible to users with user:read_salary permission"""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">salary_value</span>
 </code></pre></div>
 <p><strong>Behavior</strong>:</p>
@@ -6260,14 +6260,14 @@ sales_director
     <span class="nb">id</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+    <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">cost</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only admins can see cost&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Only admins can see cost"""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost_value</span>
 
-    <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;sales_manager&quot;</span><span class="p">)</span>
+    <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"sales_manager"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">margin</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Only sales managers can see margin&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Only sales managers can see margin"""</span>
         <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">price</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">price</span>
 </code></pre></div>
 <p><strong>Behavior</strong>:</p>
@@ -6279,27 +6279,27 @@ sales_director
 <h3 id="field-filtering-response">Field Filtering Response<a class="headerlink" href="#field-filtering-response" title="Permanent link">&para;</a></h3>
 <p>When a user doesn't have permission for a field:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"user-123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span><span class="w">        </span><span class="c"># ✓ Always included</span>
 <span class="w">    </span><span class="n">name</span><span class="w">      </span><span class="c"># ✓ Always included</span>
-<span class="w">    </span><span class="n">email</span><span class="w">     </span><span class="c"># ✗ HIDDEN - user lacks &quot;user:read_email&quot;</span>
-<span class="w">    </span><span class="n">salary</span><span class="w">    </span><span class="c"># ✗ HIDDEN - user lacks &quot;user:read_salary&quot;</span>
+<span class="w">    </span><span class="n">email</span><span class="w">     </span><span class="c"># ✗ HIDDEN - user lacks "user:read_email"</span>
+<span class="w">    </span><span class="n">salary</span><span class="w">    </span><span class="c"># ✗ HIDDEN - user lacks "user:read_salary"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Response</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;John Doe&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;salary&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"salary"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Permission denied: user:read_email&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;email&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Permission denied: user:read_email"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="s2">"email"</span><span class="p">]</span>
 <span class="w">  </span><span class="p">}]</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -6326,16 +6326,16 @@ sales_director
 <p>Define what rows each role can access:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Example: Employees can only see their own data</span>
 <span class="n">constraint</span> <span class="o">=</span> <span class="n">RowConstraint</span><span class="p">(</span>
-    <span class="n">role_id</span><span class="o">=</span><span class="s2">&quot;employee&quot;</span><span class="p">,</span>
-    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">where_clause</span><span class="o">=</span><span class="s2">&quot;owner_id = current_user_id&quot;</span>  <span class="c1"># Parameterized</span>
+    <span class="n">role_id</span><span class="o">=</span><span class="s2">"employee"</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">where_clause</span><span class="o">=</span><span class="s2">"owner_id = current_user_id"</span>  <span class="c1"># Parameterized</span>
 <span class="p">)</span>
 
 <span class="c1"># Example: Managers see their department</span>
 <span class="n">constraint</span> <span class="o">=</span> <span class="n">RowConstraint</span><span class="p">(</span>
-    <span class="n">role_id</span><span class="o">=</span><span class="s2">&quot;department_manager&quot;</span><span class="p">,</span>
-    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;employees&quot;</span><span class="p">,</span>
-    <span class="n">where_clause</span><span class="o">=</span><span class="s2">&quot;department_id = (SELECT department_id FROM users WHERE id = current_user_id)&quot;</span>
+    <span class="n">role_id</span><span class="o">=</span><span class="s2">"department_manager"</span><span class="p">,</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">"employees"</span><span class="p">,</span>
+    <span class="n">where_clause</span><span class="o">=</span><span class="s2">"department_id = (SELECT department_id FROM users WHERE id = current_user_id)"</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="performance">Performance<a class="headerlink" href="#performance" title="Permanent link">&para;</a></h3>
@@ -6365,33 +6365,33 @@ sales_director
 <p>Each role can be scoped to a tenant:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Global role (NULL tenant_id)</span>
 <span class="n">role</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;role-1&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="s2">&quot;permissions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+    <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"role-1"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span>
+    <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"permissions"</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
 <span class="p">}</span>
 
 <span class="c1"># Tenant-specific role</span>
 <span class="n">role</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;role-2&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;tenant_admin&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;tenant-123&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;permissions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
+    <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"role-2"</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"tenant_admin"</span><span class="p">,</span>
+    <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"tenant-123"</span><span class="p">,</span>
+    <span class="s2">"permissions"</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="permission-resolution-with-tenants">Permission Resolution with Tenants<a class="headerlink" href="#permission-resolution-with-tenants" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Get permissions scoped to tenant</span>
 <span class="n">permissions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-456&quot;</span>  <span class="c1"># Filter to this tenant</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user-123"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"tenant-456"</span>  <span class="c1"># Filter to this tenant</span>
 <span class="p">)</span>
 
 <span class="c1"># Query with tenant context</span>
 <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">check_permission</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-    <span class="n">resource</span><span class="o">=</span><span class="s2">&quot;product&quot;</span><span class="p">,</span>
-    <span class="n">action</span><span class="o">=</span><span class="s2">&quot;read&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-456&quot;</span>  <span class="c1"># Tenant isolation</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"user-123"</span><span class="p">,</span>
+    <span class="n">resource</span><span class="o">=</span><span class="s2">"product"</span><span class="p">,</span>
+    <span class="n">action</span><span class="o">=</span><span class="s2">"read"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"tenant-456"</span>  <span class="c1"># Tenant isolation</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Isolation</strong>:</p>
@@ -6405,10 +6405,10 @@ sales_director
 <h3 id="creating-roles">Creating Roles<a class="headerlink" href="#creating-roles" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">createRole</span><span class="p">(</span>
-<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;content_manager&quot;</span>
-<span class="w">    </span><span class="n">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Can manage all content&quot;</span>
-<span class="w">    </span><span class="n">parentRoleId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user&quot;</span>
-<span class="w">    </span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tenant-123&quot;</span>
+<span class="w">    </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"content_manager"</span>
+<span class="w">    </span><span class="n">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Can manage all content"</span>
+<span class="w">    </span><span class="n">parentRoleId</span><span class="p">:</span><span class="w"> </span><span class="s">"user"</span>
+<span class="w">    </span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="s">"tenant-123"</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
@@ -6419,9 +6419,9 @@ sales_director
 <h3 id="assigning-permissions">Assigning Permissions<a class="headerlink" href="#assigning-permissions" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">grantPermissionToRole</span><span class="p">(</span>
-<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;role-456&quot;</span>
-<span class="w">    </span><span class="n">resourceId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;resource-789&quot;</span>
-<span class="w">    </span><span class="n">action</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;create&quot;</span>
+<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">"role-456"</span>
+<span class="w">    </span><span class="n">resourceId</span><span class="p">:</span><span class="w"> </span><span class="s">"resource-789"</span>
+<span class="w">    </span><span class="n">action</span><span class="p">:</span><span class="w"> </span><span class="s">"create"</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">role</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
@@ -6432,10 +6432,10 @@ sales_director
 <h3 id="managing-user-roles">Managing User Roles<a class="headerlink" href="#managing-user-roles" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">assignRoleToUser</span><span class="p">(</span>
-<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-123&quot;</span>
-<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;content_manager&quot;</span>
-<span class="w">    </span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tenant-456&quot;</span>
-<span class="w">    </span><span class="n">expiresAt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-12-31&quot;</span>
+<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">"user-123"</span>
+<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">"content_manager"</span>
+<span class="w">    </span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="s">"tenant-456"</span>
+<span class="w">    </span><span class="n">expiresAt</span><span class="p">:</span><span class="w"> </span><span class="s">"2025-12-31"</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
@@ -6446,9 +6446,9 @@ sales_director
 
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">revokeRoleFromUser</span><span class="p">(</span>
-<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-123&quot;</span>
-<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;content_manager&quot;</span>
-<span class="w">    </span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tenant-456&quot;</span>
+<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">"user-123"</span>
+<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">"content_manager"</span>
+<span class="w">    </span><span class="n">tenantId</span><span class="p">:</span><span class="w"> </span><span class="s">"tenant-456"</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">success</span>
 <span class="w">  </span><span class="p">}</span>
@@ -6538,24 +6538,24 @@ sales_director
 <p>Always reuse resolved permissions within a request:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Single resolution</span>
 <span class="n">user_permissions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
-<span class="n">has_create</span> <span class="o">=</span> <span class="s2">&quot;resource:create&quot;</span> <span class="ow">in</span> <span class="n">user_permissions</span>
-<span class="n">has_read</span> <span class="o">=</span> <span class="s2">&quot;resource:read&quot;</span> <span class="ow">in</span> <span class="n">user_permissions</span>
-<span class="n">has_update</span> <span class="o">=</span> <span class="s2">&quot;resource:update&quot;</span> <span class="ow">in</span> <span class="n">user_permissions</span>
+<span class="n">has_create</span> <span class="o">=</span> <span class="s2">"resource:create"</span> <span class="ow">in</span> <span class="n">user_permissions</span>
+<span class="n">has_read</span> <span class="o">=</span> <span class="s2">"resource:read"</span> <span class="ow">in</span> <span class="n">user_permissions</span>
+<span class="n">has_update</span> <span class="o">=</span> <span class="s2">"resource:update"</span> <span class="ow">in</span> <span class="n">user_permissions</span>
 
 <span class="c1"># BAD - Multiple database calls</span>
-<span class="n">has_create</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;resource&quot;</span><span class="p">,</span> <span class="s2">&quot;create&quot;</span><span class="p">)</span>
-<span class="n">has_read</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;resource&quot;</span><span class="p">,</span> <span class="s2">&quot;read&quot;</span><span class="p">)</span>
-<span class="n">has_update</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;resource&quot;</span><span class="p">,</span> <span class="s2">&quot;update&quot;</span><span class="p">)</span>
+<span class="n">has_create</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s2">"resource"</span><span class="p">,</span> <span class="s2">"create"</span><span class="p">)</span>
+<span class="n">has_read</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s2">"resource"</span><span class="p">,</span> <span class="s2">"read"</span><span class="p">)</span>
+<span class="n">has_update</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s2">"resource"</span><span class="p">,</span> <span class="s2">"update"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="2-use-domain-versioning">2. Use Domain Versioning<a class="headerlink" href="#2-use-domain-versioning" title="Permanent link">&para;</a></h3>
 <p>Domain versioning automatically handles cache invalidation - don't manually clear caches:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Let domain versioning handle invalidation</span>
 <span class="n">mutation</span> <span class="p">{</span>
-  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">&quot;new_role&quot;</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">createRole</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="s2">"new_role"</span><span class="p">)</span> <span class="p">{</span>
     <span class="nb">id</span>
   <span class="p">}</span>
 <span class="p">}</span>
-<span class="c1"># Automatically increments domain_version for &#39;role&#39; domain</span>
+<span class="c1"># Automatically increments domain_version for 'role' domain</span>
 
 <span class="c1"># BAD - Manual cache management</span>
 <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_all</span><span class="p">()</span>  <span class="c1"># Throws away valid data</span>
@@ -6573,9 +6573,9 @@ sales_director
 <p>Use role expiration for temporary assignments:</p>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">assignRoleToUser</span><span class="p">(</span>
-<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;contractor-123&quot;</span>
-<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;developer&quot;</span>
-<span class="w">    </span><span class="n">expiresAt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-03-31&quot;</span><span class="w">  </span><span class="c"># Auto-revoke after contract</span>
+<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">"contractor-123"</span>
+<span class="w">    </span><span class="n">roleId</span><span class="p">:</span><span class="w"> </span><span class="s">"developer"</span>
+<span class="w">    </span><span class="n">expiresAt</span><span class="p">:</span><span class="w"> </span><span class="s">"2025-03-31"</span><span class="w">  </span><span class="c"># Auto-revoke after contract</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">  </span><span class="p">}</span>
@@ -6584,8 +6584,8 @@ sales_director
 <h3 id="5-audit-role-changes">5. Audit Role Changes<a class="headerlink" href="#5-audit-role-changes" title="Permanent link">&para;</a></h3>
 <p>Log who made what changes:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Automatically captured in audit logging</span>
-<span class="n">granted_by</span><span class="p">:</span> <span class="s2">&quot;admin-user-456&quot;</span>  <span class="c1"># Who granted the role</span>
-<span class="n">created_at</span><span class="p">:</span> <span class="s2">&quot;2025-01-11T10:30:00Z&quot;</span>
+<span class="n">granted_by</span><span class="p">:</span> <span class="s2">"admin-user-456"</span>  <span class="c1"># Who granted the role</span>
+<span class="n">created_at</span><span class="p">:</span> <span class="s2">"2025-01-11T10:30:00Z"</span>
 </code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
@@ -6594,7 +6594,7 @@ sales_director
 <li>Check role inheritance:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"user-123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">roles</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">name</span>
 <span class="w">      </span><span class="n">parentRole</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
@@ -6607,7 +6607,7 @@ sales_director
 <li>Verify permission assignment:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">role</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;role-456&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">role</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"role-456"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">permissions</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">resource</span><span class="w"> </span><span class="n">action</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -6615,7 +6615,7 @@ sales_director
 <ol>
 <li>Check cache version:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;role&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'role'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="high-latency-on-permission-checks">High Latency on Permission Checks<a class="headerlink" href="#high-latency-on-permission-checks" title="Permanent link">&para;</a></h3>
 <ol>
@@ -6626,7 +6626,7 @@ sales_director
 <ol>
 <li>Verify domain versioning is working:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;role&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">version</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">domain_versions</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">domain</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'role'</span><span class="p">;</span>
 <span class="c1">-- Should be same across requests unless roles changed</span>
 </code></pre></div>
 <ol>

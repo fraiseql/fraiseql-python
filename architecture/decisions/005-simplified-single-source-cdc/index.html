@@ -4977,10 +4977,10 @@
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- 1. Execute business logic</span>
 <span class="w">    </span><span class="n">v_customer_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">core</span><span class="p">.</span><span class="n">create_customer</span><span class="p">(</span>
-<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;password_hash&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;last_name&#39;</span>
+<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">'password_hash'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">'first_name'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">input_payload</span><span class="o">-&gt;&gt;</span><span class="s1">'last_name'</span>
 <span class="w">    </span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- 2. Get complete customer data</span>
@@ -4988,17 +4988,17 @@
 
 <span class="w">    </span><span class="c1">-- 3. Log mutation event (SINGLE source of truth)</span>
 <span class="w">    </span><span class="n">v_event_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">log_mutation_event</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;CUSTOMER_CREATED&#39;</span><span class="p">,</span><span class="w">              </span><span class="c1">-- event_type</span>
-<span class="w">        </span><span class="s1">&#39;customer&#39;</span><span class="p">,</span><span class="w">                       </span><span class="c1">-- entity_type</span>
+<span class="w">        </span><span class="s1">'CUSTOMER_CREATED'</span><span class="p">,</span><span class="w">              </span><span class="c1">-- event_type</span>
+<span class="w">        </span><span class="s1">'customer'</span><span class="p">,</span><span class="w">                       </span><span class="c1">-- entity_type</span>
 <span class="w">        </span><span class="n">v_customer_id</span><span class="p">,</span><span class="w">                    </span><span class="c1">-- entity_id</span>
-<span class="w">        </span><span class="s1">&#39;CREATE&#39;</span><span class="p">,</span><span class="w">                         </span><span class="c1">-- operation</span>
+<span class="w">        </span><span class="s1">'CREATE'</span><span class="p">,</span><span class="w">                         </span><span class="c1">-- operation</span>
 
 <span class="w">        </span><span class="c1">-- Client response (what GraphQL client receives)</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;SUCCESS&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Customer created successfully&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;customer&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_customer_data</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'SUCCESS'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Customer created successfully'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'customer'</span><span class="p">,</span><span class="w"> </span><span class="n">v_customer_data</span>
 <span class="w">        </span><span class="p">),</span>
 
 <span class="w">        </span><span class="c1">-- CDC data (for event consumers)</span>
@@ -5007,9 +5007,9 @@
 
 <span class="w">        </span><span class="c1">-- Metadata (for audit)</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
-<span class="w">            </span><span class="s1">&#39;created_by&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">current_user</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;source&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;graphql_api&#39;</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">            </span><span class="s1">'created_by'</span><span class="p">,</span><span class="w"> </span><span class="k">current_user</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'source'</span><span class="p">,</span><span class="w"> </span><span class="s1">'graphql_api'</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 
@@ -5057,10 +5057,10 @@
 <span class="w">        </span><span class="n">p_after_state</span><span class="p">,</span>
 <span class="w">        </span><span class="n">p_metadata</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;db&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">current_database</span><span class="p">(),</span>
-<span class="w">            </span><span class="s1">&#39;schema&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;table&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_entity_type</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;s&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;txId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">txid_current</span><span class="p">()</span>
+<span class="w">            </span><span class="s1">'db'</span><span class="p">,</span><span class="w"> </span><span class="n">current_database</span><span class="p">(),</span>
+<span class="w">            </span><span class="s1">'schema'</span><span class="p">,</span><span class="w"> </span><span class="s1">'public'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'table'</span><span class="p">,</span><span class="w"> </span><span class="n">p_entity_type</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'s'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'txId'</span><span class="p">,</span><span class="w"> </span><span class="n">txid_current</span><span class="p">()</span>
 <span class="w">        </span><span class="p">),</span>
 <span class="w">        </span><span class="n">txid_current</span><span class="p">()</span>
 <span class="w">    </span><span class="p">)</span>
@@ -5072,78 +5072,78 @@
 </code></pre></div>
 <h2 id="complete-event-in-database">Complete Event in Database<a class="headerlink" href="#complete-event-in-database" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;event_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CUSTOMER_CREATED&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;entity_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;customer&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;entity_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d4c8a3f2-1234-5678-9abc-def012345678&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CREATE&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"event_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"event_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CUSTOMER_CREATED"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"entity_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"customer"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"entity_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"d4c8a3f2-1234-5678-9abc-def012345678"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CREATE"</span><span class="p">,</span>
 
-<span class="w">  </span><span class="nt">&quot;client_response&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Customer created successfully&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;customer&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d4c8a3f2-1234-5678-9abc-def012345678&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;first_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;last_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Johnson&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-16T10:30:00Z&quot;</span>
+<span class="w">  </span><span class="nt">"client_response"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SUCCESS"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Customer created successfully"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"customer"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"d4c8a3f2-1234-5678-9abc-def012345678"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"first_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"last_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Johnson"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-10-16T10:30:00Z"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 
-<span class="w">  </span><span class="nt">&quot;before_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;after_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d4c8a3f2-1234-5678-9abc-def012345678&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;first_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;last_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Johnson&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-16T10:30:00Z&quot;</span>
+<span class="w">  </span><span class="nt">"before_state"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"after_state"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"d4c8a3f2-1234-5678-9abc-def012345678"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"first_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"last_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Johnson"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-10-16T10:30:00Z"</span>
 <span class="w">  </span><span class="p">},</span>
 
-<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-16T10:30:00Z&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;created_by&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;app_user&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;graphql_api&quot;</span>
+<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-10-16T10:30:00Z"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"created_by"</span><span class="p">:</span><span class="w"> </span><span class="s2">"app_user"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"graphql_api"</span>
 <span class="w">  </span><span class="p">},</span>
 
-<span class="w">  </span><span class="nt">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;db&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ecommerce_dev&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;customers&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;txId&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">98765</span>
+<span class="w">  </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"db"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ecommerce_dev"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"schema"</span><span class="p">:</span><span class="w"> </span><span class="s2">"public"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"table"</span><span class="p">:</span><span class="w"> </span><span class="s2">"customers"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"txId"</span><span class="p">:</span><span class="w"> </span><span class="mi">98765</span>
 <span class="w">  </span><span class="p">},</span>
 
-<span class="w">  </span><span class="nt">&quot;event_timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-16T10:30:00.123Z&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;transaction_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">98765</span>
+<span class="w">  </span><span class="nt">"event_timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-10-16T10:30:00.123Z"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"transaction_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">98765</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="rust-layer-unchanged">Rust Layer (Unchanged!)<a class="headerlink" href="#rust-layer-unchanged" title="Permanent link">&para;</a></h2>
 <p>Rust receives <code>client_response</code> directly as text:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Customer created successfully&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;customer&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d4c8a3f2-1234-5678-9abc-def012345678&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;first_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;last_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Johnson&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;created_at&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-16T10:30:00Z&quot;</span>
+<span class="w">  </span><span class="nt">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SUCCESS"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Customer created successfully"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"customer"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"d4c8a3f2-1234-5678-9abc-def012345678"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"first_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"last_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Johnson"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"created_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-10-16T10:30:00Z"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Transforms to:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SUCCESS&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Customer created successfully&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;customer&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;d4c8a3f2-1234-5678-9abc-def012345678&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Customer&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;firstName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;lastName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Johnson&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;createdAt&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-10-16T10:30:00Z&quot;</span>
+<span class="w">  </span><span class="nt">"success"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SUCCESS"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Customer created successfully"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"customer"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"d4c8a3f2-1234-5678-9abc-def012345678"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Customer"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"lastName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Johnson"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"createdAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-10-16T10:30:00Z"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5252,18 +5252,18 @@
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_before_data</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="c1">-- Error case: still log as event!</span>
 <span class="w">        </span><span class="n">v_event_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">log_mutation_event</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;ORDER_UPDATE_FAILED&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;order&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'ORDER_UPDATE_FAILED'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'order'</span><span class="p">,</span>
 <span class="w">            </span><span class="n">order_id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;UPDATE&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'UPDATE'</span><span class="p">,</span>
 <span class="w">            </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;NOT_FOUND&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Order not found&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">order_id</span>
+<span class="w">                </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'NOT_FOUND'</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Order not found'</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'order_id'</span><span class="p">,</span><span class="w"> </span><span class="n">order_id</span>
 <span class="w">            </span><span class="p">),</span>
 <span class="w">            </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">            </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;not_found&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'not_found'</span><span class="p">)</span>
 <span class="w">        </span><span class="p">);</span>
 
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">client_response</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">mutation_events</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">event_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_event_id</span><span class="p">);</span>
@@ -5277,21 +5277,21 @@
 
 <span class="w">    </span><span class="c1">-- Log mutation event (success case)</span>
 <span class="w">    </span><span class="n">v_event_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">log_mutation_event</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;ORDER_UPDATED&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;order&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'ORDER_UPDATED'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'order'</span><span class="p">,</span>
 <span class="w">        </span><span class="n">order_id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;UPDATE&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'UPDATE'</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;SUCCESS&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Order updated successfully&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;order&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_after_data</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'SUCCESS'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Order updated successfully'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'order'</span><span class="p">,</span><span class="w"> </span><span class="n">v_after_data</span>
 <span class="w">        </span><span class="p">),</span>
 <span class="w">        </span><span class="n">v_before_data</span><span class="p">,</span>
 <span class="w">        </span><span class="n">v_after_data</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;updated_by&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">current_user</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;fields_updated&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">input_payload</span>
+<span class="w">            </span><span class="s1">'updated_by'</span><span class="p">,</span><span class="w"> </span><span class="k">current_user</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'fields_updated'</span><span class="p">,</span><span class="w"> </span><span class="n">input_payload</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 

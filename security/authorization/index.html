@@ -5046,9 +5046,9 @@ is <em>allowed</em> to do). The authorizer is principal-agnostic: it reads every
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthorizationDecision</span>
 
 <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">()</span>                                  <span class="c1"># allow</span>
-<span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;t1&quot;</span><span class="p">})</span>       <span class="c1"># allow + row scoping</span>
-<span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">()</span>                                   <span class="c1"># deny, code &quot;FORBIDDEN&quot;</span>
-<span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;NO_MUTATIONS&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;read-only principal&quot;</span><span class="p">)</span>
+<span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"t1"</span><span class="p">})</span>       <span class="c1"># allow + row scoping</span>
+<span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">()</span>                                   <span class="c1"># deny, code "FORBIDDEN"</span>
+<span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">"NO_MUTATIONS"</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"read-only principal"</span><span class="p">)</span>
 </code></pre></div>
 <p>Fields: <code>allowed: bool</code>, <code>code: str | None</code>, <code>message: str | None</code>, <code>filters: dict | None</code>.</p>
 <h3 id="authorizer"><code>Authorizer</code><a class="headerlink" href="#authorizer" title="Permanent link">&para;</a></h3>
@@ -5059,12 +5059,12 @@ is <em>allowed</em> to do). The authorizer is principal-agnostic: it reads every
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">operation_type</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">,</span> <span class="n">arguments</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthorizationDecision</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;authentication required&quot;</span><span class="p">)</span>
-        <span class="c1"># Scope every read to the principal&#39;s tenant.</span>
-        <span class="k">if</span> <span class="n">operation_type</span> <span class="o">==</span> <span class="s2">&quot;query&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]})</span>
+            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"authentication required"</span><span class="p">)</span>
+        <span class="c1"># Scope every read to the principal's tenant.</span>
+        <span class="k">if</span> <span class="n">operation_type</span> <span class="o">==</span> <span class="s2">"query"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]})</span>
         <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">()</span>
 </code></pre></div>
 <ul>
@@ -5080,7 +5080,7 @@ subscription, the three resolver-bypass paths, and survives schema hot-reload:</
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
@@ -5111,7 +5111,7 @@ global default for that operation only:</p>
 <p>A query authorizer can return <code>filters</code> to scope rows. They are AND-merged into the repository's
 existing <code>mandatory_filters</code> SQL primitive — column names are validated and values are always
 parameterized, so there is no injection surface.</p>
-<div class="highlight"><pre><span></span><code><span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]})</span>
+<div class="highlight"><pre><span></span><code><span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]})</span>
 </code></pre></div>
 <p>Mechanism: <code>mandatory_filters</code> is a repository-method kwarg consumed in a <em>different call frame</em>
 than the resolver (your <code>@query</code> function sits in between), so the filter cannot ride resolver
@@ -5173,7 +5173,7 @@ authorization-gated as above; row scoping relies on session variables + RLS.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">authorize_field</span><span class="p">,</span> <span class="n">field_authorizer_adapter</span>
 
 <span class="nd">@field</span>
-<span class="nd">@authorize_field</span><span class="p">(</span><span class="n">field_authorizer_adapter</span><span class="p">(</span><span class="n">my_authorizer</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">&quot;User.email&quot;</span><span class="p">))</span>
+<span class="nd">@authorize_field</span><span class="p">(</span><span class="n">field_authorizer_adapter</span><span class="p">(</span><span class="n">my_authorizer</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"User.email"</span><span class="p">))</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_email</span>
 </code></pre></div>
@@ -5187,7 +5187,7 @@ the check runs on the request's event loop.</p>
 <h3 id="automatic-field-gating-opt-in">Automatic field gating (opt-in)<a class="headerlink" href="#automatic-field-gating-opt-in" title="Permanent link">&para;</a></h3>
 <p>Instead of decorating each field by hand, a type can declare which fields the configured
 operation <code>Authorizer</code> should gate automatically (issue #366):</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraise_type</span><span class="p">(</span><span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;ssn&quot;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraise_type</span><span class="p">(</span><span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"email"</span><span class="p">,</span> <span class="s2">"ssn"</span><span class="p">])</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># ungated</span>
@@ -5262,11 +5262,11 @@ TTL:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span><span class="p">,</span> <span class="n">AuthorizationCacheConfig</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span> <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">authorizer</span><span class="o">=</span><span class="n">MyAuthorizer</span><span class="p">(),</span>
     <span class="n">authorization_cache</span><span class="o">=</span><span class="n">AuthorizationCacheConfig</span><span class="p">(</span>
-        <span class="n">principal_key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">][</span><span class="s2">&quot;id&quot;</span><span class="p">],</span>  <span class="c1"># required: identify the principal</span>
+        <span class="n">principal_key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">ctx</span><span class="p">[</span><span class="s2">"user"</span><span class="p">][</span><span class="s2">"id"</span><span class="p">],</span>  <span class="c1"># required: identify the principal</span>
         <span class="n">ttl_seconds</span><span class="o">=</span><span class="mf">5.0</span><span class="p">,</span>        <span class="c1"># keep short — a stale *allow* is a security risk</span>
         <span class="n">max_entries</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>     <span class="c1"># LRU bound</span>
     <span class="p">),</span>

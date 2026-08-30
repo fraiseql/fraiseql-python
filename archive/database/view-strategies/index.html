@@ -4991,9 +4991,9 @@
 <span class="w">    </span><span class="p">(</span>
 <span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="n">json_agg</span><span class="p">(</span>
 <span class="w">            </span><span class="n">json_build_object</span><span class="p">(</span>
-<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">                </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">            </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
 <span class="w">        </span><span class="p">)</span>
@@ -5013,7 +5013,7 @@
 <h3 id="graphql-integration">GraphQL Integration<a class="headerlink" href="#graphql-integration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5023,8 +5023,8 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="strategy-2-table-views-tv_-recommended-for-production">Strategy 2: Table Views (<code>tv_*</code>) - <strong>Recommended for Production</strong><a class="headerlink" href="#strategy-2-table-views-tv_-recommended-for-production" title="Permanent link">&para;</a></h2>
@@ -5050,18 +5050,18 @@
 <span class="w">    </span><span class="k">SELECT</span>
 <span class="w">        </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;last_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;user_posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'last_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'user_posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">                        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">                    </span><span class="p">)</span>
 <span class="w">                    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
 <span class="w">                </span><span class="p">)</span>
@@ -5097,7 +5097,7 @@
 <h3 id="graphql-integration_1">GraphQL Integration<a class="headerlink" href="#graphql-integration_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5107,8 +5107,8 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="strategy-3-materialized-views-mv_">Strategy 3: Materialized Views (<code>mv_*</code>)<a class="headerlink" href="#strategy-3-materialized-views-mv_" title="Permanent link">&para;</a></h2>
@@ -5149,7 +5149,7 @@
 <h3 id="refresh-strategy">Refresh Strategy<a class="headerlink" href="#refresh-strategy" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Cron job to refresh every 30 minutes</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;0,30 * * * *&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Every 30 minutes</span>
+<span class="w">    </span><span class="s1">'0,30 * * * *'</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Every 30 minutes</span>
 <span class="w">    </span><span class="err">$$</span><span class="k">SELECT</span><span class="w"> </span><span class="n">fn_refresh_user_stats</span><span class="p">()</span><span class="err">$$</span>
 <span class="p">);</span>
 </code></pre></div>
@@ -5164,25 +5164,25 @@
 <h2 id="decision-guide">Decision Guide<a class="headerlink" href="#decision-guide" title="Permanent link">&para;</a></h2>
 <h3 id="use-v_-when">Use <code>v_*</code> When<a class="headerlink" href="#use-v_-when" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">Conditions</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">dataset_size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&lt;</span><span class="nv"> </span><span class="s">10k&quot;</span>
-<span class="w">  </span><span class="nt">traffic_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Low</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">moderate&quot;</span>
-<span class="w">  </span><span class="nt">freshness_requirement</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Absolute&quot;</span>
+<span class="w">  </span><span class="nt">dataset_size</span><span class="p">:</span><span class="w"> </span><span class="s">"&lt;</span><span class="nv"> </span><span class="s">10k"</span>
+<span class="w">  </span><span class="nt">traffic_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"Low</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">moderate"</span>
+<span class="w">  </span><span class="nt">freshness_requirement</span><span class="p">:</span><span class="w"> </span><span class="s">"Absolute"</span>
 <span class="w">  </span><span class="nt">storage_constraints</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 <span class="w">  </span><span class="nt">development_phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 <h3 id="use-tv_-when">Use <code>tv_*</code> When<a class="headerlink" href="#use-tv_-when" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">Conditions</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">dataset_size</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&gt;</span><span class="nv"> </span><span class="s">100k&quot;</span>
-<span class="w">  </span><span class="nt">traffic_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High&quot;</span>
-<span class="w">  </span><span class="nt">freshness_requirement</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Near</span><span class="nv"> </span><span class="s">real-time&quot;</span>
-<span class="w">  </span><span class="nt">performance_requirement</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sub-millisecond&quot;</span>
+<span class="w">  </span><span class="nt">dataset_size</span><span class="p">:</span><span class="w"> </span><span class="s">"&gt;</span><span class="nv"> </span><span class="s">100k"</span>
+<span class="w">  </span><span class="nt">traffic_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"High"</span>
+<span class="w">  </span><span class="nt">freshness_requirement</span><span class="p">:</span><span class="w"> </span><span class="s">"Near</span><span class="nv"> </span><span class="s">real-time"</span>
+<span class="w">  </span><span class="nt">performance_requirement</span><span class="p">:</span><span class="w"> </span><span class="s">"Sub-millisecond"</span>
 <span class="w">  </span><span class="nt">production_environment</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 <h3 id="use-mv_-when">Use <code>mv_*</code> When<a class="headerlink" href="#use-mv_-when" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">Conditions</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">query_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Analytics/Aggregation&quot;</span>
-<span class="w">  </span><span class="nt">complexity</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">(GROUP</span><span class="nv"> </span><span class="s">BY,</span><span class="nv"> </span><span class="s">multiple</span><span class="nv"> </span><span class="s">JOINs)&quot;</span>
-<span class="w">  </span><span class="nt">freshness_tolerance</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5-60</span><span class="nv"> </span><span class="s">minutes&quot;</span>
+<span class="w">  </span><span class="nt">query_type</span><span class="p">:</span><span class="w"> </span><span class="s">"Analytics/Aggregation"</span>
+<span class="w">  </span><span class="nt">complexity</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">(GROUP</span><span class="nv"> </span><span class="s">BY,</span><span class="nv"> </span><span class="s">multiple</span><span class="nv"> </span><span class="s">JOINs)"</span>
+<span class="w">  </span><span class="nt">freshness_tolerance</span><span class="p">:</span><span class="w"> </span><span class="s">"5-60</span><span class="nv"> </span><span class="s">minutes"</span>
 <span class="w">  </span><span class="nt">dashboard_use_case</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 <hr />
@@ -5200,11 +5200,11 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;last_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'last_name'</span><span class="p">,</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="p">;</span>
 
@@ -5224,7 +5224,7 @@
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_mv_dashboard_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">mv_dashboard</span><span class="p">(</span><span class="nb">date</span><span class="p">);</span>
 
 <span class="c1">-- Step 3: Set up refresh schedule</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span><span class="w"> </span><span class="err">$$</span><span class="n">REFRESH</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">mv_dashboard$$</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">'0 * * * *'</span><span class="p">,</span><span class="w"> </span><span class="err">$$</span><span class="n">REFRESH</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">mv_dashboard$$</span><span class="p">);</span>
 </code></pre></div>
 <hr />
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
@@ -5254,8 +5254,8 @@
 
 <span class="c1">-- Check materialized view freshness</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">pg_size</span><span class="p">.</span><span class="n">pretty_size</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">&#39;mv_user_stats&#39;</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">pg_stat_get_last_vacuum_time</span><span class="p">(</span><span class="s1">&#39;mv_user_stats&#39;</span><span class="p">::</span><span class="n">regclass</span><span class="p">);</span>
+<span class="w">    </span><span class="n">pg_size</span><span class="p">.</span><span class="n">pretty_size</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">'mv_user_stats'</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">pg_stat_get_last_vacuum_time</span><span class="p">(</span><span class="s1">'mv_user_stats'</span><span class="p">::</span><span class="n">regclass</span><span class="p">);</span>
 </code></pre></div>
 <hr />
 <h2 id="performance-benchmarks">Performance Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>

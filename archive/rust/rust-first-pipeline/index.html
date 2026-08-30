@@ -5400,19 +5400,19 @@
 <h2 id="integration-points">Integration Points<a class="headerlink" href="#integration-points" title="Permanent link">&para;</a></h2>
 <h3 id="repository-layer">Repository Layer<a class="headerlink" href="#repository-layer" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># New Rust pipeline methods (recommended)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_rust</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
-<span class="n">single</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one_rust</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_rust</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+<span class="n">single</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one_rust</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 
 <span class="c1"># Legacy methods still available</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>  <span class="c1"># Slower Python path</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>  <span class="c1"># Slower Python path</span>
 </code></pre></div>
 <h3 id="graphql-resolvers">GraphQL Resolvers<a class="headerlink" href="#graphql-resolvers" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RustResponseBytes</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_rust</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_rust</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="fastapi-response">FastAPI Response<a class="headerlink" href="#fastapi-response" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Automatic detection and zero-copy sending</span>
@@ -5439,7 +5439,7 @@
 <span class="n">query</span> <span class="p">{</span> <span class="n">users</span> <span class="p">{</span> <span class="nb">id</span> <span class="n">firstName</span> <span class="p">}</span> <span class="p">}</span>
 
 <span class="c1"># Automatic extraction</span>
-<span class="n">field_paths</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;firstName&quot;</span><span class="p">]]</span>
+<span class="n">field_paths</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">"id"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"firstName"</span><span class="p">]]</span>
 
 <span class="c1"># Rust filters response to only include requested fields</span>
 </code></pre></div>
@@ -5490,10 +5490,10 @@ TURBO: Cached templates → Python ops → HTTP
 </code></pre></div>
 <h3 id="code-changes-required">Code Changes Required<a class="headerlink" href="#code-changes-required" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Old code</span>
-<span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>
+<span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users"</span><span class="p">)</span>
 
 <span class="c1"># New code (recommended)</span>
-<span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_rust</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+<span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_rust</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="unified-architecture">Unified Architecture<a class="headerlink" href="#unified-architecture" title="Permanent link">&para;</a></h3>
 <ul>
@@ -5558,11 +5558,11 @@ TURBO: Cached templates → Python ops → HTTP
 <hr />
 <h2 id="python-integration-minimal-glue-code">Python Integration: Minimal Glue Code<a class="headerlink" href="#python-integration-minimal-glue-code" title="Permanent link">&para;</a></h2>
 <h3 id="srcfraiseqlcorerust_pipelinepy"><code>src/fraiseql/core/rust_pipeline.py</code><a class="headerlink" href="#srcfraiseqlcorerust_pipelinepy" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Rust-first pipeline for PostgreSQL → HTTP response.</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""Rust-first pipeline for PostgreSQL → HTTP response.</span>
 
 <span class="sd">This module provides zero-copy path from database to HTTP by delegating</span>
 <span class="sd">ALL string operations to Rust after query execution.</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnection</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">Composed</span>
@@ -5571,22 +5571,22 @@ TURBO: Cached templates → Python ops → HTTP
     <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql_rs</span>
 <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
     <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
-        <span class="s2">&quot;fraiseql-rs is required for the Rust pipeline. &quot;</span>
-        <span class="s2">&quot;Install: pip install fraiseql-rs&quot;</span>
+        <span class="s2">"fraiseql-rs is required for the Rust pipeline. "</span>
+        <span class="s2">"Install: pip install fraiseql-rs"</span>
     <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">RustResponseBytes</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Marker for pre-serialized response bytes from Rust.</span>
+<span class="w">    </span><span class="sd">"""Marker for pre-serialized response bytes from Rust.</span>
 
 <span class="sd">    FastAPI detects this type and sends bytes directly without any</span>
 <span class="sd">    Python serialization or string operations.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;bytes&#39;</span><span class="p">,</span> <span class="s1">&#39;content_type&#39;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'bytes'</span><span class="p">,</span> <span class="s1">'content_type'</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bytes</span> <span class="o">=</span> <span class="nb">bytes</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s2">&quot;application/json&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">content_type</span> <span class="o">=</span> <span class="s2">"application/json"</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__bytes__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bytes</span>
@@ -5600,7 +5600,7 @@ TURBO: Cached templates → Python ops → HTTP
     <span class="n">type_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">is_list</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RustResponseBytes</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute query and build HTTP response entirely in Rust.</span>
+<span class="w">    </span><span class="sd">"""Execute query and build HTTP response entirely in Rust.</span>
 
 <span class="sd">    This is the FASTEST path: PostgreSQL → Rust → HTTP bytes.</span>
 <span class="sd">    Zero Python string operations, zero JSON parsing, zero copies.</span>
@@ -5609,13 +5609,13 @@ TURBO: Cached templates → Python ops → HTTP
 <span class="sd">        conn: PostgreSQL connection</span>
 <span class="sd">        query: SQL query returning JSON strings</span>
 <span class="sd">        params: Query parameters</span>
-<span class="sd">        field_name: GraphQL field name (e.g., &quot;users&quot;)</span>
-<span class="sd">        type_name: GraphQL type for transformation (e.g., &quot;User&quot;)</span>
+<span class="sd">        field_name: GraphQL field name (e.g., "users")</span>
+<span class="sd">        type_name: GraphQL type for transformation (e.g., "User")</span>
 <span class="sd">        is_list: True for arrays, False for single objects</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        RustResponseBytes ready for HTTP response</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">params</span> <span class="ow">or</span> <span class="p">{})</span>
 
@@ -5631,8 +5631,8 @@ TURBO: Cached templates → Python ops → HTTP
             <span class="n">json_strings</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span> <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
 
             <span class="c1"># 🚀 RUST DOES EVERYTHING:</span>
-            <span class="c1"># - Concatenate: [&#39;{&quot;id&quot;:&quot;1&quot;}&#39;, &#39;{&quot;id&quot;:&quot;2&quot;}&#39;] → &#39;[{&quot;id&quot;:&quot;1&quot;},{&quot;id&quot;:&quot;2&quot;}]&#39;</span>
-            <span class="c1"># - Wrap: &#39;[...]&#39; → &#39;{&quot;data&quot;:{&quot;users&quot;:[...]}}&#39;</span>
+            <span class="c1"># - Concatenate: ['{"id":"1"}', '{"id":"2"}'] → '[{"id":"1"},{"id":"2"}]'</span>
+            <span class="c1"># - Wrap: '[...]' → '{"data":{"users":[...]}}'</span>
             <span class="c1"># - Transform: snake_case → camelCase + __typename</span>
             <span class="c1"># - Encode: String → UTF-8 bytes</span>
             <span class="n">response_bytes</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_list_response</span><span class="p">(</span>
@@ -5654,7 +5654,7 @@ TURBO: Cached templates → Python ops → HTTP
             <span class="n">json_string</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
             <span class="c1"># 🚀 RUST DOES EVERYTHING:</span>
-            <span class="c1"># - Wrap: &#39;{&quot;id&quot;:&quot;1&quot;}&#39; → &#39;{&quot;data&quot;:{&quot;user&quot;:{&quot;id&quot;:&quot;1&quot;}}}&#39;</span>
+            <span class="c1"># - Wrap: '{"id":"1"}' → '{"data":{"user":{"id":"1"}}}'</span>
             <span class="c1"># - Transform: snake_case → camelCase + __typename</span>
             <span class="c1"># - Encode: String → UTF-8 bytes</span>
             <span class="n">response_bytes</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_single_response</span><span class="p">(</span>
@@ -5682,13 +5682,13 @@ TURBO: Cached templates → Python ops → HTTP
         <span class="n">info</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RustResponseBytes</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find records using Rust-first pipeline.</span>
+<span class="w">        </span><span class="sd">"""Find records using Rust-first pipeline.</span>
 
 <span class="sd">        This is the FASTEST method - uses PostgreSQL → Rust → HTTP path</span>
 <span class="sd">        with ZERO Python string operations.</span>
 
 <span class="sd">        Returns RustResponseBytes that FastAPI sends directly as HTTP.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Extract field paths from GraphQL info</span>
         <span class="n">field_paths</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">info</span><span class="p">:</span>
@@ -5699,9 +5699,9 @@ TURBO: Cached templates → Python ops → HTTP
         <span class="c1"># Get cached JSONB column (no sample query!)</span>
         <span class="n">jsonb_column</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">view_name</span> <span class="ow">in</span> <span class="n">_table_metadata</span><span class="p">:</span>
-            <span class="n">jsonb_column</span> <span class="o">=</span> <span class="n">_table_metadata</span><span class="p">[</span><span class="n">view_name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;jsonb_column&quot;</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">)</span>
+            <span class="n">jsonb_column</span> <span class="o">=</span> <span class="n">_table_metadata</span><span class="p">[</span><span class="n">view_name</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"jsonb_column"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">jsonb_column</span> <span class="o">=</span> <span class="s2">&quot;data&quot;</span>  <span class="c1"># Default</span>
+            <span class="n">jsonb_column</span> <span class="o">=</span> <span class="s2">"data"</span>  <span class="c1"># Default</span>
 
         <span class="c1"># Build query</span>
         <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_find_query</span><span class="p">(</span>
@@ -5734,7 +5734,7 @@ TURBO: Cached templates → Python ops → HTTP
         <span class="n">info</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RustResponseBytes</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Find single record using Rust-first pipeline.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Find single record using Rust-first pipeline."""</span>
         <span class="c1"># Similar to find_rust but is_list=False</span>
         <span class="c1"># ... (implementation similar to above)</span>
 
@@ -5755,29 +5755,29 @@ TURBO: Cached templates → Python ops → HTTP
 <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">handle_graphql_response</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle different response types from FraiseQL resolvers.</span>
+<span class="w">    </span><span class="sd">"""Handle different response types from FraiseQL resolvers.</span>
 
 <span class="sd">    Supports:</span>
 <span class="sd">    - RustResponseBytes: Pre-serialized bytes from Rust (FASTEST)</span>
 <span class="sd">    - RawJSONResult: Legacy string-based response</span>
 <span class="sd">    - dict: Standard GraphQL response (uses Pydantic)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="c1"># 🚀 RUST PIPELINE: Zero-copy bytes → HTTP</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">RustResponseBytes</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
             <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">bytes</span><span class="p">,</span>  <span class="c1"># Already UTF-8 encoded</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span><span class="p">,</span>
             <span class="n">headers</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;Content-Length&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">bytes</span><span class="p">)),</span>
+                <span class="s2">"Content-Length"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">bytes</span><span class="p">)),</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
     <span class="c1"># Legacy: String-based response (still bypasses Pydantic)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">RawJSONResult</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
-            <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">json_string</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">),</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+            <span class="n">content</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">json_string</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">),</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="c1"># Traditional: Pydantic serialization (slowest path)</span>
@@ -5792,14 +5792,14 @@ TURBO: Cached templates → Python ops → HTTP
     <span class="n">json_items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># 150μs per 100 rows</span>
 
 <span class="c1"># Step 8: Python string formatting</span>
-<span class="n">json_array</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">json_items</span><span class="p">)</span><span class="si">}</span><span class="s2">]&quot;</span>  <span class="c1"># 50μs</span>
-<span class="n">json_response</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="se">{{</span><span class="s1">&quot;data&quot;:</span><span class="se">{{</span><span class="s1">&quot;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">&quot;:</span><span class="si">{</span><span class="n">json_array</span><span class="si">}</span><span class="se">}}}}</span><span class="s1">&#39;</span>  <span class="c1"># 30μs</span>
+<span class="n">json_array</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">json_items</span><span class="p">)</span><span class="si">}</span><span class="s2">]"</span>  <span class="c1"># 50μs</span>
+<span class="n">json_response</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'</span><span class="se">{{</span><span class="s1">"data":</span><span class="se">{{</span><span class="s1">"</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s1">":</span><span class="si">{</span><span class="n">json_array</span><span class="si">}</span><span class="se">}}}}</span><span class="s1">'</span>  <span class="c1"># 30μs</span>
 
 <span class="c1"># Step 9: Python → Rust FFI call</span>
 <span class="n">transformed</span> <span class="o">=</span> <span class="n">rust_transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">json_response</span><span class="p">,</span> <span class="n">type_name</span><span class="p">)</span>  <span class="c1"># 10μs + 50μs FFI</span>
 
 <span class="c1"># Step 10: Python string → bytes</span>
-<span class="n">response_bytes</span> <span class="o">=</span> <span class="n">transformed</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>  <span class="c1"># 20μs</span>
+<span class="n">response_bytes</span> <span class="o">=</span> <span class="n">transformed</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">)</span>  <span class="c1"># 20μs</span>
 
 <span class="n">TOTAL</span><span class="p">:</span> <span class="mi">310</span><span class="n">μs</span> <span class="n">per</span> <span class="mi">100</span> <span class="n">rows</span>
 </code></pre></div>
@@ -5900,17 +5900,17 @@ TURBO: Cached templates → Python ops → HTTP
 <span class="w">        </span><span class="p">.</span><span class="n">map_err</span><span class="p">(</span><span class="o">|</span><span class="n">e</span><span class="o">|</span><span class="w"> </span><span class="n">PyErr</span><span class="p">::</span><span class="n">new</span><span class="p">::</span><span class="o">&lt;</span><span class="n">pyo3</span><span class="p">::</span><span class="n">exceptions</span><span class="p">::</span><span class="n">PyRuntimeError</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="o">&gt;</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">to_string</span><span class="p">()))</span>
 <span class="p">}</span>
 
-<span class="sd">/// Build empty array response: {&quot;data&quot;:{&quot;fieldName&quot;:[]}}</span>
+<span class="sd">/// Build empty array response: {"data":{"fieldName":[]}}</span>
 <span class="cp">#[pyfunction]</span>
 <span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">build_empty_array_response</span><span class="p">(</span><span class="n">field_name</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">PyResult</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">r#&quot;{{&quot;data&quot;:{{&quot;{}&quot;:[]}}}}&quot;#</span><span class="p">,</span><span class="w"> </span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">r#"{{"data":{{"{}":[]}}}}"#</span><span class="p">,</span><span class="w"> </span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
 <span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="n">into_bytes</span><span class="p">())</span>
 <span class="p">}</span>
 
-<span class="sd">/// Build null response: {&quot;data&quot;:{&quot;fieldName&quot;:null}}</span>
+<span class="sd">/// Build null response: {"data":{"fieldName":null}}</span>
 <span class="cp">#[pyfunction]</span>
 <span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">build_null_response</span><span class="p">(</span><span class="n">field_name</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="kt">str</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">PyResult</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">r#&quot;{{&quot;data&quot;:{{&quot;{}&quot;:null}}}}&quot;#</span><span class="p">,</span><span class="w"> </span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">json</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">r#"{{"data":{{"{}":null}}}}"#</span><span class="p">,</span><span class="w"> </span><span class="n">escape_json_string</span><span class="p">(</span><span class="n">field_name</span><span class="p">));</span>
 <span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">json</span><span class="p">.</span><span class="n">into_bytes</span><span class="p">())</span>
 <span class="p">}</span>
 

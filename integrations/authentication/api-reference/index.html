@@ -4849,15 +4849,15 @@ implements. Subclass it to support any OIDC/JWT issuer.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">secret</span> <span class="o">=</span> <span class="n">secret</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span> <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;HS256&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span> <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"HS256"</span><span class="p">])</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
-            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
-            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="p">[]),</span>
         <span class="p">)</span>
 </code></pre></div>
 <p>Pass any provider instance to <code>create_fraiseql_app(auth=...)</code>.</p>
@@ -4868,20 +4868,20 @@ implements. Subclass it to support any OIDC/JWT issuer.</p>
 It fetches and caches the tenant JWKS, validates with <code>RS256</code> by default, and
 extracts roles/permissions from Auth0 claims.</p>
 <div class="highlight"><pre><span></span><code><span class="n">provider</span> <span class="o">=</span> <span class="n">Auth0Provider</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
-    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>   <span class="c1"># default</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"myapp.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.myapp.com"</span><span class="p">,</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"RS256"</span><span class="p">],</span>   <span class="c1"># default</span>
     <span class="n">cache_jwks</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>        <span class="c1"># default</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><code>Auth0Config</code> is a plain configuration holder you can pass to
 <code>create_fraiseql_app(auth=...)</code> (FraiseQL builds the provider from it):</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">Auth0Config</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"myapp.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.myapp.com"</span><span class="p">,</span>
     <span class="n">client_id</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>         <span class="c1"># optional, Management API only</span>
     <span class="n">client_secret</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>     <span class="c1"># optional, Management API only</span>
-    <span class="n">algorithms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>        <span class="c1"># defaults to [&quot;RS256&quot;]</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>        <span class="c1"># defaults to ["RS256"]</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="auth0providerwithrevocation"><code>Auth0ProviderWithRevocation</code><a class="headerlink" href="#auth0providerwithrevocation" title="Permanent link">&para;</a></h3>
@@ -4902,7 +4902,7 @@ and a <code>psycopg</code> connection pool. It ships with a FastAPI router
 <div class="highlight"><pre><span></span><code><span class="n">provider</span> <span class="o">=</span> <span class="n">NativeAuthProvider</span><span class="p">(</span>
     <span class="n">token_manager</span><span class="o">=</span><span class="n">token_manager</span><span class="p">,</span>   <span class="c1"># TokenManager instance</span>
     <span class="n">db_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>                  <span class="c1"># AsyncConnectionPool</span>
-    <span class="n">schema</span><span class="o">=</span><span class="s2">&quot;public&quot;</span><span class="p">,</span>               <span class="c1"># default</span>
+    <span class="n">schema</span><span class="o">=</span><span class="s2">"public"</span><span class="p">,</span>               <span class="c1"># default</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="rustcustomjwtprovider"><code>RustCustomJWTProvider</code><a class="headerlink" href="#rustcustomjwtprovider" title="Permanent link">&para;</a></h3>
@@ -4912,11 +4912,11 @@ and a <code>psycopg</code> connection pool. It ships with a FastAPI router
 from a custom issuer using the optional <code>fraiseql_rs</code> extension for faster
 validation. It is still a Python-facing <code>AuthProvider</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="n">provider</span> <span class="o">=</span> <span class="n">RustCustomJWTProvider</span><span class="p">(</span>
-    <span class="n">issuer</span><span class="o">=</span><span class="s2">&quot;https://issuer.example.com/&quot;</span><span class="p">,</span>
-    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
-    <span class="n">jwks_url</span><span class="o">=</span><span class="s2">&quot;https://issuer.example.com/.well-known/jwks.json&quot;</span><span class="p">,</span>  <span class="c1"># must be HTTPS</span>
-    <span class="n">roles_claim</span><span class="o">=</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span>            <span class="c1"># default</span>
-    <span class="n">permissions_claim</span><span class="o">=</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span>  <span class="c1"># default</span>
+    <span class="n">issuer</span><span class="o">=</span><span class="s2">"https://issuer.example.com/"</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">"https://api.myapp.com"</span><span class="p">,</span>
+    <span class="n">jwks_url</span><span class="o">=</span><span class="s2">"https://issuer.example.com/.well-known/jwks.json"</span><span class="p">,</span>  <span class="c1"># must be HTTPS</span>
+    <span class="n">roles_claim</span><span class="o">=</span><span class="s2">"roles"</span><span class="p">,</span>            <span class="c1"># default</span>
+    <span class="n">permissions_claim</span><span class="o">=</span><span class="s2">"permissions"</span><span class="p">,</span>  <span class="c1"># default</span>
 <span class="p">)</span>
 </code></pre></div>
 <blockquote>
@@ -4984,11 +4984,11 @@ available at <code>info.context["user"]</code> in every resolver.</p>
 </table>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">my_profile</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;member&quot;</span><span class="p">):</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"member"</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="resolver-decorators">Resolver decorators<a class="headerlink" href="#resolver-decorators" title="Permanent link">&para;</a></h2>
@@ -5036,10 +5036,10 @@ raises one with <code>extensions.code = "FORBIDDEN"</code>.</p>
 </tbody>
 </table>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;posts:write&quot;</span><span class="p">)</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"posts:write"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreatePostSuccess</span> <span class="o">|</span> <span class="n">CreatePostError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_post&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_post"</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
     <span class="o">...</span>
 </code></pre></div>
 <hr />
@@ -5056,7 +5056,7 @@ raises one with <code>extensions.code = "FORBIDDEN"</code>.</p>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">operation_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>    <span class="c1"># &quot;query&quot; | &quot;mutation&quot; | &quot;subscription&quot;</span>
+    <span class="n">operation_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>    <span class="c1"># "query" | "mutation" | "subscription"</span>
     <span class="n">operation_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">arguments</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthorizationDecision</span> <span class="o">|</span> <span class="nb">bool</span><span class="p">:</span>
@@ -5088,14 +5088,14 @@ your authorizer raises (anything other than a <code>GraphQLError</code>) the ope
 </table>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TenantAuthorizer</span><span class="p">:</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authorize_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">operation_type</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">,</span> <span class="n">arguments</span><span class="p">):</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">&quot;UNAUTHENTICATED&quot;</span><span class="p">)</span>
-        <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">(</span><span class="n">code</span><span class="o">=</span><span class="s2">"UNAUTHENTICATED"</span><span class="p">)</span>
+        <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">deny</span><span class="p">()</span>
-        <span class="c1"># Scope every read to the caller&#39;s tenant.</span>
-        <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">})</span>
+        <span class="c1"># Scope every read to the caller's tenant.</span>
+        <span class="k">return</span> <span class="n">AuthorizationDecision</span><span class="o">.</span><span class="n">allow</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">})</span>
 </code></pre></div>
 <p>Attach an authorizer per operation or globally:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">())</span>
@@ -5104,7 +5104,7 @@ your authorizer raises (anything other than a <code>GraphQLError</code>) the ope
 
 <span class="c1"># Or as the global default for every operation:</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Document</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">documents</span><span class="p">],</span>
     <span class="n">authorizer</span><span class="o">=</span><span class="n">TenantAuthorizer</span><span class="p">(),</span>
@@ -5149,22 +5149,22 @@ because always-evaluating is the safe default.</p>
 </table>
 <p>A <em>check</em> is any callable taking <code>info</code> (and optionally <code>root</code>) that returns a
 <code>bool</code> or an <code>AuthorizationDecision</code> (sync or async).</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
     <span class="nd">@authorize_field</span><span class="p">(</span><span class="n">any_permission</span><span class="p">(</span>
-        <span class="k">lambda</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;is_admin&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
-        <span class="k">lambda</span> <span class="n">info</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">root</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="k">lambda</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_admin"</span><span class="p">,</span> <span class="kc">False</span><span class="p">),</span>
+        <span class="k">lambda</span> <span class="n">info</span><span class="p">,</span> <span class="n">root</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">)</span> <span class="o">==</span> <span class="n">root</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
     <span class="p">))</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_email</span>
 </code></pre></div>
 <p>You can also list fields to gate automatically against the configured
 <code>Authorizer</code> via the type decorator:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;phone&quot;</span><span class="p">])</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"email"</span><span class="p">,</span> <span class="s2">"phone"</span><span class="p">])</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -5221,7 +5221,7 @@ and <code>get_revoked_count()</code>.</p>
 <span class="n">service</span> <span class="o">=</span> <span class="n">TokenRevocationService</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">RevocationConfig</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
 
 <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>                       <span class="c1"># begins the background cleanup loop</span>
-<span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">revoke_token</span><span class="p">(</span><span class="n">token_payload</span><span class="p">)</span>   <span class="c1"># token_payload must carry &quot;jti&quot; and &quot;sub&quot;</span>
+<span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">revoke_token</span><span class="p">(</span><span class="n">token_payload</span><span class="p">)</span>   <span class="c1"># token_payload must carry "jti" and "sub"</span>
 <span class="n">revoked</span> <span class="o">=</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">is_token_revoked</span><span class="p">(</span><span class="n">token_payload</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">revoke_all_user_tokens</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
@@ -5270,9 +5270,9 @@ endpoints from brute force.</p>
 </tbody>
 </table>
 <div class="highlight"><pre><span></span><code><span class="n">login_rule</span> <span class="o">=</span> <span class="n">RateLimitRule</span><span class="p">(</span>
-    <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/auth/login&quot;</span><span class="p">,</span>
+    <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/auth/login"</span><span class="p">,</span>
     <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">RateLimitStrategy</span><span class="o">.</span><span class="n">SLIDING_WINDOW</span><span class="p">),</span>
-    <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Too many login attempts, please try again shortly.&quot;</span><span class="p">,</span>
+    <span class="n">message</span><span class="o">=</span><span class="s2">"Too many login attempts, please try again shortly."</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><code>create_default_rate_limit_rules()</code> and <code>setup_rate_limiting(...)</code> provide a
@@ -5337,11 +5337,11 @@ arguments — never a TOML file.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
-        <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;myapp.auth0.com&quot;</span><span class="p">,</span>
-        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+        <span class="n">domain</span><span class="o">=</span><span class="s2">"myapp.auth0.com"</span><span class="p">,</span>
+        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.myapp.com"</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5362,11 +5362,11 @@ issuer, set <code>auth_provider="custom"</code> and pass your <code>AuthProvider
 <p>Authentication and authorization failures are returned as standard GraphQL
 errors with a stable <code>extensions.code</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Permission &#39;posts:write&#39; required&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORBIDDEN&quot;</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Permission 'posts:write' required"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FORBIDDEN"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>

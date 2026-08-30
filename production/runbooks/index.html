@@ -5343,19 +5343,19 @@
 <li><strong>Check Logs</strong> (Structured):</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># Recent errors</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;select(.level == &quot;ERROR&quot;)&#39;</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
+jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.level == "ERROR")'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
 
 <span class="c1"># Recent warnings</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;select(.level == &quot;WARNING&quot;)&#39;</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
+jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.level == "WARNING")'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
 </code></pre></div>
 <ol>
 <li><strong>Check Recent Changes</strong>:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># Recent deployments</span>
-git<span class="w"> </span>log<span class="w"> </span>--since<span class="o">=</span><span class="s2">&quot;2 hours ago&quot;</span><span class="w"> </span>--oneline
+git<span class="w"> </span>log<span class="w"> </span>--since<span class="o">=</span><span class="s2">"2 hours ago"</span><span class="w"> </span>--oneline
 
 <span class="c1"># Recent config changes</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">&#39;.lastTimestamp&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
+kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w"> </span>--sort-by<span class="o">=</span><span class="s1">'.lastTimestamp'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
 </code></pre></div>
 <h3 id="step-3-select-runbook">Step 3: Select Runbook<a class="headerlink" href="#step-3-select-runbook" title="Permanent link">&para;</a></h3>
 <p>Based on symptoms, choose the appropriate runbook:</p>
@@ -5397,7 +5397,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <p>Import the FraiseQL operational dashboard:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Import dashboard JSON</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://grafana:3000/api/dashboards/db<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-d<span class="w"> </span>@docs/production/runbooks/grafana/fraiseql-ops.json
 </code></pre></div>
 <h3 id="structured-logging">Structured Logging<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h3>
@@ -5406,20 +5406,20 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 
 <span class="c1"># Enable JSON structured logging</span>
 <span class="n">setup_logging</span><span class="p">(</span>
-    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-    <span class="n">level</span><span class="o">=</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
-    <span class="n">output</span><span class="o">=</span><span class="s2">&quot;/var/log/fraiseql/app.log&quot;</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s2">"json"</span><span class="p">,</span>
+    <span class="n">level</span><span class="o">=</span><span class="s2">"INFO"</span><span class="p">,</span>
+    <span class="n">output</span><span class="o">=</span><span class="s2">"/var/log/fraiseql/app.log"</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>Query logs with <code>jq</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Find errors</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;select(.level == &quot;ERROR&quot;)&#39;</span><span class="w"> </span>/var/log/fraiseql/app.log
+jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.level == "ERROR")'</span><span class="w"> </span>/var/log/fraiseql/app.log
 
 <span class="c1"># Find specific events</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;select(.event == &quot;database.slow_query&quot;)&#39;</span><span class="w"> </span>/var/log/fraiseql/app.log
+jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "database.slow_query")'</span><span class="w"> </span>/var/log/fraiseql/app.log
 
 <span class="c1"># Count events by type</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;.event&#39;</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
+jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.event'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
 </code></pre></div>
 <hr />
 <h2 id="escalation-paths">🆘 Escalation Paths<a class="headerlink" href="#escalation-paths" title="Permanent link">&para;</a></h2>

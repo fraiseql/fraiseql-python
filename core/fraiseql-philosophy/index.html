@@ -5053,7 +5053,7 @@
     <span class="c1"># Must manually get database from somewhere</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">get_database_from_somewhere</span><span class="p">()</span>
     <span class="c1"># Or pass it through complex dependency injection</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="fraiseqls-solution">FraiseQL's Solution<a class="headerlink" href="#fraiseqls-solution" title="Permanent link">&para;</a></h3>
 <p><strong>FraiseQL automatically injects the database into <code>info.context["db"]</code></strong>:</p>
@@ -5063,15 +5063,15 @@
 <span class="c1"># ✅ FraiseQL - database automatically available</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>  <span class="c1"># Always available!</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>  <span class="c1"># Always available!</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Configuration</strong> - Specify database URL once:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span>
 <span class="p">)</span>
 </code></pre></div>
 <ol>
@@ -5101,12 +5101,12 @@
 <h3 id="advanced-custom-context">Advanced: Custom Context<a class="headerlink" href="#advanced-custom-context" title="Permanent link">&para;</a></h3>
 <p>You can extend context while keeping auto-injection:</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom context with user + auto database injection.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Custom context with user + auto database injection."""</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="c1"># Your custom context</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">extract_user_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">extract_tenant_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="c1"># No need to add &quot;db&quot; - FraiseQL adds it automatically!</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">extract_user_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">extract_tenant_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
+        <span class="c1"># No need to add "db" - FraiseQL adds it automatically!</span>
     <span class="p">}</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
@@ -5141,17 +5141,17 @@
 <span class="p">);</span>
 
 <span class="c1">-- Indexes for commonly queried fields</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">));</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_name</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'email'</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_name</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'name'</span><span class="p">));</span>
 
 <span class="c1">-- View for GraphQL</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">tenant_id</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;first_name&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;last_name&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'first_name'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'last_name'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
@@ -5161,16 +5161,16 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># Add new field - no migration needed!</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User account.</span>
+<span class="w">    </span><span class="sd">"""User account.</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">        id: User identifier</span>
 <span class="sd">        email: Email address</span>
 <span class="sd">        name: Full name</span>
 <span class="sd">        preferences: User preferences (NEW! Just add it)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5184,17 +5184,17 @@
 <span class="c1"># No Python object instantiation needed!</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Returns JSONB directly - 10-100x faster</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>3. Flexible Data Models</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Different tenants can have different user fields</span>
 <span class="c1">-- Tenant A users</span>
-<span class="err">{</span><span class="ss">&quot;first_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;John&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;last_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;Doe&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;department&quot;</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;Sales&quot;</span><span class="err">}</span>
+<span class="err">{</span><span class="ss">"first_name"</span><span class="p">:</span><span class="w"> </span><span class="ss">"John"</span><span class="p">,</span><span class="w"> </span><span class="ss">"last_name"</span><span class="p">:</span><span class="w"> </span><span class="ss">"Doe"</span><span class="p">,</span><span class="w"> </span><span class="ss">"department"</span><span class="p">:</span><span class="w"> </span><span class="ss">"Sales"</span><span class="err">}</span>
 
 <span class="c1">-- Tenant B users (different structure!)</span>
-<span class="err">{</span><span class="ss">&quot;full_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;Jane Smith&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;division&quot;</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;Marketing&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;employee_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="ss">&quot;E123&quot;</span><span class="err">}</span>
+<span class="err">{</span><span class="ss">"full_name"</span><span class="p">:</span><span class="w"> </span><span class="ss">"Jane Smith"</span><span class="p">,</span><span class="w"> </span><span class="ss">"division"</span><span class="p">:</span><span class="w"> </span><span class="ss">"Marketing"</span><span class="p">,</span><span class="w"> </span><span class="ss">"employee_id"</span><span class="p">:</span><span class="w"> </span><span class="ss">"E123"</span><span class="err">}</span>
 </code></pre></div>
 <h3 id="jsonb-best-practices">JSONB Best Practices<a class="headerlink" href="#jsonb-best-practices" title="Permanent link">&para;</a></h3>
 <p><strong>1. Use Views for GraphQL</strong>:</p>
@@ -5202,31 +5202,31 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">tenant_id</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">    </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;price&#39;</span><span class="p">)::</span><span class="nb">decimal</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;sku&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'price'</span><span class="p">)::</span><span class="nb">decimal</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'sku'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span><span class="w">  </span><span class="c1">-- Full JSONB for passthrough</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_product</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>2. Index Frequently Queried Fields</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- GIN index for contains queries</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_product_search</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_product</span>
-<span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">gin_trgm_ops</span><span class="p">);</span>
+<span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'name'</span><span class="p">)</span><span class="w"> </span><span class="n">gin_trgm_ops</span><span class="p">);</span>
 
 <span class="c1">-- B-tree for exact matches</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_product_sku</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;sku&#39;</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_product_sku</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'sku'</span><span class="p">));</span>
 </code></pre></div>
 <p><strong>3. Validate in PostgreSQL, Not Python</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">validate_user_data</span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="nb">boolean</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Email required</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;email&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;email is required&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">'email'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'email is required'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Email format</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">&#39;invalid email format&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'invalid email format'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">true</span><span class="p">;</span>
@@ -5244,7 +5244,7 @@
 <li><strong>Foreign key relationships</strong> - Use UUID columns, not nested JSONB</li>
 <li><strong>Frequently joined data</strong> - Extract to separate table with foreign keys</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ Don&#39;t do this</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ Don't do this</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w">  </span><span class="c1">-- Contains user_id, product_id</span>
@@ -5264,9 +5264,9 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User account with authentication and profile information.</span>
+<span class="w">    </span><span class="sd">"""User account with authentication and profile information.</span>
 
 <span class="sd">    Users are created during registration and can access the system</span>
 <span class="sd">    based on their assigned roles and permissions.</span>
@@ -5274,11 +5274,11 @@
 <span class="sd">    Fields:</span>
 <span class="sd">        id: Unique user identifier (UUID v4)</span>
 <span class="sd">        email: Email address used for login (must be unique)</span>
-<span class="sd">        first_name: User&#39;s first name</span>
-<span class="sd">        last_name: User&#39;s last name</span>
+<span class="sd">        first_name: User's first name</span>
+<span class="sd">        last_name: User's last name</span>
 <span class="sd">        created_at: Account creation timestamp</span>
 <span class="sd">        is_active: Whether user account is active</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -5288,20 +5288,20 @@
     <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span>
 </code></pre></div>
 <p><strong>Result</strong> - GraphQL schema includes all documentation:</p>
-<div class="highlight"><pre><span></span><code><span class="err">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="err">"""</span>
 <span class="err">User</span><span class="w"> </span><span class="err">account</span><span class="w"> </span><span class="err">with</span><span class="w"> </span><span class="err">authentication</span><span class="w"> </span><span class="err">and</span><span class="w"> </span><span class="err">profile</span><span class="w"> </span><span class="err">information.</span>
 
 <span class="err">Users</span><span class="w"> </span><span class="err">are</span><span class="w"> </span><span class="err">created</span><span class="w"> </span><span class="err">during</span><span class="w"> </span><span class="err">registration</span><span class="w"> </span><span class="err">and</span><span class="w"> </span><span class="err">can</span><span class="w"> </span><span class="err">access</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">system</span>
 <span class="err">based</span><span class="w"> </span><span class="err">on</span><span class="w"> </span><span class="err">their</span><span class="w"> </span><span class="err">assigned</span><span class="w"> </span><span class="err">roles</span><span class="w"> </span><span class="err">and</span><span class="w"> </span><span class="err">permissions.</span>
-<span class="err">&quot;&quot;&quot;</span>
+<span class="err">"""</span>
 <span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="err">&quot;</span><span class="n">Unique</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="p">(</span><span class="n">UUID</span><span class="w"> </span><span class="n">v4</span><span class="p">)</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">Unique</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="p">(</span><span class="n">UUID</span><span class="w"> </span><span class="n">v4</span><span class="p">)</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
 
-<span class="w">  </span><span class="err">&quot;</span><span class="n">Email</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="n">used</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="n">login</span><span class="w"> </span><span class="p">(</span><span class="n">must</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">unique</span><span class="p">)</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">Email</span><span class="w"> </span><span class="n">address</span><span class="w"> </span><span class="n">used</span><span class="w"> </span><span class="n">for</span><span class="w"> </span><span class="n">login</span><span class="w"> </span><span class="p">(</span><span class="n">must</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">unique</span><span class="p">)</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
 
-<span class="w">  </span><span class="err">&quot;</span><span class="n">User</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="n">name</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">User</span><span class="err">'</span><span class="n">s</span><span class="w"> </span><span class="n">first</span><span class="w"> </span><span class="n">name</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">firstName</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
 
 <span class="w">  </span><span class="c"># ... etc</span>
@@ -5322,29 +5322,29 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">extract_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">token</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">],</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">token</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">token</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">],</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">token</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]</span>
     <span class="p">}</span>
 
 <span class="c1"># FraiseQL automatically executes:</span>
-<span class="c1"># SET LOCAL app.tenant_id = &#39;&lt;tenant_id&gt;&#39;;</span>
-<span class="c1"># SET LOCAL app.contact_id = &#39;&lt;user_id&gt;&#39;;</span>
+<span class="c1"># SET LOCAL app.tenant_id = '&lt;tenant_id&gt;';</span>
+<span class="c1"># SET LOCAL app.contact_id = '&lt;user_id&gt;';</span>
 </code></pre></div>
 <h3 id="multi-tenant-isolation">Multi-Tenant Isolation<a class="headerlink" href="#multi-tenant-isolation" title="Permanent link">&para;</a></h3>
 <p>Views automatically filter by tenant:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 </code></pre></div>
 <p>Now all queries are automatically tenant-isolated:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Automatically filtered by tenant from JWT!</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_order"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Security Benefits</strong>:</p>
 <ul>
@@ -5374,7 +5374,7 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span>
 
 <span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
 
 <span class="c1"># Features:</span>
 <span class="c1"># - UNLOGGED tables for Redis-level performance</span>
@@ -5387,11 +5387,11 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <h3 id="postgresql-native-error-tracking-sentry-alternative">PostgreSQL-Native Error Tracking (Sentry Alternative)<a class="headerlink" href="#postgresql-native-error-tracking-sentry-alternative" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_error_tracker</span>
 
-<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">)</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-    <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-    <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
-    <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="s2">&quot;create_order&quot;</span>
+    <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
+    <span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"create_order"</span>
 <span class="p">})</span>
 
 <span class="c1"># Features:</span>
@@ -5405,14 +5405,14 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <p><strong>Observability:</strong> All errors stored in PostgreSQL with automatic grouping. Query directly for debugging:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Find all errors for a user</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;user_id&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;123&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'123'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 
 <span class="c1">-- Correlate errors with traces</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="o">*</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span><span class="w"> </span><span class="n">e</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">traces</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">trace_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">trace_id</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;order_creation_failed&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'order_creation_failed'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="integrated-observability-stack">Integrated Observability Stack<a class="headerlink" href="#integrated-observability-stack" title="Permanent link">&para;</a></h3>
 <p><strong>OpenTelemetry Integration:</strong></p>
@@ -5426,7 +5426,7 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <span class="n">FROM</span> <span class="n">monitoring</span><span class="o">.</span><span class="n">errors</span> <span class="n">e</span>
 <span class="n">JOIN</span> <span class="n">monitoring</span><span class="o">.</span><span class="n">traces</span> <span class="n">t</span> <span class="n">ON</span> <span class="n">e</span><span class="o">.</span><span class="n">trace_id</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">trace_id</span>
 <span class="n">JOIN</span> <span class="n">tb_entity_change_log</span> <span class="n">c</span> <span class="n">ON</span> <span class="n">t</span><span class="o">.</span><span class="n">trace_id</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">trace_id</span><span class="p">::</span><span class="n">text</span>
-<span class="n">WHERE</span> <span class="n">e</span><span class="o">.</span><span class="n">fingerprint</span> <span class="o">=</span> <span class="s1">&#39;payment_processing_error&#39;</span>
+<span class="n">WHERE</span> <span class="n">e</span><span class="o">.</span><span class="n">fingerprint</span> <span class="o">=</span> <span class="s1">'payment_processing_error'</span>
 <span class="n">ORDER</span> <span class="n">BY</span> <span class="n">e</span><span class="o">.</span><span class="n">occurred_at</span> <span class="n">DESC</span>
 <span class="n">LIMIT</span> <span class="mi">10</span><span class="p">;</span>
 </code></pre></div>
@@ -5454,13 +5454,13 @@ Pre-built dashboards in <code>grafana/</code>:</p>
 <span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
 
 <span class="c1"># Add only checks you need</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"database"</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
 
 <span class="c1"># Optionally add custom checks</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="n">my_s3_check</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"s3"</span><span class="p">,</span> <span class="n">my_s3_check</span><span class="p">)</span>
 
 <span class="c1"># Use in your endpoints</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_endpoint</span><span class="p">():</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
 </code></pre></div>
@@ -5487,9 +5487,9 @@ Pre-built dashboards in <code>grafana/</code>:</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Returns JSONB directly - 10-100x faster</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 
 <span class="c1"># With Rust transformer: 80x faster</span>
 <span class="c1"># With APQ: 3-5x additional speedup</span>
@@ -5509,11 +5509,11 @@ Pre-built dashboards in <code>grafana/</code>:</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">order_totals</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderTotals</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Database does the heavy lifting</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;calculate_order_totals&quot;</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">}</span>
+        <span class="s2">"calculate_order_totals"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

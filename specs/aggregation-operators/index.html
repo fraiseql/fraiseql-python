@@ -4615,6 +4615,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mapping-key-spelling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping key spelling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migrating-an-existing-native_dimension_mapping-1240" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating an existing native_dimension_mapping (1.24.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4845,6 +4867,28 @@
     <span class="md-ellipsis">
       
         Registering aggregation metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mapping-key-spelling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mapping key spelling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#migrating-an-existing-native_dimension_mapping-1240" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migrating an existing native_dimension_mapping (1.24.0)
       
     </span>
   </a>
@@ -5124,20 +5168,38 @@ never be injected.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_type_for_view</span>
 
 <span class="n">register_type_for_view</span><span class="p">(</span>
-    <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_sales_summary&quot;</span><span class="p">,</span>
+    <span class="n">view_name</span><span class="o">=</span><span class="s2">"v_sales_summary"</span><span class="p">,</span>
     <span class="n">type_class</span><span class="o">=</span><span class="n">SalesSummary</span><span class="p">,</span>
     <span class="n">aggregation</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;measures&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;measures.revenue&quot;</span><span class="p">:</span> <span class="s2">&quot;SUM&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;measures.quantity&quot;</span><span class="p">:</span> <span class="s2">&quot;SUM&quot;</span><span class="p">,</span>
+        <span class="s2">"measures"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"measures.revenue"</span><span class="p">:</span> <span class="s2">"SUM"</span><span class="p">,</span>
+            <span class="s2">"measures.quantity"</span><span class="p">:</span> <span class="s2">"SUM"</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s2">&quot;dimensions&quot;</span><span class="p">:</span> <span class="s2">&quot;dimensions&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;native_dimensions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;period_date&quot;</span><span class="p">,</span> <span class="s2">&quot;category_id&quot;</span><span class="p">],</span>
-        <span class="s2">&quot;native_measures&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;measures.quantity&quot;</span><span class="p">:</span> <span class="s2">&quot;quantity&quot;</span><span class="p">},</span>
-        <span class="s2">&quot;native_dimension_mapping&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;dimensions.category.id&quot;</span><span class="p">:</span> <span class="s2">&quot;category_id&quot;</span><span class="p">},</span>
+        <span class="s2">"dimensions"</span><span class="p">:</span> <span class="s2">"dimensions"</span><span class="p">,</span>
+        <span class="s2">"native_dimensions"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"period_date"</span><span class="p">,</span> <span class="s2">"category_id"</span><span class="p">],</span>
+        <span class="s2">"native_measures"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"measures.quantity"</span><span class="p">:</span> <span class="s2">"quantity"</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="n">column_mapping</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"dimensions.dateInfo.date"</span><span class="p">:</span> <span class="s2">"period_date"</span><span class="p">,</span>
+        <span class="s2">"dimensions.productCategory.id"</span><span class="p">:</span> <span class="s2">"category_id"</span><span class="p">,</span>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
+<h3 id="mapping-key-spelling">Mapping key spelling<a class="headerlink" href="#mapping-key-spelling" title="Permanent link">&para;</a></h3>
+<p>Mapping keys are matched against <strong>database</strong> field paths, and each segment is
+normalised to <code>snake_case</code> at registration — so the two spellings below declare the
+same thing and both work:</p>
+<div class="highlight"><pre><span></span><code><span class="n">column_mapping</span><span class="o">=</span><span class="p">{</span><span class="s2">"dimensions.dateInfo.date"</span><span class="p">:</span> <span class="s2">"period_date"</span><span class="p">}</span>    <span class="c1"># GraphQL spelling</span>
+<span class="n">column_mapping</span><span class="o">=</span><span class="p">{</span><span class="s2">"dimensions.date_info.date"</span><span class="p">:</span> <span class="s2">"period_date"</span><span class="p">}</span>   <span class="c1"># database spelling</span>
+</code></pre></div>
+<p>This matters because the example above used to read
+<code>{"dimensions.category.id": "category_id"}</code> — every segment a single word, so the
+question never came up. A key like <code>dimensions.dateInfo.date</code> written against an engine
+that matches the raw GraphQL name would previously have matched nothing here, silently:
+the value is a real column and the key is a valid path, so no validation caught it and
+the mapping simply never fired. That is issue #467.</p>
+<p>A key that names a column which does not exist on the view now raises at registration
+under <code>validate_fk_strict=True</code>, and warns otherwise.</p>
 <p>Metadata keys:</p>
 <ul>
 <li><code>measures</code> — maps a JSONB measure path to the aggregate function to apply
@@ -5149,12 +5211,37 @@ never be injected.</p>
   correct for dimension columns.</li>
 <li><code>native_measures</code> — maps JSONB measure paths to flat SQL column names so <code>SUM</code>/<code>AVG</code>
   run on native numeric columns and skip the <code>::numeric</code> cast.</li>
-<li><code>native_dimension_mapping</code> — maps deep JSONB dimension paths to flat SQL columns so
-  <code>GROUP BY</code> can use native columns even for nested dimension paths.</li>
+<li><code>native_dimension_mapping</code> — <strong>superseded by the top-level <code>column_mapping=</code> below.</strong>
+  Still read, still merged, still works; <code>column_mapping=</code> wins where both declare the
+  same path. Prefer the top-level parameter in new code.</li>
 </ul>
+<p>The top-level <code>column_mapping=</code> parameter on <code>register_type_for_view</code> is a peer of
+<code>fk_relationships</code>: it maps a deep JSONB path to a flat SQL column, and it is applied
+unconditionally to <strong><code>GROUP BY</code>, <code>WHERE</code> and <code>ORDER BY</code> alike</strong>. Before 1.24.0 the
+mapping reached <code>GROUP BY</code> only, so a query could group on the flat column while
+filtering and sorting on the JSONB snapshot — three expressions for one logical field.</p>
 <p>Use <code>native_dimensions</code> whenever your view exposes a real SQL column for a grouping key:
 it is the difference between a sequential scan over extracted JSONB text and an
 index-backed <code>GROUP BY</code>.</p>
+<h3 id="migrating-an-existing-native_dimension_mapping-1240">Migrating an existing <code>native_dimension_mapping</code> (1.24.0)<a class="headerlink" href="#migrating-an-existing-native_dimension_mapping-1240" title="Permanent link">&para;</a></h3>
+<p>Nothing to change: the key is still read and still merged. What changes is that the
+mapping you already declared now also applies to <code>WHERE</code> and <code>ORDER BY</code>, so two things
+become visible:</p>
+<ul>
+<li><strong>Filtering results can change.</strong> Where the flat column and the frozen JSONB snapshot
+  disagree — a column updated after the snapshot was written, say — the filter now
+  follows the column. That is the correction, and it is the reason 1.24.0 is a minor
+  release rather than a patch.</li>
+<li><strong>NULLs move in a sort.</strong> A jsonb <code>null</code> is the lowest jsonb value and sorts first; a
+  SQL <code>NULL</code> sorts last in <code>ASC</code>. Any row with a missing or null mapped dimension moves
+  from one end of the result to the other. The non-null <em>values</em> keep their order for
+  the shapes this library produces — ISO dates sort lexicographically in chronological
+  order by construction, and the generator uses <code>-&gt;</code> rather than <code>-&gt;&gt;</code> so a JSON number
+  keeps its type. Values do reorder where the snapshot is untyped: a number written as
+  a string, or an ISO timestamp whose rows do not share one UTC offset.</li>
+</ul>
+<p>If a mapping key you declared never took effect because of the casing rule above, it
+will start working — check the key names before upgrading if you are unsure.</p>
 <hr />
 <h2 id="aggregation-in-view-sql">Aggregation in view SQL<a class="headerlink" href="#aggregation-in-view-sql" title="Permanent link">&para;</a></h2>
 <p>For anything beyond derived <code>COUNT</code>/<code>SUM</code>/<code>AVG</code>/<code>MIN</code>/<code>MAX</code> — including <code>STDDEV</code>,
@@ -5163,42 +5250,42 @@ below — write standard PostgreSQL in your <code>v_</code>/<code>tv_</code> vie
 rows like any other view.</p>
 <h3 id="group-by">GROUP BY<a class="headerlink" href="#group-by" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
-<span class="w">    </span><span class="k">AVG</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_avg</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w">          </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_avg</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                   </span><span class="k">AS</span><span class="w"> </span><span class="n">order_count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="having">HAVING<a class="headerlink" href="#having" title="Permanent link">&para;</a></h3>
 <p>Filter groups after aggregation with <code>HAVING</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">                 </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w">                 </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span>
-<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="conditional-aggregates-with-filter">Conditional aggregates with FILTER<a class="headerlink" href="#conditional-aggregates-with-filter" title="Permanent link">&para;</a></h3>
 <p><code>FILTER (WHERE ...)</code> computes an aggregate over a subset of rows in the same pass — the
 idiomatic PostgreSQL way to do conditional sums and counts:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w">                                          </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="w">                                          </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                                                 </span><span class="k">AS</span><span class="w"> </span><span class="n">total_orders</span><span class="p">,</span>
-<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;shipped&#39;</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">shipped_orders</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
-<span class="w">        </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;on_sale&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="n">sale_revenue</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'status'</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'shipped'</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">shipped_orders</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
+<span class="w">        </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'on_sale'</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">           </span><span class="k">AS</span><span class="w"> </span><span class="n">sale_revenue</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="time-bucketing-with-date_trunc">Time bucketing with DATE_TRUNC<a class="headerlink" href="#time-bucketing-with-date_trunc" title="Permanent link">&para;</a></h3>
 <p>Bucket a timestamp into fixed periods with <code>DATE_TRUNC</code>. Supported buckets include
 <code>second</code>, <code>minute</code>, <code>hour</code>, <code>day</code>, <code>week</code>, <code>month</code>, <code>quarter</code>, and <code>year</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at&#39;</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket_month</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">                         </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'month'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'occurred_at'</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket_month</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w">                         </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at&#39;</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'month'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'occurred_at'</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">bucket_month</span><span class="p">;</span>
 </code></pre></div>
 <p>Expose the bucket as a regular column and group on it. For dimension columns that you
@@ -5212,40 +5299,40 @@ view-backed type.</p>
 <h3 id="array_agg">ARRAY_AGG<a class="headerlink" href="#array_agg" title="Permanent link">&para;</a></h3>
 <p>Collect group values into an array:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">                </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="n">ARRAY_AGG</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">product_names</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w">                </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ARRAY_AGG</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'product_name'</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">product_names</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="json_agg-jsonb_agg">JSON_AGG / JSONB_AGG<a class="headerlink" href="#json_agg-jsonb_agg" title="Permanent link">&para;</a></h3>
 <p>Collect rows into a JSON array — useful for building nested read models inside a <code>tv_</code>
 projection view:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">JSONB_AGG</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;product&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span>
+<span class="w">        </span><span class="s1">'product'</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'product_name'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'revenue'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span>
 <span class="w">    </span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">orders</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="string_agg">STRING_AGG<a class="headerlink" href="#string_agg" title="Permanent link">&para;</a></h3>
 <p>Concatenate group values with a delimiter, optionally ordered:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
-<span class="w">    </span><span class="n">STRING_AGG</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;, &#39;</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">STRING_AGG</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'product_name'</span><span class="p">,</span><span class="w"> </span><span class="s1">', '</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
 <span class="w">        </span><span class="k">AS</span><span class="w"> </span><span class="n">products</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="bool_and-bool_or">BOOL_AND / BOOL_OR<a class="headerlink" href="#bool_and-bool_or" title="Permanent link">&para;</a></h3>
 <p>Boolean aggregates — "all true" and "any true" across a group:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w">                       </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="n">BOOL_AND</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;in_stock&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">all_in_stock</span><span class="p">,</span>
-<span class="w">    </span><span class="n">BOOL_OR</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;on_sale&#39;</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">any_on_sale</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w">                       </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="n">BOOL_AND</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'in_stock'</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">  </span><span class="k">AS</span><span class="w"> </span><span class="n">all_in_stock</span><span class="p">,</span>
+<span class="w">    </span><span class="n">BOOL_OR</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'on_sale'</span><span class="p">)::</span><span class="nb">boolean</span><span class="p">)</span><span class="w">    </span><span class="k">AS</span><span class="w"> </span><span class="n">any_on_sale</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="choosing-measure-and-dimension-columns">Choosing measure and dimension columns<a class="headerlink" href="#choosing-measure-and-dimension-columns" title="Permanent link">&para;</a></h2>

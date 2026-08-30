@@ -5137,7 +5137,7 @@ through <code>FraiseQLConfig</code> / <code>FRAISEQL_</code>-prefixed environmen
 <span class="c1"># Auth0 settings (when FRAISEQL_AUTH_PROVIDER=auth0)</span>
 <span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>myapp.auth0.com
 <span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.yourdomain.com
-<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS=[&quot;RS256&quot;]   # defaults to RS256</span>
+<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS=["RS256"]   # defaults to RS256</span>
 
 <span class="c1"># Token revocation</span>
 <span class="nv">FRAISEQL_REVOCATION_ENABLED</span><span class="o">=</span><span class="nb">true</span>
@@ -5164,9 +5164,9 @@ not real secrets.</p>
 <span class="nb">source</span><span class="w"> </span>/etc/fraiseql/auth.env
 
 <span class="c1"># Verify critical variables (avoid printing secret values)</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Auth provider: </span><span class="nv">$FRAISEQL_AUTH_PROVIDER</span><span class="s2">&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Auth0 domain:  </span><span class="nv">$FRAISEQL_AUTH0_DOMAIN</span><span class="s2">&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Environment:   </span><span class="nv">$FRAISEQL_ENVIRONMENT</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Auth provider: </span><span class="nv">$FRAISEQL_AUTH_PROVIDER</span><span class="s2">"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Auth0 domain:  </span><span class="nv">$FRAISEQL_AUTH0_DOMAIN</span><span class="s2">"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Environment:   </span><span class="nv">$FRAISEQL_ENVIRONMENT</span><span class="s2">"</span>
 </code></pre></div>
 <h2 id="database-setup">Database Setup<a class="headerlink" href="#database-setup" title="Permanent link">&para;</a></h2>
 <h3 id="1-create-database">1. Create Database<a class="headerlink" href="#1-create-database" title="Permanent link">&para;</a></h3>
@@ -5174,10 +5174,10 @@ not real secrets.</p>
 sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>psql
 
 CREATE<span class="w"> </span>DATABASE<span class="w"> </span>fraiseql<span class="p">;</span>
-CREATE<span class="w"> </span>USER<span class="w"> </span>fraiseql_app<span class="w"> </span>WITH<span class="w"> </span>PASSWORD<span class="w"> </span><span class="s1">&#39;strong_password_here&#39;</span><span class="p">;</span>
-ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>client_encoding<span class="w"> </span>TO<span class="w"> </span><span class="s1">&#39;utf8&#39;</span><span class="p">;</span>
-ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>default_transaction_isolation<span class="w"> </span>TO<span class="w"> </span><span class="s1">&#39;read committed&#39;</span><span class="p">;</span>
-ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>timezone<span class="w"> </span>TO<span class="w"> </span><span class="s1">&#39;UTC&#39;</span><span class="p">;</span>
+CREATE<span class="w"> </span>USER<span class="w"> </span>fraiseql_app<span class="w"> </span>WITH<span class="w"> </span>PASSWORD<span class="w"> </span><span class="s1">'strong_password_here'</span><span class="p">;</span>
+ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>client_encoding<span class="w"> </span>TO<span class="w"> </span><span class="s1">'utf8'</span><span class="p">;</span>
+ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>default_transaction_isolation<span class="w"> </span>TO<span class="w"> </span><span class="s1">'read committed'</span><span class="p">;</span>
+ALTER<span class="w"> </span>ROLE<span class="w"> </span>fraiseql_app<span class="w"> </span>SET<span class="w"> </span>timezone<span class="w"> </span>TO<span class="w"> </span><span class="s1">'UTC'</span><span class="p">;</span>
 
 GRANT<span class="w"> </span>ALL<span class="w"> </span>PRIVILEGES<span class="w"> </span>ON<span class="w"> </span>DATABASE<span class="w"> </span>fraiseql<span class="w"> </span>TO<span class="w"> </span>fraiseql_app<span class="p">;</span>
 
@@ -5193,15 +5193,15 @@ shared across instances. The store creates and manages its own table
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.token_revocation</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgreSQLRevocationStore</span>
 
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">conninfo</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">)</span>
-<span class="n">revocation_store</span> <span class="o">=</span> <span class="n">PostgreSQLRevocationStore</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;tb_token_revocation&quot;</span><span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">conninfo</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">)</span>
+<span class="n">revocation_store</span> <span class="o">=</span> <span class="n">PostgreSQLRevocationStore</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"tb_token_revocation"</span><span class="p">)</span>
 <span class="c1"># The table is created lazily on first revocation/check.</span>
 </code></pre></div>
 <p>The in-memory store (<code>InMemoryRevocationStore</code>) is for development/testing only —
 revocations are lost on restart and are not shared between processes.</p>
 <h3 id="3-verify-connection">3. Verify Connection<a class="headerlink" href="#3-verify-connection" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_app:strong_password_here@prod-db.internal:5432/fraiseql&quot;</span>
-psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_app:strong_password_here@prod-db.internal:5432/fraiseql"</span>
+psql<span class="w"> </span><span class="s2">"</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1;"</span>
 </code></pre></div>
 <h2 id="docker-deployment">Docker Deployment<a class="headerlink" href="#docker-deployment" title="Permanent link">&para;</a></h2>
 <p>FraiseQL is a Python package — the image installs <code>fraiseql</code> and runs the FastAPI
@@ -5227,9 +5227,9 @@ wheel, so <strong>no Rust toolchain and no compile step are needed</strong>.</p>
 <span class="k">EXPOSE</span><span class="w"> </span><span class="s">8000</span>
 
 <span class="c"># Run the ASGI app with multiple workers via gunicorn + uvicorn workers.</span>
-<span class="k">CMD</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;gunicorn&quot;</span>,<span class="w"> </span><span class="s2">&quot;app.main:app&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;-k&quot;</span>,<span class="w"> </span><span class="s2">&quot;uvicorn.workers.UvicornWorker&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;-w&quot;</span>,<span class="w"> </span><span class="s2">&quot;4&quot;</span>,<span class="w"> </span><span class="s2">&quot;-b&quot;</span>,<span class="w"> </span><span class="s2">&quot;0.0.0.0:8000&quot;</span><span class="o">]</span>
+<span class="k">CMD</span><span class="w"> </span><span class="o">[</span><span class="s2">"gunicorn"</span>,<span class="w"> </span><span class="s2">"app.main:app"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"-k"</span>,<span class="w"> </span><span class="s2">"uvicorn.workers.UvicornWorker"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"-w"</span>,<span class="w"> </span><span class="s2">"4"</span>,<span class="w"> </span><span class="s2">"-b"</span>,<span class="w"> </span><span class="s2">"0.0.0.0:8000"</span><span class="o">]</span>
 </code></pre></div>
 <p><code>requirements.txt</code> pins <code>fraiseql</code> (and <code>fraiseql-rs</code> for the acceleration wheel).
 For a single worker (or local development) you can run <code>uvicorn app.main:app --host 0.0.0.0 --port 8000</code> instead.</p>
@@ -5246,17 +5246,17 @@ in your <code>app/main.py</code>. Auth is configured there (or via <code>FRAISEQ
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">FRAISEQL_DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${FRAISEQL_DATABASE_URL}</span>
 <span class="w">      </span><span class="nt">FRAISEQL_ENVIRONMENT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
-<span class="w">      </span><span class="nt">FRAISEQL_AUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">FRAISEQL_AUTH_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">      </span><span class="nt">FRAISEQL_AUTH_PROVIDER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">auth0</span>
 <span class="w">      </span><span class="nt">FRAISEQL_AUTH0_DOMAIN</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${FRAISEQL_AUTH0_DOMAIN}</span>
 <span class="w">      </span><span class="nt">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${FRAISEQL_AUTH0_API_IDENTIFIER}</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8000:8000"</span>
 <span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">postgres</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-f&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://localhost:8000/health&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"curl"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-f"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"http://localhost:8000/health"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
@@ -5274,7 +5274,7 @@ in your <code>app/main.py</code>. Auth is configured there (or via <code>FRAISEQ
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres_data:/var/lib/postgresql/data</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./init.sql:/docker-entrypoint-initdb.d/init.sql</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">fraiseql_app&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD-SHELL"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">fraiseql_app"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
@@ -5283,8 +5283,8 @@ in your <code>app/main.py</code>. Auth is configured there (or via <code>FRAISEQ
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nginx:alpine</span>
 <span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"80:80"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"443:443"</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./nginx.conf:/etc/nginx/nginx.conf:ro</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/letsencrypt:/etc/letsencrypt:ro</span>
@@ -5321,10 +5321,10 @@ in your <code>app/main.py</code>. Auth is configured there (or via <code>FRAISEQ
 <span class="w">    </span><span class="kn">ssl_certificate_key</span><span class="w"> </span><span class="s">/etc/letsencrypt/live/yourdomain.com/privkey.pem</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1"># Security headers</span>
-<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">Strict-Transport-Security</span><span class="w"> </span><span class="s">&quot;max-age=31536000</span><span class="p">;</span><span class="w"> </span><span class="kn">includeSubDomains&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
-<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-Content-Type-Options</span><span class="w"> </span><span class="s">&quot;nosniff&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
-<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-Frame-Options</span><span class="w"> </span><span class="s">&quot;SAMEORIGIN&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
-<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-XSS-Protection</span><span class="w"> </span><span class="s">&quot;1</span><span class="p">;</span><span class="w"> </span><span class="kn">mode=block&quot;</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">Strict-Transport-Security</span><span class="w"> </span><span class="s">"max-age=31536000</span><span class="p">;</span><span class="w"> </span><span class="kn">includeSubDomains"</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-Content-Type-Options</span><span class="w"> </span><span class="s">"nosniff"</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-Frame-Options</span><span class="w"> </span><span class="s">"SAMEORIGIN"</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">add_header</span><span class="w"> </span><span class="s">X-XSS-Protection</span><span class="w"> </span><span class="s">"1</span><span class="p">;</span><span class="w"> </span><span class="kn">mode=block"</span><span class="w"> </span><span class="s">always</span><span class="p">;</span>
 
 <span class="w">    </span><span class="kn">location</span><span class="w"> </span><span class="s">/graphql</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="kn">limit_req</span><span class="w"> </span><span class="s">zone=api_limit</span><span class="w"> </span><span class="s">burst=20</span><span class="p">;</span>
@@ -5417,11 +5417,11 @@ and add <code>?sslmode=require</code> to your <code>FRAISEQL_DATABASE_URL</code>
 <span class="w">          </span><span class="nt">periodSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
 <span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;256Mi&quot;</span>
-<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100m&quot;</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"256Mi"</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"100m"</span>
 <span class="w">          </span><span class="nt">limits</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span>
-<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;500m&quot;</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"512Mi"</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"500m"</span>
 <span class="nn">---</span>
 <span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Service</span>
@@ -5468,10 +5468,10 @@ and add <code>?sslmode=require</code> to your <code>FRAISEQL_DATABASE_URL</code>
 <span class="w">  </span><span class="nt">evaluation_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15s</span>
 
 <span class="nt">scrape_configs</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;fraiseql&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">'fraiseql'</span>
 <span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;localhost:8000&#39;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;/metrics&#39;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'localhost:8000'</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="s">'/metrics'</span>
 </code></pre></div>
 <p>Use the <code>/health</code> and <code>/ready</code> endpoints for liveness/readiness, and your standard
 ASGI/FastAPI metrics for latency and error-rate dashboards.</p>
@@ -5480,21 +5480,21 @@ ASGI/FastAPI metrics for latency and error-rate dashboards.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 <span class="c1"># backup.sh</span>
 
-<span class="nv">BACKUP_DIR</span><span class="o">=</span><span class="s2">&quot;/backups/fraiseql&quot;</span>
+<span class="nv">BACKUP_DIR</span><span class="o">=</span><span class="s2">"/backups/fraiseql"</span>
 <span class="nv">TIMESTAMP</span><span class="o">=</span><span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>
-<span class="nv">DB_NAME</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span>
+<span class="nv">DB_NAME</span><span class="o">=</span><span class="s2">"fraiseql"</span>
 
-mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">&quot;</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">"</span><span class="nv">$BACKUP_DIR</span><span class="s2">"</span>
 
 <span class="c1"># Full backup</span>
-pg_dump<span class="w"> </span>-h<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DB_HOST</span><span class="s2">&quot;</span><span class="w"> </span>-U<span class="w"> </span>fraiseql_app<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DB_NAME</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>gzip<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/fraiseql_</span><span class="nv">$TIMESTAMP</span><span class="s2">.sql.gz&quot;</span>
+pg_dump<span class="w"> </span>-h<span class="w"> </span><span class="s2">"</span><span class="nv">$DB_HOST</span><span class="s2">"</span><span class="w"> </span>-U<span class="w"> </span>fraiseql_app<span class="w"> </span><span class="s2">"</span><span class="nv">$DB_NAME</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>gzip<span class="w"> </span>&gt;<span class="w"> </span><span class="s2">"</span><span class="nv">$BACKUP_DIR</span><span class="s2">/fraiseql_</span><span class="nv">$TIMESTAMP</span><span class="s2">.sql.gz"</span>
 
 <span class="c1"># Keep only last 30 days</span>
-find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">&quot;</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;fraiseql_*.sql.gz&quot;</span><span class="w"> </span>-mtime<span class="w"> </span>+30<span class="w"> </span>-delete
+find<span class="w"> </span><span class="s2">"</span><span class="nv">$BACKUP_DIR</span><span class="s2">"</span><span class="w"> </span>-name<span class="w"> </span><span class="s2">"fraiseql_*.sql.gz"</span><span class="w"> </span>-mtime<span class="w"> </span>+30<span class="w"> </span>-delete
 
 <span class="c1"># Upload to S3</span>
-aws<span class="w"> </span>s3<span class="w"> </span>cp<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_DIR</span><span class="s2">/fraiseql_</span><span class="nv">$TIMESTAMP</span><span class="s2">.sql.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+aws<span class="w"> </span>s3<span class="w"> </span>cp<span class="w"> </span><span class="s2">"</span><span class="nv">$BACKUP_DIR</span><span class="s2">/fraiseql_</span><span class="nv">$TIMESTAMP</span><span class="s2">.sql.gz"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>s3://fraiseql-backups/
 </code></pre></div>
 <p>Schedule with cron:</p>
@@ -5578,10 +5578,10 @@ critical piece — use a primary + replica with automated failover.</p>
 docker<span class="w"> </span>logs<span class="w"> </span>fraiseql
 
 <span class="c1"># Check database connection</span>
-psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1&quot;</span>
+psql<span class="w"> </span><span class="s2">"</span><span class="nv">$FRAISEQL_DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1"</span>
 
 <span class="c1"># Check the auth issuer is reachable (Auth0 example)</span>
-curl<span class="w"> </span><span class="s2">&quot;https://</span><span class="si">${</span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="si">}</span><span class="s2">/.well-known/openid-configuration&quot;</span>
+curl<span class="w"> </span><span class="s2">"https://</span><span class="si">${</span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="si">}</span><span class="s2">/.well-known/openid-configuration"</span>
 </code></pre></div>
 <p>A missing <code>auth0_domain</code>/<code>auth0_api_identifier</code> with <code>FRAISEQL_AUTH_PROVIDER=auth0</code>
 raises a configuration error at startup — set both env vars.</p>
@@ -5590,7 +5590,7 @@ raises a configuration error at startup — set both env vars.</p>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">total_exec_time</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check auth issuer latency (Auth0 example)</span>
-<span class="nb">time</span><span class="w"> </span>curl<span class="w"> </span><span class="s2">&quot;https://</span><span class="si">${</span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="si">}</span><span class="s2">/.well-known/jwks.json&quot;</span>
+<span class="nb">time</span><span class="w"> </span>curl<span class="w"> </span><span class="s2">"https://</span><span class="si">${</span><span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="si">}</span><span class="s2">/.well-known/jwks.json"</span>
 </code></pre></div>
 <h3 id="database-connection-pool-exhausted">Database Connection Pool Exhausted<a class="headerlink" href="#database-connection-pool-exhausted" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Increase pool size</span>

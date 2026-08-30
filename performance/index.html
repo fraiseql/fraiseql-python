@@ -4983,7 +4983,7 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_users</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">Info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="c1"># Automatically uses optimized view</span>
-    <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users_view&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users_view"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Best Practices</strong>:</p>
 <ul>
@@ -4999,7 +4999,7 @@
 <span class="nd">@dataloader</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
     <span class="c1"># Automatically batched</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;posts_view&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"posts_view"</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="4-query-complexity-analysis">4. Query Complexity Analysis<a class="headerlink" href="#4-query-complexity-analysis" title="Permanent link">&para;</a></h3>
 <p>Prevent expensive queries with complexity limits:</p>
@@ -5060,7 +5060,7 @@
 <span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
-<span class="w">    </span><span class="c"># Don&#39;t select unnecessary fields</span>
+<span class="w">    </span><span class="c"># Don't select unnecessary fields</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5073,7 +5073,7 @@
     <span class="n">info</span><span class="p">:</span> <span class="n">Info</span><span class="p">,</span>
     <span class="n">first</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users_view&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users_view"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>
 <h3 id="query-performance">Query Performance<a class="headerlink" href="#query-performance" title="Permanent link">&para;</a></h3>
@@ -5127,7 +5127,7 @@
 <h3 id="query-planning">Query Planning<a class="headerlink" href="#query-planning" title="Permanent link">&para;</a></h3>
 <p>Understand PostgreSQL query plans:</p>
 <div class="highlight"><pre><span></span><code><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users_view</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;user@example.com&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users_view</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'user@example.com'</span><span class="p">;</span>
 </code></pre></div>
 <h2 id="further-reading">Further Reading<a class="headerlink" href="#further-reading" title="Permanent link">&para;</a></h2>
 <ul>

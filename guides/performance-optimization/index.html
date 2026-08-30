@@ -5592,7 +5592,7 @@ plus a few framework knobs.</p>
 <span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
-<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Composed in the v_user view&#39;s data JSONB — single read</span>
+<span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Composed in the v_user view's data JSONB — single read</span>
 <span class="w">      </span><span class="n">id</span>
 <span class="w">      </span><span class="n">title</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5634,7 +5634,7 @@ plus a few framework knobs.</p>
 <h3 id="3-request-only-needed-fields">3. Request Only Needed Fields<a class="headerlink" href="#3-request-only-needed-fields" title="Permanent link">&para;</a></h3>
 <p>❌ <strong>Bad: Over-fetching</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">email</span>
 <span class="w">    </span><span class="n">full_name</span>
@@ -5648,7 +5648,7 @@ plus a few framework knobs.</p>
 </code></pre></div>
 <p>✅ <strong>Good: Specific fields</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">email</span>
 <span class="w">    </span><span class="n">full_name</span>
@@ -5671,9 +5671,9 @@ runtime, so requesting fewer fields means less JSON is transformed and serialize
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_orders_user_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
 
 <span class="c1">-- For full-text search:</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_content_search</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_content_search</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">));</span>
 
-<span class="c1">-- For filtering inside a view&#39;s data JSONB:</span>
+<span class="c1">-- For filtering inside a view's data JSONB:</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_data</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="n">jsonb_path_ops</span><span class="p">);</span>
 </code></pre></div>
 <p><strong>Index Selection:</strong></p>
@@ -5688,7 +5688,7 @@ runtime, so requesting fewer fields means less JSON is transformed and serialize
 <span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'active'</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">;</span>
 
@@ -5706,7 +5706,7 @@ runtime, so requesting fewer fields means less JSON is transformed and serialize
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>          <span class="c1"># connections per app instance</span>
@@ -5739,7 +5739,7 @@ schema. See the <a href="#caching-strategies">Caching Strategies</a> section bel
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
 
 <span class="c1"># Per-query control is available on the call itself</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="3-materialized-views-for-aggregations">3. Materialized Views for Aggregations<a class="headerlink" href="#3-materialized-views-for-aggregations" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Pre-compute expensive aggregations</span>
@@ -5754,8 +5754,8 @@ schema. See the <a href="#caching-strategies">Caching Strategies</a> section bel
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fk_user</span><span class="p">;</span>
 
 <span class="c1">-- Refresh hourly</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">&#39;refresh_user_stats&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span>
-<span class="w">  </span><span class="s1">&#39;REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">'refresh_user_stats'</span><span class="p">,</span><span class="w"> </span><span class="s1">'0 * * * *'</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">'REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats'</span><span class="p">);</span>
 
 <span class="c1">-- Query materialized view (fast)</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">user_stats</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
@@ -5774,14 +5774,14 @@ pre-composed <code>data</code> JSONB, refreshed by <code>fn_</code> functions or
 
 <span class="c1">-- Create partitions</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2024_01</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
-<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-01-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-02-01&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2024-01-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2024-02-01'</span><span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2024_02</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
-<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-02-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2024-03-01&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2024-02-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2024-03-01'</span><span class="p">);</span>
 
 <span class="c1">-- Queries automatically scan only relevant partitions</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">event_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="s1">&#39;2024-01-15&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="s1">&#39;2024-01-20&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">event_date</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="s1">'2024-01-15'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="s1">'2024-01-20'</span><span class="p">;</span>
 <span class="c1">-- Only queries tb_event_2024_01 partition</span>
 </code></pre></div>
 <h3 id="5-denormalization-when-needed">5. Denormalization When Needed<a class="headerlink" href="#5-denormalization-when-needed" title="Permanent link">&para;</a></h3>
@@ -5828,7 +5828,7 @@ cascade rules derived from your GraphQL schema relationships.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">CachedRepository</span>
 
 <span class="c1"># 1. PostgreSQL-backed backend (shared by all app instances)</span>
-<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>  <span class="c1"># creates the UNLOGGED table + expiry index</span>
 
 <span class="c1"># 2. Result cache with TTL policy</span>
@@ -5838,7 +5838,7 @@ cascade rules derived from your GraphQL schema relationships.</p>
         <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>   <span class="c1"># 5 minutes</span>
         <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>      <span class="c1"># 1 hour ceiling</span>
-        <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+        <span class="n">key_prefix</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">,</span>
     <span class="p">),</span>
 <span class="p">)</span>
 
@@ -5861,8 +5861,8 @@ via <code>find(..., skip_cache=True)</code> / <code>find(..., cache_ttl=600)</co
 
 <span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">expensive_user_stats</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserStats</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user_stats&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user_stats"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="connection-pooling">Connection Pooling<a class="headerlink" href="#connection-pooling" title="Permanent link">&para;</a></h2>
@@ -5872,7 +5872,7 @@ variables / a <code>FraiseQLConfig</code> instance:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>          <span class="c1"># base connections</span>
@@ -5903,8 +5903,8 @@ Concurrency = Pool Size × Average Query Time
 <span class="c1">-- Identify slow/idle connections</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">usename</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">query_start</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;15 minutes&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'idle'</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'15 minutes'</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="monitoring-profiling">Monitoring &amp; Profiling<a class="headerlink" href="#monitoring-profiling" title="Permanent link">&para;</a></h2>
@@ -5918,11 +5918,11 @@ Concurrency = Pool Size × Average Query Time
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 
     <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
-    <span class="n">log_metric</span><span class="p">(</span><span class="s2">&quot;query.duration&quot;</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;posts&quot;</span><span class="p">})</span>
+    <span class="n">log_metric</span><span class="p">(</span><span class="s2">"query.duration"</span><span class="p">,</span> <span class="n">duration</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="s2">"posts"</span><span class="p">})</span>
 
     <span class="k">return</span> <span class="n">results</span>
 </code></pre></div>
@@ -5946,9 +5946,9 @@ Concurrency = Pool Size × Average Query Time
     <span class="n">body</span><span class="o">=</span><span class="n">MetricsPayload</span><span class="p">(</span>
         <span class="n">series</span><span class="o">=</span><span class="p">[</span>
             <span class="n">Series</span><span class="p">(</span>
-                <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;fraiseql.query.duration&quot;</span><span class="p">,</span>
+                <span class="n">metric</span><span class="o">=</span><span class="s2">"fraiseql.query.duration"</span><span class="p">,</span>
                 <span class="n">points</span><span class="o">=</span><span class="p">[[</span><span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()),</span> <span class="n">query_duration_ms</span><span class="p">]],</span>
-                <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;query:posts&quot;</span><span class="p">,</span> <span class="s2">&quot;endpoint:graphql&quot;</span><span class="p">],</span>
+                <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"query:posts"</span><span class="p">,</span> <span class="s2">"endpoint:graphql"</span><span class="p">],</span>
             <span class="p">)</span>
         <span class="p">]</span>
     <span class="p">)</span>
@@ -6000,21 +6000,21 @@ write instance pointed at the primary, fronted by your load balancer or router:<
 
 <span class="c1"># Read-only instance — queries served from a replica</span>
 <span class="n">read_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://postgres_replica/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://postgres_replica/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="c1"># Write instance — mutations served from the primary</span>
 <span class="n">write_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://postgres_primary/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://postgres_primary/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="citus-for-sharding">Citus for Sharding<a class="headerlink" href="#citus-for-sharding" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Distribute table across nodes</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">create_distributed_table</span><span class="p">(</span><span class="s1">&#39;tb_order&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;fk_user&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">create_distributed_table</span><span class="p">(</span><span class="s1">'tb_order'</span><span class="p">,</span><span class="w"> </span><span class="s1">'fk_user'</span><span class="p">);</span>
 
 <span class="c1">-- Queries automatically sharded</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Single shard</span>
@@ -6071,22 +6071,22 @@ write instance pointed at the primary, fronted by your load balancer or router:<
 <hr />
 <h2 id="performance-benchmarking">Performance Benchmarking<a class="headerlink" href="#performance-benchmarking" title="Permanent link">&para;</a></h2>
 <h3 id="benchmark-suite">Benchmark Suite<a class="headerlink" href="#benchmark-suite" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nx">Benchmark</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;benchmark&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="nx">Benchmark</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'benchmark'</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">suite</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">Benchmark</span><span class="p">.</span><span class="nx">Suite</span><span class="p">;</span>
 
 <span class="nx">suite</span>
-<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">&#39;Simple query (1KB result)&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'Simple query (1KB result)'</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="nx">GET_USER</span><span class="p">);</span>
 <span class="w">  </span><span class="p">})</span>
-<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">&#39;Complex query (100KB result)&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'Complex query (100KB result)'</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="nx">GET_POSTS_WITH_COMMENTS</span><span class="p">);</span>
 <span class="w">  </span><span class="p">})</span>
-<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">&#39;Aggregation query&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="s1">'Aggregation query'</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">client</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="nx">GET_STATS</span><span class="p">);</span>
 <span class="w">  </span><span class="p">})</span>
-<span class="w">  </span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;complete&#39;</span><span class="p">,</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;Fastest is &#39;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="s1">&#39;fastest&#39;</span><span class="p">).</span><span class="nx">map</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">));</span>
+<span class="w">  </span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'complete'</span><span class="p">,</span><span class="w"> </span><span class="kd">function</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'Fastest is '</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="s1">'fastest'</span><span class="p">).</span><span class="nx">map</span><span class="p">(</span><span class="s1">'name'</span><span class="p">));</span>
 <span class="w">  </span><span class="p">})</span>
 <span class="w">  </span><span class="p">.</span><span class="nx">run</span><span class="p">({</span><span class="w"> </span><span class="nx">async</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="w"> </span><span class="p">});</span>
 </code></pre></div>

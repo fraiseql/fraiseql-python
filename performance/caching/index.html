@@ -5266,12 +5266,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
 
 <span class="c1"># Initialize database pool</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span><span class="s2">"postgresql://user:pass@localhost/mydb"</span><span class="p">)</span>
 
 <span class="c1"># Create cache backend (PostgreSQL UNLOGGED table)</span>
 <span class="n">postgres_cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span>
     <span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
-    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">,</span>  <span class="c1"># default</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">,</span>  <span class="c1"># default</span>
     <span class="n">auto_initialize</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 
@@ -5283,7 +5283,7 @@
 
 <span class="n">base_repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
     <span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
-    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span>  <span class="c1"># CRITICAL for multi-tenant!</span>
+    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span>  <span class="c1"># CRITICAL for multi-tenant!</span>
 <span class="p">)</span>
 
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span>
@@ -5292,8 +5292,8 @@
 <span class="p">)</span>
 
 <span class="c1"># Use cached repository - automatic caching!</span>
-<span class="c1"># View name: &quot;v_user&quot; (singular, as defined in schema)</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
+<span class="c1"># View name: "v_user" (singular, as defined in schema)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="fastapi-integration">FastAPI Integration<a class="headerlink" href="#fastapi-integration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span>
@@ -5302,7 +5302,7 @@
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 
 <span class="c1"># Initialize cache at startup</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">startup</span><span class="p">():</span>
     <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
     <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">result_cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span>
@@ -5312,7 +5312,7 @@
 
 <span class="c1"># Provide cached repository in GraphQL context</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_graphql_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build complete GraphQL context with all required keys.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Build complete GraphQL context with all required keys."""</span>
     <span class="c1"># Extract tenant and user from request state</span>
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user</span>  <span class="c1"># UserContext instance (or None)</span>
@@ -5321,8 +5321,8 @@
     <span class="n">base_repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
         <span class="n">pool</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">pool</span><span class="p">,</span>
         <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">,</span>
-            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">,</span>
+            <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span> <span class="k">if</span> <span class="n">user</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
@@ -5334,10 +5334,10 @@
 
     <span class="c1"># Return complete context structure</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;request&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>          <span class="c1"># FastAPI/Starlette request</span>
-        <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">cached_db</span><span class="p">,</span>              <span class="c1"># Repository with caching</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">,</span>       <span class="c1"># Required for multi-tenancy</span>
-        <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user</span>                  <span class="c1"># UserContext for auth decorators</span>
+        <span class="s2">"request"</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>          <span class="c1"># FastAPI/Starlette request</span>
+        <span class="s2">"db"</span><span class="p">:</span> <span class="n">cached_db</span><span class="p">,</span>              <span class="c1"># Repository with caching</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">,</span>       <span class="c1"># Required for multi-tenancy</span>
+        <span class="s2">"user"</span><span class="p">:</span> <span class="n">user</span>                  <span class="c1"># UserContext for auth decorators</span>
     <span class="p">}</span>
 
 <span class="n">fraiseql_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
@@ -5345,7 +5345,7 @@
     <span class="n">context_getter</span><span class="o">=</span><span class="n">get_graphql_context</span>
 <span class="p">)</span>
 
-<span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">fraiseql_app</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">fraiseql_app</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="postgresql-cache-backend">PostgreSQL Cache Backend<a class="headerlink" href="#postgresql-cache-backend" title="Permanent link">&para;</a></h2>
 <h3 id="unlogged-tables">UNLOGGED Tables<a class="headerlink" href="#unlogged-tables" title="Permanent link">&para;</a></h3>
@@ -5379,10 +5379,10 @@
 <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
 
 <span class="k">if</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ pg_fraiseql_cache v</span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">extension_version</span><span class="si">}</span><span class="s2"> detected&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;  Domain-based invalidation enabled&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✓ pg_fraiseql_cache v</span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">extension_version</span><span class="si">}</span><span class="s2"> detected"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"  Domain-based invalidation enabled"</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Using TTL-only caching (no extension)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Using TTL-only caching (no extension)"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Detection Logic</strong>:</p>
 <ol>
@@ -5397,7 +5397,7 @@
 
 <span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span>
     <span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
-    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">,</span>  <span class="c1"># Cache table name</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">,</span>  <span class="c1"># Cache table name</span>
     <span class="n">auto_initialize</span><span class="o">=</span><span class="kc">True</span>           <span class="c1"># Auto-create table on first use</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5420,15 +5420,15 @@
 
 <span class="c1"># Query with custom TTL</span>
 <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+    <span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span>
     <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span>  <span class="c1"># 10 minutes for this query</span>
 <span class="p">)</span>
 
 <span class="c1"># Skip cache for specific query</span>
 <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+    <span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span>
     <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Bypass cache, fetch fresh data</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5444,10 +5444,10 @@
     <span class="n">scheduler</span> <span class="o">=</span> <span class="n">AsyncIOScheduler</span><span class="p">()</span>
 
     <span class="c1"># Clean expired entries every 5 minutes</span>
-    <span class="nd">@scheduler</span><span class="o">.</span><span class="n">scheduled_job</span><span class="p">(</span><span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="nd">@scheduler</span><span class="o">.</span><span class="n">scheduled_job</span><span class="p">(</span><span class="s2">"interval"</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_cache</span><span class="p">():</span>
         <span class="n">cleaned</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">postgres_cache</span><span class="o">.</span><span class="n">cleanup_expired</span><span class="p">()</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cleaned </span><span class="si">{</span><span class="n">cleaned</span><span class="si">}</span><span class="s2"> expired cache entries&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cleaned </span><span class="si">{</span><span class="n">cleaned</span><span class="si">}</span><span class="s2"> expired cache entries"</span><span class="p">)</span>
 
     <span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
     <span class="k">yield</span>
@@ -5462,14 +5462,14 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># tenant_id extracted from repository context</span>
 <span class="n">base_repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
     <span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
-    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;tenant-123&quot;</span><span class="p">}</span>  <span class="c1"># REQUIRED for multi-tenant!</span>
+    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"tenant-123"</span><span class="p">}</span>  <span class="c1"># REQUIRED for multi-tenant!</span>
 <span class="p">)</span>
 
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repo</span><span class="p">,</span> <span class="n">result_cache</span><span class="p">)</span>
 
 <span class="c1"># Automatically generates tenant-scoped cache key</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
-<span class="c1"># Cache key: &quot;fraiseql:tenant-123:users:status:active&quot;</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
+<span class="c1"># Cache key: "fraiseql:tenant-123:users:status:active"</span>
 </code></pre></div>
 <p><strong>Without tenant_id</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># 🚨 CRITICAL SECURITY VIOLATION - DO NOT USE IN PRODUCTION</span>
@@ -5480,18 +5480,18 @@
 <span class="n">base_repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{})</span>
 
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repo</span><span class="p">,</span> <span class="n">result_cache</span><span class="p">)</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
-<span class="c1"># Cache key: &quot;fraiseql:users:status:active&quot;</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
+<span class="c1"># Cache key: "fraiseql:users:status:active"</span>
 <span class="c1"># ⚠️ This cache key is SHARED ACROSS ALL TENANTS - SECURITY VIOLATION!</span>
 
 <span class="c1"># ✅ CORRECT: Always include tenant_id</span>
 <span class="n">base_repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
     <span class="n">pool</span><span class="p">,</span>
-    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span>  <span class="c1"># REQUIRED for multi-tenant apps</span>
+    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span>  <span class="c1"># REQUIRED for multi-tenant apps</span>
 <span class="p">)</span>
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repo</span><span class="p">,</span> <span class="n">result_cache</span><span class="p">)</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
-<span class="c1"># Cache key: &quot;fraiseql:tenant_123:users:status:active&quot;  ✅ Isolated per tenant</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
+<span class="c1"># Cache key: "fraiseql:tenant_123:users:status:active"  ✅ Isolated per tenant</span>
 </code></pre></div>
 <h3 id="cache-key-structure">Cache Key Structure<a class="headerlink" href="#cache-key-structure" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>fraiseql:{tenant_id}:{view_name}:{filters}:{order_by}:{limit}:{offset}
@@ -5512,13 +5512,13 @@ fraiseql:users:status:active:limit:10  ← ALL TENANTS SHARE THIS KEY!
 <p>Ensure tenant_id is always set:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span><span class="p">,</span> <span class="n">HTTPException</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tenant_context_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
     <span class="c1"># Extract tenant from subdomain, JWT, or header</span>
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolve_tenant_id</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">tenant_id</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">&quot;Tenant not identified&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"Tenant not identified"</span><span class="p">)</span>
 
     <span class="c1"># Store in request state</span>
     <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span> <span class="o">=</span> <span class="n">tenant_id</span>
@@ -5526,7 +5526,7 @@ fraiseql:users:status:active:limit:10  ← ALL TENANTS SHARE THIS KEY!
     <span class="c1"># Set in PostgreSQL session for RLS</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">&quot;SET LOCAL app.current_tenant_id = $1&quot;</span><span class="p">,</span>
+            <span class="s2">"SET LOCAL app.current_tenant_id = $1"</span><span class="p">,</span>
             <span class="n">tenant_id</span>
         <span class="p">)</span>
 
@@ -5538,12 +5538,12 @@ fraiseql:users:status:active:limit:10  ← ALL TENANTS SHARE THIS KEY!
 <p>The <code>pg_fraiseql_cache</code> extension provides automatic domain-based cache invalidation beyond simple TTL expiry:</p>
 <p><strong>Without Extension</strong> (TTL-only):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Cache entry valid for 5 minutes, even if data changes</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 <span class="c1"># ❌ If user data changes, cache remains stale until TTL expires</span>
 </code></pre></div>
 <p><strong>With Extension</strong> (Domain-based):</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Cache automatically invalidated when &#39;user&#39; domain data changes</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Cache automatically invalidated when 'user' domain data changes</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 <span class="c1"># ✅ If user data changes, cache immediately invalidated (via triggers)</span>
 </code></pre></div>
 <h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
@@ -5558,12 +5558,12 @@ fraiseql:users:status:active:limit:10  ← ALL TENANTS SHARE THIS KEY!
 │                    Cache Entry Structure                      │
 ├──────────────────────────────────────────────────────────────┤
 │ {                                                            │
-│   &quot;result&quot;: [...query results...],                          │
-│   &quot;versions&quot;: {                                              │
-│     &quot;user&quot;: 42,    ← Domain versions at cache time          │
-│     &quot;post&quot;: 15                                               │
+│   "result": [...query results...],                          │
+│   "versions": {                                              │
+│     "user": 42,    ← Domain versions at cache time          │
+│     "post": 15                                               │
 │   },                                                         │
-│   &quot;cached_at&quot;: &quot;2025-10-11T10:00:00Z&quot;                       │
+│   "cached_at": "2025-10-11T10:00:00Z"                       │
 │ }                                                            │
 └──────────────────────────────────────────────────────────────┘
 
@@ -5575,7 +5575,7 @@ On cache hit:
 </code></pre></div>
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Install pg_fraiseql_cache extension</span>
-psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;CREATE EXTENSION pg_fraiseql_cache;&quot;</span>
+psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </span>-c<span class="w"> </span><span class="s2">"CREATE EXTENSION pg_fraiseql_cache;"</span>
 </code></pre></div>
 <p>FraiseQL automatically detects the extension and enables domain-based features.</p>
 <h3 id="cache-value-metadata">Cache Value Metadata<a class="headerlink" href="#cache-value-metadata" title="Permanent link">&para;</a></h3>
@@ -5585,31 +5585,31 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 
 <span class="c1"># With extension</span>
 <span class="n">cache_value</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="n">query</span> <span class="n">results</span><span class="o">...</span><span class="p">],</span>
-    <span class="s2">&quot;versions&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span>
-        <span class="s2">&quot;post&quot;</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
-        <span class="s2">&quot;product&quot;</span><span class="p">:</span> <span class="mi">8</span>
+    <span class="s2">"result"</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="n">query</span> <span class="n">results</span><span class="o">...</span><span class="p">],</span>
+    <span class="s2">"versions"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"user"</span><span class="p">:</span> <span class="mi">42</span><span class="p">,</span>
+        <span class="s2">"post"</span><span class="p">:</span> <span class="mi">15</span><span class="p">,</span>
+        <span class="s2">"product"</span><span class="p">:</span> <span class="mi">8</span>
     <span class="p">},</span>
-    <span class="s2">&quot;cached_at&quot;</span><span class="p">:</span> <span class="s2">&quot;2025-10-11T10:00:00Z&quot;</span>
+    <span class="s2">"cached_at"</span><span class="p">:</span> <span class="s2">"2025-10-11T10:00:00Z"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Automatic Unwrapping</strong>: <code>PostgresCache.get()</code> automatically unwraps metadata:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Returns just the result, metadata handled internally</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;cache_key&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cache_key"</span><span class="p">)</span>
 <span class="c1"># result = [...query results...]  (unwrapped)</span>
 
 <span class="c1"># Access metadata explicitly</span>
-<span class="n">result</span><span class="p">,</span> <span class="n">versions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_with_metadata</span><span class="p">(</span><span class="s2">&quot;cache_key&quot;</span><span class="p">)</span>
+<span class="n">result</span><span class="p">,</span> <span class="n">versions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_with_metadata</span><span class="p">(</span><span class="s2">"cache_key"</span><span class="p">)</span>
 <span class="c1"># result = [...query results...]</span>
-<span class="c1"># versions = {&quot;user&quot;: 42, &quot;post&quot;: 15}</span>
+<span class="c1"># versions = {"user": 42, "post": 15}</span>
 </code></pre></div>
 <h3 id="mutation-invalidation">Mutation Invalidation<a class="headerlink" href="#mutation-invalidation" title="Permanent link">&para;</a></h3>
 <p>Cache automatically invalidated on mutations:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Create a new user (mutation)</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;alice@example.com&quot;</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"create_user"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Alice"</span><span class="p">,</span>
+    <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"alice@example.com"</span>
 <span class="p">})</span>
 
 <span class="c1"># Automatically invalidates:</span>
@@ -5617,7 +5617,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <span class="c1"># - fraiseql:{tenant_id}:users:*  (plural form)</span>
 
 <span class="c1"># Next query fetches fresh data</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users"</span><span class="p">)</span>
 <span class="c1"># Cache miss → fetch from database → re-cache with new version</span>
 </code></pre></div>
 <h2 id="usage-patterns">Usage Patterns<a class="headerlink" href="#usage-patterns" title="Permanent link">&para;</a></h2>
@@ -5628,12 +5628,12 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repo</span><span class="p">,</span> <span class="n">result_cache</span><span class="p">)</span>
 
 <span class="c1"># All find() calls automatically cached</span>
-<span class="c1"># Note: View name is &quot;v_user&quot; (singular, as defined in schema)</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>  <span class="c1"># Returns list</span>
-<span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>   <span class="c1"># Returns single item</span>
+<span class="c1"># Note: View name is "v_user" (singular, as defined in schema)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>  <span class="c1"># Returns list</span>
+<span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>   <span class="c1"># Returns single item</span>
 
 <span class="c1"># Mutations automatically invalidate related cache</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;create_user&quot;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"create_user"</span><span class="p">,</span> <span class="n">user_data</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="pattern-2-explicit-cache-control">Pattern 2: Explicit Cache Control<a class="headerlink" href="#pattern-2-explicit-cache-control" title="Permanent link">&para;</a></h3>
 <p>Manual cache management for fine-grained control:</p>
@@ -5643,9 +5643,9 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 
 <span class="c1"># Build cache key</span>
 <span class="n">cache_key</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
-    <span class="n">query_name</span><span class="o">=</span><span class="s2">&quot;active_users&quot;</span><span class="p">,</span>
+    <span class="n">query_name</span><span class="o">=</span><span class="s2">"active_users"</span><span class="p">,</span>
     <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
     <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
 <span class="p">)</span>
 
@@ -5655,7 +5655,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
     <span class="k">return</span> <span class="n">cached_result</span>
 
 <span class="c1"># Fetch from database</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">base_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">base_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># Cache result</span>
 <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">cache_key</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
@@ -5666,35 +5666,35 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache_result</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="nd">@cache_result</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;top_products&quot;</span><span class="p">)</span>
+<span class="nd">@cache_result</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span> <span class="n">key_prefix</span><span class="o">=</span><span class="s2">"top_products"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_top_products</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span>
     <span class="n">category</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get top products by category (cached).&quot;&quot;&quot;</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Get top products by category (cached)."""</span>
+    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;products&quot;</span><span class="p">,</span>
+        <span class="s2">"products"</span><span class="p">,</span>
         <span class="n">category</span><span class="o">=</span><span class="n">category</span><span class="p">,</span>
-        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;published&quot;</span><span class="p">,</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;sales_count&quot;</span><span class="p">,</span> <span class="s2">&quot;DESC&quot;</span><span class="p">)],</span>
+        <span class="n">status</span><span class="o">=</span><span class="s2">"published"</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"sales_count"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)],</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 </code></pre></div>
 <h3 id="pattern-4-conditional-caching">Pattern 4: Conditional Caching<a class="headerlink" href="#pattern-4-conditional-caching" title="Permanent link">&para;</a></h3>
 <p>Cache based on query characteristics:</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">smart_find</span><span class="p">(</span><span class="n">view_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cache only if query is expensive.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Cache only if query is expensive."""</span>
 
-    <span class="c1"># Don&#39;t cache simple lookups by ID</span>
-    <span class="k">if</span> <span class="s2">&quot;id&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="c1"># Don't cache simple lookups by ID</span>
+    <span class="k">if</span> <span class="s2">"id"</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">base_repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="n">view_name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1"># Cache complex queries</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="s2">&quot;order_by&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="ow">or</span> <span class="s2">"order_by"</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">view_name</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
     <span class="c1"># Default: no cache</span>
@@ -5704,32 +5704,32 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <h3 id="key-components">Key Components<a class="headerlink" href="#key-components" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheKeyBuilder</span>
 
-<span class="n">key_builder</span> <span class="o">=</span> <span class="n">CacheKeyBuilder</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span>
+<span class="n">key_builder</span> <span class="o">=</span> <span class="n">CacheKeyBuilder</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">)</span>
 
 <span class="n">cache_key</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
-    <span class="n">query_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-123&quot;</span><span class="p">,</span>      <span class="c1"># Tenant isolation</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">},</span>
-    <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;DESC&quot;</span><span class="p">)],</span>
+    <span class="n">query_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"tenant-123"</span><span class="p">,</span>      <span class="c1"># Tenant isolation</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">},</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)],</span>
     <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">offset</span><span class="o">=</span><span class="mi">0</span>
 <span class="p">)</span>
 
-<span class="c1"># Result: &quot;fraiseql:tenant-123:users:role:admin:status:active:order:created_at:DESC:limit:10:offset:0&quot;</span>
+<span class="c1"># Result: "fraiseql:tenant-123:users:role:admin:status:active:order:created_at:DESC:limit:10:offset:0"</span>
 </code></pre></div>
 <h3 id="key-normalization">Key Normalization<a class="headerlink" href="#key-normalization" title="Permanent link">&para;</a></h3>
 <p>Keys are deterministic and order-independent:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># These produce the same key</span>
 <span class="n">key1</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
-    <span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;t1&quot;</span><span class="p">,</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">}</span>
+    <span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"t1"</span><span class="p">,</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">,</span> <span class="s2">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">}</span>
 <span class="p">)</span>
 
 <span class="n">key2</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
-    <span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;t1&quot;</span><span class="p">,</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">}</span>  <span class="c1"># Different order</span>
+    <span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"t1"</span><span class="p">,</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"admin"</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}</span>  <span class="c1"># Different order</span>
 <span class="p">)</span>
 
 <span class="k">assert</span> <span class="n">key1</span> <span class="o">==</span> <span class="n">key2</span>  <span class="c1"># True - filters sorted alphabetically</span>
@@ -5737,34 +5737,34 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <h3 id="filter-serialization">Filter Serialization<a class="headerlink" href="#filter-serialization" title="Permanent link">&para;</a></h3>
 <p>Complex filter values are properly serialized:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># UUID</span>
-<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">UUID</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">)}</span>
+<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">UUID</span><span class="p">(</span><span class="s2">"..."</span><span class="p">)}</span>
 <span class="c1"># → user_id:00000000-0000-0000-0000-000000000000</span>
 
 <span class="c1"># Date/DateTime</span>
-<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;created_after&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span>
+<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"created_after"</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)}</span>
 <span class="c1"># → created_after:2025-01-01T00:00:00</span>
 
 <span class="c1"># List (sorted)</span>
-<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status__in&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;active&quot;</span><span class="p">,</span> <span class="s2">&quot;pending&quot;</span><span class="p">]}</span>
+<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status__in"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"active"</span><span class="p">,</span> <span class="s2">"pending"</span><span class="p">]}</span>
 <span class="c1"># → status__in:active,pending</span>
 
 <span class="c1"># Complex list (hashed for brevity)</span>
-<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ids&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">UUID</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="n">UUID</span><span class="p">(</span><span class="o">...</span><span class="p">)]}</span>
+<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"ids"</span><span class="p">:</span> <span class="p">[</span><span class="n">UUID</span><span class="p">(</span><span class="o">...</span><span class="p">),</span> <span class="n">UUID</span><span class="p">(</span><span class="o">...</span><span class="p">)]}</span>
 <span class="c1"># → ids:a1b2c3d4  (MD5 hash prefix)</span>
 
 <span class="c1"># Boolean</span>
-<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"is_active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
 <span class="c1"># → is_active:true</span>
 
 <span class="c1"># None</span>
-<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;deleted_at&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+<span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"deleted_at"</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
 <span class="c1"># → deleted_at:null</span>
 </code></pre></div>
 <h3 id="pattern-based-invalidation">Pattern-Based Invalidation<a class="headerlink" href="#pattern-based-invalidation" title="Permanent link">&para;</a></h3>
 <p>Invalidate multiple related keys at once:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Invalidate all user queries for a tenant</span>
-<span class="n">pattern</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
-<span class="c1"># Result: &quot;fraiseql:user:*&quot;</span>
+<span class="n">pattern</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
+<span class="c1"># Result: "fraiseql:user:*"</span>
 
 <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
 <span class="c1"># Deletes: fraiseql:tenant-a:user:*, fraiseql:tenant-b:user:*, etc.</span>
@@ -5774,18 +5774,18 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <p>Track cache performance:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Get cache statistics</span>
 <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;hit_rate&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hits: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;hits&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;misses&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_entries&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expired entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;expired_entries&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Table size: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;table_size_bytes&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'hit_rate'</span><span class="p">]</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hits: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'hits'</span><span class="p">]</span><span class="si">}</span><span class="s2">, Misses: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'misses'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'total_entries'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expired entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'expired_entries'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Table size: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'table_size_bytes'</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> MB"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="postgresql-monitoring">PostgreSQL Monitoring<a class="headerlink" href="#postgresql-monitoring" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check cache table size</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_size</span><span class="p">,</span>
-<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">table_size</span><span class="p">,</span>
-<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_indexes_size</span><span class="p">(</span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">index_size</span><span class="p">;</span>
+<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">'fraiseql_cache'</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_size</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">'fraiseql_cache'</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">table_size</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_indexes_size</span><span class="p">(</span><span class="s1">'fraiseql_cache'</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">index_size</span><span class="p">;</span>
 
 <span class="c1">-- Count cache entries</span>
 <span class="k">SELECT</span>
@@ -5805,7 +5805,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 
 <span class="c1">-- Monitor cache churn</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">date_trunc</span><span class="p">(</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">expires_at</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">hour</span><span class="p">,</span>
+<span class="w">    </span><span class="n">date_trunc</span><span class="p">(</span><span class="s1">'hour'</span><span class="p">,</span><span class="w"> </span><span class="n">expires_at</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">hour</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">entries_expiring</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">fraiseql_cache</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">expires_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
@@ -5817,28 +5817,28 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 
 <span class="c1"># Cache hit/miss counters</span>
 <span class="n">cache_hits</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cache_hits_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total cache hits&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;tenant_id&#39;</span><span class="p">,</span> <span class="s1">&#39;view_name&#39;</span><span class="p">]</span>
+    <span class="s1">'fraiseql_cache_hits_total'</span><span class="p">,</span>
+    <span class="s1">'Total cache hits'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'tenant_id'</span><span class="p">,</span> <span class="s1">'view_name'</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">cache_misses</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cache_misses_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total cache misses&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;tenant_id&#39;</span><span class="p">,</span> <span class="s1">&#39;view_name&#39;</span><span class="p">]</span>
+    <span class="s1">'fraiseql_cache_misses_total'</span><span class="p">,</span>
+    <span class="s1">'Total cache misses'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'tenant_id'</span><span class="p">,</span> <span class="s1">'view_name'</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="c1"># Cache operation duration</span>
 <span class="n">cache_get_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cache_get_duration_seconds&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Cache get operation duration&#39;</span><span class="p">,</span>
+    <span class="s1">'fraiseql_cache_get_duration_seconds'</span><span class="p">,</span>
+    <span class="s1">'Cache get operation duration'</span><span class="p">,</span>
     <span class="n">buckets</span><span class="o">=</span><span class="p">[</span><span class="mf">0.001</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="c1"># Cache size</span>
 <span class="n">cache_size</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cache_entries_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total cache entries&#39;</span>
+    <span class="s1">'fraiseql_cache_entries_total'</span><span class="p">,</span>
+    <span class="s1">'Total cache entries'</span>
 <span class="p">)</span>
 
 <span class="c1"># Instrument cache operations</span>
@@ -5855,20 +5855,20 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="c1"># Enable cache logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql.caching&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql.caching"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 
 <span class="c1"># Logs include:</span>
-<span class="c1"># - Extension detection: &quot;✓ Detected pg_fraiseql_cache v1.0.0&quot;</span>
-<span class="c1"># - Cache initialization: &quot;PostgreSQL cache table &#39;fraiseql_cache&#39; initialized&quot;</span>
-<span class="c1"># - Cleanup operations: &quot;Cleaned 145 expired cache entries&quot;</span>
-<span class="c1"># - Errors: &quot;Failed to get cache key &#39;fraiseql:...&#39; ...&quot;</span>
+<span class="c1"># - Extension detection: "✓ Detected pg_fraiseql_cache v1.0.0"</span>
+<span class="c1"># - Cache initialization: "PostgreSQL cache table 'fraiseql_cache' initialized"</span>
+<span class="c1"># - Cleanup operations: "Cleaned 145 expired cache entries"</span>
+<span class="c1"># - Errors: "Failed to get cache key 'fraiseql:...' ..."</span>
 </code></pre></div>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="1-always-set-tenant_id">1. Always Set tenant_id<a class="headerlink" href="#1-always-set-tenant_id" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: tenant_id in context</span>
 <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
     <span class="n">pool</span><span class="p">,</span>
-    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span>
+    <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span>
 <span class="p">)</span>
 
 <span class="c1"># ❌ WRONG: Missing tenant_id (security issue!)</span>
@@ -5877,45 +5877,45 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <h3 id="2-choose-appropriate-ttls">2. Choose Appropriate TTLs<a class="headerlink" href="#2-choose-appropriate-ttls" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Frequently changing data (short TTL)</span>
 <span class="n">recent_orders</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;orders&quot;</span><span class="p">,</span>
+    <span class="s2">"orders"</span><span class="p">,</span>
     <span class="n">created_at__gte</span><span class="o">=</span><span class="n">today</span><span class="p">,</span>
     <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">60</span>  <span class="c1"># 1 minute</span>
 <span class="p">)</span>
 
 <span class="c1"># Rarely changing data (long TTL)</span>
 <span class="n">categories</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;categories&quot;</span><span class="p">,</span>
-    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">,</span>
+    <span class="s2">"categories"</span><span class="p">,</span>
+    <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">,</span>
     <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">3600</span>  <span class="c1"># 1 hour</span>
 <span class="p">)</span>
 
 <span class="c1"># Static data (very long TTL)</span>
 <span class="n">countries</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;countries&quot;</span><span class="p">,</span>
+    <span class="s2">"countries"</span><span class="p">,</span>
     <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">86400</span>  <span class="c1"># 24 hours</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="3-use-skip_cache-for-real-time-data">3. Use skip_cache for Real-Time Data<a class="headerlink" href="#3-use-skip_cache-for-real-time-data" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Admin dashboard: always fresh data</span>
 <span class="n">admin_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;admin_stats&quot;</span><span class="p">,</span>
+    <span class="s2">"admin_stats"</span><span class="p">,</span>
     <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Never cache</span>
 <span class="p">)</span>
 
 <span class="c1"># User-facing: can cache</span>
 <span class="n">user_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="s2">&quot;user_stats&quot;</span><span class="p">,</span>
+    <span class="s2">"user_stats"</span><span class="p">,</span>
     <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
     <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span>  <span class="c1"># 5 minutes OK</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="4-invalidate-on-mutations">4. Invalidate on Mutations<a class="headerlink" href="#4-invalidate-on-mutations" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Manual invalidation</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;create_product&quot;</span><span class="p">,</span> <span class="n">product_data</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"create_product"</span><span class="p">,</span> <span class="n">product_data</span><span class="p">)</span>
 
 <span class="c1"># Or explicit</span>
 <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span>
-    <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">&quot;product&quot;</span><span class="p">)</span>
+    <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">"product"</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="5-monitor-cache-health">5. Monitor Cache Health<a class="headerlink" href="#5-monitor-cache-health" title="Permanent link">&para;</a></h3>
@@ -5924,17 +5924,17 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
     <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">postgres_cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
 
     <span class="c1"># Alert if too many expired entries (cleanup not working)</span>
-    <span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;expired_entries&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">10000</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;High expired entry count: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;expired_entries&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"expired_entries"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">10000</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"High expired entry count: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'expired_entries'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># Alert if cache table too large (increase cleanup frequency)</span>
-    <span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;table_size_bytes&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1_000_000_000</span><span class="p">:</span>  <span class="c1"># 1GB</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache table large: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;table_size_bytes&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> bytes&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"table_size_bytes"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1_000_000_000</span><span class="p">:</span>  <span class="c1"># 1GB</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache table large: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'table_size_bytes'</span><span class="p">]</span><span class="si">}</span><span class="s2"> bytes"</span><span class="p">)</span>
 
     <span class="c1"># Alert if hit rate too low (TTLs too short or invalidation too aggressive)</span>
-    <span class="n">hit_rate</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;hits&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;hits&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;misses&quot;</span><span class="p">])</span>
+    <span class="n">hit_rate</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"hits"</span><span class="p">]</span> <span class="o">/</span> <span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"hits"</span><span class="p">]</span> <span class="o">+</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"misses"</span><span class="p">])</span>
     <span class="k">if</span> <span class="n">hit_rate</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Low cache hit rate: </span><span class="si">{</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Low cache hit rate: </span><span class="si">{</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="6-vacuum-unlogged-tables">6. Vacuum UNLOGGED Tables<a class="headerlink" href="#6-vacuum-unlogged-tables" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Schedule regular VACUUM for UNLOGGED table</span>
@@ -5975,11 +5975,11 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 
 <span class="c1"># Check key diversity</span>
 <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">postgres_cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_entries&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total entries: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'total_entries'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="c1"># If &gt; 100,000: Consider query normalization</span>
 
 <span class="c1"># Verify tenant_id in keys</span>
-<span class="n">cache_key</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<span class="n">cache_key</span> <span class="o">=</span> <span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">cache_key</span><span class="p">)</span>  <span class="c1"># Should include tenant_id</span>
 </code></pre></div>
 <h3 id="stale-data">Stale Data<a class="headerlink" href="#stale-data" title="Permanent link">&para;</a></h3>
@@ -5993,12 +5993,12 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <p><strong>Solutions</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check extension</span>
 <span class="k">if</span> <span class="ow">not</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;⚠️ pg_fraiseql_cache not installed - using TTL-only&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"⚠️ pg_fraiseql_cache not installed - using TTL-only"</span><span class="p">)</span>
     <span class="c1"># Install extension or reduce TTLs</span>
 
 <span class="c1"># Manual invalidation after mutation</span>
 <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span>
-    <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+    <span class="n">key_builder</span><span class="o">.</span><span class="n">build_mutation_pattern</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Reduce TTL for frequently changing data</span>
@@ -6014,20 +6014,20 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 </ol>
 <p><strong>Solutions</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check table size</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">));</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">'fraiseql_cache'</span><span class="p">));</span>
 
 <span class="c1">-- Manual cleanup</span>
 <span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">expires_at</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">NOW</span><span class="p">();</span>
 <span class="k">VACUUM</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Increase cleanup frequency</span>
-<span class="nd">@scheduler</span><span class="o">.</span><span class="n">scheduled_job</span><span class="p">(</span><span class="s2">&quot;interval&quot;</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Every minute</span>
+<span class="nd">@scheduler</span><span class="o">.</span><span class="n">scheduled_job</span><span class="p">(</span><span class="s2">"interval"</span><span class="p">,</span> <span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Every minute</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_cache</span><span class="p">():</span>
     <span class="k">await</span> <span class="n">postgres_cache</span><span class="o">.</span><span class="n">cleanup_expired</span><span class="p">()</span>
 
 <span class="c1"># Limit cache value size</span>
 <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">100_000</span><span class="p">:</span>  <span class="c1"># &gt; 100KB</span>
-    <span class="c1"># Don&#39;t cache large results</span>
+    <span class="c1"># Don't cache large results</span>
     <span class="k">return</span> <span class="n">result</span>
 </code></pre></div>
 <h3 id="connection-pool-exhaustion">Connection Pool Exhaustion<a class="headerlink" href="#connection-pool-exhaustion" title="Permanent link">&para;</a></h3>
@@ -6046,7 +6046,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 <h3 id="cache-table-corruption">Cache Table Corruption<a class="headerlink" href="#cache-table-corruption" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom</strong>: Unexpected errors, constraint violations</p>
 <p><strong>Solution</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Drop and recreate cache table (safe - it&#39;s just cache)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Drop and recreate cache table (safe - it's just cache)</span>
 <span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">;</span>
 
 <span class="c1">-- Recreate automatically on next use</span>
@@ -6070,7 +6070,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
 </ol>
 <p><strong>Solutions</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Verify extension installed</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;pg_fraiseql_cache&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'pg_fraiseql_cache'</span><span class="p">;</span>
 
 <span class="c1">-- Install if missing</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">pg_fraiseql_cache</span><span class="p">;</span>
@@ -6083,8 +6083,8 @@ psql<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </spa
     <span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">_ensure_initialized</span><span class="p">()</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extension detected: </span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extension version: </span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">extension_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Extension detected: </span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Extension version: </span><span class="si">{</span><span class="n">cache</span><span class="o">.</span><span class="n">extension_version</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

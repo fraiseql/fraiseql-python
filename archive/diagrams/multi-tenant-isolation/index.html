@@ -5025,8 +5025,8 @@
 
 <span class="c1"># Route by header</span>
 <span class="k">location</span><span class="w"> </span><span class="s">/api/</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kn">if</span><span class="w"> </span><span class="s">(</span><span class="nv">$http_x_tenant_id</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">&quot;&quot;)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="kn">return</span><span class="w"> </span><span class="mi">400</span><span class="w"> </span><span class="s">&quot;Missing</span><span class="w"> </span><span class="s">tenant</span><span class="w"> </span><span class="s">ID&quot;</span><span class="p">;</span>
+<span class="w">    </span><span class="kn">if</span><span class="w"> </span><span class="s">(</span><span class="nv">$http_x_tenant_id</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">"")</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="kn">return</span><span class="w"> </span><span class="mi">400</span><span class="w"> </span><span class="s">"Missing</span><span class="w"> </span><span class="s">tenant</span><span class="w"> </span><span class="s">ID"</span><span class="p">;</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="kn">proxy_pass</span><span class="w"> </span><span class="s">http://app-server</span><span class="p">;</span>
 <span class="p">}</span>
@@ -5035,19 +5035,19 @@
 <p><strong>Context Management:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">contextvars</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextVar</span>
 
-<span class="n">tenant_context</span><span class="p">:</span> <span class="n">ContextVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span><span class="s1">&#39;tenant_id&#39;</span><span class="p">)</span>
+<span class="n">tenant_context</span><span class="p">:</span> <span class="n">ContextVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">ContextVar</span><span class="p">(</span><span class="s1">'tenant_id'</span><span class="p">)</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">TenantMiddleware</span><span class="p">:</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
         <span class="c1"># Extract tenant from various sources</span>
         <span class="n">tenant_id</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;X-Tenant-ID&#39;</span><span class="p">)</span> <span class="ow">or</span>
-            <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">hostname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
-            <span class="n">jwt_decode</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;Authorization&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">))</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;tenant_id&#39;</span><span class="p">)</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'X-Tenant-ID'</span><span class="p">)</span> <span class="ow">or</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">hostname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'.'</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span>
+            <span class="n">jwt_decode</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'Authorization'</span><span class="p">,</span> <span class="s1">''</span><span class="p">))</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'tenant_id'</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">tenant_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">&quot;No tenant identified&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"No tenant identified"</span><span class="p">)</span>
 
         <span class="c1"># Set context for entire request</span>
         <span class="n">token</span> <span class="o">=</span> <span class="n">tenant_context</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span>
@@ -5065,21 +5065,21 @@
 
 <span class="c1">-- Create tenant isolation policy</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
 
 <span class="c1">-- Set session variable in connection</span>
 <span class="c1">-- (Done by application before each query)</span>
-<span class="k">SET</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;550e8400-e29b-41d4-a716-446655440000&#39;</span><span class="p">;</span>
+<span class="k">SET</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'550e8400-e29b-41d4-a716-446655440000'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Tenant-Scoped Views:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Views automatically inherit RLS</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="c1">-- Functions include tenant validation</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span>
@@ -5087,7 +5087,7 @@
 <span class="w">    </span><span class="n">p_name</span><span class="w"> </span><span class="nb">text</span>
 <span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">uuid</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
-<span class="w">    </span><span class="n">v_tenant_id</span><span class="w"> </span><span class="n">uuid</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_tenant_id</span><span class="w"> </span><span class="n">uuid</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">tenant_id</span><span class="p">)</span>
@@ -5139,7 +5139,7 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">tenant_context</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;SELECT * FROM v_user WHERE tenant_id = $1&quot;</span><span class="p">,</span>
+        <span class="s2">"SELECT * FROM v_user WHERE tenant_id = $1"</span><span class="p">,</span>
         <span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span>
     <span class="p">)</span>
 
@@ -5147,7 +5147,7 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">tenant_context</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
     <span class="n">user_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_scalar</span><span class="p">(</span>
-        <span class="s2">&quot;SELECT fn_create_user($1, $2, $3)&quot;</span><span class="p">,</span>
+        <span class="s2">"SELECT fn_create_user($1, $2, $3)"</span><span class="p">,</span>
         <span class="p">[</span><span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">]</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
@@ -5173,7 +5173,7 @@
 <span class="c1">-- RLS policies</span>
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">));</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">));</span>
 </code></pre></div>
 <h2 id="monitoring-observability">Monitoring &amp; Observability<a class="headerlink" href="#monitoring-observability" title="Permanent link">&para;</a></h2>
 <h3 id="tenant-specific-metrics">Tenant-Specific Metrics<a class="headerlink" href="#tenant-specific-metrics" title="Permanent link">&para;</a></h3>
@@ -5207,12 +5207,12 @@
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_audit</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="n">entity_type</span><span class="p">,</span><span class="w"> </span><span class="n">entity_id</span><span class="p">,</span><span class="w"> </span><span class="n">details</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span>
-<span class="w">        </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.user_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span>
+<span class="w">        </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span>
+<span class="w">        </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.user_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span>
 <span class="w">        </span><span class="n">TG_OP</span><span class="p">,</span>
 <span class="w">        </span><span class="n">TG_TABLE_NAME</span><span class="p">,</span>
 <span class="w">        </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">id</span><span class="p">),</span>
-<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;operation&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">TG_OP</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;table&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">TG_TABLE_NAME</span><span class="p">)</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'operation'</span><span class="p">,</span><span class="w"> </span><span class="n">TG_OP</span><span class="p">,</span><span class="w"> </span><span class="s1">'table'</span><span class="p">,</span><span class="w"> </span><span class="n">TG_TABLE_NAME</span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">NEW</span><span class="p">,</span><span class="w"> </span><span class="k">OLD</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>

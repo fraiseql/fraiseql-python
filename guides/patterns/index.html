@@ -5270,7 +5270,7 @@ PostgreSQL functions.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">EmailAddress</span><span class="p">,</span> <span class="n">DateTime</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="n">EmailAddress</span>
@@ -5287,7 +5287,7 @@ PostgreSQL functions.</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AuthError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;AUTH_ERROR&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"AUTH_ERROR"</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
@@ -5308,35 +5308,35 @@ PostgreSQL function <code>fn_register_user</code>. The mutation resolver simply 
 the JSONB result to the success or error union member.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the authenticated user from the request context.&quot;&quot;&quot;</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Return the authenticated user from the request context."""</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">user_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">RegisterInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthSuccess</span> <span class="o">|</span> <span class="n">AuthError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_register_user&quot;</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">},</span>
+        <span class="s2">"fn_register_user"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">AuthError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Registration failed&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">AuthSuccess</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;token&quot;</span><span class="p">],</span> <span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">AuthError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"Registration failed"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">AuthSuccess</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"token"</span><span class="p">],</span> <span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">LoginInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuthSuccess</span> <span class="o">|</span> <span class="n">AuthError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_login&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">password</span><span class="p">}</span>
+        <span class="s2">"fn_login"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">password</span><span class="p">}</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">AuthError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid credentials&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;INVALID_CREDENTIALS&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">AuthSuccess</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;token&quot;</span><span class="p">],</span> <span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">AuthError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"Invalid credentials"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"INVALID_CREDENTIALS"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">AuthSuccess</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"token"</span><span class="p">],</span> <span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
 </code></pre></div>
 <p>The PostgreSQL function hashes the password with <code>pgcrypto</code> and returns a JSONB
 envelope:</p>
@@ -5347,23 +5347,23 @@ envelope:</p>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Email already registered&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email already registered'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">password_hash</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
 <span class="w">        </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
-<span class="w">        </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">crypt</span><span class="p">(</span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;password&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">gen_salt</span><span class="p">(</span><span class="s1">&#39;bf&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">)),</span><span class="w">  </span><span class="c1">-- bcrypt, cost 12</span>
-<span class="w">        </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span>
+<span class="w">        </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">crypt</span><span class="p">(</span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">'password'</span><span class="p">,</span><span class="w"> </span><span class="n">gen_salt</span><span class="p">(</span><span class="s1">'bf'</span><span class="p">,</span><span class="w"> </span><span class="mi">12</span><span class="p">)),</span><span class="w">  </span><span class="c1">-- bcrypt, cost 12</span>
+<span class="w">        </span><span class="n">payload</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;token&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&lt;issued by your auth layer&gt;&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'token'</span><span class="p">,</span><span class="w"> </span><span class="s1">'&lt;issued by your auth layer&gt;'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -5375,13 +5375,13 @@ envelope:</p>
 
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-    <span class="n">token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"Authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="s2">"Bearer "</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
     <span class="n">user_id</span> <span class="o">=</span> <span class="n">verify_jwt</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">if</span> <span class="n">token</span> <span class="k">else</span> <span class="kc">None</span>   <span class="c1"># your JWT validation</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}</span>
 
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">me</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">register</span><span class="p">,</span> <span class="n">login</span><span class="p">],</span>
@@ -5392,7 +5392,7 @@ envelope:</p>
 <h3 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c"># Register</span>
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">register</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice@example.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;secure-password&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">register</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"alice@example.com"</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="s">"secure-password"</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Alice"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">AuthSuccess</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">token</span>
 <span class="w">      </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">}</span>
@@ -5403,7 +5403,7 @@ envelope:</p>
 
 <span class="c"># Login</span>
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">login</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice@example.com&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;secure-password&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">login</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"alice@example.com"</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="p">:</span><span class="w"> </span><span class="s">"secure-password"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">AuthSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">token</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">AuthError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
@@ -5446,7 +5446,7 @@ Build cursor-based pagination on top of a <code>v_user</code> view.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">Connection</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5472,25 +5472,25 @@ a next page, and builds the connection. All data comes from the <code>v_user</co
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">first</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">after</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">first</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>            <span class="c1"># cap page size</span>
     <span class="n">offset</span> <span class="o">=</span> <span class="n">_decode_cursor</span><span class="p">(</span><span class="n">after</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">after</span> <span class="k">else</span> <span class="mi">0</span>
 
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;created_at_desc&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"created_at_desc"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
     <span class="n">has_next_page</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">first</span>
     <span class="n">rows</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[:</span><span class="n">first</span><span class="p">]</span>
 
     <span class="n">edges</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="p">{</span><span class="s2">&quot;node&quot;</span><span class="p">:</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">),</span> <span class="s2">&quot;cursor&quot;</span><span class="p">:</span> <span class="n">_encode_cursor</span><span class="p">(</span><span class="n">offset</span> <span class="o">+</span> <span class="n">idx</span><span class="p">)}</span>
+        <span class="p">{</span><span class="s2">"node"</span><span class="p">:</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">),</span> <span class="s2">"cursor"</span><span class="p">:</span> <span class="n">_encode_cursor</span><span class="p">(</span><span class="n">offset</span> <span class="o">+</span> <span class="n">idx</span><span class="p">)}</span>
         <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="k">return</span> <span class="n">Connection</span><span class="o">.</span><span class="n">from_dict</span><span class="p">({</span>
-        <span class="s2">&quot;edges&quot;</span><span class="p">:</span> <span class="n">edges</span><span class="p">,</span>
-        <span class="s2">&quot;page_info&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;has_next_page&quot;</span><span class="p">:</span> <span class="n">has_next_page</span><span class="p">,</span>
-            <span class="s2">&quot;has_previous_page&quot;</span><span class="p">:</span> <span class="n">offset</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="s2">&quot;start_cursor&quot;</span><span class="p">:</span> <span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;cursor&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">edges</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;end_cursor&quot;</span><span class="p">:</span> <span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;cursor&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">edges</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="s2">"edges"</span><span class="p">:</span> <span class="n">edges</span><span class="p">,</span>
+        <span class="s2">"page_info"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"has_next_page"</span><span class="p">:</span> <span class="n">has_next_page</span><span class="p">,</span>
+            <span class="s2">"has_previous_page"</span><span class="p">:</span> <span class="n">offset</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="s2">"start_cursor"</span><span class="p">:</span> <span class="n">edges</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"cursor"</span><span class="p">]</span> <span class="k">if</span> <span class="n">edges</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"end_cursor"</span><span class="p">:</span> <span class="n">edges</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"cursor"</span><span class="p">]</span> <span class="k">if</span> <span class="n">edges</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">})</span>
 </code></pre></div>
@@ -5509,7 +5509,7 @@ a next page, and builds the connection. All data comes from the <code>v_user</co
 <span class="p">}</span>
 
 <span class="k">query</span><span class="w"> </span><span class="nf">GetNextPage</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">after</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;MTA=&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">first</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">after</span><span class="p">:</span><span class="w"> </span><span class="s">"MTA="</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">edges</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">node</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="n">cursor</span>
@@ -5576,7 +5576,7 @@ column built inside the view.</p>
     <span class="n">created_before</span><span class="p">:</span> <span class="n">DateTime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5588,30 +5588,30 @@ column built inside the view.</p>
 generation to <code>db.find</code>. Parameters are always bound, never interpolated.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">filter</span><span class="p">:</span> <span class="n">UserFilter</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">search</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">where</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="k">if</span> <span class="nb">filter</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">filter</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">where</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;icontains&quot;</span><span class="p">:</span> <span class="nb">filter</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
+            <span class="n">where</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"icontains"</span><span class="p">:</span> <span class="nb">filter</span><span class="o">.</span><span class="n">name</span><span class="p">}</span>
         <span class="k">if</span> <span class="nb">filter</span><span class="o">.</span><span class="n">email</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">where</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="nb">filter</span><span class="o">.</span><span class="n">email</span><span class="p">}</span>
+            <span class="n">where</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="nb">filter</span><span class="o">.</span><span class="n">email</span><span class="p">}</span>
         <span class="k">if</span> <span class="nb">filter</span><span class="o">.</span><span class="n">created_after</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">where</span><span class="p">[</span><span class="s2">&quot;created_at&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;gte&quot;</span><span class="p">:</span> <span class="nb">filter</span><span class="o">.</span><span class="n">created_after</span><span class="p">}</span>
+            <span class="n">where</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="nb">filter</span><span class="o">.</span><span class="n">created_after</span><span class="p">}</span>
         <span class="k">if</span> <span class="nb">filter</span><span class="o">.</span><span class="n">created_before</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">where</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="p">{})[</span><span class="s2">&quot;lte&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">filter</span><span class="o">.</span><span class="n">created_before</span>
+            <span class="n">where</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="p">{})[</span><span class="s2">"lte"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">filter</span><span class="o">.</span><span class="n">created_before</span>
 
     <span class="k">if</span> <span class="n">search</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># `search_text` is a tsvector exposed by the view; see the SQL below.</span>
-        <span class="n">where</span><span class="p">[</span><span class="s2">&quot;search_text&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;matches&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span>
+        <span class="n">where</span><span class="p">[</span><span class="s2">"search_text"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"matches"</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span>
 
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;created_at_desc&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"created_at_desc"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 </code></pre></div>
 <h3 id="usage_2">Usage<a class="headerlink" href="#usage_2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c"># Search by name</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"alice"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">email</span>
@@ -5621,8 +5621,8 @@ generation to <code>db.find</code>. Parameters are always bound, never interpola
 <span class="c"># Filter by date range</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">createdAfter</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-01-01T00:00:00Z&quot;</span>
-<span class="w">    </span><span class="n">createdBefore</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-01-31T23:59:59Z&quot;</span>
+<span class="w">    </span><span class="n">createdAfter</span><span class="p">:</span><span class="w"> </span><span class="s">"2026-01-01T00:00:00Z"</span>
+<span class="w">    </span><span class="n">createdBefore</span><span class="p">:</span><span class="w"> </span><span class="s">"2026-01-31T23:59:59Z"</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5633,8 +5633,8 @@ generation to <code>db.find</code>. Parameters are always bound, never interpola
 <span class="c"># Combine filter and search</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span>
-<span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">createdAfter</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-01-01T00:00:00Z&quot;</span><span class="w"> </span><span class="p">}</span>
-<span class="w">    </span><span class="n">search</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice&quot;</span>
+<span class="w">    </span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">createdAfter</span><span class="p">:</span><span class="w"> </span><span class="s">"2026-01-01T00:00:00Z"</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">search</span><span class="p">:</span><span class="w"> </span><span class="s">"alice"</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5647,7 +5647,7 @@ generation to <code>db.find</code>. Parameters are always bound, never interpola
 <div class="highlight"><pre><span></span><code><span class="c1">-- On the write table: precompute and index the search vector.</span>
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="w">    </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">search_text</span><span class="w"> </span><span class="n">tsvector</span>
-<span class="w">    </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">email</span><span class="p">))</span><span class="w"> </span><span class="n">STORED</span><span class="p">;</span>
+<span class="w">    </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">' '</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">email</span><span class="p">))</span><span class="w"> </span><span class="n">STORED</span><span class="p">;</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_search</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">(</span><span class="n">search_text</span><span class="p">);</span>
 
@@ -5674,7 +5674,7 @@ async stream.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5686,19 +5686,19 @@ async stream.</p>
 yields each fresh <code>User</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_created</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">&quot;user_created&quot;</span><span class="p">):</span>   <span class="c1"># LISTEN on a NOTIFY channel</span>
-        <span class="n">user_id</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">"user_created"</span><span class="p">):</span>   <span class="c1"># LISTEN on a NOTIFY channel</span>
+        <span class="n">user_id</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">user</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_updated</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;user_updated:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">):</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user_updated:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">):</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">user</span><span class="p">)</span>
 </code></pre></div>
@@ -5708,7 +5708,7 @@ yields each fresh <code>User</code>.</p>
 <span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
 <span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">&#39;user_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">)::</span><span class="nb">text</span><span class="p">);</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">'user_created'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">)::</span><span class="nb">text</span><span class="p">);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -5729,7 +5729,7 @@ yields each fresh <code>User</code>.</p>
 
 <span class="c"># Subscribe to updates for a specific user</span>
 <span class="k">subscription</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">userUpdated</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">userUpdated</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">email</span>
@@ -5755,7 +5755,7 @@ resulting URL via a <code>fn_</code> function.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">File</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5770,34 +5770,34 @@ resulting URL via a <code>fn_</code> function.</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UploadError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;UPLOAD_ERROR&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"UPLOAD_ERROR"</span>
 </code></pre></div>
 <h3 id="implementation_4">Implementation<a class="headerlink" href="#implementation_4" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">MAX_AVATAR_BYTES</span> <span class="o">=</span> <span class="mi">5_000_000</span>
-<span class="n">ALLOWED_MIME</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;image/jpeg&quot;</span><span class="p">,</span> <span class="s2">&quot;image/png&quot;</span><span class="p">,</span> <span class="s2">&quot;image/webp&quot;</span><span class="p">}</span>
+<span class="n">ALLOWED_MIME</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"image/jpeg"</span><span class="p">,</span> <span class="s2">"image/png"</span><span class="p">,</span> <span class="s2">"image/webp"</span><span class="p">}</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_user_avatar</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadSuccess</span> <span class="o">|</span> <span class="n">UploadError</span><span class="p">:</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_AVATAR_BYTES</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;File size exceeds 5MB limit&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"File size exceeds 5MB limit"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">mimetype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALLOWED_MIME</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Only JPEG, PNG, or WebP allowed&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"Only JPEG, PNG, or WebP allowed"</span><span class="p">)</span>
 
-    <span class="n">s3</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;s3&quot;</span><span class="p">]</span>
+    <span class="n">s3</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"s3"</span><span class="p">]</span>
     <span class="n">url</span> <span class="o">=</span> <span class="k">await</span> <span class="n">s3</span><span class="o">.</span><span class="n">put_object</span><span class="p">(</span>
-        <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;avatars/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">"avatars/</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">file</span><span class="o">.</span><span class="n">filename</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="n">body</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
         <span class="n">content_type</span><span class="o">=</span><span class="n">file</span><span class="o">.</span><span class="n">mimetype</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_set_user_avatar&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="s2">&quot;avatar_url&quot;</span><span class="p">:</span> <span class="n">url</span><span class="p">}</span>
+        <span class="s2">"fn_set_user_avatar"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="s2">"avatar_url"</span><span class="p">:</span> <span class="n">url</span><span class="p">}</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;Failed to update avatar&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">UploadSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"Failed to update avatar"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">UploadSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
 </code></pre></div>
 <h3 id="client-usage">Client Usage<a class="headerlink" href="#client-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">UploadAvatar</span><span class="p">(</span><span class="nv">$userId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$file</span><span class="p">:</span><span class="w"> </span><span class="nc">File</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
@@ -5810,24 +5810,24 @@ resulting URL via a <code>fn_</code> function.</p>
 <span class="p">}</span>
 </code></pre></div>
 <p>JavaScript client (GraphQL multipart request spec):</p>
-<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">&#39;input[type=&quot;file&quot;]&#39;</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="nx">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">'input[type="file"]'</span><span class="p">);</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">formData</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">FormData</span><span class="p">();</span>
 
-<span class="nx">formData</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">&#39;operations&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
+<span class="nx">formData</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'operations'</span><span class="p">,</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
 <span class="w">  </span><span class="nx">query</span><span class="o">:</span><span class="w"> </span><span class="sb">`mutation UploadAvatar($userId: ID!, $file: File!) {</span>
 <span class="sb">    uploadUserAvatar(userId: $userId, file: $file) { ... }</span>
 <span class="sb">  }`</span><span class="p">,</span>
-<span class="w">  </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;123&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="o">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="nx">variables</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">userId</span><span class="o">:</span><span class="w"> </span><span class="s1">'123'</span><span class="p">,</span><span class="w"> </span><span class="nx">file</span><span class="o">:</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="p">}</span>
 <span class="p">}));</span>
 
-<span class="nx">formData</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">&#39;map&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
-<span class="w">  </span><span class="mf">0</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;variables.file&#39;</span><span class="p">]</span>
+<span class="nx">formData</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'map'</span><span class="p">,</span><span class="w"> </span><span class="nb">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">({</span>
+<span class="w">  </span><span class="mf">0</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s1">'variables.file'</span><span class="p">]</span>
 <span class="p">}));</span>
 
-<span class="nx">formData</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">input</span><span class="p">.</span><span class="nx">files</span><span class="p">[</span><span class="mf">0</span><span class="p">]);</span>
+<span class="nx">formData</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s1">'0'</span><span class="p">,</span><span class="w"> </span><span class="nx">input</span><span class="p">.</span><span class="nx">files</span><span class="p">[</span><span class="mf">0</span><span class="p">]);</span>
 
-<span class="nx">fetch</span><span class="p">(</span><span class="s1">&#39;/graphql&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;POST&#39;</span><span class="p">,</span>
+<span class="nx">fetch</span><span class="p">(</span><span class="s1">'/graphql'</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">method</span><span class="o">:</span><span class="w"> </span><span class="s1">'POST'</span><span class="p">,</span>
 <span class="w">  </span><span class="nx">body</span><span class="o">:</span><span class="w"> </span><span class="nx">formData</span>
 <span class="p">});</span>
 </code></pre></div>
@@ -5844,7 +5844,7 @@ cached results when the underlying tables change.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5876,9 +5876,9 @@ view and arguments; <code>setup_auto_cascade_rules</code> registers invalidation
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="c1"># info.context[&quot;db&quot;] is the CachedRepository; cache lookup is transparent.</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="c1"># info.context["db"] is the CachedRepository; cache lookup is transparent.</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span>
 </code></pre></div>
 <h3 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">&para;</a></h3>

@@ -6683,7 +6683,7 @@ a breaking change for clients that rely on it.</p>
 <p><strong>Adding a row-level filter that changes results</strong> (breaking):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># BREAKING: Add row-level security that filters results</span>
 <span class="c1"># Before: query returns all posts.</span>
-<span class="c1"># After: only the current user&#39;s posts are returned.</span>
+<span class="c1"># After: only the current user's posts are returned.</span>
 <span class="c1"># Clients that expected all posts now get fewer results.</span>
 </code></pre></div>
 <h4 id="214-error-code-changes">2.1.4 Error Code Changes<a class="headerlink" href="#214-error-code-changes" title="Permanent link">&para;</a></h4>
@@ -6695,8 +6695,8 @@ a breaking change for clients that rely on it.</p>
 </code></pre></div>
 <p><strong>Changing what an error code means</strong> (breaks clients):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># BREAKING: Re-define an error code.</span>
-<span class="c1"># Before: E_DB_DEADLOCK means &quot;deadlock — retry with backoff&quot;.</span>
-<span class="c1"># After: the same code means &quot;connection timeout&quot;.</span>
+<span class="c1"># Before: E_DB_DEADLOCK means "deadlock — retry with backoff".</span>
+<span class="c1"># After: the same code means "connection timeout".</span>
 <span class="c1"># Client retry logic becomes wrong.</span>
 </code></pre></div>
 <p><strong>Note</strong>: Treat your error codes as part of your API contract — they should not change
@@ -6716,7 +6716,7 @@ meaning once clients depend on them.</p>
 </code></pre></div>
 <p><strong>Changing scalar serialization</strong> (breaks clients):</p>
 <div class="highlight"><pre><span></span><code><span class="c"># BREAKING: Change how a value is serialized</span>
-<span class="c"># Before: UUID serialized as &quot;f47ac10b-58cc-4372-a567-0e02b2c3d479&quot;.</span>
+<span class="c"># Before: UUID serialized as "f47ac10b-58cc-4372-a567-0e02b2c3d479".</span>
 <span class="c"># After: UUID serialized without hyphens.</span>
 <span class="c"># Clients that parse the string representation break.</span>
 </code></pre></div>
@@ -6791,7 +6791,7 @@ meaning once clients depend on them.</p>
 <p><strong>Making authorization stricter</strong> (fewer results, safe):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># SAFE: Make row-level security more restrictive.</span>
 <span class="c1"># Before: query returns posts from all users.</span>
-<span class="c1"># After: query returns only the current user&#39;s posts.</span>
+<span class="c1"># After: query returns only the current user's posts.</span>
 <span class="c1"># Fewer results, stricter access — more secure, not less.</span>
 </code></pre></div>
 <p><strong>Adding new error codes</strong> (safe when clients ignore unknown codes):</p>
@@ -6841,14 +6841,14 @@ announced deprecation period.</p>
 
 <span class="k">-</span><span class="w"> </span><span class="gs">**`regex` filter operator**</span>: Use the <span class="sb">`contains`</span> operator instead.
 <span class="w">  </span><span class="k">-</span><span class="w"> </span><span class="gs">**Reason**</span>: Regex carries performance overhead; most cases are better served by <span class="sb">`contains`</span>.
-<span class="w">  </span><span class="k">-</span><span class="w"> </span><span class="gs">**Migration**</span>: Replace <span class="sb">`{name: {regex: &quot;/pattern/&quot;}}`</span> with <span class="sb">`{name: {contains: &quot;pattern&quot;}}`</span>.
+<span class="w">  </span><span class="k">-</span><span class="w"> </span><span class="gs">**Migration**</span>: Replace <span class="sb">`{name: {regex: "/pattern/"}}`</span> with <span class="sb">`{name: {contains: "pattern"}}`</span>.
 <span class="w">  </span><span class="k">-</span><span class="w"> </span><span class="gs">**Timeline**</span>: Deprecated in this MINOR release; removal in the next MAJOR release.
 </code></pre></div>
 <h3 id="34-deprecation-warning-at-runtime">3.4 Deprecation Warning at Runtime<a class="headerlink" href="#34-deprecation-warning-at-runtime" title="Permanent link">&para;</a></h3>
 <p>When a deprecated feature is used, the GraphQL response can carry a warning in <code>extensions</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Query uses a deprecated filter operator</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetPosts</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">regex</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/draft/&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">regex</span><span class="p">:</span><span class="w"> </span><span class="s">"/draft/"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">  </span><span class="p">}</span>
@@ -6856,15 +6856,15 @@ announced deprecation period.</p>
 </code></pre></div>
 <p><strong>Response includes a deprecation warning:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;posts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"posts"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;deprecations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"deprecations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Operator &#39;regex&#39; is deprecated. Use &#39;contains&#39; instead.&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;W_DEPRECATED_OPERATOR_REGEX&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;location&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;column&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Operator 'regex' is deprecated. Use 'contains' instead."</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"W_DEPRECATED_OPERATOR_REGEX"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"location"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">"column"</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
@@ -6889,7 +6889,7 @@ managing the compatibility of the GraphQL surface it produces.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6907,14 +6907,14 @@ schema edits safe.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># v1 of your schema</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="c1"># v1.1 of your schema — additive, no clients break</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6929,14 +6929,14 @@ JSONB so the resolver can return it.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># before</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="c1"># after — `email` is now required: this breaks clients that relied on null</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6968,7 +6968,7 @@ startup. You version it together with your application code:</p>
 <p><strong>Across additive schema changes</strong>, existing queries keep working:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Query written against your earlier schema</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetUser</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">email</span>
@@ -6980,7 +6980,7 @@ startup. You version it together with your application code:</p>
 <p><strong>Across a breaking schema change</strong>, queries may need updates:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Query written against your earlier filter shape</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetPosts</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">author_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">filter</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">author_id</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">  </span><span class="p">}</span>
@@ -6988,7 +6988,7 @@ startup. You version it together with your application code:</p>
 
 <span class="c"># After you changed the filter shape, clients must update</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetPosts</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">author</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">author</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">  </span><span class="p">}</span>
@@ -7017,8 +7017,8 @@ E_AUTH_PERMISSION_401    → Category: AUTH, Subcategory: PERMISSION, Number: 40
 </code></pre></div>
 <h4 id="612-stable-codes-flexible-messages">6.1.2 Stable Codes, Flexible Messages<a class="headerlink" href="#612-stable-codes-flexible-messages" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># The code and its meaning stay stable across releases</span>
-<span class="n">error_code</span> <span class="o">=</span> <span class="s2">&quot;E_VALIDATION_EMAIL_001&quot;</span>
-<span class="n">message</span> <span class="o">=</span> <span class="s2">&quot;Email cannot be empty&quot;</span>
+<span class="n">error_code</span> <span class="o">=</span> <span class="s2">"E_VALIDATION_EMAIL_001"</span>
+<span class="n">message</span> <span class="o">=</span> <span class="s2">"Email cannot be empty"</span>
 </code></pre></div>
 <p>The human-readable <strong>message can change</strong> (more detail, better wording), but the code and its
 semantics stay fixed.</p>
@@ -7051,7 +7051,7 @@ serve a different schema.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
@@ -7087,10 +7087,10 @@ serve a different schema.</p>
 <h3 id="81-upgrading-the-fraiseql-package">8.1 Upgrading the FraiseQL Package<a class="headerlink" href="#81-upgrading-the-fraiseql-package" title="Permanent link">&para;</a></h3>
 <p>Within the <code>1.x</code> line, upgrades are backward-compatible. Upgrade with <code>uv</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Upgrade to the latest 1.x release</span>
-uv<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;fraiseql&gt;=1.23,&lt;2&quot;</span>
+uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"fraiseql&gt;=1.23,&lt;2"</span>
 
 <span class="c1"># Pin an exact version for reproducible builds</span>
-uv<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;fraiseql==1.23.11&quot;</span>
+uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"fraiseql==1.23.11"</span>
 </code></pre></div>
 <p>A MINOR or PATCH upgrade should require no code changes. Read the changelog, run your test
 suite, and deploy. Because the schema is rebuilt at startup, simply restarting the app picks
@@ -7109,7 +7109,7 @@ up any framework improvements.</p>
 <p>Because there is no schema artifact and no data-format migration in the framework itself,
 rolling the FraiseQL package back to the previous version is a redeploy:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Roll back to the previously deployed version</span>
-uv<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;fraiseql==1.22.0&quot;</span>
+uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"fraiseql==1.22.0"</span>
 </code></pre></div>
 <p>If you also shipped a breaking change to <em>your own</em> schema, coordinate the rollback with
 your clients and your PostgreSQL views as you would any API change.</p>
@@ -7197,7 +7197,7 @@ common cases with better performance, so we are consolidating the operator surfa
 <span class="gu">## Before</span>
 \`\`\`graphql
 query SearchPosts {
-  posts(where: { title: { regex: &quot;/^draft/&quot; } }) {
+  posts(where: { title: { regex: "/^draft/" } }) {
     id
     title
   }
@@ -7207,7 +7207,7 @@ query SearchPosts {
 <span class="gu">## After</span>
 \`\`\`graphql
 query SearchPosts {
-  posts(where: { title: { startsWith: &quot;draft&quot; } }) {
+  posts(where: { title: { startsWith: "draft" } }) {
     id
     title
   }
@@ -7223,7 +7223,7 @@ production, and schedule regular, low-risk upgrades within the <code>1.x</code> 
 <h3 id="112-security-patches">11.2 Security Patches<a class="headerlink" href="#112-security-patches" title="Permanent link">&para;</a></h3>
 <p>Security fixes are released as new versions on PyPI. Upgrade promptly when a security release
 is published:</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;fraiseql&gt;=1.23.11&quot;</span>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"fraiseql&gt;=1.23.11"</span>
 </code></pre></div>
 <h3 id="113-end-of-life-behaviour">11.3 End-of-Life Behaviour<a class="headerlink" href="#113-end-of-life-behaviour" title="Permanent link">&para;</a></h3>
 <p>An application pinned to an older <code>1.x</code> version keeps running — nothing forces an upgrade —
@@ -7290,14 +7290,14 @@ MINOR, or PATCH bump:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># before</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="c1"># after — add an optional field</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -7311,7 +7311,7 @@ in the <code>v_user</code> view's <code>data</code> JSONB so the resolver can re
 <p><strong>Scenario</strong>: Remove the <code>regex</code> filter operator.</p>
 <div class="highlight"><pre><span></span><code><span class="c"># before — query using the regex operator works</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetPosts</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">regex</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/draft/&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">regex</span><span class="p">:</span><span class="w"> </span><span class="s">"/draft/"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -7319,7 +7319,7 @@ in the <code>v_user</code> view's <code>data</code> JSONB so the resolver can re
 <span class="c"># after — the regex operator is gone; this query errors.</span>
 <span class="c"># Clients must rewrite it, e.g. using startsWith:</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetPosts</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">startsWith</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;draft&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">posts</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">startsWith</span><span class="p">:</span><span class="w"> </span><span class="s">"draft"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -7408,13 +7408,13 @@ after:  WHERE clause correctly applied (fixed)
 
 <span class="c1"># Get the installed FraiseQL package version</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">fraiseql</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span>
-<span class="c1"># Example: &quot;1.23.11&quot;</span>
+<span class="c1"># Example: "1.23.11"</span>
 </code></pre></div>
 <p>You can also read the installed version through the standard library:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
 
-<span class="nb">print</span><span class="p">(</span><span class="n">version</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
-<span class="c1"># Example: &quot;1.23.11&quot;</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">version</span><span class="p">(</span><span class="s2">"fraiseql"</span><span class="p">))</span>
+<span class="c1"># Example: "1.23.11"</span>
 </code></pre></div>
 <h3 id="162-graphql-introspection">16.2 GraphQL Introspection<a class="headerlink" href="#162-graphql-introspection" title="Permanent link">&para;</a></h3>
 <p>Use introspection to snapshot your runtime schema (useful for diffing schema versions):</p>
@@ -7431,7 +7431,7 @@ after:  WHERE clause correctly applied (fixed)
 <p>Expose your application's version however you like, for example a small endpoint:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Your app returns its version</span>
 curl<span class="w"> </span>https://api.example.com/version
-<span class="c1"># Example: {&quot;version&quot;: &quot;1.23.11&quot;}</span>
+<span class="c1"># Example: {"version": "1.23.11"}</span>
 </code></pre></div>
 <hr />
 <h2 id="related-reading">Related Reading<a class="headerlink" href="#related-reading" title="Permanent link">&para;</a></h2>

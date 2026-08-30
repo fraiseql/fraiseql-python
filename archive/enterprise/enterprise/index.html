@@ -5317,7 +5317,7 @@ License: MIT</p>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">timestamp</span><span class="p">,</span><span class="w"> </span><span class="n">operation_type</span><span class="p">,</span><span class="w"> </span><span class="n">entity_type</span><span class="p">,</span><span class="w"> </span><span class="n">entity_id</span><span class="p">,</span>
 <span class="w">       </span><span class="n">old_data</span><span class="p">,</span><span class="w"> </span><span class="n">new_data</span><span class="p">,</span><span class="w"> </span><span class="n">changed_fields</span><span class="p">,</span><span class="w"> </span><span class="n">metadata</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">audit_events</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">entity_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;user&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">entity_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">entity_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'user'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">entity_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 
 <span class="c1">-- Verify cryptographic chain integrity</span>
@@ -5326,7 +5326,7 @@ License: MIT</p>
 <p><strong>Cryptographic Chain Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check if audit trail has been tampered with</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">event_id</span><span class="p">,</span><span class="w"> </span><span class="n">chain_valid</span><span class="p">,</span><span class="w"> </span><span class="n">expected_hash</span><span class="p">,</span><span class="w"> </span><span class="n">actual_hash</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">verify_audit_chain</span><span class="p">(</span><span class="s1">&#39;tenant-123&#39;</span><span class="p">::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">verify_audit_chain</span><span class="p">(</span><span class="s1">'tenant-123'</span><span class="p">::</span><span class="n">UUID</span><span class="p">);</span>
 <span class="c1">-- Returns TRUE for all events if chain is intact</span>
 </code></pre></div>
 <h3 id="observability-monitoring">Observability &amp; Monitoring<a class="headerlink" href="#observability-monitoring" title="Permanent link">&para;</a></h3>
@@ -5394,11 +5394,11 @@ curl<span class="w"> </span>http://localhost:8000/graphql
 
 <span class="c1"># Initialize error tracking</span>
 <span class="n">init_sentry</span><span class="p">(</span>
-    <span class="n">dsn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SENTRY_DSN&quot;</span><span class="p">),</span>
-    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">dsn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"SENTRY_DSN"</span><span class="p">),</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
     <span class="n">traces_sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
     <span class="n">profiles_sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">release</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;fraiseql@</span><span class="si">{</span><span class="n">VERSION</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">release</span><span class="o">=</span><span class="sa">f</span><span class="s2">"fraiseql@</span><span class="si">{</span><span class="n">VERSION</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 
 <span class="c1"># Configure metrics</span>
@@ -5410,23 +5410,23 @@ curl<span class="w"> </span>http://localhost:8000/graphql
 
 <span class="c1"># Set up health checks</span>
 <span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;pool&quot;</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"database"</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"pool"</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_check</span><span class="p">():</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">result</span>
 
 <span class="c1"># Create FraiseQL app</span>
 <span class="n">fraiseql</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">),</span>
-    <span class="n">cqrs_read_urls</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;READ_REPLICA_1&quot;</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;READ_REPLICA_2&quot;</span><span class="p">)],</span>
+    <span class="n">db_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">),</span>
+    <span class="n">cqrs_read_urls</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"READ_REPLICA_1"</span><span class="p">),</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"READ_REPLICA_2"</span><span class="p">)],</span>
     <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">enable_introspection</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">enable_playground</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">apq_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">apq_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span>
+    <span class="n">apq_backend</span><span class="o">=</span><span class="s2">"postgresql"</span>
 <span class="p">)</span>
 </code></pre></div>
 <hr />

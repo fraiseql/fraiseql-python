@@ -5011,13 +5011,13 @@
 <h1 id="authentication-authorization">Authentication &amp; Authorization<a class="headerlink" href="#authentication-authorization" title="Permanent link">&para;</a></h1>
 <p>Complete guide to implementing enterprise-grade authentication and authorization in FraiseQL applications.</p>
 <h2 id="quick-start-jwt-authentication-example">Quick Start - JWT Authentication Example<a class="headerlink" href="#quick-start-jwt-authentication-example" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""</span>
 <span class="sd">Complete example: JWT authentication with FraiseQL.</span>
 
 <span class="sd">Prerequisites:</span>
 <span class="sd">- pip install fraiseql pyjwt cryptography</span>
-<span class="sd">- Generate a secret key: python -c &quot;import secrets; print(secrets.token_hex(32))&quot;</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">- Generate a secret key: python -c "import secrets; print(secrets.token_hex(32))"</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
@@ -5028,14 +5028,14 @@
 
 <span class="c1"># 1. Create custom JWT auth provider</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SimpleJWTProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple JWT authentication provider.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Simple JWT authentication provider."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">secret_key</span> <span class="o">=</span> <span class="n">secret_key</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">algorithm</span> <span class="o">=</span> <span class="s2">&quot;HS256&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">algorithm</span> <span class="o">=</span> <span class="s2">"HS256"</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and decode JWT token.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate and decode JWT token."""</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">payload</span> <span class="o">=</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
                 <span class="n">token</span><span class="p">,</span>
@@ -5044,24 +5044,24 @@
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">payload</span>
         <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">ExpiredSignatureError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Token has expired&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Token has expired"</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">InvalidTokenError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid token&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid token"</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract user context from token.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Extract user context from token."""</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">UUID</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]),</span>
-            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
-            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[])</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">UUID</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]),</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="p">[])</span>
         <span class="p">)</span>
 
 <span class="c1"># 2. Define types with authorization</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5071,48 +5071,48 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="nd">@requires_auth</span>  <span class="c1"># ← Requires authentication</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get current authenticated user.&quot;&quot;&quot;</span>
-    <span class="n">user_context</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>  <span class="c1"># UserContext available here</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Get current authenticated user."""</span>
+    <span class="n">user_context</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>  <span class="c1"># UserContext available here</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch_one</span><span class="p">(</span>
-        <span class="s2">&quot;SELECT * FROM v_user WHERE data-&gt;&gt;&#39;id&#39; = $1&quot;</span><span class="p">,</span>
+        <span class="s2">"SELECT * FROM v_user WHERE data-&gt;&gt;'id' = $1"</span><span class="p">,</span>
         <span class="nb">str</span><span class="p">(</span><span class="n">user_context</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
     <span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>  <span class="c1"># ← Requires admin role</span>
+<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>  <span class="c1"># ← Requires admin role</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">all_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Admin-only: Get all users.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM v_user&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Admin-only: Get all users."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"SELECT * FROM v_user"</span><span class="p">)</span>
 
 <span class="c1"># 4. Set up schema with auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
     <span class="c1"># Create auth provider</span>
-    <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">SimpleJWTProvider</span><span class="p">(</span><span class="n">secret_key</span><span class="o">=</span><span class="s2">&quot;your-secret-key-here&quot;</span><span class="p">)</span>
+    <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">SimpleJWTProvider</span><span class="p">(</span><span class="n">secret_key</span><span class="o">=</span><span class="s2">"your-secret-key-here"</span><span class="p">)</span>
 
     <span class="c1"># Create schema with auth</span>
     <span class="n">schema</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span>
-        <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
         <span class="n">auth_provider</span><span class="o">=</span><span class="n">auth_provider</span>
     <span class="p">)</span>
 
     <span class="c1"># Generate test token</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">jwt</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span>
         <span class="p">{</span>
-            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()),</span>
-            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;alice@example.com&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;roles&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;admin&quot;</span><span class="p">],</span>
-            <span class="s2">&quot;exp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()),</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"alice@example.com"</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Alice"</span><span class="p">,</span>
+            <span class="s2">"roles"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"admin"</span><span class="p">],</span>
+            <span class="s2">"exp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">},</span>
-        <span class="s2">&quot;your-secret-key-here&quot;</span><span class="p">,</span>
-        <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;HS256&quot;</span>
+        <span class="s2">"your-secret-key-here"</span><span class="p">,</span>
+        <span class="n">algorithm</span><span class="o">=</span><span class="s2">"HS256"</span>
     <span class="p">)</span>
 
     <span class="c1"># Execute authenticated query</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">    {</span>
 <span class="s2">      currentUser {</span>
 <span class="s2">        id</span>
@@ -5120,29 +5120,29 @@
 <span class="s2">        email</span>
 <span class="s2">      }</span>
 <span class="s2">    }</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
         <span class="n">query</span><span class="p">,</span>
         <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># ← Pass token in context</span>
+            <span class="s2">"authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># ← Pass token in context</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Errors: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Errors: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;currentUser&#39;</span><span class="p">]</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Authenticated as: </span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'currentUser'</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ Authenticated as: </span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'email'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <p><strong>Expected Output:</strong></p>
 <div class="highlight"><pre><span></span><code>✅ Authenticated as: Alice (alice@example.com)
 </code></pre></div>
 <p><strong>Without Token (Unauthorized):</strong></p>
-<div class="highlight"><pre><span></span><code>❌ Errors: [{&#39;message&#39;: &#39;Authentication required&#39;, &#39;locations&#39;: [...]}]
+<div class="highlight"><pre><span></span><code>❌ Errors: [{'message': 'Authentication required', 'locations': [...]}]
 </code></pre></div>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
@@ -5164,34 +5164,34 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AuthProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base for authentication providers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Abstract base for authentication providers."""</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate token and return decoded payload.</span>
+<span class="w">        </span><span class="sd">"""Validate token and return decoded payload.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            TokenExpiredError: If token has expired</span>
 <span class="sd">            InvalidTokenError: If token is invalid</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract UserContext from validated token.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Extract UserContext from validated token."""</span>
         <span class="k">pass</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional: Refresh access token.</span>
+<span class="w">        </span><span class="sd">"""Optional: Refresh access token.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Tuple of (new_access_token, new_refresh_token)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Token refresh not supported&quot;</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Token refresh not supported"</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">revoke_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional: Revoke a token.&quot;&quot;&quot;</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Token revocation not supported&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Optional: Revoke a token."""</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">"Token revocation not supported"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Implementation Requirements:</strong></p>
 <ul>
@@ -5208,7 +5208,7 @@
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserContext</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User context available in all GraphQL resolvers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User context available in all GraphQL resolvers."""</span>
 
     <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5218,27 +5218,27 @@
     <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has specific role.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user has specific role."""</span>
         <span class="k">return</span> <span class="n">role</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">roles</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_permission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permission</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has specific permission.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user has specific permission."""</span>
         <span class="k">return</span> <span class="n">permission</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">permissions</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_any_role</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">roles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has any of the specified roles.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user has any of the specified roles."""</span>
         <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">role</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">roles</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_any_permission</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permissions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has any of the specified permissions.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user has any of the specified permissions."""</span>
         <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">perm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">permissions</span> <span class="k">for</span> <span class="n">perm</span> <span class="ow">in</span> <span class="n">permissions</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_all_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">roles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has all specified roles.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user has all specified roles."""</span>
         <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">role</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="n">roles</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">has_all_permissions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permissions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has all specified permissions.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user has all specified permissions."""</span>
         <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">perm</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">permissions</span> <span class="k">for</span> <span class="n">perm</span> <span class="ow">in</span> <span class="n">permissions</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Access in Resolvers:</strong></p>
@@ -5247,17 +5247,17 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_my_profile</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get current user&#39;s profile.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get current user's profile."""</span>
     <span class="c1"># Extract context early (standard pattern)</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">AuthenticationError</span><span class="p">(</span><span class="s2">&quot;Not authenticated&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">AuthenticationError</span><span class="p">(</span><span class="s2">"Not authenticated"</span><span class="p">)</span>
 
     <span class="c1"># Use repository to fetch user data</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="auth0-provider">Auth0 Provider<a class="headerlink" href="#auth0-provider" title="Permanent link">&para;</a></h2>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
@@ -5267,19 +5267,19 @@
 
 <span class="c1"># Method 1: Direct provider instantiation</span>
 <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">Auth0Provider</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.yourapp.com&quot;</span><span class="p">,</span>
-    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"your-tenant.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.yourapp.com"</span><span class="p">,</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"RS256"</span><span class="p">],</span>
     <span class="n">cache_jwks</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Cache JWKS keys for 1 hour</span>
 <span class="p">)</span>
 
 <span class="c1"># Method 2: Using config object</span>
 <span class="n">auth_config</span> <span class="o">=</span> <span class="n">Auth0Config</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.yourapp.com&quot;</span><span class="p">,</span>
-    <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;your_client_id&quot;</span><span class="p">,</span>  <span class="c1"># Optional: for Management API</span>
-    <span class="n">client_secret</span><span class="o">=</span><span class="s2">&quot;your_client_secret&quot;</span><span class="p">,</span>  <span class="c1"># Optional: for Management API</span>
-    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">]</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"your-tenant.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.yourapp.com"</span><span class="p">,</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="s2">"your_client_id"</span><span class="p">,</span>  <span class="c1"># Optional: for Management API</span>
+    <span class="n">client_secret</span><span class="o">=</span><span class="s2">"your_client_secret"</span><span class="p">,</span>  <span class="c1"># Optional: for Management API</span>
+    <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"RS256"</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">auth_config</span><span class="o">.</span><span class="n">create_provider</span><span class="p">()</span>
@@ -5296,20 +5296,20 @@
 <span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
 <span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>your-tenant.auth0.com
 <span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.yourapp.com
-<span class="nv">FRAISEQL_AUTH0_ALGORITHMS</span><span class="o">=[</span><span class="s2">&quot;RS256&quot;</span><span class="o">]</span>
+<span class="nv">FRAISEQL_AUTH0_ALGORITHMS</span><span class="o">=[</span><span class="s2">"RS256"</span><span class="o">]</span>
 </code></pre></div>
 <h3 id="token-structure">Token Structure<a class="headerlink" href="#token-structure" title="Permanent link">&para;</a></h3>
 <p>Auth0 JWT tokens must contain:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;sub&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;auth0|507f1f77bcf86cd799439011&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;email&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user@example.com&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;John Doe&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;permissions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;users:read&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;users:write&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;posts:create&quot;</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;https://api.yourapp.com/roles&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;editor&quot;</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;aud&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://api.yourapp.com&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;iss&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://your-tenant.auth0.com/&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;iat&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1516239022</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;exp&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1516325422</span>
+<span class="w">  </span><span class="nt">"sub"</span><span class="p">:</span><span class="w"> </span><span class="s2">"auth0|507f1f77bcf86cd799439011"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user@example.com"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"permissions"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"users:read"</span><span class="p">,</span><span class="w"> </span><span class="s2">"users:write"</span><span class="p">,</span><span class="w"> </span><span class="s2">"posts:create"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"https://api.yourapp.com/roles"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="s2">"editor"</span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"aud"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://api.yourapp.com"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"iss"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://your-tenant.auth0.com/"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"iat"</span><span class="p">:</span><span class="w"> </span><span class="mi">1516239022</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"exp"</span><span class="p">:</span><span class="w"> </span><span class="mi">1516325422</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Custom Claims:</strong></p>
@@ -5329,7 +5329,7 @@
 <span class="c1"># 6. Extract user information into UserContext</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate Auth0 JWT token.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Validate Auth0 JWT token."""</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Get signing key from JWKS (cached)</span>
         <span class="n">signing_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jwks_client</span><span class="o">.</span><span class="n">get_signing_key_from_jwt</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
@@ -5346,49 +5346,49 @@
         <span class="k">return</span> <span class="n">payload</span>
 
     <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">ExpiredSignatureError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">TokenExpiredError</span><span class="p">(</span><span class="s2">&quot;Token has expired&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">TokenExpiredError</span><span class="p">(</span><span class="s2">"Token has expired"</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">InvalidTokenError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid token: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid token: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="management-api-integration">Management API Integration<a class="headerlink" href="#management-api-integration" title="Permanent link">&para;</a></h3>
 <p>Access Auth0 Management API for user profile, roles, permissions:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Fetch full user profile</span>
 <span class="n">user_profile</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">get_user_profile</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;auth0|507f1f77bcf86cd799439011&quot;</span><span class="p">,</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"auth0|507f1f77bcf86cd799439011"</span><span class="p">,</span>
     <span class="n">access_token</span><span class="o">=</span><span class="n">management_api_token</span>
 <span class="p">)</span>
-<span class="c1"># Returns: {&quot;user_id&quot;: &quot;...&quot;, &quot;email&quot;: &quot;...&quot;, &quot;name&quot;: &quot;...&quot;, ...}</span>
+<span class="c1"># Returns: {"user_id": "...", "email": "...", "name": "...", ...}</span>
 
 <span class="c1"># Fetch user roles</span>
 <span class="n">roles</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">get_user_roles</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;auth0|507f1f77bcf86cd799439011&quot;</span><span class="p">,</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"auth0|507f1f77bcf86cd799439011"</span><span class="p">,</span>
     <span class="n">access_token</span><span class="o">=</span><span class="n">management_api_token</span>
 <span class="p">)</span>
-<span class="c1"># Returns: [{&quot;id&quot;: &quot;rol_...&quot;, &quot;name&quot;: &quot;admin&quot;, &quot;description&quot;: &quot;...&quot;}]</span>
+<span class="c1"># Returns: [{"id": "rol_...", "name": "admin", "description": "..."}]</span>
 
 <span class="c1"># Fetch user permissions</span>
 <span class="n">permissions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;auth0|507f1f77bcf86cd799439011&quot;</span><span class="p">,</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"auth0|507f1f77bcf86cd799439011"</span><span class="p">,</span>
     <span class="n">access_token</span><span class="o">=</span><span class="n">management_api_token</span>
 <span class="p">)</span>
-<span class="c1"># Returns: [{&quot;permission_name&quot;: &quot;users:write&quot;, &quot;resource_server_identifier&quot;: &quot;...&quot;}]</span>
+<span class="c1"># Returns: [{"permission_name": "users:write", "resource_server_identifier": "..."}]</span>
 </code></pre></div>
 <p><strong>Management API Token:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_management_api_token</span><span class="p">(</span><span class="n">domain</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">client_secret</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get Management API access token.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get Management API access token."""</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;https://</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">/oauth/token&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"https://</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">/oauth/token"</span><span class="p">,</span>
             <span class="n">json</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;grant_type&quot;</span><span class="p">:</span> <span class="s2">&quot;client_credentials&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;client_id&quot;</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
-                <span class="s2">&quot;client_secret&quot;</span><span class="p">:</span> <span class="n">client_secret</span><span class="p">,</span>
-                <span class="s2">&quot;audience&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;https://</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">/api/v2/&quot;</span>
+                <span class="s2">"grant_type"</span><span class="p">:</span> <span class="s2">"client_credentials"</span><span class="p">,</span>
+                <span class="s2">"client_id"</span><span class="p">:</span> <span class="n">client_id</span><span class="p">,</span>
+                <span class="s2">"client_secret"</span><span class="p">:</span> <span class="n">client_secret</span><span class="p">,</span>
+                <span class="s2">"audience"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"https://</span><span class="si">{</span><span class="n">domain</span><span class="si">}</span><span class="s2">/api/v2/"</span>
             <span class="p">}</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;access_token&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"access_token"</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="custom-jwt-provider">Custom JWT Provider<a class="headerlink" href="#custom-jwt-provider" title="Permanent link">&para;</a></h2>
 <p>Implement custom JWT authentication for non-Auth0 providers:</p>
@@ -5397,12 +5397,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CustomJWTProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom JWT authentication provider.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Custom JWT authentication provider."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">secret_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;HS256&quot;</span><span class="p">,</span>
+        <span class="n">algorithm</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"HS256"</span><span class="p">,</span>
         <span class="n">issuer</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">audience</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
@@ -5412,7 +5412,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">audience</span> <span class="o">=</span> <span class="n">audience</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate JWT token with secret key.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate JWT token with secret key."""</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">payload</span> <span class="o">=</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
                 <span class="n">token</span><span class="p">,</span>
@@ -5421,32 +5421,32 @@
                 <span class="n">audience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">audience</span><span class="p">,</span>
                 <span class="n">issuer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">issuer</span><span class="p">,</span>
                 <span class="n">options</span><span class="o">=</span><span class="p">{</span>
-                    <span class="s2">&quot;verify_signature&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="s2">&quot;verify_exp&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-                    <span class="s2">&quot;verify_aud&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">audience</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="s2">&quot;verify_iss&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">issuer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="s2">"verify_signature"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">"verify_exp"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+                    <span class="s2">"verify_aud"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">audience</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">"verify_iss"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">issuer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                 <span class="p">}</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">payload</span>
 
         <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">ExpiredSignatureError</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">TokenExpiredError</span><span class="p">(</span><span class="s2">&quot;Token has expired&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">TokenExpiredError</span><span class="p">(</span><span class="s2">"Token has expired"</span><span class="p">)</span>
         <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">InvalidTokenError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid token: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid token: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract UserContext from token payload.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Extract UserContext from token payload."""</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">UUID</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sub&quot;</span><span class="p">,</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">))),</span>
-            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
-            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">UUID</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sub"</span><span class="p">,</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">))),</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="p">[]),</span>
             <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
                 <span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">payload</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">,</span> <span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="s2">&quot;exp&quot;</span><span class="p">,</span> <span class="s2">&quot;iat&quot;</span><span class="p">,</span> <span class="s2">&quot;iss&quot;</span><span class="p">,</span> <span class="s2">&quot;aud&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"sub"</span><span class="p">,</span> <span class="s2">"user_id"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="s2">"roles"</span><span class="p">,</span> <span class="s2">"permissions"</span><span class="p">,</span> <span class="s2">"exp"</span><span class="p">,</span> <span class="s2">"iat"</span><span class="p">,</span> <span class="s2">"iss"</span><span class="p">,</span> <span class="s2">"aud"</span><span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
 </code></pre></div>
@@ -5455,10 +5455,10 @@
 
 <span class="c1"># Create provider</span>
 <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">CustomJWTProvider</span><span class="p">(</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="s2">&quot;your-secret-key-keep-secure&quot;</span><span class="p">,</span>
-    <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;HS256&quot;</span><span class="p">,</span>
-    <span class="n">issuer</span><span class="o">=</span><span class="s2">&quot;https://yourapp.com&quot;</span><span class="p">,</span>
-    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;https://api.yourapp.com&quot;</span>
+    <span class="n">secret_key</span><span class="o">=</span><span class="s2">"your-secret-key-keep-secure"</span><span class="p">,</span>
+    <span class="n">algorithm</span><span class="o">=</span><span class="s2">"HS256"</span><span class="p">,</span>
+    <span class="n">issuer</span><span class="o">=</span><span class="s2">"https://yourapp.com"</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">"https://api.yourapp.com"</span>
 <span class="p">)</span>
 
 <span class="c1"># Create app</span>
@@ -5479,59 +5479,59 @@
 
 <span class="c1"># 1. Implement user repository</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PostgresUserRepository</span><span class="p">(</span><span class="n">UserRepository</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User repository backed by PostgreSQL.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User repository backed by PostgreSQL."""</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_by_username</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password_hash</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
-            <span class="s2">&quot;password_hash&quot;</span><span class="p">:</span> <span class="n">password_hash</span><span class="p">,</span>
-            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"username"</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+            <span class="s2">"password_hash"</span><span class="p">:</span> <span class="n">password_hash</span><span class="p">,</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span>
         <span class="p">})</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
 
 <span class="c1"># 2. Create provider</span>
 <span class="n">user_repo</span> <span class="o">=</span> <span class="n">PostgresUserRepository</span><span class="p">()</span>
 
 <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">NativeAuthFactory</span><span class="o">.</span><span class="n">create_provider</span><span class="p">(</span>
     <span class="n">user_repository</span><span class="o">=</span><span class="n">user_repo</span><span class="p">,</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="s2">&quot;your-secret-key&quot;</span><span class="p">,</span>
+    <span class="n">secret_key</span><span class="o">=</span><span class="s2">"your-secret-key"</span><span class="p">,</span>
     <span class="n">access_token_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># 1 hour</span>
     <span class="n">refresh_token_ttl</span><span class="o">=</span><span class="mi">2592000</span>  <span class="c1"># 30 days</span>
 <span class="p">)</span>
 
 <span class="c1"># 3. Mount authentication routes</span>
 <span class="n">auth_router</span> <span class="o">=</span> <span class="n">create_auth_router</span><span class="p">(</span><span class="n">auth_provider</span><span class="p">)</span>
-<span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">auth_router</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/auth&quot;</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">include_router</span><span class="p">(</span><span class="n">auth_router</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"/auth"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Authentication Endpoints:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Register</span>
 POST<span class="w"> </span>/auth/register
 <span class="o">{</span>
-<span class="w">  </span><span class="s2">&quot;username&quot;</span>:<span class="w"> </span><span class="s2">&quot;john&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;password&quot;</span>:<span class="w"> </span><span class="s2">&quot;secure_password&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;email&quot;</span>:<span class="w"> </span><span class="s2">&quot;john@example.com&quot;</span>
+<span class="w">  </span><span class="s2">"username"</span>:<span class="w"> </span><span class="s2">"john"</span>,
+<span class="w">  </span><span class="s2">"password"</span>:<span class="w"> </span><span class="s2">"secure_password"</span>,
+<span class="w">  </span><span class="s2">"email"</span>:<span class="w"> </span><span class="s2">"john@example.com"</span>
 <span class="o">}</span>
 
 <span class="c1"># Login</span>
 POST<span class="w"> </span>/auth/login
 <span class="o">{</span>
-<span class="w">  </span><span class="s2">&quot;username&quot;</span>:<span class="w"> </span><span class="s2">&quot;john&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;password&quot;</span>:<span class="w"> </span><span class="s2">&quot;secure_password&quot;</span>
+<span class="w">  </span><span class="s2">"username"</span>:<span class="w"> </span><span class="s2">"john"</span>,
+<span class="w">  </span><span class="s2">"password"</span>:<span class="w"> </span><span class="s2">"secure_password"</span>
 <span class="o">}</span>
-<span class="c1"># Returns: {&quot;access_token&quot;: &quot;...&quot;, &quot;refresh_token&quot;: &quot;...&quot;, &quot;token_type&quot;: &quot;bearer&quot;}</span>
+<span class="c1"># Returns: {"access_token": "...", "refresh_token": "...", "token_type": "bearer"}</span>
 
 <span class="c1"># Refresh token</span>
 POST<span class="w"> </span>/auth/refresh
 <span class="o">{</span>
-<span class="w">  </span><span class="s2">&quot;refresh_token&quot;</span>:<span class="w"> </span><span class="s2">&quot;...&quot;</span>
+<span class="w">  </span><span class="s2">"refresh_token"</span>:<span class="w"> </span><span class="s2">"..."</span>
 <span class="o">}</span>
-<span class="c1"># Returns: {&quot;access_token&quot;: &quot;...&quot;, &quot;refresh_token&quot;: &quot;...&quot;}</span>
+<span class="c1"># Returns: {"access_token": "...", "refresh_token": "..."}</span>
 
 <span class="c1"># Logout</span>
 POST<span class="w"> </span>/auth/logout
@@ -5546,15 +5546,15 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="nd">@requires_auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_my_orders</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get current user&#39;s orders - requires authentication.&quot;&quot;&quot;</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>  <span class="c1"># Guaranteed to exist</span>
+<span class="w">    </span><span class="sd">"""Get current user's orders - requires authentication."""</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>  <span class="c1"># Guaranteed to exist</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_user_orders</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_profile</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update user profile - requires authentication.&quot;&quot;&quot;</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Update user profile - requires authentication."""</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">update_user_profile</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Behavior:</strong></p>
@@ -5569,16 +5569,16 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_permission</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;orders:create&quot;</span><span class="p">)</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"orders:create"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create order - requires orders:create permission.&quot;&quot;&quot;</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Create order - requires orders:create permission."""</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">create_order_for_user</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">quantity</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;users:delete&quot;</span><span class="p">)</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"users:delete"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete user - requires users:delete permission.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Delete user - requires users:delete permission."""</span>
     <span class="k">await</span> <span class="n">delete_user_by_id</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
@@ -5594,15 +5594,15 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_role</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_all_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all users - admin only.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get all users - admin only."""</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_all_users</span><span class="p">()</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;moderator&quot;</span><span class="p">)</span>
+<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"moderator"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ban_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ban user - moderator only.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Ban user - moderator only."""</span>
     <span class="k">await</span> <span class="n">ban_user_by_id</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
@@ -5612,9 +5612,9 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_any_permission</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_any_permission</span><span class="p">(</span><span class="s2">&quot;orders:write&quot;</span><span class="p">,</span> <span class="s2">&quot;admin:all&quot;</span><span class="p">)</span>
+<span class="nd">@requires_any_permission</span><span class="p">(</span><span class="s2">"orders:write"</span><span class="p">,</span> <span class="s2">"admin:all"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update order - requires orders:write OR admin:all permission.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Update order - requires orders:write OR admin:all permission."""</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">update_order_status</span><span class="p">(</span><span class="n">order_id</span><span class="p">,</span> <span class="n">status</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="requires_any_role">@requires_any_role<a class="headerlink" href="#requires_any_role" title="Permanent link">&para;</a></h3>
@@ -5623,9 +5623,9 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_any_role</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_any_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">,</span> <span class="s2">&quot;moderator&quot;</span><span class="p">)</span>
+<span class="nd">@requires_any_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">,</span> <span class="s2">"moderator"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">moderate_content</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">content_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Moderate content - admin or moderator.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Moderate content - admin or moderator."""</span>
     <span class="k">await</span> <span class="n">moderate_content_by_id</span><span class="p">(</span><span class="n">content_id</span><span class="p">,</span> <span class="n">action</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
@@ -5636,15 +5636,15 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_auth</span>
-<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;orders:refund&quot;</span><span class="p">)</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"orders:refund"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refund_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Refund order - requires authentication and orders:refund permission.&quot;&quot;&quot;</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Refund order - requires authentication and orders:refund permission."""</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
 
     <span class="c1"># Additional custom checks</span>
     <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_order</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">user_id</span> <span class="o">!=</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Can only refund your own orders&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">user_id</span> <span class="o">!=</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Can only refund your own orders"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">process_refund</span><span class="p">(</span><span class="n">order_id</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
 </code></pre></div>
@@ -5678,11 +5678,11 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="p">)</span>
 
 <span class="c1"># Start cleanup task in application lifecycle</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">startup</span><span class="p">():</span>
     <span class="k">await</span> <span class="n">revocation_service</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;shutdown&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"shutdown"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">():</span>
     <span class="k">await</span> <span class="n">revocation_service</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
 </code></pre></div>
@@ -5691,7 +5691,7 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
 
 <span class="c1"># Create Redis client</span>
-<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">)</span>
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">"redis://localhost:6379/0"</span><span class="p">)</span>
 
 <span class="c1"># Create revocation store</span>
 <span class="n">revocation_store</span> <span class="o">=</span> <span class="n">RedisRevocationStore</span><span class="p">(</span>
@@ -5714,8 +5714,8 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 
 <span class="c1"># Auth0 with revocation support</span>
 <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">Auth0ProviderWithRevocation</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.yourapp.com&quot;</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"your-tenant.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.yourapp.com"</span><span class="p">,</span>
     <span class="n">revocation_service</span><span class="o">=</span><span class="n">revocation_service</span>
 <span class="p">)</span>
 
@@ -5733,12 +5733,12 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 
 <span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">()</span>
 
-<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/logout&quot;</span><span class="p">)</span>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout</span><span class="p">(</span><span class="n">authorization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Header</span><span class="p">(</span><span class="o">...</span><span class="p">)):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logout current session.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Logout current session."""</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Extract token</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="n">authorization</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">authorization</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Bearer "</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
 
         <span class="c1"># Validate and decode</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
@@ -5746,26 +5746,26 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
         <span class="c1"># Revoke token</span>
         <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">logout</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Logged out successfully&quot;</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Logged out successfully"</span><span class="p">}</span>
 
     <span class="k">except</span> <span class="n">AuthenticationError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">401</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid token&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">401</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"Invalid token"</span><span class="p">)</span>
 
-<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/logout-all&quot;</span><span class="p">)</span>
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/logout-all"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">logout_all_sessions</span><span class="p">(</span><span class="n">authorization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Header</span><span class="p">(</span><span class="o">...</span><span class="p">)):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logout all sessions for current user.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Logout all sessions for current user."""</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">token</span> <span class="o">=</span> <span class="n">authorization</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">authorization</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Bearer "</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-        <span class="n">user_id</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">]</span>
+        <span class="n">user_id</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">]</span>
 
         <span class="c1"># Revoke all user tokens</span>
         <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">logout_all_sessions</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;All sessions logged out&quot;</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"message"</span><span class="p">:</span> <span class="s2">"All sessions logged out"</span><span class="p">}</span>
 
     <span class="k">except</span> <span class="n">AuthenticationError</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">401</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Invalid token&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">401</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"Invalid token"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Token Requirements:</strong></p>
 <ul>
@@ -5779,15 +5779,15 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_cart</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Cart</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get user&#39;s shopping cart from session.&quot;&quot;&quot;</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
-    <span class="n">session</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;session&quot;</span><span class="p">,</span> <span class="p">{})</span>
+<span class="w">    </span><span class="sd">"""Get user's shopping cart from session."""</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
+    <span class="n">session</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"session"</span><span class="p">,</span> <span class="p">{})</span>
 
-    <span class="n">cart_id</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;cart:</span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">cart_id</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cart:</span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">cart_id</span><span class="p">:</span>
         <span class="c1"># Create new cart</span>
         <span class="n">cart</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_cart</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="n">session</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;cart:</span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cart</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">session</span><span class="p">[</span><span class="sa">f</span><span class="s2">"cart:</span><span class="si">{</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span> <span class="o">=</span> <span class="n">cart</span><span class="o">.</span><span class="n">id</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cart</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_cart</span><span class="p">(</span><span class="n">cart_id</span><span class="p">)</span>
 
@@ -5798,10 +5798,10 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 
 <span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
     <span class="n">SessionMiddleware</span><span class="p">,</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="s2">&quot;your-session-secret-key&quot;</span><span class="p">,</span>
-    <span class="n">session_cookie</span><span class="o">=</span><span class="s2">&quot;fraiseql_session&quot;</span><span class="p">,</span>
+    <span class="n">secret_key</span><span class="o">=</span><span class="s2">"your-session-secret-key"</span><span class="p">,</span>
+    <span class="n">session_cookie</span><span class="o">=</span><span class="s2">"fraiseql_session"</span><span class="p">,</span>
     <span class="n">max_age</span><span class="o">=</span><span class="mi">86400</span><span class="p">,</span>  <span class="c1"># 24 hours</span>
-    <span class="n">same_site</span><span class="o">=</span><span class="s2">&quot;lax&quot;</span><span class="p">,</span>
+    <span class="n">same_site</span><span class="o">=</span><span class="s2">"lax"</span><span class="p">,</span>
     <span class="n">https_only</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Production only</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5820,37 +5820,37 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 
     <span class="c1"># Only admins or user themselves can see email</span>
     <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">user</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="p">(</span>
-        <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span>
-        <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span>
+        <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>
     <span class="p">))</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">email</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_email</span>
 
     <span class="c1"># Only admins can see internal notes</span>
-    <span class="nd">@authorize_field</span><span class="p">(</span><span class="n">any_permission</span><span class="p">(</span><span class="s2">&quot;admin:all&quot;</span><span class="p">))</span>
+    <span class="nd">@authorize_field</span><span class="p">(</span><span class="n">any_permission</span><span class="p">(</span><span class="s2">"admin:all"</span><span class="p">))</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">internal_notes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_notes</span>
 </code></pre></div>
 <p><strong>Authorization Patterns:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Permission-based</span>
-<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;users:read_pii&quot;</span><span class="p">))</span>
+<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">"users:read_pii"</span><span class="p">))</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ssn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span>
 
 <span class="c1"># Role-based</span>
-<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">))</span>
+<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">))</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audit_log</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">AuditEvent</span><span class="p">]:</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_audit_log</span>
 
 <span class="c1"># Owner-based</span>
-<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">order</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+<span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">order</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">payment_details</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PaymentDetails</span><span class="p">:</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_payment_details</span>
 
 <span class="c1"># Combined</span>
 <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="p">(</span>
-    <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;orders:read_all&quot;</span><span class="p">)</span> <span class="ow">or</span>
-    <span class="n">obj</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
+    <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">"orders:read_all"</span><span class="p">)</span> <span class="ow">or</span>
+    <span class="n">obj</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
 <span class="p">))</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">internal_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_internal_status</span>
@@ -5861,41 +5861,41 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MultiAuthProvider</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Support multiple authentication providers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Support multiple authentication providers."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">providers</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;auth0&quot;</span><span class="p">:</span> <span class="n">Auth0Provider</span><span class="p">(</span>
-                <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;tenant.auth0.com&quot;</span><span class="p">,</span>
-                <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.app.com&quot;</span>
+            <span class="s2">"auth0"</span><span class="p">:</span> <span class="n">Auth0Provider</span><span class="p">(</span>
+                <span class="n">domain</span><span class="o">=</span><span class="s2">"tenant.auth0.com"</span><span class="p">,</span>
+                <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.app.com"</span>
             <span class="p">),</span>
-            <span class="s2">&quot;api_key&quot;</span><span class="p">:</span> <span class="n">CustomJWTProvider</span><span class="p">(</span>
-                <span class="n">secret_key</span><span class="o">=</span><span class="s2">&quot;api-key-secret&quot;</span><span class="p">,</span>
-                <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;HS256&quot;</span>
+            <span class="s2">"api_key"</span><span class="p">:</span> <span class="n">CustomJWTProvider</span><span class="p">(</span>
+                <span class="n">secret_key</span><span class="o">=</span><span class="s2">"api-key-secret"</span><span class="p">,</span>
+                <span class="n">algorithm</span><span class="o">=</span><span class="s2">"HS256"</span>
             <span class="p">)</span>
         <span class="p">}</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Try each provider until one succeeds.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Try each provider until one succeeds."""</span>
         <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
 
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">provider</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">providers</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
-        <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;All providers failed: </span><span class="si">{</span><span class="n">errors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"All providers failed: </span><span class="si">{</span><span class="n">errors</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract user from first successful provider.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Extract user from first successful provider."""</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 
         <span class="c1"># Determine provider from token and extract user</span>
-        <span class="k">if</span> <span class="s2">&quot;iss&quot;</span> <span class="ow">in</span> <span class="n">payload</span> <span class="ow">and</span> <span class="s2">&quot;auth0.com&quot;</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;iss&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">providers</span><span class="p">[</span><span class="s2">&quot;auth0&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get_user_from_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"iss"</span> <span class="ow">in</span> <span class="n">payload</span> <span class="ow">and</span> <span class="s2">"auth0.com"</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"iss"</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">providers</span><span class="p">[</span><span class="s2">"auth0"</span><span class="p">]</span><span class="o">.</span><span class="n">get_user_from_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">providers</span><span class="p">[</span><span class="s2">&quot;api_key&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get_user_from_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">providers</span><span class="p">[</span><span class="s2">"api_key"</span><span class="p">]</span><span class="o">.</span><span class="n">get_user_from_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="security-best-practices">Security Best Practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="token-security">Token Security<a class="headerlink" href="#token-security" title="Permanent link">&para;</a></h3>
@@ -5919,54 +5919,54 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <h3 id="permission-design">Permission Design<a class="headerlink" href="#permission-design" title="Permanent link">&para;</a></h3>
 <p><strong>Hierarchical Permissions:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Resource-based</span>
-<span class="s2">&quot;orders:read&quot;</span>       <span class="c1"># Read orders</span>
-<span class="s2">&quot;orders:write&quot;</span>      <span class="c1"># Create/update orders</span>
-<span class="s2">&quot;orders:delete&quot;</span>     <span class="c1"># Delete orders</span>
-<span class="s2">&quot;orders:*&quot;</span>          <span class="c1"># All order permissions</span>
+<span class="s2">"orders:read"</span>       <span class="c1"># Read orders</span>
+<span class="s2">"orders:write"</span>      <span class="c1"># Create/update orders</span>
+<span class="s2">"orders:delete"</span>     <span class="c1"># Delete orders</span>
+<span class="s2">"orders:*"</span>          <span class="c1"># All order permissions</span>
 
 <span class="c1"># Scope-based</span>
-<span class="s2">&quot;users:read:self&quot;</span>   <span class="c1"># Read own user</span>
-<span class="s2">&quot;users:read:team&quot;</span>   <span class="c1"># Read team users</span>
-<span class="s2">&quot;users:read:all&quot;</span>    <span class="c1"># Read all users</span>
+<span class="s2">"users:read:self"</span>   <span class="c1"># Read own user</span>
+<span class="s2">"users:read:team"</span>   <span class="c1"># Read team users</span>
+<span class="s2">"users:read:all"</span>    <span class="c1"># Read all users</span>
 
 <span class="c1"># Admin override</span>
-<span class="s2">&quot;admin:all&quot;</span>         <span class="c1"># All permissions</span>
+<span class="s2">"admin:all"</span>         <span class="c1"># All permissions</span>
 </code></pre></div>
 <h3 id="role-based-access-control-rbac">Role-Based Access Control (RBAC)<a class="headerlink" href="#role-based-access-control-rbac" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="c1"># Define roles with associated permissions</span>
 <span class="n">ROLES</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;orders:read:self&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;orders:write:self&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;profile:read:self&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;profile:write:self&quot;</span>
+    <span class="s2">"user"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"orders:read:self"</span><span class="p">,</span>
+        <span class="s2">"orders:write:self"</span><span class="p">,</span>
+        <span class="s2">"profile:read:self"</span><span class="p">,</span>
+        <span class="s2">"profile:write:self"</span>
     <span class="p">],</span>
-    <span class="s2">&quot;manager&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;orders:read:team&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;orders:write:team&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;users:read:team&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;reports:read:team&quot;</span>
+    <span class="s2">"manager"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"orders:read:team"</span><span class="p">,</span>
+        <span class="s2">"orders:write:team"</span><span class="p">,</span>
+        <span class="s2">"users:read:team"</span><span class="p">,</span>
+        <span class="s2">"reports:read:team"</span>
     <span class="p">],</span>
-    <span class="s2">&quot;admin&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="s2">&quot;admin:all&quot;</span>
+    <span class="s2">"admin"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="s2">"admin:all"</span>
     <span class="p">]</span>
 <span class="p">}</span>
 
 <span class="c1"># Check in resolver</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_any_permission</span><span class="p">([</span><span class="s2">&quot;orders:delete&quot;</span><span class="p">,</span> <span class="s2">&quot;admin:all&quot;</span><span class="p">]):</span>
-        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Insufficient permissions&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_any_permission</span><span class="p">([</span><span class="s2">"orders:delete"</span><span class="p">,</span> <span class="s2">"admin:all"</span><span class="p">]):</span>
+        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Insufficient permissions"</span><span class="p">)</span>
 
     <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_order</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
 
     <span class="c1"># Owners can delete own orders</span>
-    <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">user_id</span> <span class="o">!=</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">&quot;admin:all&quot;</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Can only delete your own orders&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">order</span><span class="o">.</span><span class="n">user_id</span> <span class="o">!=</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="s2">"admin:all"</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Can only delete your own orders"</span><span class="p">)</span>
 
     <span class="k">await</span> <span class="n">delete_order_by_id</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
@@ -5981,13 +5981,13 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
 <span class="n">security_logger</span><span class="o">.</span><span class="n">log_auth_success</span><span class="p">(</span>
     <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
     <span class="n">user_email</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;provider&quot;</span><span class="p">:</span> <span class="s2">&quot;auth0&quot;</span><span class="p">,</span> <span class="s2">&quot;roles&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">roles</span><span class="p">}</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"provider"</span><span class="p">:</span> <span class="s2">"auth0"</span><span class="p">,</span> <span class="s2">"roles"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">roles</span><span class="p">}</span>
 <span class="p">)</span>
 
 <span class="c1"># Log failed authentication</span>
 <span class="n">security_logger</span><span class="o">.</span><span class="n">log_auth_failure</span><span class="p">(</span>
-    <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Invalid token&quot;</span><span class="p">,</span>
-    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;token_type&quot;</span><span class="p">:</span> <span class="s2">&quot;bearer&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)}</span>
+    <span class="n">reason</span><span class="o">=</span><span class="s2">"Invalid token"</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)}</span>
 <span class="p">)</span>
 
 <span class="c1"># Log authorization failure</span>
@@ -5996,7 +5996,7 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>&lt;access_t
         <span class="n">event_type</span><span class="o">=</span><span class="n">SecurityEventType</span><span class="o">.</span><span class="n">AUTH_PERMISSION_DENIED</span><span class="p">,</span>
         <span class="n">severity</span><span class="o">=</span><span class="n">SecurityEventSeverity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
         <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;required_permission&quot;</span><span class="p">:</span> <span class="s2">&quot;orders:delete&quot;</span><span class="p">,</span> <span class="s2">&quot;resource&quot;</span><span class="p">:</span> <span class="n">order_id</span><span class="p">}</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"required_permission"</span><span class="p">:</span> <span class="s2">"orders:delete"</span><span class="p">,</span> <span class="s2">"resource"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">}</span>
     <span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>

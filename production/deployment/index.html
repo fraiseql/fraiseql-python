@@ -5014,16 +5014,16 @@
 <span class="w">    </span><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
 
 <span class="c"># Run with Gunicorn</span>
-<span class="k">CMD</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;gunicorn&quot;</span>,<span class="w"> </span><span class="s2">&quot;app:app&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;-w&quot;</span>,<span class="w"> </span><span class="s2">&quot;4&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;-k&quot;</span>,<span class="w"> </span><span class="s2">&quot;uvicorn.workers.UvicornWorker&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;--bind&quot;</span>,<span class="w"> </span><span class="s2">&quot;0.0.0.0:8000&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;--access-logfile&quot;</span>,<span class="w"> </span><span class="s2">&quot;-&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;--error-logfile&quot;</span>,<span class="w"> </span><span class="s2">&quot;-&quot;</span>,<span class="w"> </span><span class="se">\</span>
-<span class="w">     </span><span class="s2">&quot;--log-level&quot;</span>,<span class="w"> </span><span class="s2">&quot;info&quot;</span><span class="o">]</span>
+<span class="k">CMD</span><span class="w"> </span><span class="o">[</span><span class="s2">"gunicorn"</span>,<span class="w"> </span><span class="s2">"app:app"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"-w"</span>,<span class="w"> </span><span class="s2">"4"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"-k"</span>,<span class="w"> </span><span class="s2">"uvicorn.workers.UvicornWorker"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"--bind"</span>,<span class="w"> </span><span class="s2">"0.0.0.0:8000"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"--access-logfile"</span>,<span class="w"> </span><span class="s2">"-"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"--error-logfile"</span>,<span class="w"> </span><span class="s2">"-"</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">"--log-level"</span>,<span class="w"> </span><span class="s2">"info"</span><span class="o">]</span>
 </code></pre></div>
 <h3 id="docker-compose-production">Docker Compose Production<a class="headerlink" href="#docker-compose-production" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3.8'</span>
 
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">fraiseql</span><span class="p">:</span>
@@ -5034,7 +5034,7 @@
 <span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-app</span>
 <span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8000:8000"</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=postgresql://user:${DB_PASSWORD}@postgres:5432/fraiseql</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ENVIRONMENT=production</span>
@@ -5048,7 +5048,7 @@
 <span class="w">      </span><span class="nt">redis</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-f&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://localhost:8000/health&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"curl"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"-f"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"http://localhost:8000/health"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
@@ -5056,10 +5056,10 @@
 <span class="w">    </span><span class="nt">deploy</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">resources</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">limits</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;2&#39;</span>
+<span class="w">          </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="s">'2'</span>
 <span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1G</span>
 <span class="w">        </span><span class="nt">reservations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;0.5&#39;</span>
+<span class="w">          </span><span class="nt">cpus</span><span class="p">:</span><span class="w"> </span><span class="s">'0.5'</span>
 <span class="w">          </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512M</span>
 <span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-network</span>
@@ -5076,7 +5076,7 @@
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres_data:/var/lib/postgresql/data</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./init.sql:/docker-entrypoint-initdb.d/init.sql</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">user&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD-SHELL"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">user"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
@@ -5091,7 +5091,7 @@
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">redis_data:/data</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;redis-cli&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;ping&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"redis-cli"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"ping"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
@@ -5103,8 +5103,8 @@
 <span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-nginx</span>
 <span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;80:80&quot;</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;443:443&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"80:80"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"443:443"</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./nginx.conf:/etc/nginx/nginx.conf:ro</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./ssl:/etc/nginx/ssl:ro</span>
@@ -5147,9 +5147,9 @@
 <span class="w">        </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
 <span class="w">        </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1.0.0</span>
 <span class="w">      </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">        </span><span class="nt">prometheus.io/scrape</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
-<span class="w">        </span><span class="nt">prometheus.io/port</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;8000&quot;</span>
-<span class="w">        </span><span class="nt">prometheus.io/path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/metrics&quot;</span>
+<span class="w">        </span><span class="nt">prometheus.io/scrape</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
+<span class="w">        </span><span class="nt">prometheus.io/port</span><span class="p">:</span><span class="w"> </span><span class="s">"8000"</span>
+<span class="w">        </span><span class="nt">prometheus.io/path</span><span class="p">:</span><span class="w"> </span><span class="s">"/metrics"</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">serviceAccountName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
 <span class="w">      </span><span class="nt">containers</span><span class="p">:</span>
@@ -5289,7 +5289,7 @@
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">graphql_requests_per_second</span>
 <span class="w">      </span><span class="nt">target</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AverageValue</span>
-<span class="w">        </span><span class="nt">averageValue</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;100&quot;</span>
+<span class="w">        </span><span class="nt">averageValue</span><span class="p">:</span><span class="w"> </span><span class="s">"100"</span>
 <span class="w">  </span><span class="nt">behavior</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">scaleUp</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">stabilizationWindowSeconds</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
@@ -5309,7 +5309,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># .env.production</span>
 <span class="c1"># Core</span>
 <span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
-<span class="nv">FRAISEQL_APP_NAME</span><span class="o">=</span><span class="s2">&quot;FraiseQL API&quot;</span>
+<span class="nv">FRAISEQL_APP_NAME</span><span class="o">=</span><span class="s2">"FraiseQL API"</span>
 <span class="nv">FRAISEQL_APP_VERSION</span><span class="o">=</span><span class="m">1</span>.0.0
 
 <span class="c1"># Database</span>
@@ -5360,9 +5360,9 @@
 <span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Opaque</span>
 <span class="nt">stringData</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">database-password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-secure-password&quot;</span>
-<span class="w">  </span><span class="nt">sentry-dsn</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://...@sentry.io/...&quot;</span>
-<span class="w">  </span><span class="nt">auth0-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-auth0-secret&quot;</span>
+<span class="w">  </span><span class="nt">database-password</span><span class="p">:</span><span class="w"> </span><span class="s">"your-secure-password"</span>
+<span class="w">  </span><span class="nt">sentry-dsn</span><span class="p">:</span><span class="w"> </span><span class="s">"https://...@sentry.io/..."</span>
+<span class="w">  </span><span class="nt">auth0-client-secret</span><span class="p">:</span><span class="w"> </span><span class="s">"your-auth0-secret"</span>
 </code></pre></div>
 <h2 id="database-migrations">Database Migrations<a class="headerlink" href="#database-migrations" title="Permanent link">&para;</a></h2>
 <h3 id="migration-strategy">Migration Strategy<a class="headerlink" href="#migration-strategy" title="Permanent link">&para;</a></h3>
@@ -5373,24 +5373,24 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">alembic.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_migrations</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run database migrations before deployment.&quot;&quot;&quot;</span>
-    <span class="n">alembic_cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="s2">&quot;alembic.ini&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Run database migrations before deployment."""</span>
+    <span class="n">alembic_cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="s2">"alembic.ini"</span><span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Check current version</span>
         <span class="n">command</span><span class="o">.</span><span class="n">current</span><span class="p">(</span><span class="n">alembic_cfg</span><span class="p">)</span>
 
         <span class="c1"># Run migrations</span>
-        <span class="n">command</span><span class="o">.</span><span class="n">upgrade</span><span class="p">(</span><span class="n">alembic_cfg</span><span class="p">,</span> <span class="s2">&quot;head&quot;</span><span class="p">)</span>
+        <span class="n">command</span><span class="o">.</span><span class="n">upgrade</span><span class="p">(</span><span class="n">alembic_cfg</span><span class="p">,</span> <span class="s2">"head"</span><span class="p">)</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✓ Migrations completed successfully&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">"✓ Migrations completed successfully"</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">0</span>
 
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✗ Migration failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✗ Migration failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
         <span class="k">return</span> <span class="mi">1</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_migrations</span><span class="p">()))</span>
 </code></pre></div>
 <h3 id="kubernetes-init-container">Kubernetes Init Container<a class="headerlink" href="#kubernetes-init-container" title="Permanent link">&para;</a></h3>
@@ -5398,7 +5398,7 @@
 <span class="w">  </span><span class="nt">initContainers</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">migrate</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gcr.io/your-project/fraiseql:1.0.0</span>
-<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;python&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;migrations/run_migrations.py&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"python"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"migrations/run_migrations.py"</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">envFrom</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">configMapRef</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-config</span>
@@ -5416,31 +5416,31 @@
 
 <span class="c1"># Create health check</span>
 <span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;database&quot;</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;pool&quot;</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"database"</span><span class="p">,</span> <span class="n">check_database</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"pool"</span><span class="p">,</span> <span class="n">check_pool_stats</span><span class="p">)</span>
 
 <span class="c1"># FastAPI endpoints</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Response</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_check</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple liveness check.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;healthy&quot;</span><span class="p">,</span> <span class="s2">&quot;service&quot;</span><span class="p">:</span> <span class="s2">&quot;fraiseql&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="sd">"""Simple liveness check."""</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"healthy"</span><span class="p">,</span> <span class="s2">"service"</span><span class="p">:</span> <span class="s2">"fraiseql"</span><span class="p">}</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/ready&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/ready"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">readiness_check</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Comprehensive readiness check.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Comprehensive readiness check."""</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
 
-    <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;healthy&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"healthy"</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">result</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
             <span class="n">content</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">),</span>
             <span class="n">status_code</span><span class="o">=</span><span class="mi">503</span><span class="p">,</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span>
         <span class="p">)</span>
 </code></pre></div>
 <h2 id="scaling-strategies">Scaling Strategies<a class="headerlink" href="#scaling-strategies" title="Permanent link">&para;</a></h2>
@@ -5557,10 +5557,10 @@ kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class=
 <span class="kn">from</span><span class="w"> </span><span class="nn">alembic.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">Config</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">rollback_migration</span><span class="p">(</span><span class="n">steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rollback database migrations.&quot;&quot;&quot;</span>
-    <span class="n">alembic_cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="s2">&quot;alembic.ini&quot;</span><span class="p">)</span>
-    <span class="n">command</span><span class="o">.</span><span class="n">downgrade</span><span class="p">(</span><span class="n">alembic_cfg</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;-</span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✓ Rolled back </span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2"> migration(s)&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Rollback database migrations."""</span>
+    <span class="n">alembic_cfg</span> <span class="o">=</span> <span class="n">Config</span><span class="p">(</span><span class="s2">"alembic.ini"</span><span class="p">)</span>
+    <span class="n">command</span><span class="o">.</span><span class="n">downgrade</span><span class="p">(</span><span class="n">alembic_cfg</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"-</span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✓ Rolled back </span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2"> migration(s)"</span><span class="p">)</span>
 
 <span class="c1"># Rollback one migration</span>
 <span class="n">rollback_migration</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
@@ -5571,21 +5571,21 @@ kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class=
 
 <span class="nb">set</span><span class="w"> </span>-e
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;🚨 Emergency rollback initiated&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"🚨 Emergency rollback initiated"</span>
 
 <span class="c1"># 1. Rollback Kubernetes deployment</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Rolling back deployment...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Rolling back deployment..."</span>
 kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w"> </span>deployment/fraiseql<span class="w"> </span>-n<span class="w"> </span>production
 
 <span class="c1"># 2. Wait for rollback</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Waiting for rollback to complete...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Waiting for rollback to complete..."</span>
 kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/fraiseql<span class="w"> </span>-n<span class="w"> </span>production
 
 <span class="c1"># 3. Verify health</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Checking health...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Checking health..."</span>
 kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>production<span class="w"> </span>deployment/fraiseql<span class="w"> </span>--<span class="w"> </span>curl<span class="w"> </span>-f<span class="w"> </span>http://localhost:8000/health
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✓ Rollback completed successfully&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"✓ Rollback completed successfully"</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>

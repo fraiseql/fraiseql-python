@@ -5327,7 +5327,7 @@ and an optional human-readable <code>identifier</code>.</p>
 <span class="w">    </span><span class="n">latitude</span><span class="w">        </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">),</span>
 <span class="w">    </span><span class="n">longitude</span><span class="w">       </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">11</span><span class="p">,</span><span class="w"> </span><span class="mi">8</span><span class="p">),</span>
 <span class="w">    </span><span class="n">fk_owner</span><span class="w">        </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_owner</span><span class="w"> </span><span class="p">(</span><span class="n">pk_owner</span><span class="p">),</span>
-<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;active&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">-- active, inactive, error</span>
+<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'active'</span><span class="p">,</span><span class="w">  </span><span class="c1">-- active, inactive, error</span>
 <span class="w">    </span><span class="n">last_heartbeat</span><span class="w">  </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
 <span class="p">);</span>
@@ -5341,7 +5341,7 @@ and an optional human-readable <code>identifier</code>.</p>
 <span class="w">    </span><span class="n">pk_device_config</span><span class="w">    </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
 <span class="w">    </span><span class="n">fk_device</span><span class="w">           </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_device</span><span class="w"> </span><span class="p">(</span><span class="n">pk_device</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
 <span class="w">    </span><span class="n">read_interval_s</span><span class="w">     </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">                </span><span class="c1">-- seconds between readings</span>
-<span class="w">    </span><span class="n">alert_threshold</span><span class="w">     </span><span class="n">JSONB</span><span class="p">,</span><span class="w">                       </span><span class="c1">-- {&quot;temperature&quot;: {&quot;min&quot;: 0, &quot;max&quot;: 100}}</span>
+<span class="w">    </span><span class="n">alert_threshold</span><span class="w">     </span><span class="n">JSONB</span><span class="p">,</span><span class="w">                       </span><span class="c1">-- {"temperature": {"min": 0, "max": 100}}</span>
 <span class="w">    </span><span class="n">data_retention_days</span><span class="w"> </span><span class="nb">INT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="mi">365</span><span class="p">,</span>
 <span class="w">    </span><span class="n">custom_fields</span><span class="w">       </span><span class="n">JSONB</span><span class="p">,</span>
 <span class="w">    </span><span class="n">updated_at</span><span class="w">          </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
@@ -5368,26 +5368,26 @@ makes retention a metadata operation (<code>DROP</code>/<code>DETACH PARTITION</
 <code>DELETE</code>), and lets the planner prune to the partitions a query touches.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Raw sensor readings, partitioned by month</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="ss">&quot;time&quot;</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="ss">"time"</span><span class="w">      </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">fk_device</span><span class="w">   </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_device</span><span class="w"> </span><span class="p">(</span><span class="n">pk_device</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">,</span>
 <span class="w">    </span><span class="n">sensor_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">value</span><span class="w">       </span><span class="nb">NUMERIC</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">unit</span><span class="w">        </span><span class="nb">TEXT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">quality</span><span class="w">     </span><span class="nb">TEXT</span><span class="w">                          </span><span class="c1">-- good, poor, unknown</span>
-<span class="p">)</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">RANGE</span><span class="w"> </span><span class="p">(</span><span class="ss">&quot;time&quot;</span><span class="p">);</span>
+<span class="p">)</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">RANGE</span><span class="w"> </span><span class="p">(</span><span class="ss">"time"</span><span class="p">);</span>
 
 <span class="c1">-- One partition per month (create ahead of time, e.g. via cron)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_sensor_reading_2026_06</span>
 <span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_sensor_reading</span>
-<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-06-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-07-01&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-06-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-07-01'</span><span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_sensor_reading_2026_07</span>
 <span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_sensor_reading</span>
-<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-07-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-08-01&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-07-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-08-01'</span><span class="p">);</span>
 
 <span class="c1">-- Indexes are created on the parent and inherited by every partition</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_reading_device_time</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;time&quot;</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_reading_sensor_time</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;time&quot;</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_reading_device_time</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="ss">"time"</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_reading_sensor_time</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="ss">"time"</span><span class="w"> </span><span class="k">DESC</span><span class="p">);</span>
 </code></pre></div>
 <p>Retention then becomes cheap — drop the partition once it ages out:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Retire June once it is older than the retention window</span>
@@ -5416,19 +5416,19 @@ fast — see <a href="../../architecture/database/tv-table-pattern/">tv-table pa
 <span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_reading_1h</span><span class="w"> </span><span class="p">(</span><span class="n">bucket</span><span class="p">,</span><span class="w"> </span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
 <span class="w">    </span><span class="k">SELECT</span>
-<span class="w">        </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">&quot;time&quot;</span><span class="p">)</span><span class="w">               </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket</span><span class="p">,</span>
+<span class="w">        </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'hour'</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">"time"</span><span class="p">)</span><span class="w">               </span><span class="k">AS</span><span class="w"> </span><span class="n">bucket</span><span class="p">,</span>
 <span class="w">        </span><span class="n">r</span><span class="p">.</span><span class="n">fk_device</span><span class="p">,</span>
 <span class="w">        </span><span class="n">r</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;avgValue&#39;</span><span class="p">,</span><span class="w">     </span><span class="k">AVG</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;minValue&#39;</span><span class="p">,</span><span class="w">     </span><span class="k">MIN</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;maxValue&#39;</span><span class="p">,</span><span class="w">     </span><span class="k">MAX</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;stddevValue&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">STDDEV</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;readingCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'avgValue'</span><span class="p">,</span><span class="w">     </span><span class="k">AVG</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">'minValue'</span><span class="p">,</span><span class="w">     </span><span class="k">MIN</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">'maxValue'</span><span class="p">,</span><span class="w">     </span><span class="k">MAX</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">'stddevValue'</span><span class="p">,</span><span class="w">  </span><span class="n">STDDEV</span><span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">value</span><span class="p">),</span>
+<span class="w">            </span><span class="s1">'readingCount'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span><span class="w">                                          </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="n">r</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">&quot;time&quot;</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">p_from</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">&quot;time&quot;</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">p_to</span>
-<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">&quot;time&quot;</span><span class="p">),</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">sensor_name</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">"time"</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">p_from</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">"time"</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">p_to</span>
+<span class="w">    </span><span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'hour'</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="ss">"time"</span><span class="p">),</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">r</span><span class="p">.</span><span class="n">sensor_name</span>
 <span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">bucket</span><span class="p">,</span><span class="w"> </span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">)</span>
 <span class="w">    </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -5444,15 +5444,15 @@ with <code>jsonb_build_object(...)</code>. <code>pk_</code>/<code>fk_</code> col
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">           </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">d</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">         </span><span class="n">d</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;deviceType&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">d</span><span class="p">.</span><span class="n">device_type</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;location&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="k">location</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;latitude&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="n">latitude</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;longitude&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">longitude</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">d</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;lastHeartbeat&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">last_heartbeat</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">           </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w">   </span><span class="n">d</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w">         </span><span class="n">d</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'deviceType'</span><span class="p">,</span><span class="w">   </span><span class="n">d</span><span class="p">.</span><span class="n">device_type</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'location'</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="k">location</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'latitude'</span><span class="p">,</span><span class="w">     </span><span class="n">d</span><span class="p">.</span><span class="n">latitude</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'longitude'</span><span class="p">,</span><span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">longitude</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'status'</span><span class="p">,</span><span class="w">       </span><span class="n">d</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'lastHeartbeat'</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">last_heartbeat</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_device</span><span class="w"> </span><span class="n">d</span><span class="p">;</span>
 
@@ -5463,13 +5463,13 @@ with <code>jsonb_build_object(...)</code>. <code>pk_</code>/<code>fk_</code> col
 <span class="w">    </span><span class="n">dev</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">device_id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;bucket&#39;</span><span class="p">,</span><span class="w">       </span><span class="n">t</span><span class="p">.</span><span class="n">bucket</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;sensorName&#39;</span><span class="p">,</span><span class="w">   </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;avgValue&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;avgValue&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;minValue&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;minValue&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;maxValue&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;maxValue&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;stddevValue&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;stddevValue&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;readingCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;readingCount&#39;</span>
+<span class="w">        </span><span class="s1">'bucket'</span><span class="p">,</span><span class="w">       </span><span class="n">t</span><span class="p">.</span><span class="n">bucket</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'sensorName'</span><span class="p">,</span><span class="w">   </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'avgValue'</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'avgValue'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'minValue'</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'minValue'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'maxValue'</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'maxValue'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'stddevValue'</span><span class="p">,</span><span class="w">  </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'stddevValue'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'readingCount'</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'readingCount'</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tv_reading_1h</span><span class="w"> </span><span class="n">t</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tb_device</span><span class="w"> </span><span class="n">dev</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">dev</span><span class="p">.</span><span class="n">pk_device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">fk_device</span><span class="p">;</span>
@@ -5484,10 +5484,10 @@ view — not a FraiseQL API. FraiseQL serves whatever the view returns. See
 <span class="w">    </span><span class="n">dev</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">device_id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;bucket&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="n">bucket</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;sensorName&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;avgValue&#39;</span><span class="p">,</span><span class="w">   </span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;avgValue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;movingAvg3&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">AVG</span><span class="p">((</span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;avgValue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'bucket'</span><span class="p">,</span><span class="w">     </span><span class="n">t</span><span class="p">.</span><span class="n">bucket</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'sensorName'</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'avgValue'</span><span class="p">,</span><span class="w">   </span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'avgValue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'movingAvg3'</span><span class="p">,</span><span class="w"> </span><span class="k">AVG</span><span class="p">((</span><span class="n">t</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'avgValue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">sensor_name</span>
 <span class="w">            </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">bucket</span>
 <span class="w">            </span><span class="k">ROWS</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="n">PRECEDING</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">CURRENT</span><span class="w"> </span><span class="k">ROW</span>
@@ -5519,13 +5519,13 @@ view — not a FraiseQL API. FraiseQL serves whatever the view returns. See
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">           </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;alertType&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">alert_type</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;severity&#39;</span><span class="p">,</span><span class="w">     </span><span class="n">a</span><span class="p">.</span><span class="n">severity</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;value&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">a</span><span class="p">.</span><span class="n">value</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;threshold&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">threshold</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;acknowledged&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">acknowledged</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">           </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'alertType'</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">alert_type</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'severity'</span><span class="p">,</span><span class="w">     </span><span class="n">a</span><span class="p">.</span><span class="n">severity</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'value'</span><span class="p">,</span><span class="w">        </span><span class="n">a</span><span class="p">.</span><span class="n">value</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'threshold'</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">threshold</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'acknowledged'</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">acknowledged</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_device_alert</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
 </code></pre></div>
@@ -5540,7 +5540,7 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_device&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_device"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Device</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
@@ -5553,7 +5553,7 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
     <span class="n">last_heartbeat</span><span class="p">:</span> <span class="n">DateTime</span> <span class="o">|</span> <span class="kc">None</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_sensor&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_sensor"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Sensor</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">sensor_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5561,9 +5561,9 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
     <span class="n">accuracy</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="kc">None</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_reading_1h&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_reading_1h"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SensorMetric</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pre-aggregated hourly metric from tv_reading_1h.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Pre-aggregated hourly metric from tv_reading_1h."""</span>
     <span class="n">bucket</span><span class="p">:</span> <span class="n">DateTime</span>
     <span class="n">sensor_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">avg_value</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="kc">None</span>
@@ -5573,7 +5573,7 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
     <span class="n">reading_count</span><span class="p">:</span> <span class="nb">int</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_alert&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_alert"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Alert</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">alert_type</span><span class="p">:</span> <span class="nb">str</span>
@@ -5601,7 +5601,7 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RecordReadingError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;INGEST_ERROR&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"INGEST_ERROR"</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
@@ -5617,22 +5617,22 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AcknowledgeAlertError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;NOT_FOUND&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"NOT_FOUND"</span>
 </code></pre></div>
 <h3 id="queries">Queries<a class="headerlink" href="#queries" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">devices</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">device_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Device</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List devices, optionally filtered by type.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device_type&quot;</span><span class="p">:</span> <span class="n">device_type</span><span class="p">}</span> <span class="k">if</span> <span class="n">device_type</span> <span class="k">else</span> <span class="p">{}</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_device&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""List devices, optionally filtered by type."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"device_type"</span><span class="p">:</span> <span class="n">device_type</span><span class="p">}</span> <span class="k">if</span> <span class="n">device_type</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_device"</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">device</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Device</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get one device by id.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_device&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Get one device by id."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_device"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
@@ -5643,10 +5643,10 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
     <span class="n">start_time</span><span class="p">:</span> <span class="n">DateTime</span><span class="p">,</span>
     <span class="n">end_time</span><span class="p">:</span> <span class="n">DateTime</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">SensorMetric</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Pre-aggregated hourly metrics from tv_reading_1h (fast for dashboards).&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Pre-aggregated hourly metrics from tv_reading_1h (fast for dashboards)."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_reading_1h&quot;</span><span class="p">,</span>
+        <span class="s2">"v_reading_1h"</span><span class="p">,</span>
         <span class="n">device_id</span><span class="o">=</span><span class="n">device_id</span><span class="p">,</span>
         <span class="n">sensor_name</span><span class="o">=</span><span class="n">sensor_name</span><span class="p">,</span>
         <span class="n">bucket__gte</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
@@ -5656,9 +5656,9 @@ call <code>fn_</code> functions via <code>db.execute_function</code>.</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_alerts</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Alert</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unacknowledged alerts.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_alert&quot;</span><span class="p">,</span> <span class="n">acknowledged</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Unacknowledged alerts."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_alert"</span><span class="p">,</span> <span class="n">acknowledged</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <p><code>start_time</code>/<code>end_time</code> map to the WHERE operators <code>bucket__gte</code> / <code>bucket__lte</code>, which
 FraiseQL translates into a partition-prunable <code>BETWEEN</code> against the view. When a query
@@ -5671,19 +5671,19 @@ you can aggregate <code>v_reading_1h</code> further without writing a second vie
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">record_reading</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">RecordReadingInput</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RecordReadingSuccess</span> <span class="o">|</span> <span class="n">RecordReadingError</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Ingest a single reading and run threshold checks (in PostgreSQL).&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Ingest a single reading and run threshold checks (in PostgreSQL)."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_record_reading&quot;</span><span class="p">,</span>
+        <span class="s2">"fn_record_reading"</span><span class="p">,</span>
         <span class="p">{</span>
-            <span class="s2">&quot;device_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">device_id</span><span class="p">),</span>
-            <span class="s2">&quot;sensor_name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">sensor_name</span><span class="p">,</span>
-            <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
-            <span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
+            <span class="s2">"device_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">device_id</span><span class="p">),</span>
+            <span class="s2">"sensor_name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">sensor_name</span><span class="p">,</span>
+            <span class="s2">"value"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="s2">"ts"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">timestamp</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">RecordReadingError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;ingest failed&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">RecordReadingError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"ingest failed"</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">RecordReadingSuccess</span><span class="p">(</span>
         <span class="n">device_id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">device_id</span><span class="p">,</span> <span class="n">sensor_name</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">sensor_name</span>
     <span class="p">)</span>
@@ -5693,13 +5693,13 @@ you can aggregate <code>v_reading_1h</code> further without writing a second vie
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">acknowledge_alert</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">AcknowledgeAlertInput</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AcknowledgeAlertSuccess</span> <span class="o">|</span> <span class="n">AcknowledgeAlertError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_acknowledge_alert&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;alert_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">alert_id</span><span class="p">)}</span>
+        <span class="s2">"fn_acknowledge_alert"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"alert_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">alert_id</span><span class="p">)}</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">AcknowledgeAlertError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;not found&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">AcknowledgeAlertSuccess</span><span class="p">(</span><span class="n">alert</span><span class="o">=</span><span class="n">Alert</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;alert&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">AcknowledgeAlertError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"not found"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">AcknowledgeAlertSuccess</span><span class="p">(</span><span class="n">alert</span><span class="o">=</span><span class="n">Alert</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"alert"</span><span class="p">]))</span>
 </code></pre></div>
 <h3 id="real-time-push-subscriptions">Real-Time Push (Subscriptions)<a class="headerlink" href="#real-time-push-subscriptions" title="Permanent link">&para;</a></h3>
 <p>FraiseQL exposes GraphQL subscriptions over WebSocket. A <code>@fraiseql.subscription</code> decorates
@@ -5711,15 +5711,15 @@ it with PostgreSQL <code>LISTEN/NOTIFY</code> (e.g. a trigger on <code>tb_device
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">alerts</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Alert</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stream new alerts to dashboards as they are created.&quot;&quot;&quot;</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">alert</span> <span class="ow">in</span> <span class="n">watch_alerts</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]):</span>   <span class="c1"># your LISTEN/NOTIFY loop</span>
+<span class="w">    </span><span class="sd">"""Stream new alerts to dashboards as they are created."""</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">alert</span> <span class="ow">in</span> <span class="n">watch_alerts</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]):</span>   <span class="c1"># your LISTEN/NOTIFY loop</span>
         <span class="k">yield</span> <span class="n">alert</span>
 </code></pre></div>
 <h3 id="mounting-the-app">Mounting the App<a class="headerlink" href="#mounting-the-app" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/iot&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/iot"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Device</span><span class="p">,</span> <span class="n">Sensor</span><span class="p">,</span> <span class="n">SensorMetric</span><span class="p">,</span> <span class="n">Alert</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">devices</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">sensor_metrics</span><span class="p">,</span> <span class="n">active_alerts</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">record_reading</span><span class="p">,</span> <span class="n">acknowledge_alert</span><span class="p">],</span>
@@ -5746,26 +5746,26 @@ inserts the reading, and evaluates thresholds in one transaction.</p>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_device</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_pk_device</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_device</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">device_id</span><span class="p">;</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_pk_device</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;unknown device&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown device'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="ss">&quot;time&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="ss">"time"</span><span class="p">,</span><span class="w"> </span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">ts</span><span class="p">,</span><span class="w"> </span><span class="n">v_pk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- Threshold check</span>
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">alert_threshold</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sensor_name</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">&#39;max&#39;</span><span class="p">)::</span><span class="nb">numeric</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="n">alert_threshold</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">sensor_name</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'max'</span><span class="p">)::</span><span class="nb">numeric</span>
 <span class="w">      </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_threshold</span>
 <span class="w">      </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_device_config</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">fk_device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_pk_device</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_threshold</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">v_threshold</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_device_alert</span><span class="w"> </span><span class="p">(</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">alert_type</span><span class="p">,</span><span class="w"> </span><span class="n">severity</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">threshold</span><span class="p">)</span>
-<span class="w">        </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_pk_device</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;threshold_exceeded&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;warning&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">v_threshold</span><span class="p">);</span>
-<span class="w">        </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">&#39;alert&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;device&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">device_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;sensor&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;value&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span>
+<span class="w">        </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_pk_device</span><span class="p">,</span><span class="w"> </span><span class="s1">'threshold_exceeded'</span><span class="p">,</span><span class="w"> </span><span class="s1">'warning'</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">v_threshold</span><span class="p">);</span>
+<span class="w">        </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">'alert'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'device'</span><span class="p">,</span><span class="w"> </span><span class="n">device_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'sensor'</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="s1">'value'</span><span class="p">,</span><span class="w"> </span><span class="n">value</span>
 <span class="w">        </span><span class="p">)::</span><span class="nb">text</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -5773,13 +5773,13 @@ inserts the reading, and evaluates thresholds in one transaction.</p>
 <p>For backfills or high-throughput ingestion, bypass per-row mutations and stream straight
 into the partitioned table with <code>COPY</code> — the fastest path PostgreSQL offers. An MQTT/Kafka
 bridge can batch readings and pipe them in:</p>
-<div class="highlight"><pre><span></span><code><span class="k">COPY</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="ss">&quot;time&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">unit</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="k">COPY</span><span class="w"> </span><span class="n">tb_sensor_reading</span><span class="w"> </span><span class="p">(</span><span class="ss">"time"</span><span class="p">,</span><span class="w"> </span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">sensor_name</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">unit</span><span class="p">)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="k">STDIN</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="p">(</span><span class="n">FORMAT</span><span class="w"> </span><span class="n">csv</span><span class="p">);</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Async bulk load via psycopg copy (run outside FraiseQL, in your ingestion worker)</span>
 <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span>
-        <span class="s2">&quot;COPY tb_sensor_reading (</span><span class="se">\&quot;</span><span class="s2">time</span><span class="se">\&quot;</span><span class="s2">, fk_device, sensor_name, value) FROM STDIN&quot;</span>
+        <span class="s2">"COPY tb_sensor_reading (</span><span class="se">\"</span><span class="s2">time</span><span class="se">\"</span><span class="s2">, fk_device, sensor_name, value) FROM STDIN"</span>
     <span class="p">)</span> <span class="k">as</span> <span class="n">copy</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">copy</span><span class="o">.</span><span class="n">write_row</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
@@ -5818,7 +5818,7 @@ like; FraiseQL reads from the PostgreSQL tables and views.</p>
 <span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">sensorMetrics</span><span class="p">(</span>
 <span class="w">    </span><span class="n">deviceId</span><span class="p">:</span><span class="w"> </span><span class="nv">$deviceId</span>
-<span class="w">    </span><span class="n">sensorName</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;temperature&quot;</span>
+<span class="w">    </span><span class="n">sensorName</span><span class="p">:</span><span class="w"> </span><span class="s">"temperature"</span>
 <span class="w">    </span><span class="n">startTime</span><span class="p">:</span><span class="w"> </span><span class="nv">$startTime</span>
 <span class="w">    </span><span class="n">endTime</span><span class="p">:</span><span class="w"> </span><span class="nv">$endTime</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5834,10 +5834,10 @@ like; FraiseQL reads from the PostgreSQL tables and views.</p>
 <h3 id="time-based-partitioning">Time-Based Partitioning<a class="headerlink" href="#time-based-partitioning" title="Permanent link">&para;</a></h3>
 <p>Native range partitioning (above) is the core scaling lever. Pre-create partitions ahead of
 time with a small cron job so writes never hit a missing partition:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Create next month&#39;s partition (run monthly)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Create next month's partition (run monthly)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">tb_sensor_reading_2026_08</span>
 <span class="w">    </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_sensor_reading</span>
-<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-08-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-09-01&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-08-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-09-01'</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="data-retention">Data Retention<a class="headerlink" href="#data-retention" title="Permanent link">&para;</a></h3>
 <p>Drop or detach aged partitions — a metadata operation, far cheaper than a bulk <code>DELETE</code>:</p>
@@ -5851,28 +5851,28 @@ time with a small cron job so writes never hit a missing partition:</p>
 <code>tv_reading_1d</code> table (refreshed like <code>tv_reading_1h</code>) becomes the system of record for
 historical trends, served through <code>v_reading_1d</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Daily rollup window refresh</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">fn_refresh_reading_1d</span><span class="p">(</span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;1 day&#39;</span><span class="p">),</span>
-<span class="w">                             </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">()));</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">fn_refresh_reading_1d</span><span class="p">(</span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'1 day'</span><span class="p">),</span>
+<span class="w">                             </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">now</span><span class="p">()));</span>
 </code></pre></div>
 <hr />
 <h2 id="alerting">Alerting<a class="headerlink" href="#alerting" title="Permanent link">&para;</a></h2>
 <p>Threshold alerts are evaluated inside <code>fn_record_reading</code> (above) so every write is checked
 in the same transaction. For time-window rules (device offline, sustained anomalies) run a
 periodic job that calls an <code>fn_</code> function:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Flag devices that haven&#39;t reported in 5 minutes (run from cron)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Flag devices that haven't reported in 5 minutes (run from cron)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_flag_offline_devices</span><span class="p">()</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="n">void</span>
 <span class="k">LANGUAGE</span><span class="w"> </span><span class="k">sql</span>
 <span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_device_alert</span><span class="w"> </span><span class="p">(</span><span class="n">fk_device</span><span class="p">,</span><span class="w"> </span><span class="n">alert_type</span><span class="p">,</span><span class="w"> </span><span class="n">severity</span><span class="p">)</span>
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">pk_device</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;device_offline&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;warning&#39;</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">pk_device</span><span class="p">,</span><span class="w"> </span><span class="s1">'device_offline'</span><span class="p">,</span><span class="w"> </span><span class="s1">'warning'</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_device</span><span class="w"> </span><span class="n">d</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">last_heartbeat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;5 minutes&#39;</span>
-<span class="w">      </span><span class="k">AND</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">last_heartbeat</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'5 minutes'</span>
+<span class="w">      </span><span class="k">AND</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'active'</span>
 <span class="w">      </span><span class="k">AND</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span>
 <span class="w">          </span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_device_alert</span><span class="w"> </span><span class="n">a</span>
 <span class="w">          </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">fk_device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">pk_device</span>
-<span class="w">            </span><span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">alert_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;device_offline&#39;</span>
+<span class="w">            </span><span class="k">AND</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">alert_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'device_offline'</span>
 <span class="w">            </span><span class="k">AND</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">acknowledged</span>
 <span class="w">      </span><span class="p">);</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -5887,40 +5887,40 @@ periodic job that calls an <code>fn_</code> function:</p>
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_record_reading_ingests</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">db</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A reading is persisted and queryable.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A reading is persisted and queryable."""</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        mutation Ingest($input: RecordReadingInput!) {</span>
 <span class="sd">          recordReading(input: $input) {</span>
 <span class="sd">            ... on RecordReadingSuccess { deviceId sensorName }</span>
 <span class="sd">            ... on RecordReadingError { message }</span>
 <span class="sd">          }</span>
 <span class="sd">        }</span>
-<span class="sd">        &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">        """</span><span class="p">,</span>
         <span class="n">variable_values</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">&quot;deviceId&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">device_id</span><span class="p">),</span>
-                <span class="s2">&quot;sensorName&quot;</span><span class="p">:</span> <span class="s2">&quot;temperature&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;23.5&quot;</span><span class="p">,</span>
+            <span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"deviceId"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">device_id</span><span class="p">),</span>
+                <span class="s2">"sensorName"</span><span class="p">:</span> <span class="s2">"temperature"</span><span class="p">,</span>
+                <span class="s2">"value"</span><span class="p">:</span> <span class="s2">"23.5"</span><span class="p">,</span>
             <span class="p">}</span>
         <span class="p">},</span>
-        <span class="n">context_value</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">db</span><span class="p">},</span>
+        <span class="n">context_value</span><span class="o">=</span><span class="p">{</span><span class="s2">"db"</span><span class="p">:</span> <span class="n">db</span><span class="p">},</span>
     <span class="p">)</span>
     <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">is</span> <span class="kc">None</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;recordReading&quot;</span><span class="p">][</span><span class="s2">&quot;sensorName&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;temperature&quot;</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"recordReading"</span><span class="p">][</span><span class="s2">"sensorName"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"temperature"</span>
 
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_threshold_triggers_alert</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">db</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A reading above the configured max raises an alert.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A reading above the configured max raises an alert."""</span>
     <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;mutation { recordReading(input: &quot;</span>
-        <span class="s1">&#39;{ deviceId: &quot;</span><span class="si">%s</span><span class="s1">&quot;, sensorName: &quot;temperature&quot;, value: &quot;120&quot; }) &#39;</span>
-        <span class="s2">&quot;{ ... on RecordReadingSuccess { sensorName } } }&quot;</span> <span class="o">%</span> <span class="n">device_id</span><span class="p">,</span>
-        <span class="n">context_value</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">db</span><span class="p">},</span>
+        <span class="s2">"mutation { recordReading(input: "</span>
+        <span class="s1">'{ deviceId: "</span><span class="si">%s</span><span class="s1">", sensorName: "temperature", value: "120" }) '</span>
+        <span class="s2">"{ ... on RecordReadingSuccess { sensorName } } }"</span> <span class="o">%</span> <span class="n">device_id</span><span class="p">,</span>
+        <span class="n">context_value</span><span class="o">=</span><span class="p">{</span><span class="s2">"db"</span><span class="p">:</span> <span class="n">db</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="n">alerts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_alert&quot;</span><span class="p">,</span> <span class="n">acknowledged</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;severity&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;warning&quot;</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alerts</span><span class="p">)</span>
+    <span class="n">alerts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_alert"</span><span class="p">,</span> <span class="n">acknowledged</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">any</span><span class="p">(</span><span class="n">a</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"severity"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"warning"</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">alerts</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>

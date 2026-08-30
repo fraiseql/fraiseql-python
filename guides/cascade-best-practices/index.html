@@ -5259,17 +5259,17 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(...)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="c1">-- Update author&#39;s post count</span>
+<span class="w">    </span><span class="c1">-- Update author's post count</span>
 <span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">post_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">post_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Return cascade for both entities</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;_cascade&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'data'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'_cascade'</span><span class="p">,</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
 <span class="w">            </span><span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">),</span>
-<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;User&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_user&#39;</span><span class="p">)</span>
+<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">),</span>
+<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_user'</span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
@@ -5278,13 +5278,13 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 </code></pre></div>
 <p><strong>List Invalidation Requirements</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- New post requires invalidating post lists</span>
-<span class="s1">&#39;_cascade&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
+<span class="s1">'_cascade'</span><span class="p">,</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
 <span class="w">    </span><span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">)</span>
 <span class="w">    </span><span class="p">),</span>
 <span class="w">    </span><span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PREFIX&#39;</span><span class="p">),</span>
-<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;userPosts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;EXACT&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'PREFIX'</span><span class="p">),</span>
+<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'userPosts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EXACT'</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5330,9 +5330,9 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 </code></pre></div>
 <p><strong>Response</strong> (minimal payload):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;updatePreference&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Preference updated successfully&quot;</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"updatePreference"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Preference updated successfully"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -5350,8 +5350,8 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 
 <span class="w">    </span><span class="c1">-- Simple success response (no _cascade object)</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Preference updated&#39;</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Preference updated'</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="w">    </span><span class="c1">-- Note: No app.build_cascade() call</span>
 <span class="k">END</span><span class="p">;</span>
@@ -5362,7 +5362,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 
 <span class="nd">@mutation</span>  <span class="c1"># Note: enable_cascade=False by default</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserPreference</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple preference update - no side effects&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Simple preference update - no side effects"""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">UpdatePreferenceInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">UpdatePreferenceSuccess</span>
     <span class="n">error</span><span class="p">:</span> <span class="n">UpdatePreferenceError</span>
@@ -5387,13 +5387,13 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <p><strong>Include All Affected Entities</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- GOOD: Include both post and author</span>
 <span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;User&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_user&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_user'</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1">-- BAD: Missing author update</span>
 <span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Use Appropriate Operations</strong></p>
@@ -5406,19 +5406,19 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="c1">-- GOOD: Complete entity data</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;author_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;updated_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;like_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">like_count</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'author_id'</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'updated_at'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'like_count'</span><span class="p">,</span><span class="w"> </span><span class="n">like_count</span>
 <span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 
 <span class="c1">-- BAD: Incomplete entity data</span>
 <span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span>
 <span class="w">    </span><span class="c1">-- Missing other fields clients expect</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5427,9 +5427,9 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="c1">-- Invalidate specific query patterns</span>
 <span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
 <span class="w">    </span><span class="c1">-- Invalidate all post-related queries</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PREFIX&#39;</span><span class="p">),</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'PREFIX'</span><span class="p">),</span>
 <span class="w">    </span><span class="c1">-- Invalidate user-specific queries</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;userPosts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;EXACT&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'userPosts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EXACT'</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Scope Options</strong></p>
@@ -5441,14 +5441,14 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <p><strong>Strategic Invalidation</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- For new posts: invalidate list queries but not individual post queries</span>
 <span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PREFIX&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;feed&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PREFIX&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'PREFIX'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'feed'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'PREFIX'</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1">-- For profile updates: invalidate user-specific queries</span>
 <span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;userProfile&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;EXACT&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;currentUser&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;EXACT&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'userProfile'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EXACT'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'currentUser'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EXACT'</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h2>
@@ -5458,11 +5458,11 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="c1">-- Post creation affects: Post + Author (2 entities)</span>
 
 <span class="c1">-- AVOID: Over-inclusive cascades</span>
-<span class="c1">-- Don&#39;t include every related entity in the system</span>
+<span class="c1">-- Don't include every related entity in the system</span>
 </code></pre></div>
 <p><strong>Monitor Payload Sizes</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Track cascade payload sizes in production</span>
-<span class="n">cascade_size</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span><span class="s1">&#39;fraiseql_cascade_payload_bytes&#39;</span><span class="p">,</span> <span class="s1">&#39;Cascade payload size&#39;</span><span class="p">)</span>
+<span class="n">cascade_size</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span><span class="s1">'fraiseql_cascade_payload_bytes'</span><span class="p">,</span> <span class="s1">'Cascade payload size'</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Large Cascade Thresholds</strong></p>
 <ul>
@@ -5474,20 +5474,20 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <p><strong>Prefer Entity Updates Over Invalidations</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- GOOD: Update specific entities</span>
 <span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;User&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_user&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_user'</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1">-- LESS EFFICIENT: Invalidate and refetch</span>
 <span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;userProfile&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;EXACT&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'userProfile'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EXACT'</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Batch Related Updates</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- GOOD: Single cascade with multiple updates</span>
 <span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;User&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_user&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Feed&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_feed_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_feed&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_user'</span><span class="p">),</span>
+<span class="w">    </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Feed'</span><span class="p">,</span><span class="w"> </span><span class="n">v_feed_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_feed'</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
@@ -5496,9 +5496,9 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="c1">-- If some operations succeeded but validation failed</span>
 <span class="k">IF</span><span class="w"> </span><span class="n">validation_error</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;VALIDATION_ERROR&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...),</span>
-<span class="w">        </span><span class="s1">&#39;_cascade&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_partial_cascade</span><span class="w">  </span><span class="c1">-- Still include successful updates</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'VALIDATION_ERROR'</span><span class="p">,</span><span class="w"> </span><span class="p">...),</span>
+<span class="w">        </span><span class="s1">'_cascade'</span><span class="p">,</span><span class="w"> </span><span class="n">v_partial_cascade</span><span class="w">  </span><span class="c1">-- Still include successful updates</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 </code></pre></div>
@@ -5506,8 +5506,8 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="c1">-- If nothing was actually changed</span>
 <span class="k">IF</span><span class="w"> </span><span class="n">complete_failure</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PERMISSION_DENIED&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'PERMISSION_DENIED'</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
 <span class="w">        </span><span class="c1">-- No _cascade field</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
@@ -5520,8 +5520,8 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="k">await</span><span class="w"> </span><span class="nx">applyCascadeToCache</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">createPost</span><span class="p">.</span><span class="nx">cascade</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="c1">// Log error but don&#39;t fail the mutation</span>
-<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s1">&#39;Cascade application failed:&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="p">);</span>
+<span class="w">        </span><span class="c1">// Log error but don't fail the mutation</span>
+<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s1">'Cascade application failed:'</span><span class="p">,</span><span class="w"> </span><span class="nx">error</span><span class="p">);</span>
 <span class="w">        </span><span class="c1">// Optionally invalidate entire cache as fallback</span>
 <span class="w">        </span><span class="nx">client</span><span class="p">.</span><span class="nx">cache</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5531,7 +5531,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">applyCascadeToCache</span><span class="p">(</span><span class="nx">cascade</span><span class="o">:</span><span class="w"> </span><span class="kt">CascadeData</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// Validate structure before processing</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nx">cascade</span><span class="p">.</span><span class="nx">updated</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="nx">cascade</span><span class="p">.</span><span class="nx">deleted</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="nx">cascade</span><span class="p">.</span><span class="nx">invalidations</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s1">&#39;Invalid cascade structure&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">throw</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="ne">Error</span><span class="p">(</span><span class="s1">'Invalid cascade structure'</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Process updates...</span>
@@ -5549,17 +5549,17 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="c1">-- Include all fields clients typically need</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">author_id</span><span class="p">)</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">author_id</span><span class="p">)</span>
 <span class="w">    </span><span class="p">),</span>
-<span class="w">    </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;updated_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;like_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">like_count</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;comment_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">comment_count</span>
+<span class="w">    </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'updated_at'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'like_count'</span><span class="p">,</span><span class="w"> </span><span class="n">like_count</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'comment_count'</span><span class="p">,</span><span class="w"> </span><span class="n">comment_count</span>
 <span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Performance Considerations</strong></p>
@@ -5568,7 +5568,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">id</span><span class="p">);</span>
 
 <span class="c1">-- Ensure views are fast to query</span>
-<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;some-uuid&#39;</span><span class="p">;</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'some-uuid'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="helper-function-usage">Helper Function Usage<a class="headerlink" href="#helper-function-usage" title="Permanent link">&para;</a></h3>
 <p><strong>Standard Helper Functions</strong></p>
@@ -5588,7 +5588,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">CascadeUpdate</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">__typename</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
 <span class="w">    </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
-<span class="w">    </span><span class="nx">operation</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">&#39;DELETED&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="nx">operation</span><span class="o">:</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="s1">'DELETED'</span><span class="p">;</span>
 <span class="w">    </span><span class="nx">entity</span><span class="o">:</span><span class="w"> </span><span class="kt">any</span><span class="p">;</span>
 <span class="p">}</span>
 
@@ -5618,7 +5618,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 
 <span class="w">    </span><span class="c1">// Apply invalidations</span>
 <span class="w">    </span><span class="nx">cascade</span><span class="p">.</span><span class="nx">invalidations</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">invalidation</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">invalidation</span><span class="p">.</span><span class="nx">strategy</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">invalidation</span><span class="p">.</span><span class="nx">strategy</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="c1">// Implement invalidation logic based on scope</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">    </span><span class="p">});</span>
@@ -5628,8 +5628,8 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <div class="highlight"><pre><span></span><code><span class="kd">const</span><span class="w"> </span><span class="p">[</span><span class="nx">createPost</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">useMutation</span><span class="p">(</span><span class="nx">CREATE_POST</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">optimisticResponse</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">createPost</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;temp-id&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;Post created&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">id</span><span class="o">:</span><span class="w"> </span><span class="s1">'temp-id'</span><span class="p">,</span>
+<span class="w">            </span><span class="nx">message</span><span class="o">:</span><span class="w"> </span><span class="s1">'Post created'</span><span class="p">,</span>
 <span class="w">            </span><span class="nx">cascade</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="c1">// Include expected cascade data for optimistic updates</span>
 <span class="w">            </span><span class="p">}</span>
@@ -5648,7 +5648,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="w">    </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">applyCascade</span><span class="p">(</span><span class="nx">cache</span><span class="p">,</span><span class="w"> </span><span class="nx">cascade</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">error</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s1">&#39;Cascade application failed, falling back to cache reset&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="nx">console</span><span class="p">.</span><span class="nx">warn</span><span class="p">(</span><span class="s1">'Cascade application failed, falling back to cache reset'</span><span class="p">);</span>
 <span class="w">        </span><span class="c1">// Fallback: reset cache to force refetch</span>
 <span class="w">        </span><span class="nx">cache</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5686,42 +5686,42 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <p><strong>Performance Metrics</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Cascade processing time</span>
 <span class="n">cascade_processing_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_processing_duration_seconds&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Time spent processing cascade data&#39;</span>
+    <span class="s1">'fraiseql_cascade_processing_duration_seconds'</span><span class="p">,</span>
+    <span class="s1">'Time spent processing cascade data'</span>
 <span class="p">)</span>
 
 <span class="c1"># Payload sizes</span>
 <span class="n">cascade_payload_bytes</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_payload_bytes&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Size of cascade payloads in bytes&#39;</span>
+    <span class="s1">'fraiseql_cascade_payload_bytes'</span><span class="p">,</span>
+    <span class="s1">'Size of cascade payloads in bytes'</span>
 <span class="p">)</span>
 
 <span class="c1"># Entity counts</span>
 <span class="n">cascade_entities_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_entities_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total entities processed via cascade&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;operation&#39;</span><span class="p">]</span>  <span class="c1"># CREATED, UPDATED, DELETED</span>
+    <span class="s1">'fraiseql_cascade_entities_total'</span><span class="p">,</span>
+    <span class="s1">'Total entities processed via cascade'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'operation'</span><span class="p">]</span>  <span class="c1"># CREATED, UPDATED, DELETED</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Effectiveness Metrics</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Cache hit improvements</span>
 <span class="n">cache_hit_rate</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cache_hit_rate&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Client cache hit rate percentage&#39;</span>
+    <span class="s1">'fraiseql_cache_hit_rate'</span><span class="p">,</span>
+    <span class="s1">'Client cache hit rate percentage'</span>
 <span class="p">)</span>
 
 <span class="c1"># Network request reduction</span>
 <span class="n">network_requests_reduced_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_network_requests_reduced_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Network requests eliminated by cascade&#39;</span>
+    <span class="s1">'fraiseql_network_requests_reduced_total'</span><span class="p">,</span>
+    <span class="s1">'Network requests eliminated by cascade'</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Error Metrics</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Cascade processing errors</span>
 <span class="n">cascade_errors_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_errors_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total cascade processing errors&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;error_type&#39;</span><span class="p">]</span>
+    <span class="s1">'fraiseql_cascade_errors_total'</span><span class="p">,</span>
+    <span class="s1">'Total cascade processing errors'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'error_type'</span><span class="p">]</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="alerting-rules">Alerting Rules<a class="headerlink" href="#alerting-rules" title="Permanent link">&para;</a></h3>
@@ -5735,7 +5735,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Cascade</span><span class="nv"> </span><span class="s">processing</span><span class="nv"> </span><span class="s">time</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">too</span><span class="nv"> </span><span class="s">high&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Cascade</span><span class="nv"> </span><span class="s">processing</span><span class="nv"> </span><span class="s">time</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">too</span><span class="nv"> </span><span class="s">high"</span>
 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LargeCascadePayloads</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">histogram_quantile(0.95, fraiseql_cascade_payload_bytes) &gt; 50000</span>
@@ -5743,7 +5743,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Cascade</span><span class="nv"> </span><span class="s">payloads</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">getting</span><span class="nv"> </span><span class="s">large&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Cascade</span><span class="nv"> </span><span class="s">payloads</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">getting</span><span class="nv"> </span><span class="s">large"</span>
 </code></pre></div>
 <p><strong>Error Alerts</strong></p>
 <div class="highlight"><pre><span></span><code><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CascadeProcessingErrors</span>
@@ -5752,27 +5752,27 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">cascade</span><span class="nv"> </span><span class="s">processing</span><span class="nv"> </span><span class="s">errors&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">cascade</span><span class="nv"> </span><span class="s">processing</span><span class="nv"> </span><span class="s">errors"</span>
 </code></pre></div>
 <h2 id="testing-strategies">Testing Strategies<a class="headerlink" href="#testing-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="unit-tests">Unit Tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h3>
 <p><strong>Test Cascade Data Structure</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_cascade_data_structure</span><span class="p">():</span>
     <span class="n">cascade</span> <span class="o">=</span> <span class="n">generate_cascade_data</span><span class="p">()</span>
-    <span class="k">assert</span> <span class="s1">&#39;updated&#39;</span> <span class="ow">in</span> <span class="n">cascade</span>
-    <span class="k">assert</span> <span class="s1">&#39;deleted&#39;</span> <span class="ow">in</span> <span class="n">cascade</span>
-    <span class="k">assert</span> <span class="s1">&#39;invalidations&#39;</span> <span class="ow">in</span> <span class="n">cascade</span>
-    <span class="k">assert</span> <span class="s1">&#39;metadata&#39;</span> <span class="ow">in</span> <span class="n">cascade</span>
+    <span class="k">assert</span> <span class="s1">'updated'</span> <span class="ow">in</span> <span class="n">cascade</span>
+    <span class="k">assert</span> <span class="s1">'deleted'</span> <span class="ow">in</span> <span class="n">cascade</span>
+    <span class="k">assert</span> <span class="s1">'invalidations'</span> <span class="ow">in</span> <span class="n">cascade</span>
+    <span class="k">assert</span> <span class="s1">'metadata'</span> <span class="ow">in</span> <span class="n">cascade</span>
 
-    <span class="k">for</span> <span class="n">update</span> <span class="ow">in</span> <span class="n">cascade</span><span class="p">[</span><span class="s1">&#39;updated&#39;</span><span class="p">]:</span>
-        <span class="k">assert</span> <span class="s1">&#39;__typename&#39;</span> <span class="ow">in</span> <span class="n">update</span>
-        <span class="k">assert</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">update</span>
-        <span class="k">assert</span> <span class="s1">&#39;operation&#39;</span> <span class="ow">in</span> <span class="n">update</span>
-        <span class="k">assert</span> <span class="s1">&#39;entity&#39;</span> <span class="ow">in</span> <span class="n">update</span>
+    <span class="k">for</span> <span class="n">update</span> <span class="ow">in</span> <span class="n">cascade</span><span class="p">[</span><span class="s1">'updated'</span><span class="p">]:</span>
+        <span class="k">assert</span> <span class="s1">'__typename'</span> <span class="ow">in</span> <span class="n">update</span>
+        <span class="k">assert</span> <span class="s1">'id'</span> <span class="ow">in</span> <span class="n">update</span>
+        <span class="k">assert</span> <span class="s1">'operation'</span> <span class="ow">in</span> <span class="n">update</span>
+        <span class="k">assert</span> <span class="s1">'entity'</span> <span class="ow">in</span> <span class="n">update</span>
 </code></pre></div>
 <p><strong>Test Helper Functions</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Test cascade_entity function</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;123e4567-e89b-12d3-a456-426614174000&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="s1">'123e4567-e89b-12d3-a456-426614174000'</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">);</span>
 
 <span class="c1">-- Expected: Valid cascade entity JSONB</span>
 </code></pre></div>
@@ -5793,7 +5793,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 </code></pre></div>
 <h3 id="client-tests">Client Tests<a class="headerlink" href="#client-tests" title="Permanent link">&para;</a></h3>
 <p><strong>Apollo Cache Updates</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nx">it</span><span class="p">(</span><span class="s1">&#39;applies cascade updates to cache&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><span class="nx">it</span><span class="p">(</span><span class="s1">'applies cascade updates to cache'</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">mockCache</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">MockApolloCache</span><span class="p">();</span>
 <span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">cascade</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">createMockCascade</span><span class="p">();</span>
 
@@ -5813,7 +5813,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 </ol>
 <p><strong>Feature Flags</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Use environment variables for gradual rollout</span>
-<span class="n">ENABLE_CASCADE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;ENABLE_CASCADE&#39;</span><span class="p">,</span> <span class="s1">&#39;false&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;true&#39;</span>
+<span class="n">ENABLE_CASCADE</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">'ENABLE_CASCADE'</span><span class="p">,</span> <span class="s1">'false'</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">'true'</span>
 
 <span class="nd">@mutation</span><span class="p">(</span><span class="n">enable_cascade</span><span class="o">=</span><span class="n">ENABLE_CASCADE</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
@@ -5859,26 +5859,26 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <h3 id="conditional-cascade">Conditional Cascade<a class="headerlink" href="#conditional-cascade" title="Permanent link">&para;</a></h3>
 <p><strong>Based on Client Capabilities</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Include cascade only for clients that support it</span>
-<span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;client_supports_cascade&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'client_supports_cascade'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'true'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span>
-<span class="w">        </span><span class="s1">&#39;_cascade&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_cascade</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'data'</span><span class="p">,</span><span class="w"> </span><span class="p">...,</span>
+<span class="w">        </span><span class="s1">'_cascade'</span><span class="p">,</span><span class="w"> </span><span class="n">v_cascade</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">ELSE</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'data'</span><span class="p">,</span><span class="w"> </span><span class="p">...</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Selective Cascade</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Include different cascade data based on operation type</span>
-<span class="k">CASE</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;operation_type&#39;</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;full&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="k">CASE</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'operation_type'</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'full'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="c1">-- Include all related entities</span>
 <span class="w">        </span><span class="n">v_cascade</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_full_cascade</span><span class="p">(</span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">);</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;minimal&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'minimal'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="c1">-- Include only essential updates</span>
 <span class="w">        </span><span class="n">v_cascade</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_minimal_cascade</span><span class="p">(</span><span class="n">v_post_id</span><span class="p">);</span>
 <span class="k">END</span><span class="w"> </span><span class="k">CASE</span><span class="p">;</span>
@@ -5892,7 +5892,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="c1">-- Compose complex cascades</span>
 <span class="n">v_cascade</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
 <span class="w">    </span><span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">),</span>
+<span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">),</span>
 <span class="w">        </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_user_stats</span><span class="p">(</span><span class="n">v_author_id</span><span class="p">)</span>
 <span class="w">    </span><span class="p">),</span>
 <span class="w">    </span><span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>

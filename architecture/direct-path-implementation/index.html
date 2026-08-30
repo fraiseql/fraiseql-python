@@ -4739,12 +4739,12 @@
 <li>Field paths for projection (e.g., <code>[["id"], ["firstName"], ["email"]]</code>)</li>
 </ul>
 <p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">parse_graphql_query_simple</span><span class="p">(</span><span class="s1">&#39;query { user(id: &quot;123&quot;) { id firstName } }&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="n">parse_graphql_query_simple</span><span class="p">(</span><span class="s1">'query { user(id: "123") { id firstName } }'</span><span class="p">)</span>
 <span class="c1"># Returns:</span>
 <span class="p">{</span>
-    <span class="s2">&quot;field_name&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;arguments&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;123&quot;</span><span class="p">},</span>
-    <span class="s2">&quot;field_paths&quot;</span><span class="p">:</span> <span class="p">[[</span><span class="s2">&quot;id&quot;</span><span class="p">],</span> <span class="p">[</span><span class="s2">&quot;firstName&quot;</span><span class="p">]]</span>
+    <span class="s2">"field_name"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span>
+    <span class="s2">"arguments"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"123"</span><span class="p">},</span>
+    <span class="s2">"field_paths"</span><span class="p">:</span> <span class="p">[[</span><span class="s2">"id"</span><span class="p">],</span> <span class="p">[</span><span class="s2">"firstName"</span><span class="p">]]</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="2-direct-path-router">2. Direct Path Router<a class="headerlink" href="#2-direct-path-router" title="Permanent link">&para;</a></h3>
@@ -4754,14 +4754,14 @@
 <span class="n">parsed</span> <span class="o">=</span> <span class="n">parse_graphql_query_simple</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">query</span><span class="p">)</span>
 
 <span class="c1"># 2. Determine entity and view</span>
-<span class="n">entity_name</span> <span class="o">=</span> <span class="n">field_name</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;s&quot;</span><span class="p">)</span>  <span class="c1"># &quot;users&quot; → &quot;user&quot;</span>
-<span class="n">view_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;v_</span><span class="si">{</span><span class="n">entity_name</span><span class="si">}</span><span class="s2">&quot;</span>        <span class="c1"># → &quot;v_user&quot;</span>
+<span class="n">entity_name</span> <span class="o">=</span> <span class="n">field_name</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"s"</span><span class="p">)</span>  <span class="c1"># "users" → "user"</span>
+<span class="n">view_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"v_</span><span class="si">{</span><span class="n">entity_name</span><span class="si">}</span><span class="s2">"</span>        <span class="c1"># → "v_user"</span>
 
 <span class="c1"># 3. Build SQL query (WHERE/LIMIT/ORDER BY)</span>
 <span class="n">query</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">_build_find_query</span><span class="p">(</span>
     <span class="n">view_name</span><span class="o">=</span><span class="n">view_name</span><span class="p">,</span>
     <span class="n">field_paths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Rust does projection</span>
-    <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span>
+    <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span>
     <span class="o">**</span><span class="n">arguments</span>
 <span class="p">)</span>
 
@@ -4777,21 +4777,21 @@
 <span class="p">)</span>
 
 <span class="c1"># 5. Return bytes directly to HTTP</span>
-<span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result_bytes</span><span class="p">),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">)</span>
+<span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result_bytes</span><span class="p">),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="3-sql-generation">3. SQL Generation<a class="headerlink" href="#3-sql-generation" title="Permanent link">&para;</a></h3>
 <p><strong>Location</strong>: <code>src/fraiseql/db.py</code></p>
 <p>Generates optimized SQL for JSONB tables:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Single object query</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;123&#39;</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'123'</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span>
 
 <span class="c1">-- List query with WHERE</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;active&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;true&#39;</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'active'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'true'</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span>
 
 <span class="c1">-- List query with complex WHERE</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;role&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;admin&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;active&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;true&#39;</span>
-<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;created_at&#39;</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'role'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'admin'</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'active'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'true'</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'created_at'</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">OFFSET</span><span class="w"> </span><span class="mi">20</span>
 </code></pre></div>
 <p><strong>Key Enhancement</strong>: Added <code>jsonb_column</code> parameter to WHERE clause builders to use JSONB path operators (<code>data-&gt;&gt;'field'</code>) instead of column names.</p>
@@ -4822,7 +4822,7 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -4858,9 +4858,9 @@
 <p>If the direct path fails (e.g., complex nested queries), it automatically falls back to traditional GraphQL execution:</p>
 <div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
     <span class="c1"># Direct path...</span>
-    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result_bytes</span><span class="p">),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result_bytes</span><span class="p">),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span><span class="p">)</span>
 <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Direct path failed, falling back to GraphQL: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Direct path failed, falling back to GraphQL: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="c1"># Continue to traditional GraphQL execution</span>
 </code></pre></div>
 <p>This ensures <strong>100% compatibility</strong> with all GraphQL features while providing performance benefits where possible.</p>

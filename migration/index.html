@@ -5075,7 +5075,7 @@
 <span class="c1">-- View for GraphQL</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -5087,7 +5087,7 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
-            <span class="s2">&quot;INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *&quot;</span><span class="p">,</span>
+            <span class="s2">"INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *"</span><span class="p">,</span>
             <span class="n">email</span><span class="p">,</span> <span class="n">name</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">))</span>
@@ -5108,9 +5108,9 @@
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new user&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create a new user"""</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
@@ -5123,13 +5123,13 @@
 
 <span class="c1"># Then refetch related data</span>
 <span class="n">query</span> <span class="p">{</span>
-    <span class="n">user</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">user</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">posts</span> <span class="p">{</span> <span class="nb">id</span> <span class="n">title</span> <span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>After (FraiseQL CASCADE):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">&quot;fn_create_post&quot;</span><span class="p">,</span> <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_post"</span><span class="p">,</span> <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>

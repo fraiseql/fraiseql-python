@@ -6603,7 +6603,7 @@ SELECT * FROM users
 → 500ms
 
 After:
-SELECT * FROM users WHERE created_at &gt; NOW() - INTERVAL &#39;7 days&#39;
+SELECT * FROM users WHERE created_at &gt; NOW() - INTERVAL '7 days'
 → Scans 100K rows (index), returns 20
 → 50ms (10x faster)
 </code></pre></div>
@@ -6614,7 +6614,7 @@ SELECT * FROM users OFFSET 1,000,000 LIMIT 20
 → 1000ms
 
 After:
-SELECT * FROM users WHERE id &gt; &#39;cursor-value&#39; LIMIT 20
+SELECT * FROM users WHERE id &gt; 'cursor-value' LIMIT 20
 → Index seek, returns 20
 → 10ms (100x faster)
 </code></pre></div>
@@ -6669,9 +6669,9 @@ Real-time data (current user):   TTL = 30 seconds
 <span class="c1"># used to execute them, and seeds the cache before the first request.</span>
 <span class="k">await</span> <span class="n">result_cache</span><span class="o">.</span><span class="n">warm_cache</span><span class="p">(</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span>
-        <span class="p">(</span><span class="s2">&quot;popular_products&quot;</span><span class="p">,</span> <span class="p">{}),</span>
-        <span class="p">(</span><span class="s2">&quot;trending_posts&quot;</span><span class="p">,</span> <span class="p">{}),</span>
-        <span class="p">(</span><span class="s2">&quot;recommendations&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">(</span><span class="s2">"popular_products"</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">(</span><span class="s2">"trending_posts"</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="p">(</span><span class="s2">"recommendations"</span><span class="p">,</span> <span class="p">{}),</span>
     <span class="p">],</span>
     <span class="n">query_func</span><span class="o">=</span><span class="n">run_query</span><span class="p">,</span>
 <span class="p">)</span>
@@ -6686,11 +6686,11 @@ Real-time data (current user):   TTL = 30 seconds
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsConfig</span><span class="p">,</span> <span class="n">setup_metrics</span>
 
 <span class="c1"># Adds the /metrics endpoint and request metrics to the FastAPI app</span>
-<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">))</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">MetricsConfig</span><span class="p">(</span><span class="n">namespace</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">))</span>
 
 <span class="n">cache_efficiency</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
-    <span class="s2">&quot;fraiseql_cache_efficiency&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Result-cache hit rate&quot;</span><span class="p">,</span>
+    <span class="s2">"fraiseql_cache_efficiency"</span><span class="p">,</span>
+    <span class="s2">"Result-cache hit rate"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">track_cache</span><span class="p">(</span><span class="n">cache_hits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cache_misses</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -6698,7 +6698,7 @@ Real-time data (current user):   TTL = 30 seconds
     <span class="n">hit_rate</span> <span class="o">=</span> <span class="n">cache_hits</span> <span class="o">/</span> <span class="n">total</span> <span class="k">if</span> <span class="n">total</span> <span class="k">else</span> <span class="mf">0.0</span>
     <span class="n">cache_efficiency</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">hit_rate</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">hit_rate</span> <span class="o">&lt;</span> <span class="mf">0.80</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Cache hit rate below 80</span><span class="si">%%</span><span class="s2">: </span><span class="si">%.2f</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">hit_rate</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"Cache hit rate below 80</span><span class="si">%%</span><span class="s2">: </span><span class="si">%.2f</span><span class="s2">"</span><span class="p">,</span> <span class="n">hit_rate</span><span class="p">)</span>
 </code></pre></div>
 <p>Alert on <code>fraiseql_cache_efficiency &lt; 0.80</code> from your Prometheus/Alertmanager setup.</p>
 <hr />
@@ -6926,7 +6926,7 @@ Result:
 <p><strong>Investigation:</strong></p>
 <div class="highlight"><pre><span></span><code>Problem: Each customer queries different data
 Cache key included user_id
-As customer base grew, each user&#39;s queries unique
+As customer base grew, each user's queries unique
 Cache hit rate = (repeated_queries / total_queries)
 Declining as customer base grew
 </code></pre></div>

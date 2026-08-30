@@ -6454,11 +6454,11 @@ triggers — ideal when the composition is expensive or deeply nested.</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                                       </span><span class="c1">-- public UUID, used for WHERE id = $1</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;firstName&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;lastName&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;fullName&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">concat_ws</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;age&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">extract</span><span class="p">(</span><span class="k">YEAR</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">age</span><span class="p">(</span><span class="n">u</span><span class="p">.</span><span class="n">birth_date</span><span class="p">))::</span><span class="nb">int</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'firstName'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'lastName'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'fullName'</span><span class="p">,</span><span class="w"> </span><span class="n">concat_ws</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'age'</span><span class="p">,</span><span class="w"> </span><span class="k">extract</span><span class="p">(</span><span class="k">YEAR</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">age</span><span class="p">(</span><span class="n">u</span><span class="p">.</span><span class="n">birth_date</span><span class="p">))::</span><span class="nb">int</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 </code></pre></div>
@@ -6466,9 +6466,9 @@ triggers — ideal when the composition is expensive or deeply nested.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_profile&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user_profile"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserProfile</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Logical view - composed per query from tb_user.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Logical view - composed per query from tb_user."""</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6511,9 +6511,9 @@ triggers — ideal when the composition is expensive or deeply nested.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Table-backed view - pre-composed and refreshed daily.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Table-backed view - pre-composed and refreshed daily."""</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
@@ -6530,11 +6530,11 @@ or from triggers):</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;postCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;commentCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;likeCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">pk_like</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;avgPostLength&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">avg</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'postCount'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'commentCount'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'likeCount'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">pk_like</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'avgPostLength'</span><span class="p">,</span><span class="w"> </span><span class="k">avg</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">))</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
 <span class="w">    </span><span class="n">now</span><span class="p">()</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -6636,7 +6636,7 @@ or from triggers):</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="c1"># Identifiers: public UUIDs only (never pk_/fk_)</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>                          <span class="c1"># public UUID</span>
@@ -6651,11 +6651,11 @@ or from triggers):</p>
     <span class="c1"># Status: use enums</span>
     <span class="n">status</span><span class="p">:</span> <span class="n">UserStatus</span>              <span class="c1"># enum (active, inactive, banned)</span>
 
-    <span class="c1"># Booleans: use &quot;is_&quot; or &quot;has_&quot; prefix</span>
+    <span class="c1"># Booleans: use "is_" or "has_" prefix</span>
     <span class="n">is_active</span><span class="p">:</span> <span class="nb">bool</span>                 <span class="c1"># Current state</span>
     <span class="n">has_verified_email</span><span class="p">:</span> <span class="nb">bool</span>        <span class="c1"># Capability</span>
 
-    <span class="c1"># Counts: use &quot;count&quot; or &quot;total_&quot;</span>
+    <span class="c1"># Counts: use "count" or "total_"</span>
     <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>                 <span class="c1"># Number of posts</span>
     <span class="n">total_followers</span><span class="p">:</span> <span class="nb">int</span>            <span class="c1"># Total followers</span>
 
@@ -6675,16 +6675,16 @@ camelCases them for GraphQL by default.</p>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">UserStatus</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="n">ACTIVE</span> <span class="o">=</span> <span class="s2">&quot;active&quot;</span>
-    <span class="n">INACTIVE</span> <span class="o">=</span> <span class="s2">&quot;inactive&quot;</span>
-    <span class="n">BANNED</span> <span class="o">=</span> <span class="s2">&quot;banned&quot;</span>
+    <span class="n">ACTIVE</span> <span class="o">=</span> <span class="s2">"active"</span>
+    <span class="n">INACTIVE</span> <span class="o">=</span> <span class="s2">"inactive"</span>
+    <span class="n">BANNED</span> <span class="o">=</span> <span class="s2">"banned"</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderStatus</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="n">PENDING</span> <span class="o">=</span> <span class="s2">&quot;pending&quot;</span>
-    <span class="n">CONFIRMED</span> <span class="o">=</span> <span class="s2">&quot;confirmed&quot;</span>
-    <span class="n">SHIPPED</span> <span class="o">=</span> <span class="s2">&quot;shipped&quot;</span>
-    <span class="n">DELIVERED</span> <span class="o">=</span> <span class="s2">&quot;delivered&quot;</span>
+    <span class="n">PENDING</span> <span class="o">=</span> <span class="s2">"pending"</span>
+    <span class="n">CONFIRMED</span> <span class="o">=</span> <span class="s2">"confirmed"</span>
+    <span class="n">SHIPPED</span> <span class="o">=</span> <span class="s2">"shipped"</span>
+    <span class="n">DELIVERED</span> <span class="o">=</span> <span class="s2">"delivered"</span>
 </code></pre></div>
 <hr />
 <h2 id="3-field-type-selection">3. Field Type Selection<a class="headerlink" href="#3-field-type-selection" title="Permanent link">&para;</a></h2>
@@ -6743,7 +6743,7 @@ camelCases them for GraphQL by default.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">UUID</span>
 
 <span class="c1"># ❌ Wrong: plain string ID</span>
-<span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;abc123&quot;</span>
+<span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"abc123"</span>
 
 <span class="c1"># ✅ Correct: ID / UUID scalar for identifiers</span>
 <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
@@ -6786,7 +6786,7 @@ camelCases them for GraphQL by default.</p>
 <span class="n">account_balance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">99.99</span>
 
 <span class="c1"># ✅ Correct: Decimal for money (PostgreSQL NUMERIC)</span>
-<span class="n">account_balance</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">&quot;99.99&quot;</span><span class="p">)</span>
+<span class="n">account_balance</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="s2">"99.99"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="dates-times">Dates &amp; Times<a class="headerlink" href="#dates-times" title="Permanent link">&para;</a></h3>
 <table>
@@ -6826,7 +6826,7 @@ camelCases them for GraphQL by default.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_event&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_event"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>  <span class="c1"># Always use a timestamptz for created/updated</span>
@@ -6844,17 +6844,17 @@ camelCases them for GraphQL by default.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]</span>  <span class="c1"># One-to-many: User has many Posts</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>  <span class="c1"># the related user&#39;s public UUID</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>  <span class="c1"># the related user's public UUID</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- v_user composes its posts inline via jsonb_agg</span>
@@ -6862,13 +6862,13 @@ camelCases them for GraphQL by default.</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span>
 <span class="w">            </span><span class="n">jsonb_agg</span><span class="p">(</span>
-<span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">)</span>
+<span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">            </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -6890,14 +6890,14 @@ camelCases them for GraphQL by default.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">groups</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Group</span><span class="p">]</span>  <span class="c1"># Many-to-many via join table</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_group&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_group"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Group</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6917,17 +6917,17 @@ camelCases them for GraphQL by default.</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;groups&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'groups'</span><span class="p">,</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span>
 <span class="w">            </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;joinedAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">ug</span><span class="p">.</span><span class="n">joined_at</span>
+<span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'joinedAt'</span><span class="p">,</span><span class="w"> </span><span class="n">ug</span><span class="p">.</span><span class="n">joined_at</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">pk_group</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">            </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -6942,7 +6942,7 @@ camelCases them for GraphQL by default.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_category&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_category"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Category</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6955,7 +6955,7 @@ complexity at the app level:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Category</span><span class="p">],</span>
     <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Prevent Category -&gt; Category -&gt; Category...</span>
 <span class="p">)</span>
@@ -6981,7 +6981,7 @@ complexity at the app level:</p>
 </ul>
 <h3 id="index-strategies-by-query-pattern">Index Strategies by Query Pattern<a class="headerlink" href="#index-strategies-by-query-pattern" title="Permanent link">&para;</a></h3>
 <h4 id="pattern-simple-where-clause">Pattern: Simple WHERE clause<a class="headerlink" href="#pattern-simple-where-clause" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Query: users WHERE created_at &gt;= &#39;2026-01-01&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Query: users WHERE created_at &gt;= '2026-01-01'</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_user_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="pattern-composite-filters">Pattern: Composite filters<a class="headerlink" href="#pattern-composite-filters" title="Permanent link">&para;</a></h3>
@@ -6993,7 +6993,7 @@ complexity at the app level:</p>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_post_fk_user</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="pattern-full-text-fuzzy-search">Pattern: Full-text / fuzzy search<a class="headerlink" href="#pattern-full-text-fuzzy-search" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Query: products WHERE name ILIKE &#39;%search%&#39;  (requires pg_trgm)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Query: products WHERE name ILIKE '%search%'  (requires pg_trgm)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tb_product_name_trgm</span>
 <span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_product</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="w"> </span><span class="n">gin_trgm_ops</span><span class="p">);</span>
 </code></pre></div>
@@ -7012,15 +7012,15 @@ value.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">last_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">full_name</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># composed in the view</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="c1">-- inside v_user&#39;s jsonb_build_object:</span>
-<span class="c1">--   &#39;fullName&#39;, concat_ws(&#39; &#39;, u.first_name, u.last_name)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- inside v_user's jsonb_build_object:</span>
+<span class="c1">--   'fullName', concat_ws(' ', u.first_name, u.last_name)</span>
 </code></pre></div>
 <h3 id="pattern-2-complex-aggregation-use-tv_">Pattern 2: Complex aggregation (use <code>tv_*</code>)<a class="headerlink" href="#pattern-2-complex-aggregation-use-tv_" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -7028,7 +7028,7 @@ value.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>        <span class="c1"># pre-computed, refreshed hourly</span>
@@ -7036,12 +7036,12 @@ value.</p>
     <span class="n">total_engagement</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># = post_count + comment_count, computed at refresh time</span>
 </code></pre></div>
 <h4 id="pattern-3-conditional-logic-use-case-in-the-view">Pattern 3: Conditional logic (use <code>CASE</code> in the view)<a class="headerlink" href="#pattern-3-conditional-logic-use-case-in-the-view" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1">-- inside the view&#39;s jsonb_build_object:</span>
-<span class="s1">&#39;statusLabel&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Waiting for payment&#39;</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;confirmed&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Order confirmed&#39;</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;shipped&#39;</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;In transit&#39;</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">&#39;delivered&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Delivered&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- inside the view's jsonb_build_object:</span>
+<span class="s1">'statusLabel'</span><span class="p">,</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'pending'</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'Waiting for payment'</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'confirmed'</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'Order confirmed'</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'shipped'</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'In transit'</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'delivered'</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'Delivered'</span>
 <span class="k">END</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -7049,7 +7049,7 @@ value.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_order&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_order"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">status</span><span class="p">:</span> <span class="n">OrderStatus</span>
@@ -7070,9 +7070,9 @@ at runtime by the <code>Authorizer</code> wired into your app.</p>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span>
-    <span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-    <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span>
-    <span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">,</span> <span class="s2">&quot;salary&quot;</span><span class="p">],</span>
+    <span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span>
+    <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span>
+    <span class="n">authorize_fields</span><span class="o">=</span><span class="p">[</span><span class="s2">"email"</span><span class="p">,</span> <span class="s2">"salary"</span><span class="p">],</span>
 <span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
@@ -7089,15 +7089,15 @@ policy sees the current tenant automatically.</p>
 <div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
 </code></pre></div>
 <p>You can also constrain reads explicitly with <code>mandatory_filters</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_post&quot;</span><span class="p">,</span>
-        <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]},</span>
+        <span class="s2">"v_post"</span><span class="p">,</span>
+        <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]},</span>
     <span class="p">)</span>
 </code></pre></div>
 <hr />
@@ -7109,18 +7109,18 @@ policy sees the current tenant automatically.</p>
 
 
 <span class="c1"># Old type</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
 
 <span class="c1"># New type (existing clients still work!)</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># ← New field; add the key to v_user&#39;s data JSONB</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># ← New field; add the key to v_user's data JSONB</span>
 </code></pre></div>
 <p>Remember to also emit the new key in the view's <code>jsonb_build_object(...)</code>.</p>
 <h3 id="removing-fields-breaking">Removing Fields (❌ Breaking)<a class="headerlink" href="#removing-fields-breaking" title="Permanent link">&para;</a></h3>
@@ -7130,7 +7130,7 @@ policy sees the current tenant automatically.</p>
 
 
 <span class="c1"># Old type</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -7138,7 +7138,7 @@ policy sees the current tenant automatically.</p>
 
 
 <span class="c1"># New type (breaks clients still selecting legacy_field!)</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -7152,12 +7152,12 @@ in introspection before you remove the field:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">legacy_field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Deprecated: use &#39;name&#39; instead. Removal scheduled for a later release.&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Deprecated: use 'name' instead. Removal scheduled for a later release."</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
 <h3 id="renaming-fields-breaking">Renaming Fields (❌ Breaking)<a class="headerlink" href="#renaming-fields-breaking" title="Permanent link">&para;</a></h3>
@@ -7169,7 +7169,7 @@ drop the old key once clients have migrated.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>       <span class="c1"># legacy key, kept temporarily</span>
@@ -7180,7 +7180,7 @@ drop the old key once clients have migrated.</p>
 <h3 id="load-testing-view-performance">Load Testing View Performance<a class="headerlink" href="#load-testing-view-performance" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Generate test data</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span><span class="w"> </span><span class="s1">&#39;user_&#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">g</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span><span class="w"> </span><span class="s1">'user_'</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">g</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">generate_series</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1000000</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">g</span><span class="p">;</span>
 
 <span class="c1">-- Time the logical view query</span>
@@ -7190,11 +7190,11 @@ drop the old key once clients have migrated.</p>
 </code></pre></div>
 <h3 id="index-effectiveness">Index Effectiveness<a class="headerlink" href="#index-effectiveness" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check if an index is used</span>
-<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">;</span>
-<span class="c1">-- Should show &quot;Index Scan&quot;, not &quot;Seq Scan&quot;</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">'2026-01-01'</span><span class="p">;</span>
+<span class="c1">-- Should show "Index Scan", not "Seq Scan"</span>
 
 <span class="c1">-- Check index size</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">&#39;idx_tb_user_created_at&#39;</span><span class="p">));</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_relation_size</span><span class="p">(</span><span class="s1">'idx_tb_user_created_at'</span><span class="p">));</span>
 </code></pre></div>
 <hr />
 <h2 id="10-monitoring-schema-health">10. Monitoring Schema Health<a class="headerlink" href="#10-monitoring-schema-health" title="Permanent link">&para;</a></h2>
@@ -7223,17 +7223,17 @@ drop the old key once clients have migrated.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    User account and profile information (read from v_user).</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">    - id: Unique user identifier (public UUID)</span>
-<span class="sd">    - email: User&#39;s email (unique, case-insensitive)</span>
-<span class="sd">    - name: User&#39;s display name</span>
+<span class="sd">    - email: User's email (unique, case-insensitive)</span>
+<span class="sd">    - name: User's display name</span>
 <span class="sd">    - created_at: Account creation timestamp</span>
-<span class="sd">    - posts: User&#39;s published posts (1-to-many, composed inline)</span>
+<span class="sd">    - posts: User's published posts (1-to-many, composed inline)</span>
 
 <span class="sd">    Source:</span>
 <span class="sd">    - v_user composes data from tb_user (+ tb_post for the posts array)</span>
@@ -7249,7 +7249,7 @@ drop the old key once clients have migrated.</p>
 <span class="sd">    Related:</span>
 <span class="sd">    - Post (1-to-many relationship)</span>
 <span class="sd">    - Organization (many-to-one)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -7263,15 +7263,15 @@ drop the old key once clients have migrated.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    User engagement statistics (table-backed, refreshed daily).</span>
 
 <span class="sd">    Refresh:</span>
 <span class="sd">    - Cadence: daily at 02:00 UTC (fn_refresh_user_stats)</span>
 <span class="sd">    - Source: aggregate from tb_post, tb_comment, tb_like</span>
-<span class="sd">    - Latency: ~1-24 hours (yesterday&#39;s data)</span>
+<span class="sd">    - Latency: ~1-24 hours (yesterday's data)</span>
 <span class="sd">    - Storage: ~5GB for 10M users</span>
 
 <span class="sd">    Use cases:</span>
@@ -7282,7 +7282,7 @@ drop the old key once clients have migrated.</p>
 <span class="sd">    updated_at:</span>
 <span class="sd">    - Indicates when the row was last refreshed</span>
 <span class="sd">    - Use for cache invalidation</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
 </code></pre></div>

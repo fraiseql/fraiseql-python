@@ -4841,7 +4841,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># 1. Define GraphQL type</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Python uses snake_case</span>
@@ -4850,28 +4850,28 @@
 <span class="c1"># 2. Define query resolver</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># 3. Execute PostgreSQL query (returns JSONB)</span>
     <span class="c1"># Rust pipeline handles transformation automatically</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="under-the-hood">Under the Hood<a class="headerlink" href="#under-the-hood" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># In FraiseQLRepository.find():</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="c1"># 1. Execute PostgreSQL query</span>
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SELECT data FROM </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SELECT data FROM </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># 2. Extract JSONB strings</span>
-    <span class="n">json_strings</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+    <span class="n">json_strings</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 
     <span class="c1"># 3. Call Rust pipeline</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql_rs</span>
 
     <span class="n">response_bytes</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_graphql_response</span><span class="p">(</span>
         <span class="n">json_strings</span><span class="o">=</span><span class="n">json_strings</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
-        <span class="n">type_name</span><span class="o">=</span><span class="s2">&quot;User&quot;</span><span class="p">,</span>
+        <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
+        <span class="n">type_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
         <span class="n">field_paths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -4887,11 +4887,11 @@
 <span class="w">    </span><span class="n">field_paths</span><span class="p">:</span><span class="w"> </span><span class="nb">Option</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;&gt;&gt;</span><span class="p">,</span>
 <span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">PyResult</span><span class="o">&lt;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">u8</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// 1. Concatenate JSON strings</span>
-<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">array</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">&quot;[{}]&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">json_strings</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="s">&quot;,&quot;</span><span class="p">));</span>
+<span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">array</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span><span class="s">"[{}]"</span><span class="p">,</span><span class="w"> </span><span class="n">json_strings</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="s">","</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">// 2. Wrap in GraphQL response</span>
 <span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">response</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="fm">format!</span><span class="p">(</span>
-<span class="w">        </span><span class="s">r#&quot;{{&quot;data&quot;:{{&quot;{}&quot;:{}}}}}&quot;#</span><span class="p">,</span>
+<span class="w">        </span><span class="s">r#"{{"data":{{"{}":{}}}}}"#</span><span class="p">,</span>
 <span class="w">        </span><span class="n">field_name</span><span class="p">,</span><span class="w"> </span><span class="n">array</span>
 <span class="w">    </span><span class="p">);</span>
 
@@ -4924,10 +4924,10 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.core.rust_pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustResponseBytes</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">RustResponseBytes</span><span class="p">):</span>
     <span class="c1"># Convert bytes to string for inspection</span>
-    <span class="n">json_str</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="n">json_str</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">json_str</span><span class="p">)</span>  <span class="c1"># See what Rust produced</span>
 
     <span class="c1"># Parse to verify structure</span>

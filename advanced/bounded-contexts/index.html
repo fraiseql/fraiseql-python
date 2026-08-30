@@ -4901,57 +4901,57 @@ Analytics Context:
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
 
-<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">'T'</span><span class="p">)</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">Repository</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base repository for domain entities.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Base repository for domain entities."""</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_pool</span><span class="p">:</span> <span class="n">DatabasePool</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;public&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_pool</span><span class="p">:</span> <span class="n">DatabasePool</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"public"</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db_pool</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="n">schema</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">table_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_table_name</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_table_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get table name for this repository.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get table name for this repository."""</span>
         <span class="k">pass</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_by_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get entity by ID.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get entity by ID."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;SELECT * FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> WHERE id = $1&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"SELECT * FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> WHERE id = $1"</span><span class="p">,</span>
                 <span class="nb">id</span>
             <span class="p">)</span>
             <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map_to_entity</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_all</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all entities.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get all entities."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;SELECT * FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> LIMIT $1&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"SELECT * FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> LIMIT $1"</span><span class="p">,</span>
                 <span class="n">limit</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_map_to_entity</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Save entity (insert or update).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Save entity (insert or update)."""</span>
         <span class="c1"># Implemented by subclasses</span>
         <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete entity by ID.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Delete entity by ID."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;DELETE FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> WHERE id = $1&quot;</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"DELETE FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">table_name</span><span class="si">}</span><span class="s2"> WHERE id = $1"</span><span class="p">,</span>
                 <span class="nb">id</span>
             <span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">rowcount</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_map_to_entity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">row</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map database row to entity.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Map database row to entity."""</span>
         <span class="k">pass</span>
 </code></pre></div>
 <h3 id="context-specific-repository">Context-Specific Repository<a class="headerlink" href="#context-specific-repository" title="Permanent link">&para;</a></h3>
@@ -4963,10 +4963,10 @@ Analytics Context:
 <span class="c1"># Orders Context Domain Model</span>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Order aggregate root.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Order aggregate root."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">customer_id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;OrderItem&#39;</span><span class="p">]</span>
+    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">'OrderItem'</span><span class="p">]</span>
     <span class="n">total</span><span class="p">:</span> <span class="n">Decimal</span>
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
@@ -4974,7 +4974,7 @@ Analytics Context:
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderItem</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Order line item.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Order line item."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">product_id</span><span class="p">:</span> <span class="n">ID</span>
@@ -5083,27 +5083,27 @@ Examples:
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Order aggregate root - enforces all business rules.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Order aggregate root - enforces all business rules."""</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()))</span>
-    <span class="n">customer_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
-    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;OrderItem&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
-    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;draft&quot;</span>
+    <span class="n">customer_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">'OrderItem'</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"draft"</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">)</span>
     <span class="n">updated_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">total</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Decimal</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate total from items.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Calculate total from items."""</span>
         <span class="k">return</span> <span class="nb">sum</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">total</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">add_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">price</span><span class="p">:</span> <span class="n">Decimal</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add item to order - enforces business rules.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;draft&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot modify non-draft order&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Add item to order - enforces business rules."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">"draft"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot modify non-draft order"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">quantity</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Quantity must be positive&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Quantity must be positive"</span><span class="p">)</span>
 
         <span class="c1"># Check if product already in order</span>
         <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
@@ -5126,38 +5126,38 @@ Examples:
         <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">remove_item</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove item from order.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;draft&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot modify non-draft order&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Remove item from order."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">"draft"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot modify non-draft order"</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span> <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">product_id</span> <span class="o">!=</span> <span class="n">product_id</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Submit order for processing - state transition.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">&quot;draft&quot;</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Order already submitted&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Submit order for processing - state transition."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="s2">"draft"</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Order already submitted"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot submit empty order&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot submit empty order"</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">customer_id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Customer ID required&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Customer ID required"</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;submitted&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">"submitted"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cancel order.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;shipped&quot;</span><span class="p">,</span> <span class="s2">&quot;delivered&quot;</span><span class="p">]:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cannot cancel </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> order&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="sd">"""Cancel order."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"shipped"</span><span class="p">,</span> <span class="s2">"delivered"</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cannot cancel </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> order"</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;cancelled&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="s2">"cancelled"</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">updated_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderItem</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Order item - part of Order aggregate.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Order item - part of Order aggregate."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -5172,7 +5172,7 @@ Examples:
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span> <span class="n">customer_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create new order.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create new order."""</span>
     <span class="n">order</span> <span class="o">=</span> <span class="n">Order</span><span class="p">(</span><span class="n">customer_id</span><span class="o">=</span><span class="n">customer_id</span><span class="p">)</span>
     <span class="n">order_repo</span> <span class="o">=</span> <span class="n">get_order_repository</span><span class="p">()</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">order_repo</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">order</span><span class="p">)</span>
@@ -5185,13 +5185,13 @@ Examples:
     <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">price</span><span class="p">:</span> <span class="nb">float</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Add item to order - enforces aggregate rules.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Add item to order - enforces aggregate rules."""</span>
     <span class="n">order_repo</span> <span class="o">=</span> <span class="n">get_order_repository</span><span class="p">()</span>
 
     <span class="c1"># Get aggregate</span>
     <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">order_repo</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Order not found&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Order not found"</span><span class="p">)</span>
 
     <span class="c1"># Modify through aggregate root</span>
     <span class="n">order</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">product_id</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">price</span><span class="p">)))</span>
@@ -5201,12 +5201,12 @@ Examples:
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit_order</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Submit order for processing.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Submit order for processing."""</span>
     <span class="n">order_repo</span> <span class="o">=</span> <span class="n">get_order_repository</span><span class="p">()</span>
 
     <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">order_repo</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Order not found&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Order not found"</span><span class="p">)</span>
 
     <span class="c1"># State transition through aggregate</span>
     <span class="n">order</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
@@ -5247,14 +5247,14 @@ Examples:
 <span class="c1"># Orders Context exports queries</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orders context: Get order details.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Orders context: Get order details."""</span>
     <span class="n">order_repo</span> <span class="o">=</span> <span class="n">get_order_repository</span><span class="p">()</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">order_repo</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
 
 <span class="c1"># Billing Context consumes Orders data</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_invoice_for_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Invoice</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Billing context: Create invoice from order.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Billing context: Create invoice from order."""</span>
     <span class="c1"># Fetch order data via internal call or event</span>
     <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">)</span>
 
@@ -5263,7 +5263,7 @@ Examples:
         <span class="n">order_id</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
         <span class="n">customer_id</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">customer_id</span><span class="p">,</span>
         <span class="n">amount</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">total</span><span class="p">,</span>
-        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span><span class="p">,</span>
+        <span class="n">status</span><span class="o">=</span><span class="s2">"pending"</span><span class="p">,</span>
         <span class="n">due_date</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
     <span class="p">)</span>
 
@@ -5279,21 +5279,21 @@ Examples:
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Money</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shared money type.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Shared money type."""</span>
     <span class="n">amount</span><span class="p">:</span> <span class="n">Decimal</span>
-    <span class="n">currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;USD&quot;</span>
+    <span class="n">currency</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"USD"</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;Money&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Money&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__add__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">'Money'</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'Money'</span><span class="p">:</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">currency</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Cannot add different currencies&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Cannot add different currencies"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scalar</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;Money&#39;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__mul__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scalar</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">'Money'</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Money</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">amount</span> <span class="o">*</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">scalar</span><span class="p">)),</span> <span class="bp">self</span><span class="o">.</span><span class="n">currency</span><span class="p">)</span>
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Address</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shared address type.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Shared address type."""</span>
     <span class="n">street</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">city</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">state</span><span class="p">:</span> <span class="nb">str</span>
@@ -5302,7 +5302,7 @@ Examples:
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CustomerId</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Shared customer identifier.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Shared customer identifier."""</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -5314,7 +5314,7 @@ Examples:
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">customer_id</span><span class="p">:</span> <span class="n">CustomerId</span>  <span class="c1"># Shared type</span>
     <span class="n">shipping_address</span><span class="p">:</span> <span class="n">Address</span>  <span class="c1"># Shared type</span>
-    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">&#39;OrderItem&#39;</span><span class="p">]</span>
+    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">'OrderItem'</span><span class="p">]</span>
     <span class="n">total</span><span class="p">:</span> <span class="n">Money</span>  <span class="c1"># Shared type</span>
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
 
@@ -5332,7 +5332,7 @@ Examples:
 <div class="highlight"><pre><span></span><code><span class="c1"># External system has different structure</span>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ExternalProduct</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;External catalog system product.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""External catalog system product."""</span>
     <span class="n">sku</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">unitPrice</span><span class="p">:</span> <span class="nb">float</span>
@@ -5341,7 +5341,7 @@ Examples:
 <span class="c1"># Your domain model</span>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal product model.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Internal product model."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">price</span><span class="p">:</span> <span class="n">Money</span>
@@ -5349,21 +5349,21 @@ Examples:
 
 <span class="c1"># Anti-Corruption Layer</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ProductACL</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Translates between external and internal product models.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Translates between external and internal product models."""</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_domain</span><span class="p">(</span><span class="n">external</span><span class="p">:</span> <span class="n">ExternalProduct</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert external product to domain product.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Convert external product to domain product."""</span>
         <span class="k">return</span> <span class="n">Product</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">external</span><span class="o">.</span><span class="n">sku</span><span class="p">,</span>
             <span class="n">name</span><span class="o">=</span><span class="n">external</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
-            <span class="n">price</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">external</span><span class="o">.</span><span class="n">unitPrice</span><span class="p">)),</span> <span class="s2">&quot;USD&quot;</span><span class="p">),</span>
+            <span class="n">price</span><span class="o">=</span><span class="n">Money</span><span class="p">(</span><span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">external</span><span class="o">.</span><span class="n">unitPrice</span><span class="p">)),</span> <span class="s2">"USD"</span><span class="p">),</span>
             <span class="n">quantity_available</span><span class="o">=</span><span class="n">external</span><span class="o">.</span><span class="n">stockLevel</span>
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_external</span><span class="p">(</span><span class="n">product</span><span class="p">:</span> <span class="n">Product</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExternalProduct</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert domain product to external format.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Convert domain product to external format."""</span>
         <span class="k">return</span> <span class="n">ExternalProduct</span><span class="p">(</span>
             <span class="n">sku</span><span class="o">=</span><span class="n">product</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
             <span class="n">title</span><span class="o">=</span><span class="n">product</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
@@ -5377,7 +5377,7 @@ Examples:
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_product_from_external</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">sku</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fetch product from external system via ACL.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Fetch product from external system via ACL."""</span>
     <span class="n">external_product</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_from_external_catalog</span><span class="p">(</span><span class="n">sku</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">ProductACL</span><span class="o">.</span><span class="n">to_domain</span><span class="p">(</span><span class="n">external_product</span><span class="p">)</span>
 </code></pre></div>
@@ -5391,7 +5391,7 @@ Examples:
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DomainEvent</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base domain event.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Base domain event."""</span>
     <span class="n">event_type</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">aggregate_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
@@ -5400,7 +5400,7 @@ Examples:
 <span class="c1"># Orders Context: Publish event</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">submit_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Submit order and publish event.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Submit order and publish event."""</span>
     <span class="n">order_repo</span> <span class="o">=</span> <span class="n">get_order_repository</span><span class="p">()</span>
     <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">order_repo</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
     <span class="n">order</span><span class="o">.</span><span class="n">submit</span><span class="p">()</span>
@@ -5408,14 +5408,14 @@ Examples:
 
     <span class="c1"># Publish event for other contexts</span>
     <span class="n">event</span> <span class="o">=</span> <span class="n">DomainEvent</span><span class="p">(</span>
-        <span class="n">event_type</span><span class="o">=</span><span class="s2">&quot;OrderSubmitted&quot;</span><span class="p">,</span>
+        <span class="n">event_type</span><span class="o">=</span><span class="s2">"OrderSubmitted"</span><span class="p">,</span>
         <span class="n">aggregate_id</span><span class="o">=</span><span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
         <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="s2">&quot;customer_id&quot;</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">customer_id</span><span class="p">,</span>
-            <span class="s2">&quot;total&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">total</span><span class="p">),</span>
-            <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">[</span>
-                <span class="p">{</span><span class="s2">&quot;product_id&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">product_id</span><span class="p">,</span> <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">quantity</span><span class="p">}</span>
+            <span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"customer_id"</span><span class="p">:</span> <span class="n">order</span><span class="o">.</span><span class="n">customer_id</span><span class="p">,</span>
+            <span class="s2">"total"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">total</span><span class="p">),</span>
+            <span class="s2">"items"</span><span class="p">:</span> <span class="p">[</span>
+                <span class="p">{</span><span class="s2">"product_id"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">product_id</span><span class="p">,</span> <span class="s2">"quantity"</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">quantity</span><span class="p">}</span>
                 <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">order</span><span class="o">.</span><span class="n">items</span>
             <span class="p">]</span>
         <span class="p">}</span>
@@ -5426,17 +5426,17 @@ Examples:
 
 <span class="c1"># Billing Context: Subscribe to event</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_order_submitted</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">DomainEvent</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle OrderSubmitted event from Orders context.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="o">!=</span> <span class="s2">&quot;OrderSubmitted&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Handle OrderSubmitted event from Orders context."""</span>
+    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">event_type</span> <span class="o">!=</span> <span class="s2">"OrderSubmitted"</span><span class="p">:</span>
         <span class="k">return</span>
 
     <span class="c1"># Create invoice</span>
     <span class="n">invoice</span> <span class="o">=</span> <span class="n">Invoice</span><span class="p">(</span>
         <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()),</span>
-        <span class="n">order_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">],</span>
-        <span class="n">customer_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;customer_id&quot;</span><span class="p">],</span>
-        <span class="n">amount</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]),</span>
-        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span>
+        <span class="n">order_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">],</span>
+        <span class="n">customer_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">"customer_id"</span><span class="p">],</span>
+        <span class="n">amount</span><span class="o">=</span><span class="n">Decimal</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]),</span>
+        <span class="n">status</span><span class="o">=</span><span class="s2">"pending"</span>
     <span class="p">)</span>
 
     <span class="n">invoice_repo</span> <span class="o">=</span> <span class="n">get_invoice_repository</span><span class="p">()</span>

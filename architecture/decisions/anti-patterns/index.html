@@ -5422,7 +5422,7 @@ and functions.</p>
 <p><strong>Anti-pattern</strong>: Resolving nested relationships one row at a time</p>
 <div class="highlight"><pre><span></span><code><span class="c"># ❌ WRONG: Dangerous nesting depth</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetUserWithEverything</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-1&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"user-1"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w">                    </span><span class="c"># 1 query</span>
@@ -5458,13 +5458,13 @@ single <code>db.find</code> returns the whole tree:</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                                      </span><span class="c1">-- public UUID (the GraphQL id)</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">           </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;commentCount&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
+<span class="w">                </span><span class="s1">'id'</span><span class="p">,</span><span class="w">           </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'title'</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'commentCount'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
 <span class="w">                                 </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">)</span>
 <span class="w">            </span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
@@ -5482,14 +5482,14 @@ the lookups into one query instead of N:</p>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">Comment</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="c1"># Called once per comment, but FraiseQL collects the keys and issues a</span>
     <span class="c1"># single batched load — turning N+1 queries into 1.</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Solution C — cap depth and page nested lists.</strong> Keep request shapes sane and
 always paginate nested collections:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># ✅ CORRECT: Controlled nesting, paginated nested lists, aggregates not joins</span>
 <span class="k">query</span><span class="w"> </span><span class="nf">GetUserWithPosts</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;user-1&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"user-1"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5517,8 +5517,8 @@ GraphQL requests that work in dev but melt in production.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: resolver hands the whole view back, no bound</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>   <span class="c1"># could be millions of rows</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>   <span class="c1"># could be millions of rows</span>
 </code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
@@ -5537,9 +5537,9 @@ push them into the read:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: bounded read with a sane default cap</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">limit</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">limit</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>   <span class="c1"># hard ceiling regardless of client request</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
 </code></pre></div>
 <p>For client-driven paging, expose a cursor connection:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># ✅ CORRECT: paginated with a cursor connection</span>
@@ -5566,18 +5566,18 @@ multi-row updates) in the Python resolver instead of a PostgreSQL function</p>
 <span class="c1">#          and is not transactional</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Validate by hand, in the app</span>
-    <span class="n">customer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_customer&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">)</span>
+    <span class="n">customer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_customer"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">customer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;unknown customer&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"unknown customer"</span><span class="p">)</span>
 
     <span class="c1"># Several separate writes — not atomic, racy</span>
-    <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_insert_order_row&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_insert_order_row"</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
     <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">lines</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_insert_order_line&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_recompute_order_total&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">order</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]})</span>
+        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_insert_order_line"</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_recompute_order_total"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]})</span>
 
     <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">order</span><span class="p">))</span>
 </code></pre></div>
@@ -5602,17 +5602,17 @@ validation, the writes, and returns a JSONB result in a single transaction:</p>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;customer_id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">,</span> <span class="s2">&quot;lines&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">lines</span><span class="p">},</span>
+        <span class="s2">"fn_create_order"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"customer_id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">,</span> <span class="s2">"lines"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">lines</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">),</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">),</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"VALIDATION_ERROR"</span><span class="p">),</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"order"</span><span class="p">]))</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_order does the validation + all writes atomically and returns JSONB.</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="n">p_customer_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="n">p_lines</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
@@ -5622,9 +5622,9 @@ validation, the writes, and returns a JSONB result in a single transaction:</p>
 <span class="w">    </span><span class="n">v_order_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_customer_id</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">                                  </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UNKNOWN_CUSTOMER&#39;</span><span class="p">,</span>
-<span class="w">                                  </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;unknown customer&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">                                  </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'UNKNOWN_CUSTOMER'</span><span class="p">,</span>
+<span class="w">                                  </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown customer'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">fk_customer</span><span class="p">)</span>
@@ -5633,11 +5633,11 @@ validation, the writes, and returns a JSONB result in a single transaction:</p>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">)</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_order</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">),</span>
-<span class="w">           </span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;sku&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;qty&#39;</span><span class="p">)::</span><span class="nb">int</span>
+<span class="w">           </span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">'sku'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">'qty'</span><span class="p">)::</span><span class="nb">int</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="n">p_lines</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">line</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">                              </span><span class="s1">&#39;order&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">                              </span><span class="s1">'order'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -5653,14 +5653,14 @@ behind keeping write logic in the database.</p>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_order"</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
 
     <span class="c1"># Blocks the whole request on third-party I/O</span>
-    <span class="n">email_service</span><span class="o">.</span><span class="n">send_confirmation</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">][</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>   <span class="c1"># 2 seconds!</span>
-    <span class="n">analytics</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span><span class="s2">&quot;order_created&quot;</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">])</span>    <span class="c1"># 1 second!</span>
+    <span class="n">email_service</span><span class="o">.</span><span class="n">send_confirmation</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">"order"</span><span class="p">][</span><span class="s2">"id"</span><span class="p">])</span>   <span class="c1"># 2 seconds!</span>
+    <span class="n">analytics</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span><span class="s2">"order_created"</span><span class="p">,</span> <span class="n">result</span><span class="p">[</span><span class="s2">"order"</span><span class="p">])</span>    <span class="c1"># 1 second!</span>
 
-    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"order"</span><span class="p">]))</span>
 </code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
@@ -5680,8 +5680,8 @@ effects out of the request path. The most robust approach keeps the dispatch
 row written by <code>fn_create_order</code>) and draining it with a separate worker:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_order also enqueues the side effect transactionally.</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">kind</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
-<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;order_confirmation&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'order_confirmation'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'order_id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
 </code></pre></div>
 <p>A background worker (a separate process, not the GraphQL request) reads
 <code>tb_outbox</code> and performs the email/analytics calls with retries. The resolver
@@ -5691,11 +5691,11 @@ returns as soon as the database commits:</p>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order&quot;</span><span class="p">]))</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_order"</span><span class="p">,</span> <span class="p">{</span><span class="o">...</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"order"</span><span class="p">]))</span>
 </code></pre></div>
 <p>If you genuinely must dispatch from the process, hand the work to your own
 worker/queue — never <code>await</code> a slow third party inside the resolver, and never
@@ -5709,23 +5709,23 @@ and side effects that are either blocking <em>or</em> silently dropped on failur
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: authorization scattered and easy to forget</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
-    <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;current_user&quot;</span><span class="p">]</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"current_user"</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">created_by</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">&quot;Not authorized&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">"Not authorized"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">user</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="c1"># A *different* check, written by hand, in a different place</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;current_user&quot;</span><span class="p">]</span>
-    <span class="n">target</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"current_user"</span><span class="p">]</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">&quot;Not authorized&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_delete_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+        <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">"Not authorized"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
 <p><strong>Problem:</strong></p>
@@ -5749,18 +5749,18 @@ the operation, instead of re-implementing checks inline:</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">owner_or_admin</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">DeleteUserInput</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeleteUserSuccess</span> <span class="o">|</span> <span class="n">DeleteUserError</span><span class="p">:</span>
     <span class="c1"># The same rule is enforced by fn_delete_user as well — see below.</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_delete_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">DeleteUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;forbidden&quot;</span><span class="p">))</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">DeleteUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"forbidden"</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">DeleteUserSuccess</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 </code></pre></div>
 <p>Defense in depth: enforce the <em>data</em> boundary in PostgreSQL too. <code>fn_delete_user</code>
@@ -5782,7 +5782,7 @@ away from a breach.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: the client tells you their role (and can lie)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdminPanel</span><span class="p">:</span>
-    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">&quot;admin&quot;</span><span class="p">:</span>               <span class="c1"># forgeable!</span>
+    <span class="k">if</span> <span class="n">role</span> <span class="o">==</span> <span class="s2">"admin"</span><span class="p">:</span>               <span class="c1"># forgeable!</span>
         <span class="k">return</span> <span class="n">build_admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
     <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">()</span>
 </code></pre></div>
@@ -5803,7 +5803,7 @@ validated JWT or session), never from operation arguments:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: identity comes from the verified context, not the input</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">AdminOnlyAuthorizer</span><span class="p">())</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AdminPanel</span><span class="p">:</span>
-    <span class="c1"># info.context[&quot;current_user&quot;] was populated from a verified token by</span>
+    <span class="c1"># info.context["current_user"] was populated from a verified token by</span>
     <span class="c1"># auth middleware; the client cannot forge it.</span>
     <span class="k">return</span> <span class="n">build_admin_panel</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
 </code></pre></div>
@@ -5822,13 +5822,13 @@ it carelessly.</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">product</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Product</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">cached_query</span><span class="p">(</span>
-        <span class="n">db</span><span class="p">,</span> <span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>   <span class="c1"># 1 hour</span>
+        <span class="n">db</span><span class="p">,</span> <span class="s2">"v_product"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>   <span class="c1"># 1 hour</span>
     <span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c"># A mutation updates the price...</span>
-<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateProduct</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;p-1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">updateProduct</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"p-1"</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">:</span><span class="w"> </span><span class="mi">150</span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">product</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="c"># ...but nothing invalidates product:p-1, so queries serve the stale price</span>
 <span class="c"># for up to an hour.</span>
 </code></pre></div>
@@ -5852,7 +5852,7 @@ a <code>tv_</code>/<code>v_</code> source invalidates the dependent cached queri
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>          <span class="c1"># derive rules from the schema, or:</span>
 <span class="n">cache</span><span class="o">.</span><span class="n">add_cascade_rule</span><span class="p">(</span>
-    <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">&quot;tv_product&quot;</span><span class="p">,</span> <span class="n">invalidates</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="s2">&quot;v_featured&quot;</span><span class="p">])</span>
+    <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source</span><span class="o">=</span><span class="s2">"tv_product"</span><span class="p">,</span> <span class="n">invalidates</span><span class="o">=</span><span class="p">[</span><span class="s2">"v_product"</span><span class="p">,</span> <span class="s2">"v_featured"</span><span class="p">])</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>When <code>fn_update_product</code> writes the product, the cascade rule clears the cached
@@ -5865,7 +5865,7 @@ win.</p>
 <h3 id="32-caching-sensitive-data-carelessly">3.2 Caching Sensitive Data Carelessly<a class="headerlink" href="#32-caching-sensitive-data-carelessly" title="Permanent link">&para;</a></h3>
 <p><strong>Anti-pattern</strong>: Cache PII or per-tenant data under a guessable, unscoped key</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: caches email (PII) under a key with no tenant scope</span>
-<span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">user_with_email</span><span class="p">)</span>
+<span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">user_with_email</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
@@ -5882,10 +5882,10 @@ win.</p>
 <p><strong>Solution</strong>: Cache only what is safe to share, scope keys by tenant, and keep
 sensitive fields on a short or no TTL:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: cache public projection, tenant-scoped key, sensitive data excluded</span>
-<span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;tenant:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-    <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;avatar_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://...&quot;</span><span class="p">,</span>
+<span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tenant:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+    <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Alice"</span><span class="p">,</span>
+    <span class="s2">"avatar_url"</span><span class="p">:</span> <span class="s2">"https://..."</span><span class="p">,</span>
     <span class="c1"># no email, no phone, no tokens</span>
 <span class="p">})</span>
 </code></pre></div>
@@ -5900,10 +5900,10 @@ near the cache.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: hand-rolled offset batching, never profiled</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">out</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100_000</span><span class="p">,</span> <span class="mi">1000</span><span class="p">):</span>
-        <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">i</span><span class="p">))</span>
+        <span class="n">out</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">i</span><span class="p">))</span>
     <span class="k">return</span> <span class="n">out</span>
 <span class="c1"># Offset pagination is O(n) in the offset — this is *slower*, not faster,</span>
 <span class="c1"># and it still returns an unbounded result set (see 1.2).</span>
@@ -5938,15 +5938,15 @@ nobody asked for</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;lines&#39;</span><span class="p">,</span><span class="w">     </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">...),</span>
-<span class="w">        </span><span class="s1">&#39;history&#39;</span><span class="p">,</span><span class="w">   </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_event</span><span class="w"> </span><span class="p">...),</span><span class="w">  </span><span class="c1">-- huge, rarely read</span>
-<span class="w">        </span><span class="s1">&#39;rawAudit&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">audit_blob</span><span class="w">                                      </span><span class="c1">-- never requested</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">        </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'status'</span><span class="p">,</span><span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'lines'</span><span class="p">,</span><span class="w">     </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">...),</span>
+<span class="w">        </span><span class="s1">'history'</span><span class="p">,</span><span class="w">   </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_event</span><span class="w"> </span><span class="p">...),</span><span class="w">  </span><span class="c1">-- huge, rarely read</span>
+<span class="w">        </span><span class="s1">'rawAudit'</span><span class="p">,</span><span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">audit_blob</span><span class="w">                                      </span><span class="c1">-- never requested</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
 
-<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;OPEN&#39;</span><span class="p">;</span><span class="w">   </span><span class="c1">-- can&#39;t use an index</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'status'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'OPEN'</span><span class="p">;</span><span class="w">   </span><span class="c1">-- can't use an index</span>
 </code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
@@ -5968,7 +5968,7 @@ build heavy sub-objects only where they're actually needed (or in a dedicated
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span><span class="w">                                  </span><span class="c1">-- real column → indexable filter</span>
-<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'status'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="s1">'total'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_order_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="p">);</span>
@@ -6003,14 +6003,14 @@ that nothing keeps current</p>
 </ul>
 <p><strong>Solution</strong>: Compute on read in a view, or maintain it in the database with a
 trigger or projection table — never leave it to chance:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Option A: compute on read in the view&#39;s data JSONB</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Option A: compute on read in the view's data JSONB</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;score&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_activity</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'score'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_activity</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 
@@ -6042,7 +6042,7 @@ reconcile after the fact.</p>
 <div class="highlight"><pre><span></span><code># ❌ WRONG: lost-update race
 Tx 1: read user (version 1)
 Tx 2: update user, version 1 -&gt; 2
-Tx 1: update user using its stale copy, clobbering Tx 2&#39;s change
+Tx 1: update user using its stale copy, clobbering Tx 2's change
 </code></pre></div>
 <p><strong>Problem:</strong></p>
 <ul>
@@ -6074,10 +6074,10 @@ conflict result when it doesn't:</p>
 <span class="w">    </span><span class="k">GET</span><span class="w"> </span><span class="k">DIAGNOSTICS</span><span class="w"> </span><span class="n">v_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ROW_COUNT</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CONFLICT&#39;</span><span class="p">,</span>
-<span class="w">                                  </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;version mismatch, refresh and retry&#39;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'CONFLICT'</span><span class="p">,</span>
+<span class="w">                                  </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'version mismatch, refresh and retry'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -6129,7 +6129,7 @@ as traffic grows.</p>
 <hr />
 <h3 id="72-ignoring-connection-liveness">7.2 Ignoring Connection Liveness<a class="headerlink" href="#72-ignoring-connection-liveness" title="Permanent link">&para;</a></h3>
 <p><strong>Anti-pattern</strong>: Assume a WebSocket subscription stays healthy forever</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: no liveness handling; a dead connection looks &quot;subscribed&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: no liveness handling; a dead connection looks "subscribed"</span>
 <span class="n">subscription</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">subscription</span><span class="p">:</span>
     <span class="n">process_event</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>   <span class="c1"># silently stops if the socket is half-open</span>
@@ -6167,8 +6167,8 @@ find out until it matters.</p>
 <p><strong>Anti-pattern</strong>: Test the happy path and never test who is allowed to do it</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ WRONG: only asserts the result, never the access boundary</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_get_user</span><span class="p">():</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-1&quot;</span><span class="p">})</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Alice&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-1"</span><span class="p">})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"user"</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Alice"</span>
     <span class="c1"># No test that a different user is rejected!</span>
 </code></pre></div>
 <p><strong>Problem:</strong></p>
@@ -6186,19 +6186,19 @@ find out until it matters.</p>
 caller identity coming from context (as it does in production):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: assert both the grant and the denial</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_get_user_owner_allowed</span><span class="p">():</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">&quot;user-1&quot;</span><span class="p">,</span>
-                             <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-1&quot;</span><span class="p">})</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">][</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Alice&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">"user-1"</span><span class="p">,</span>
+                             <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-1"</span><span class="p">})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"user"</span><span class="p">][</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Alice"</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_get_user_other_denied</span><span class="p">():</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">&quot;user-1&quot;</span><span class="p">,</span>
-                             <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-2&quot;</span><span class="p">})</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extensions</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;FORBIDDEN&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_query</span><span class="p">(</span><span class="n">GET_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">"user-1"</span><span class="p">,</span>
+                             <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-2"</span><span class="p">})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">extensions</span><span class="p">[</span><span class="s2">"code"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"FORBIDDEN"</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_delete_user_non_owner_denied</span><span class="p">():</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_mutation</span><span class="p">(</span><span class="n">DELETE_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">&quot;user-1&quot;</span><span class="p">,</span>
-                                <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-2&quot;</span><span class="p">}})</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;deleteUser&quot;</span><span class="p">][</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;DeleteUserError&quot;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">run_mutation</span><span class="p">(</span><span class="n">DELETE_USER</span><span class="p">,</span> <span class="n">current_user</span><span class="o">=</span><span class="s2">"user-1"</span><span class="p">,</span>
+                                <span class="n">variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-2"</span><span class="p">}})</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"deleteUser"</span><span class="p">][</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"DeleteUserError"</span>
 </code></pre></div>
 <p>Also test the database boundary: a <code>fn_</code> function or tenant-scoped view should
 refuse a forbidden operation even if the resolver check were removed.</p>
@@ -6212,7 +6212,7 @@ requests</p>
 <div class="highlight"><pre><span></span><code># ❌ WRONG: traffic shifts the moment the process starts
 1. Start new app process
 2. Load balancer immediately routes to it
-3. ...but startup (schema build, DB pool warm-up) isn&#39;t done
+3. ...but startup (schema build, DB pool warm-up) isn't done
 4. First requests fail or hang
 </code></pre></div>
 <p>The FraiseQL schema is built <strong>in memory at startup</strong> from your decorators and

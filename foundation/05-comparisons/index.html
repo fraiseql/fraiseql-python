@@ -5638,7 +5638,7 @@
 <span class="kd">const</span><span class="w"> </span><span class="nx">resolvers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">Query</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">user</span><span class="o">:</span><span class="w"> </span><span class="kt">async</span><span class="w"> </span><span class="p">(</span><span class="nx">_</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">id</span><span class="w"> </span><span class="p">},</span><span class="w"> </span><span class="nx">context</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM users WHERE id = ?&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nx">id</span><span class="p">]);</span>
+<span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'SELECT * FROM users WHERE id = ?'</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nx">id</span><span class="p">]);</span>
 <span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">profile</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">externalAPI</span><span class="p">.</span><span class="nx">getProfile</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
 <span class="w">      </span><span class="kd">const</span><span class="w"> </span><span class="nx">recommendations</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">ml</span><span class="p">.</span><span class="nx">getRecommendations</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
 <span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">...</span><span class="nx">user</span><span class="p">,</span><span class="w"> </span><span class="nx">profile</span><span class="p">,</span><span class="w"> </span><span class="nx">recommendations</span><span class="w"> </span><span class="p">};</span>
@@ -5676,7 +5676,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1">// Apollo: You must implement optimization patterns</span>
 <span class="kd">const</span><span class="w"> </span><span class="nx">dataLoaders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">userLoader</span><span class="o">:</span><span class="w"> </span><span class="kt">new</span><span class="w"> </span><span class="nx">DataLoader</span><span class="p">(</span><span class="k">async</span><span class="w"> </span><span class="p">(</span><span class="nx">userIds</span><span class="p">)</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">&#39;SELECT * FROM users WHERE id = ANY(?)&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nx">userIds</span><span class="p">]);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">db</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span><span class="s1">'SELECT * FROM users WHERE id = ANY(?)'</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="nx">userIds</span><span class="p">]);</span>
 <span class="w">  </span><span class="p">}),</span>
 <span class="p">};</span>
 </code></pre></div>
@@ -5926,17 +5926,17 @@ docker<span class="w"> </span>run<span class="w"> </span>hasura/graphql-engine:l
 </code></pre></div>
 <p><strong>Federation Support</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">// WunderGraph: Compose multiple GraphQL APIs</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">introspectAndCompose</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@wundergraph/sdk&#39;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">introspectAndCompose</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@wundergraph/sdk'</span><span class="p">;</span>
 
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">apis</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="nx">introspectAndCompose</span><span class="p">({</span>
-<span class="w">      </span><span class="nx">apiNamespace</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;users&#39;</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://users-service/graphql&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">apiNamespace</span><span class="o">:</span><span class="w"> </span><span class="s1">'users'</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">'http://users-service/graphql'</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}),</span>
 <span class="w">    </span><span class="nx">introspectAndCompose</span><span class="p">({</span>
-<span class="w">      </span><span class="nx">apiNamespace</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;products&#39;</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://products-service/graphql&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">apiNamespace</span><span class="o">:</span><span class="w"> </span><span class="s1">'products'</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">url</span><span class="o">:</span><span class="w"> </span><span class="s1">'http://products-service/graphql'</span><span class="p">,</span>
 <span class="w">    </span><span class="p">}),</span>
 <span class="w">  </span><span class="p">],</span>
 <span class="p">};</span>
@@ -5961,7 +5961,7 @@ docker<span class="w"> </span>run<span class="w"> </span>hasura/graphql-engine:l
 <li>Not as flexible as Apollo (no custom middleware)</li>
 </ul>
 <p><strong>Optimization Still on You</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1">// WunderGraph: You&#39;re still responsible for optimization</span>
+<div class="highlight"><pre><span></span><code><span class="c1">// WunderGraph: You're still responsible for optimization</span>
 <span class="k">export</span><span class="w"> </span><span class="k">default</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="kd">function</span><span class="w"> </span><span class="nx">GetUserWithOrders</span><span class="p">(</span>
 <span class="w">  </span><span class="nx">ctx</span><span class="o">:</span><span class="w"> </span><span class="kt">Context</span><span class="p">,</span>
 <span class="w">  </span><span class="nx">input</span><span class="o">:</span><span class="w"> </span><span class="kt">GetUserWithOrdersInput</span><span class="p">,</span>
@@ -6021,9 +6021,9 @@ docker<span class="w"> </span>run<span class="w"> </span>hasura/graphql-engine:l
 <h4 id="what-custom-rest-excels-at">What Custom REST Excels At<a class="headerlink" href="#what-custom-rest-excels-at" title="Permanent link">&para;</a></h4>
 <p><strong>Simplicity for Simple Services</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># REST: Simple to understand</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/users/</span><span class="si">{user_id}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/users/</span><span class="si">{user_id}</span><span class="s2">"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM users WHERE id = ?&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">user_id</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">"SELECT * FROM users WHERE id = ?"</span><span class="p">,</span> <span class="p">[</span><span class="n">user_id</span><span class="p">])</span>
 </code></pre></div>
 <p><strong>Familiarity</strong></p>
 <ul>
@@ -6033,11 +6033,11 @@ docker<span class="w"> </span>run<span class="w"> </span>hasura/graphql-engine:l
 </ul>
 <p><strong>Fine-Grained Control</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># REST: You control exactly what goes into each endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/users/</span><span class="si">{user_id}</span><span class="s2">/recommendations&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/users/</span><span class="si">{user_id}</span><span class="s2">/recommendations"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">get_recommendations</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
     <span class="c1"># Your logic: exactly what you need, nothing more</span>
     <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
-        <span class="s2">&quot;SELECT * FROM recommendations WHERE user_id = ? LIMIT ?&quot;</span><span class="p">,</span>
+        <span class="s2">"SELECT * FROM recommendations WHERE user_id = ? LIMIT ?"</span><span class="p">,</span>
         <span class="p">[</span><span class="n">user_id</span><span class="p">,</span> <span class="n">limit</span><span class="p">],</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -6052,11 +6052,11 @@ docker<span class="w"> </span>run<span class="w"> </span>hasura/graphql-engine:l
 <div class="highlight"><pre><span></span><code>REST API returns:
 GET /api/users/1
 {
-  &quot;id&quot;: 1,
-  &quot;email&quot;: &quot;user@example.com&quot;,
-  &quot;name&quot;: &quot;John&quot;,
-  &quot;phone&quot;: &quot;123-456-7890&quot;,    // You don&#39;t need this
-  &quot;address&quot;: { ... }          // Or this
+  "id": 1,
+  "email": "user@example.com",
+  "name": "John",
+  "phone": "123-456-7890",    // You don't need this
+  "address": { ... }          // Or this
 }
 
 Returned 500 bytes, needed 200 bytes
@@ -6085,7 +6085,7 @@ Inconsistent APIs everywhere
 - DELETE /users/{id}
 - GET /users?search=...&amp;limit=...&amp;offset=...
 
-And that&#39;s just for users. Multiply by 20 resources = 100s of endpoints
+And that's just for users. Multiply by 20 resources = 100s of endpoints
 </code></pre></div>
 <h4 id="fraiseql-vs-rest-decision">FraiseQL vs. REST: Decision<a class="headerlink" href="#fraiseql-vs-rest-decision" title="Permanent link">&para;</a></h4>
 <table>
@@ -6206,7 +6206,7 @@ And that&#39;s just for users. Multiply by 20 resources = 100s of endpoints
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_product&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_product"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Product</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -6216,14 +6216,14 @@ And that&#39;s just for users. Multiply by 20 resources = 100s of endpoints
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">product_search</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_product&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_product"</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_recommendations</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_product&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_product"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="example-2-multi-tenant-saas-dashboard">Example 2: Multi-Tenant SaaS Dashboard<a class="headerlink" href="#example-2-multi-tenant-saas-dashboard" title="Permanent link">&para;</a></h3>
 <p><strong>Requirements:</strong></p>

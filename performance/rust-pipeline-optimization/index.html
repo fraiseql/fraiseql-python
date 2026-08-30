@@ -4761,9 +4761,9 @@
 <p>Pre-compute denormalized data in the database:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Slow: Compute JSONB on every query</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
 <span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 <span class="c1">-- Takes: 10-50ms for complex queries</span>
 
@@ -4774,7 +4774,7 @@
 <p><strong>Impact</strong>: 5-50x faster database queries</p>
 <h3 id="index-properly">Index Properly<a class="headerlink" href="#index-properly" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Index JSONB paths used in WHERE clauses</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">));</span>
 
 <span class="c1">-- Index foreign keys</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">);</span>
@@ -4800,7 +4800,7 @@
 <p>Enable APQ to cache query parsing:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">apq_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>  <span class="c1"># or &quot;memory&quot;</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>  <span class="c1"># or "memory"</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits:</strong></p>
@@ -4815,19 +4815,19 @@
 <h3 id="dont-include-unnecessary-data">Don't Include Unnecessary Data<a class="headerlink" href="#dont-include-unnecessary-data" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ Bad: Include everything</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;bio&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">,</span><span class="w">  </span><span class="c1">-- 1MB+ text field!</span>
-<span class="w">    </span><span class="s1">&#39;preferences&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">preferences</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Large JSON</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'bio'</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">,</span><span class="w">  </span><span class="c1">-- 1MB+ text field!</span>
+<span class="w">    </span><span class="s1">'preferences'</span><span class="p">,</span><span class="w"> </span><span class="n">preferences</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Large JSON</span>
 <span class="w">    </span><span class="p">...</span>
 <span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
 <span class="c1">-- ✅ Good: Only include what GraphQL needs</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
 <span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Impact</strong>: 2-5x faster for large objects</p>
@@ -4842,7 +4842,7 @@
 
 <span class="c"># Separate query when needed: large fields</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">bio</span>
 <span class="w">    </span><span class="n">preferences</span>
 <span class="w">  </span><span class="p">}</span>
@@ -4864,8 +4864,8 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_metrics</span>
 
 <span class="n">metrics</span> <span class="o">=</span> <span class="n">get_metrics</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rust transform avg: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;rust_transform_avg_ms&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rust transform p95: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;rust_transform_p95_ms&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust transform avg: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">'rust_transform_avg_ms'</span><span class="p">]</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust transform p95: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">'rust_transform_p95_ms'</span><span class="p">]</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Normal values:</strong></p>
 <ul>
@@ -4897,9 +4897,9 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total time: </span><span class="si">{</span><span class="n">duration</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total time: </span><span class="si">{</span><span class="n">duration</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Target times:</strong></p>
 <ul>

@@ -5913,10 +5913,10 @@ against your views and functions. Set the logger level via standard Python loggi
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run the app with uvicorn and watch the logs</span>
-uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;query\|select&quot;</span>
+uvicorn<span class="w"> </span>app:app<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">"query\|select"</span>
 </code></pre></div>
 <p><strong>Look for:</strong></p>
 <ul>
@@ -5943,11 +5943,11 @@ PostgreSQL:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Find tables without indexes</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_tables</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'public'</span>
 <span class="k">EXCEPT</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">schemaname</span><span class="p">,</span><span class="w"> </span><span class="n">tablename</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_indexes</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">schemaname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'public'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">tablename</span><span class="p">;</span>
 
 <span class="c1">-- Check the most expensive queries (requires the pg_stat_statements extension)</span>
@@ -5957,7 +5957,7 @@ PostgreSQL:</p>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
 
-<span class="c1">-- Example output: &quot;SELECT ... FROM tb_user WHERE created_at &gt;= ...&quot;</span>
+<span class="c1">-- Example output: "SELECT ... FROM tb_user WHERE created_at &gt;= ..."</span>
 <span class="c1">-- → Need index on created_at</span>
 </code></pre></div>
 <blockquote>
@@ -5970,8 +5970,8 @@ PostgreSQL:</p>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_created_at</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
 
 <span class="c1">-- Verify the index is used</span>
-<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">;</span>
-<span class="c1">-- Should show &quot;Index Scan&quot; not &quot;Seq Scan&quot;</span>
+<span class="k">EXPLAIN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">'2026-01-01'</span><span class="p">;</span>
+<span class="c1">-- Should show "Index Scan" not "Seq Scan"</span>
 </code></pre></div>
 <p><strong>Concurrent index creation (doesn't lock the table):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Build the index without blocking writes (recommended in production)</span>
@@ -5981,7 +5981,7 @@ PostgreSQL:</p>
 expressions you filter on:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Index on a value extracted from the JSONB data column</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email</span>
-<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">));</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">));</span>
 
 <span class="c1">-- GIN index for containment / key-existence queries on the whole JSONB document</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_data_gin</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="p">);</span>
@@ -5989,7 +5989,7 @@ expressions you filter on:</p>
 <p><strong>Solution 2: Composite Indexes for Common Filter Combinations</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- If queries often filter by both tenant and status:</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_tenant_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">);</span>
-<span class="c1">-- Covers WHERE tenant_id = X AND status = &#39;active&#39;</span>
+<span class="c1">-- Covers WHERE tenant_id = X AND status = 'active'</span>
 
 <span class="c1">-- If queries filter by range, put the range column last:</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_posts_user_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">);</span>
@@ -6004,13 +6004,13 @@ a pre-built, indexable table instead of recomputing JSONB per request.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># Logical view: data JSONB computed per query (good for small/simple reads)</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>
 
 <span class="c1"># Table-backed projection view: data pre-composed and refreshed by fn_/triggers</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserStatsFast</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># Pre-computed in tv_user_stats, indexable</span>
@@ -6027,7 +6027,7 @@ a pre-built, indexable table instead of recomputing JSONB per request.</p>
 
 <span class="c"># After: add filters (WHERE operators are generated against the view)</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">created_at</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2026-01-01&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">created_at</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">"2026-01-01"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="p">}</span>
@@ -6049,14 +6049,14 @@ number of database connections is <code>connection_pool_size + connection_pool_m
 <h3 id="diagnosis">Diagnosis<a class="headerlink" href="#diagnosis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check active connections</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="p">;</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_settings</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;max_connections&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_settings</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'max_connections'</span><span class="p">;</span>
 
 <span class="c1">-- Example: 100 max connections, 95 active → almost exhausted</span>
 
 <span class="c1">-- Find slow / non-idle connections</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pid</span><span class="p">,</span><span class="w"> </span><span class="n">usename</span><span class="p">,</span><span class="w"> </span><span class="k">state</span><span class="p">,</span><span class="w"> </span><span class="n">query_start</span><span class="p">,</span><span class="w"> </span><span class="n">query</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">'idle'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">query_start</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="solutions_1">Solutions<a class="headerlink" href="#solutions_1" title="Permanent link">&para;</a></h3>
@@ -6065,7 +6065,7 @@ number of database connections is <code>connection_pool_size + connection_pool_m
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:pass@localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">connection_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>        <span class="c1"># base connections held open</span>
@@ -6078,7 +6078,7 @@ number of database connections is <code>connection_pool_size + connection_pool_m
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:pass@localhost/mydb"</span><span class="p">,</span>
     <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
     <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
@@ -6115,17 +6115,17 @@ sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> <
 <div class="highlight"><pre><span></span><code><span class="c1">-- Kill connections idle &gt; 5 minutes</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pg_terminate_backend</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;idle&#39;</span>
-<span class="k">AND</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="s1">&#39;5 minutes&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">state</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'idle'</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">query_start</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">now</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">interval</span><span class="w"> </span><span class="s1">'5 minutes'</span><span class="p">;</span>
 
 <span class="c1">-- Set a server-side idle timeout instead of killing manually</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">mydb</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">idle_in_transaction_session_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;60s&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">mydb</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">idle_in_transaction_session_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'60s'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Solution 4: Set Connection and Query Timeouts</strong></p>
 <p><code>connection_pool_timeout</code> bounds how long FraiseQL waits for a free pool slot. Bound the
 query itself in PostgreSQL with <code>statement_timeout</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Abort any statement running longer than 30 seconds (per role or per database)</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">statement_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;30s&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">statement_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30s'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="prevention_1">Prevention<a class="headerlink" href="#prevention_1" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -6148,7 +6148,7 @@ query itself in PostgreSQL with <code>statement_timeout</code>:</p>
 
 <span class="c1">-- Estimate table/index bloat (requires the pgstattuple extension)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">pgstattuple</span><span class="p">;</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgstattuple</span><span class="p">(</span><span class="s1">&#39;idx_user_created_at&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pgstattuple</span><span class="p">(</span><span class="s1">'idx_user_created_at'</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="solutions_2">Solutions<a class="headerlink" href="#solutions_2" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Reindex</strong></p>
@@ -6170,10 +6170,10 @@ query itself in PostgreSQL with <code>statement_timeout</code>:</p>
 </code></pre></div>
 <p><strong>Solution 3: Regular Maintenance Schedule</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Weekly concurrent reindex of a hot table (PostgreSQL 12+)</span>
-<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span><span class="m">0</span><span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;REINDEX TABLE CONCURRENTLY tb_user;&quot;</span>
+<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span><span class="m">0</span><span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"REINDEX TABLE CONCURRENTLY tb_user;"</span>
 
 <span class="c1"># Daily vacuum + analyze of heavily modified tables</span>
-<span class="m">0</span><span class="w"> </span><span class="m">3</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;VACUUM (ANALYZE) tb_user; VACUUM (ANALYZE) tb_post;&quot;</span>
+<span class="m">0</span><span class="w"> </span><span class="m">3</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"VACUUM (ANALYZE) tb_user; VACUUM (ANALYZE) tb_post;"</span>
 </code></pre></div>
 <h3 id="prevention_2">Prevention<a class="headerlink" href="#prevention_2" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -6201,10 +6201,10 @@ query itself in PostgreSQL with <code>statement_timeout</code>:</p>
 </code></pre></div>
 <p><strong>Solution 2: Autovacuum Configuration</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check autovacuum settings</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_settings</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;autovacuum%&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_settings</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'autovacuum%'</span><span class="p">;</span>
 
 <span class="c1">-- Make autovacuum more aggressive globally</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">autovacuum_naptime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;30s&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Default 60s</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">autovacuum_naptime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30s'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Default 60s</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 
 <span class="c1">-- Or tune a single high-churn table</span>
@@ -6212,10 +6212,10 @@ query itself in PostgreSQL with <code>statement_timeout</code>:</p>
 </code></pre></div>
 <p><strong>Solution 3: Schedule Regular ANALYZE</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Hourly analysis of heavily modified tables</span>
-<span class="m">0</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;ANALYZE tb_user; ANALYZE tb_post;&quot;</span>
+<span class="m">0</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"ANALYZE tb_user; ANALYZE tb_post;"</span>
 
 <span class="c1"># Daily full-database analysis</span>
-<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;ANALYZE;&quot;</span>
+<span class="m">0</span><span class="w"> </span><span class="m">2</span><span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>*<span class="w"> </span>psql<span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"ANALYZE;"</span>
 </code></pre></div>
 <h3 id="prevention_3">Prevention<a class="headerlink" href="#prevention_3" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -6237,13 +6237,13 @@ PostgreSQL views, so the tuning below applies. Functions outside the allowlist (
 <div class="highlight"><pre><span></span><code><span class="c1">-- Identify aggregation queries (requires pg_stat_statements)</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="n">mean_exec_time</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%count%&#39;</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%group by%&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">'%count%'</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">query</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">'%group by%'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span>
 
 <span class="c1">-- Check whether they use indexes</span>
 <span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">fk_user</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
-<span class="c1">-- Look for &quot;Seq Scan&quot; (bad) vs &quot;Index Only Scan&quot; (good)</span>
+<span class="c1">-- Look for "Seq Scan" (bad) vs "Index Only Scan" (good)</span>
 </code></pre></div>
 <h3 id="solutions_4">Solutions<a class="headerlink" href="#solutions_4" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Add Index for the Aggregation Column</strong></p>
@@ -6264,7 +6264,7 @@ PostgreSQL views, so the tuning below applies. Functions outside the allowlist (
 
 <span class="c1"># Aggregation is pre-computed in tv_user_stats and refreshed on a schedule;</span>
 <span class="c1"># reads no longer run COUNT/GROUP BY on every request.</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserStats</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">post_count</span><span class="p">:</span> <span class="nb">int</span>   <span class="c1"># pre-computed</span>
@@ -6283,11 +6283,11 @@ periodically:</p>
 <p><strong>Solution 3: Partition Large Tables</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Partition the post table by date</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post_2026_01</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_post</span>
-<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-01-01&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;2026-02-01&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-01-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2026-02-01'</span><span class="p">);</span>
 
 <span class="c1">-- Aggregation on a single monthly partition is much faster (partition pruning)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span>
-<span class="w">                              </span><span class="k">AND</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w">  </span><span class="s1">&#39;2026-02-01&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">'2026-01-01'</span>
+<span class="w">                              </span><span class="k">AND</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w">  </span><span class="s1">'2026-02-01'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="prevention_4">Prevention<a class="headerlink" href="#prevention_4" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -6302,40 +6302,40 @@ periodically:</p>
 <h3 id="diagnosis_4">Diagnosis<a class="headerlink" href="#diagnosis_4" title="Permanent link">&para;</a></h3>
 <p>Turn up FraiseQL's Python logging and count the SQL statements issued for a single request.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run the request, capture the app logs, then count SELECTs</span>
 uvicorn<span class="w"> </span>app:app<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>logs.txt
-grep<span class="w"> </span>-c<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;select&quot;</span><span class="w"> </span>logs.txt
+grep<span class="w"> </span>-c<span class="w"> </span>-i<span class="w"> </span><span class="s2">"select"</span><span class="w"> </span>logs.txt
 <span class="c1"># ~101 statements for 100 parents → N+1 problem</span>
 </code></pre></div>
 <h3 id="solutions_5">Solutions<a class="headerlink" href="#solutions_5" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Compose the Nested Data Inside the View</strong></p>
 <p>The most reliable fix is to build the nested data directly into the <code>data</code> JSONB of a
 <code>v_</code>/<code>tv_</code> view using <code>jsonb_build_object</code> / <code>jsonb_agg</code>, so one read returns everything:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- v_user_with_posts: posts embedded in the user&#39;s data JSONB (one query, no N+1)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- v_user_with_posts: posts embedded in the user's data JSONB (one query, no N+1)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user_with_posts</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">((</span>
-<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">((</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
-<span class="w">        </span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">        </span><span class="p">),</span><span class="w"> </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_with_posts&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user_with_posts"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserWithPosts</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Post&quot;</span><span class="p">]</span>  <span class="c1"># fetched in the view definition, no per-row query</span>
+    <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">"Post"</span><span class="p">]</span>  <span class="c1"># fetched in the view definition, no per-row query</span>
 </code></pre></div>
 <p><strong>Solution 2: Batch a Field with a DataLoader</strong></p>
 <p>For computed/related fields resolved in Python, batch them with <code>@fraiseql.dataloader_field</code>
@@ -6343,7 +6343,7 @@ to collapse N lookups into one:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">dataloader_field</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">post</span><span class="p">:</span> <span class="s2">&quot;Post&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;User&quot;</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">post</span><span class="p">:</span> <span class="s2">"Post"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"User"</span><span class="p">:</span>
     <span class="c1"># Loaded in a single batched query for all posts in the result set.</span>
     <span class="o">...</span>
 </code></pre></div>
@@ -6371,7 +6371,7 @@ ping<span class="w"> </span>-c<span class="w"> </span><span class="m">10</span><
 <span class="c1"># Normal: 1-10ms; High: &gt; 50ms indicates a network issue</span>
 
 <span class="c1"># Measure end-to-end database response time</span>
-<span class="nb">time</span><span class="w"> </span>psql<span class="w"> </span>-h<span class="w"> </span>database-host<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT COUNT(*) FROM tb_user;&quot;</span>
+<span class="nb">time</span><span class="w"> </span>psql<span class="w"> </span>-h<span class="w"> </span>database-host<span class="w"> </span>-d<span class="w"> </span>mydb<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT COUNT(*) FROM tb_user;"</span>
 
 <span class="c1"># Inspect the network path</span>
 traceroute<span class="w"> </span>database-host
@@ -6381,9 +6381,9 @@ traceroute<span class="w"> </span>database-host
 <p><strong>Solution 1: Reduce Network Roundtrips</strong></p>
 <p>Compose related data in the view (see Section 6) so a request makes one roundtrip instead
 of several. Inside views, prefer a single joined <code>SELECT</code> over multiple subqueries:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- One roundtrip: join user and posts in the view&#39;s SELECT</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- One roundtrip: join user and posts in the view's SELECT</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">       </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="w">       </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span>
@@ -6415,7 +6415,7 @@ top<span class="w"> </span>-p<span class="w"> </span>&lt;app_pid&gt;<span class=
 lsof<span class="w"> </span>-p<span class="w"> </span>&lt;app_pid&gt;<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check for unclosed database connections from the app role</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">usename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_activity</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">usename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'fraiseql_user'</span><span class="p">;</span>
 <span class="c1">-- Should stay near the configured pool size, not grow unbounded</span>
 </code></pre></div>
 <h3 id="solutions_7">Solutions<a class="headerlink" href="#solutions_7" title="Permanent link">&para;</a></h3>
@@ -6438,7 +6438,7 @@ unbounded execution:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:pass@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:pass@localhost/mydb"</span><span class="p">,</span>
     <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
@@ -6483,15 +6483,15 @@ gunicorn<span class="w"> </span>app:app<span class="w"> </span>-k<span class="w"
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Turn on cache logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql.caching&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
-<span class="c1"># Then run the same query twice and look for &quot;Cache hit&quot; vs &quot;Cache miss&quot;</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql.caching"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="c1"># Then run the same query twice and look for "Cache hit" vs "Cache miss"</span>
 </code></pre></div>
 <h3 id="solutions_8">Solutions<a class="headerlink" href="#solutions_8" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Enable Query Caching</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">CachedRepository</span>
 
 <span class="c1"># Backend: an UNLOGGED PostgreSQL table shared across instances</span>
-<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">)</span>
 
 <span class="c1"># Cache with a 5-minute default TTL</span>
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
@@ -6508,16 +6508,16 @@ gunicorn<span class="w"> </span>app:app<span class="w"> </span>-k<span class="w"
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CascadeRule</span>
 
-<span class="c1"># Or declare a rule explicitly: when &quot;user&quot; changes, invalidate &quot;post&quot; caches.</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source_domain</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">target_domain</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">)</span>
+<span class="c1"># Or declare a rule explicitly: when "user" changes, invalidate "post" caches.</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source_domain</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">target_domain</span><span class="o">=</span><span class="s2">"post"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Solution 3: Tune TTL Per Read or Bypass When Needed</strong></p>
 <p><code>CachedRepository.find</code> accepts a per-call TTL and a cache bypass:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Slow-changing reference data: cache longer</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">900</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">900</span><span class="p">)</span>
 
 <span class="c1"># Volatile data (e.g. inventory): bypass the cache for a fresh read</span>
-<span class="n">levels</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_inventory_level&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">levels</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_inventory_level"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <blockquote>
 <p>The optional <code>fraiseql_rs</code> extension accelerates JSONB transformation on the read path;

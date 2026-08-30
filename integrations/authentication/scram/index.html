@@ -4764,7 +4764,7 @@ password in plaintext. Configuration is entirely on the <strong>PostgreSQL side<
 <span class="c1">-- Want: scram-sha-256  (md5 is deprecated)</span>
 
 <span class="c1">-- Enable SCRAM-SHA-256 (postgresql.conf, or via ALTER SYSTEM)</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;scram-sha-256&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'scram-sha-256'</span><span class="p">;</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 </code></pre></div>
 <p>This only governs <em>newly set</em> passwords. Existing roles keep their old hashes
@@ -4785,11 +4785,11 @@ hostssl mydb       fraiseql_user    0.0.0.0/0       scram-sha-256
 <p>With <code>password_encryption = scram-sha-256</code> active, any password you set is stored
 as a SCRAM verifier:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- New role</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">LOGIN</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;a-long-random-password&#39;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">LOGIN</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">'a-long-random-password'</span><span class="p">;</span>
 
-<span class="c1">-- Re-hash an existing role&#39;s password (also use \password in psql, which</span>
+<span class="c1">-- Re-hash an existing role's password (also use \password in psql, which</span>
 <span class="c1">-- never echoes the password into history or logs)</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;a-long-random-password&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">'a-long-random-password'</span><span class="p">;</span>
 </code></pre></div>
 <p>In <code>psql</code>, prefer the <code>\password</code> meta-command — it prompts interactively and
 rehashes using the server's current <code>password_encryption</code>:</p>
@@ -4799,7 +4799,7 @@ rehashes using the server's current <code>password_encryption</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- The stored verifier should begin with SCRAM-SHA-256$</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">rolname</span><span class="p">,</span><span class="w"> </span><span class="n">rolpassword</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'fraiseql_user'</span><span class="p">;</span>
 <span class="c1">-- e.g. SCRAM-SHA-256$4096:...   (not md5...)</span>
 </code></pre></div>
 <h2 id="fraiseql-client-side">FraiseQL / client side<a class="headerlink" href="#fraiseql-client-side" title="Permanent link">&para;</a></h2>
@@ -4809,7 +4809,7 @@ authentication code in FraiseQL.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:password@db.internal:5432/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:password@db.internal:5432/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
 <span class="p">)</span>
@@ -4818,15 +4818,15 @@ authentication code in FraiseQL.</p>
 server, FraiseQL will too — the negotiation is identical.</p>
 <p>Keep credentials out of source control. Pass the URL via an environment variable
 (FraiseQL also reads <code>FRAISEQL_DATABASE_URL</code>):</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:</span><span class="k">$(</span>vault<span class="w"> </span>kv<span class="w"> </span>get<span class="w"> </span>-field<span class="o">=</span>password<span class="w"> </span>secret/fraiseql/db<span class="k">)</span><span class="s2">@db.internal:5432/mydb&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:</span><span class="k">$(</span>vault<span class="w"> </span>kv<span class="w"> </span>get<span class="w"> </span>-field<span class="o">=</span>password<span class="w"> </span>secret/fraiseql/db<span class="k">)</span><span class="s2">@db.internal:5432/mydb"</span>
 </code></pre></div>
 <h2 id="recommend-tls-alongside-scram">Recommend TLS alongside SCRAM<a class="headerlink" href="#recommend-tls-alongside-scram" title="Permanent link">&para;</a></h2>
 <p>SCRAM protects the <em>password</em>, but on its own it does not encrypt query traffic
 or authenticate the server. Add TLS for both:</p>
 <div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="p">(</span>
-        <span class="s2">&quot;postgresql://fraiseql_user:password@db.internal:5432/mydb&quot;</span>
-        <span class="s2">&quot;?sslmode=verify-full&amp;sslrootcert=/etc/ssl/certs/ca.crt&quot;</span>
+        <span class="s2">"postgresql://fraiseql_user:password@db.internal:5432/mydb"</span>
+        <span class="s2">"?sslmode=verify-full&amp;sslrootcert=/etc/ssl/certs/ca.crt"</span>
     <span class="p">),</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
@@ -4844,14 +4844,14 @@ or authenticate the server. Add TLS for both:</p>
 <h2 id="migrating-from-md5">Migrating from MD5<a class="headerlink" href="#migrating-from-md5" title="Permanent link">&para;</a></h2>
 <p>If existing roles still use MD5:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- 1. Switch the default to SCRAM</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;scram-sha-256&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'scram-sha-256'</span><span class="p">;</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 
 <span class="c1">-- 2. Re-hash each role by resetting its password</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;a-long-random-password&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">'a-long-random-password'</span><span class="p">;</span>
 
 <span class="c1">-- 3. Confirm the verifier is now SCRAM</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">rolname</span><span class="p">,</span><span class="w"> </span><span class="n">rolpassword</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">rolname</span><span class="p">,</span><span class="w"> </span><span class="n">rolpassword</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'fraiseql_user'</span><span class="p">;</span>
 </code></pre></div>
 <p>Then change the <code>pg_hba.conf</code> method from <code>md5</code> to <code>scram-sha-256</code> and
 <code>SELECT pg_reload_conf();</code>. FraiseQL needs no changes unless the password itself
@@ -4859,7 +4859,7 @@ changed — in which case update the <code>database_url</code>.</p>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <p><strong>"SCRAM authentication failed" / "password authentication failed"</strong>
 Test the exact URL with <code>psql</code> first — FraiseQL uses the same negotiation:</p>
-<div class="highlight"><pre><span></span><code>psql<span class="w"> </span><span class="s2">&quot;postgresql://fraiseql_user:password@db.internal:5432/mydb&quot;</span>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span><span class="s2">"postgresql://fraiseql_user:password@db.internal:5432/mydb"</span>
 </code></pre></div>
 <p>If <code>psql</code> also fails, the cause is on the PostgreSQL side (wrong password, role
 missing, role still on MD5, or a <code>pg_hba.conf</code> line that does not match). Check

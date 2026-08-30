@@ -5119,10 +5119,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">                            </span><span class="c1">-- UUID for GraphQL API</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">                            </span><span class="c1">-- UUID for GraphQL API</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_note</span><span class="p">;</span>
 
@@ -5133,18 +5133,18 @@
 <span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;content&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- Sample data</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Welcome to FraiseQL&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;This is your first note!&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Type-safe queries&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Automatic GraphQL schema from PostgreSQL views&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;Database-first design&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Views compose data for optimal performance&#39;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'Welcome to FraiseQL'</span><span class="p">,</span><span class="w"> </span><span class="s1">'This is your first note!'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'Type-safe queries'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Automatic GraphQL schema from PostgreSQL views'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'Database-first design'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Views compose data for optimal performance'</span><span class="p">);</span>
 </code></pre></div>
 <p>Run the schema:</p>
 <div class="highlight"><pre><span></span><code>psql<span class="w"> </span>quickstart_notes<span class="w"> </span>&lt;<span class="w"> </span>schema.sql
@@ -5158,16 +5158,16 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>  <span class="c1"># Use ID for entity identifiers</span>
 
 <span class="c1"># Define GraphQL types</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_note&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Note</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A simple note with title and content.</span>
+<span class="w">    </span><span class="sd">"""A simple note with title and content.</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">        id: Unique note identifier</span>
 <span class="sd">        title: Note title (max 200 characters)</span>
 <span class="sd">        content: Note content in plain text</span>
 <span class="sd">        created_at: When the note was created</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>  <span class="c1"># External UUID identifier (Trinity pattern)</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
@@ -5176,91 +5176,91 @@
 <span class="c1"># Define input types</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateNoteInput</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Input for creating a new note.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Input for creating a new note."""</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="c1"># Define success/error types</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateNoteSuccess</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Success response for note creation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Success response for note creation."""</span>
     <span class="n">note</span><span class="p">:</span> <span class="n">Note</span>
     <span class="c1"># Note: @success auto-injects: status, message, updated_fields, id</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validation error.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Validation error."""</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
 
 <span class="c1"># Queries</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">notes</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Note</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all notes.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># field_name auto-inferred from function name &quot;notes&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_note&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;DESC&quot;</span><span class="p">)])</span>
+<span class="w">    </span><span class="sd">"""Get all notes."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># field_name auto-inferred from function name "notes"</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)])</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">note</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Note</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a single note by ID.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># field_name auto-inferred from function name &quot;note&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_note&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Get a single note by ID."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># field_name auto-inferred from function name "note"</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
 <span class="c1"># Mutations</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateNote</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new note.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create a new note."""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateNoteInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateNoteSuccess</span>
     <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateNoteSuccess</span> <span class="o">|</span> <span class="n">ValidationError</span><span class="p">:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Call SQL function (CQRS pattern)</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_note&quot;</span><span class="p">,</span> <span class="p">{</span>
-                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
-                <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_note"</span><span class="p">,</span> <span class="p">{</span>
+                <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+                <span class="s2">"content"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
             <span class="p">})</span>
 
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;Failed to create note&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"Failed to create note"</span><span class="p">)</span>
 
             <span class="c1"># Fetch the created note via Rust pipeline</span>
-            <span class="n">note</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_note&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+            <span class="n">note</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">CreateNoteSuccess</span><span class="p">(</span><span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">)</span>
 
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to create note: </span><span class="si">{</span><span class="n">e</span><span class="si">!s}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Failed to create note: </span><span class="si">{</span><span class="n">e</span><span class="si">!s}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># Create the app</span>
 <span class="n">QUICKSTART_TYPES</span> <span class="o">=</span> <span class="p">[</span><span class="n">Note</span><span class="p">]</span>
 <span class="n">QUICKSTART_QUERIES</span> <span class="o">=</span> <span class="p">[</span><span class="n">notes</span><span class="p">,</span> <span class="n">note</span><span class="p">]</span>
 <span class="n">QUICKSTART_MUTATIONS</span> <span class="o">=</span> <span class="p">[</span><span class="n">CreateNote</span><span class="p">]</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
     <span class="c1"># Database URL (override with DATABASE_URL environment variable)</span>
-    <span class="n">database_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">,</span> <span class="s2">&quot;postgresql://localhost/quickstart_notes&quot;</span><span class="p">)</span>
+    <span class="n">database_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">,</span> <span class="s2">"postgresql://localhost/quickstart_notes"</span><span class="p">)</span>
 
     <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
         <span class="n">database_url</span><span class="o">=</span><span class="n">database_url</span><span class="p">,</span>
         <span class="n">types</span><span class="o">=</span><span class="n">QUICKSTART_TYPES</span><span class="p">,</span>
         <span class="n">queries</span><span class="o">=</span><span class="n">QUICKSTART_QUERIES</span><span class="p">,</span>
         <span class="n">mutations</span><span class="o">=</span><span class="n">QUICKSTART_MUTATIONS</span><span class="p">,</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Notes API&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Simple note-taking GraphQL API&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Notes API"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Simple note-taking GraphQL API"</span><span class="p">,</span>
         <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Enable GraphQL playground</span>
     <span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🚀 Notes API running at http://localhost:8000/graphql&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;📖 GraphQL Playground: http://localhost:8000/graphql&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"🚀 Notes API running at http://localhost:8000/graphql"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"📖 GraphQL Playground: http://localhost:8000/graphql"</span><span class="p">)</span>
 
-    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"0.0.0.0"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="step-5-run-your-api">Step 5: Run Your API<a class="headerlink" href="#step-5-run-your-api" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>python<span class="w"> </span>app.py
@@ -5279,7 +5279,7 @@
 </code></pre></div>
 <h3 id="get-a-specific-note">Get a specific note<a class="headerlink" href="#get-a-specific-note" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">note</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">note</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">    </span><span class="n">content</span>
@@ -5290,7 +5290,7 @@
 <p><strong>Note</strong>: Replace the UUID with an actual ID from your database. You can get IDs from the <code>notes</code> query above.</p>
 <h3 id="create-a-new-note">Create a new note<a class="headerlink" href="#create-a-new-note" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">createNote</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;My New Note&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GraphQL mutations made simple&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createNote</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">"My New Note"</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">"GraphQL mutations made simple"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateNoteSuccess</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">note</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">id</span>
@@ -5322,7 +5322,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ RECOMMENDED (safe, clear)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span> <span class="o">...</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
@@ -5332,7 +5332,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ SAFE (explicit names)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">fraise_type</span><span class="p">,</span> <span class="n">fraise_input</span>
 
-<span class="nd">@fraise_type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraise_type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span> <span class="o">...</span>
 
 <span class="nd">@fraise_input</span>
@@ -5342,22 +5342,22 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ DANGEROUS - shadows builtin type() and input()</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="nb">type</span><span class="p">,</span> <span class="nb">input</span>
 
-<span class="nd">@type</span>  <span class="c1"># Now you can&#39;t use Python&#39;s type() function!</span>
+<span class="nd">@type</span>  <span class="c1"># Now you can't use Python's type() function!</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <h3 id="auto-inference-magic">Auto-Inference Magic<a class="headerlink" href="#auto-inference-magic" title="Permanent link">&para;</a></h3>
 <p>FraiseQL automatically infers parameters to reduce boilerplate:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># field_name auto-inferred from function name &quot;users&quot;</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># field_name auto-inferred from function name "users"</span>
     <span class="c1"># info parameter auto-injected from GraphQL context</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <p>The GraphQL response will automatically use the correct field name:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;users&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span><span class="w">  </span><span class="c1">// ← Matches function name</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"users"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span><span class="w">  </span><span class="c1">// ← Matches function name</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>

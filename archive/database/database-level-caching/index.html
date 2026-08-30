@@ -4979,11 +4979,11 @@ work_mem = 64MB
 <span class="w">    </span><span class="c1">-- Generated column (auto-updates on write)</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;last_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;user_posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'last_name'</span><span class="p">,</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'user_posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span>
 <span class="w">                </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">users</span><span class="p">.</span><span class="n">id</span>
@@ -5019,11 +5019,11 @@ Complex aggregations that are:</p>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_users</span><span class="p">,</span>
 <span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_posts</span><span class="p">,</span>
-<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;24 hours&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">posts_today</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'24 hours'</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">posts_today</span><span class="p">,</span>
 <span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">AVG</span><span class="p">(</span><span class="k">LENGTH</span><span class="p">(</span><span class="n">content</span><span class="p">))</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">avg_post_length</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;top_users&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
-<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;post_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">post_count</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'top_users'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="s1">'post_count'</span><span class="p">,</span><span class="w"> </span><span class="n">post_count</span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">post_count</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">u</span>
@@ -5085,7 +5085,7 @@ Complex aggregations that are:</p>
 <p><strong>Rust-First Integration</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;mv_dashboard_stats&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;top_users&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"mv_dashboard_stats"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"top_users"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DashboardStats</span><span class="p">:</span>
     <span class="n">total_users</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">total_posts</span><span class="p">:</span> <span class="nb">int</span>
@@ -5095,18 +5095,18 @@ Complex aggregations that are:</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dashboard</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DashboardStats</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Query materialized view (0.5ms)</span>
 <span class="sd">    Rust transforms top_users JSONB (0.3ms)</span>
 <span class="sd">    Total: 0.8ms (vs 150ms live query)</span>
 
 <span class="sd">    190x speedup!</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;mv_dashboard_stats&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"mv_dashboard_stats"</span><span class="p">)</span>
 
 <span class="c1"># Refresh strategy: Cron job</span>
-<span class="c1"># */5 * * * * psql -c &quot;REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_stats&quot;</span>
+<span class="c1"># */5 * * * * psql -c "REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_stats"</span>
 </code></pre></div>
 <p><strong>Verdict</strong>: ✅ <strong>Use selectively</strong> for expensive aggregations with acceptable staleness</p>
 <hr />
@@ -5140,29 +5140,29 @@ Complex aggregations that are:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cached_query</span><span class="p">(</span><span class="n">cache_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">query_fn</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Query with database-level caching&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Query with database-level caching"""</span>
 
     <span class="c1"># 1. Check cache</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
-        <span class="s2">&quot;SELECT result FROM query_cache WHERE cache_key = $1 AND expires_at &gt; NOW()&quot;</span><span class="p">,</span>
+        <span class="s2">"SELECT result FROM query_cache WHERE cache_key = $1 AND expires_at &gt; NOW()"</span><span class="p">,</span>
         <span class="n">cache_key</span>
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="p">:</span>
         <span class="c1"># Cache hit (0.1ms)</span>
-        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s1">'result'</span><span class="p">]</span>
 
     <span class="c1"># 2. Execute query</span>
     <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">query_fn</span><span class="p">()</span>
 
     <span class="c1"># 3. Store in cache</span>
     <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        INSERT INTO query_cache (cache_key, result, expires_at)</span>
-<span class="sd">        VALUES ($1, $2, NOW() + $3 * INTERVAL &#39;1 second&#39;)</span>
+<span class="sd">        VALUES ($1, $2, NOW() + $3 * INTERVAL '1 second')</span>
 <span class="sd">        ON CONFLICT (cache_key) DO UPDATE</span>
 <span class="sd">        SET result = EXCLUDED.result, expires_at = EXCLUDED.expires_at</span>
-<span class="sd">        &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">        """</span><span class="p">,</span>
         <span class="n">cache_key</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">ttl</span>
     <span class="p">)</span>
 
@@ -5172,7 +5172,7 @@ Complex aggregations that are:</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">expensive_query</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DashboardStats</span><span class="p">:</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">cached_query</span><span class="p">(</span>
-        <span class="n">cache_key</span><span class="o">=</span><span class="s2">&quot;dashboard:main&quot;</span><span class="p">,</span>
+        <span class="n">cache_key</span><span class="o">=</span><span class="s2">"dashboard:main"</span><span class="p">,</span>
         <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># 5 minutes</span>
         <span class="n">query_fn</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">execute_expensive_query</span><span class="p">()</span>
     <span class="p">)</span>
@@ -5267,7 +5267,7 @@ Complex aggregations that are:</p>
 <p><strong>More Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Index recent posts only (dashboard queries)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_posts_recent</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">posts</span><span class="p">(</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;30 days&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'30 days'</span><span class="p">;</span>
 
 <span class="c1">-- Index popular users only (profile page)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_users_popular</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
@@ -5275,22 +5275,22 @@ Complex aggregations that are:</p>
 
 <span class="c1">-- Index JSONB field for specific queries</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_users_premium</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;subscription_tier&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;premium&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'subscription_tier'</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'premium'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Rust-First Integration</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Uses partial index automatically</span>
 <span class="sd">    Query planner chooses idx_users_active</span>
 <span class="sd">    0.05ms vs 0.15ms (3x faster)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;users&quot;</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;deleted_at&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+        <span class="s2">"users"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">"deleted_at"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -5301,7 +5301,7 @@ Complex aggregations that are:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Cache table for expensive queries</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">result_cache</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">cache_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
-<span class="w">    </span><span class="n">query_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">  </span><span class="c1">-- &#39;dashboard&#39;, &#39;report&#39;, etc.</span>
+<span class="w">    </span><span class="n">query_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">  </span><span class="c1">-- 'dashboard', 'report', etc.</span>
 <span class="w">    </span><span class="k">result</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">computed_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
 <span class="w">    </span><span class="n">valid_until</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
@@ -5323,7 +5323,7 @@ Complex aggregations that are:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">DatabaseCache</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Database-level result cache with metrics&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Database-level result cache with metrics"""</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_or_compute</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5334,21 +5334,21 @@ Complex aggregations that are:</p>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="c1"># 1. Try cache</span>
         <span class="n">cached</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sd">"""</span>
 <span class="sd">            SELECT result, hit_count</span>
 <span class="sd">            FROM result_cache</span>
 <span class="sd">            WHERE cache_key = $1 AND valid_until &gt; NOW()</span>
-<span class="sd">            &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">            """</span><span class="p">,</span>
             <span class="n">cache_key</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">cached</span><span class="p">:</span>
             <span class="c1"># Cache hit - increment counter</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="s2">&quot;SELECT increment_cache_hit($1)&quot;</span><span class="p">,</span>
+                <span class="s2">"SELECT increment_cache_hit($1)"</span><span class="p">,</span>
                 <span class="n">cache_key</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cached</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cached</span><span class="p">[</span><span class="s1">'result'</span><span class="p">])</span>
 
         <span class="c1"># 2. Cache miss - compute</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
@@ -5357,24 +5357,24 @@ Complex aggregations that are:</p>
 
         <span class="c1"># 3. Store with metrics</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sd">"""</span>
 <span class="sd">            INSERT INTO result_cache (cache_key, query_type, result, valid_until, computation_time_ms)</span>
-<span class="sd">            VALUES ($1, $2, $3, NOW() + $4 * INTERVAL &#39;1 second&#39;, $5)</span>
+<span class="sd">            VALUES ($1, $2, $3, NOW() + $4 * INTERVAL '1 second', $5)</span>
 <span class="sd">            ON CONFLICT (cache_key) DO UPDATE</span>
 <span class="sd">            SET result = EXCLUDED.result,</span>
 <span class="sd">                valid_until = EXCLUDED.valid_until,</span>
 <span class="sd">                computation_time_ms = EXCLUDED.computation_time_ms,</span>
 <span class="sd">                computed_at = NOW()</span>
-<span class="sd">            &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">            """</span><span class="p">,</span>
             <span class="n">cache_key</span><span class="p">,</span> <span class="n">query_type</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">),</span> <span class="n">ttl</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">duration_ms</span><span class="p">)</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_cache_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Analyze cache effectiveness&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Analyze cache effectiveness"""</span>
         <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
-<span class="w">            </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">            </span><span class="sd">"""</span>
 <span class="sd">            SELECT</span>
 <span class="sd">                COUNT(*) as total_entries,</span>
 <span class="sd">                SUM(hit_count) as total_hits,</span>
@@ -5382,7 +5382,7 @@ Complex aggregations that are:</p>
 <span class="sd">                SUM(CASE WHEN hit_count &gt; 0 THEN 1 ELSE 0 END) as entries_with_hits</span>
 <span class="sd">            FROM result_cache</span>
 <span class="sd">            WHERE query_type = $1</span>
-<span class="sd">            &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">            """</span><span class="p">,</span>
             <span class="n">query_type</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
@@ -5390,20 +5390,20 @@ Complex aggregations that are:</p>
 <span class="c1"># Usage</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dashboard</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dashboard</span><span class="p">:</span>
-    <span class="n">cache</span> <span class="o">=</span> <span class="n">DatabaseCache</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">])</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">DatabaseCache</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">])</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_or_compute</span><span class="p">(</span>
-        <span class="n">cache_key</span><span class="o">=</span><span class="s2">&quot;dashboard:main&quot;</span><span class="p">,</span>
-        <span class="n">query_type</span><span class="o">=</span><span class="s2">&quot;dashboard&quot;</span><span class="p">,</span>
+        <span class="n">cache_key</span><span class="o">=</span><span class="s2">"dashboard:main"</span><span class="p">,</span>
+        <span class="n">query_type</span><span class="o">=</span><span class="s2">"dashboard"</span><span class="p">,</span>
         <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
         <span class="n">compute_fn</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">compute_expensive_dashboard</span><span class="p">()</span>
     <span class="p">)</span>
 
 <span class="c1"># Monitoring</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_cache_performance</span><span class="p">():</span>
-    <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cache_stats</span><span class="p">(</span><span class="s2">&quot;dashboard&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Dashboard cache: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_hits&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> hits, &quot;</span>
-          <span class="sa">f</span><span class="s2">&quot;avg computation: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;avg_computation_ms&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cache_stats</span><span class="p">(</span><span class="s2">"dashboard"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Dashboard cache: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'total_hits'</span><span class="p">]</span><span class="si">}</span><span class="s2"> hits, "</span>
+          <span class="sa">f</span><span class="s2">"avg computation: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">'avg_computation_ms'</span><span class="p">]</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits</strong>:</p>
 <ul>
@@ -5525,7 +5525,7 @@ Is query slow (&gt;10ms)?
 <span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="n">complex</span><span class="w"> </span><span class="n">aggregation</span><span class="w"> </span><span class="p">...;</span>
 
 <span class="c1">-- Refresh every 5 minutes (cron)</span>
-<span class="o">*/</span><span class="mi">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">psql</span><span class="w"> </span><span class="o">-</span><span class="k">c</span><span class="w"> </span><span class="ss">&quot;REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_stats&quot;</span>
+<span class="o">*/</span><span class="mi">5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">psql</span><span class="w"> </span><span class="o">-</span><span class="k">c</span><span class="w"> </span><span class="ss">"REFRESH MATERIALIZED VIEW CONCURRENTLY mv_dashboard_stats"</span>
 
 <span class="c1">-- Add UNLOGGED cache table for query results</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">UNLOGGED</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">query_cache</span><span class="w"> </span><span class="p">(</span>
@@ -5535,7 +5535,7 @@ Is query slow (&gt;10ms)?
 <span class="p">);</span>
 
 <span class="c1">-- Cleanup every hour</span>
-<span class="mi">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">psql</span><span class="w"> </span><span class="o">-</span><span class="k">c</span><span class="w"> </span><span class="ss">&quot;DELETE FROM query_cache WHERE expires_at &lt; NOW()&quot;</span>
+<span class="mi">0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">psql</span><span class="w"> </span><span class="o">-</span><span class="k">c</span><span class="w"> </span><span class="ss">"DELETE FROM query_cache WHERE expires_at &lt; NOW()"</span>
 </code></pre></div>
 <p><strong>Result</strong>: 0.5-1ms for cached queries, &lt;5ms for most queries</p>
 <hr />
@@ -5635,18 +5635,18 @@ Is query slow (&gt;10ms)?
 <span class="w">    </span><span class="c1">-- Generated JSONB column (database-level caching)</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;last_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;active&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">active</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;user_posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'last_name'</span><span class="p">,</span><span class="w"> </span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'active'</span><span class="p">,</span><span class="w"> </span><span class="n">active</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'user_posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">                        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">                    </span><span class="p">)</span>
 <span class="w">                    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
 <span class="w">                </span><span class="p">)</span>
@@ -5666,10 +5666,10 @@ Is query slow (&gt;10ms)?
 <span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">mv_dashboard</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_users</span><span class="p">,</span>
-<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;7 days&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">new_users_week</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'7 days'</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">new_users_week</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;top_users&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
-<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">post_count</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'top_users'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="n">post_count</span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">post_count</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">u</span>
@@ -5689,7 +5689,7 @@ Is query slow (&gt;10ms)?
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.repositories</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repository</span>
 
-<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5698,7 +5698,7 @@ Is query slow (&gt;10ms)?
     <span class="n">active</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">user_posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;mv_dashboard&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"mv_dashboard"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Dashboard</span><span class="p">:</span>
     <span class="n">total_users</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">new_users_week</span><span class="p">:</span> <span class="nb">int</span>
@@ -5707,29 +5707,29 @@ Is query slow (&gt;10ms)?
 <span class="c1"># Simple query - uses generated column</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Pipeline:</span>
 <span class="sd">    1. SELECT data FROM users WHERE id = $1 (0.05ms - partial index)</span>
 <span class="sd">    2. Rust transform (0.5ms)</span>
 <span class="sd">    Total: 0.55ms</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
 <span class="c1"># Dashboard - uses materialized view</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dashboard</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dashboard</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Pipeline:</span>
 <span class="sd">    1. SELECT * FROM mv_dashboard (0.1ms - cached)</span>
 <span class="sd">    2. Rust transform (0.3ms)</span>
 <span class="sd">    Total: 0.4ms (vs 150ms without MV!)</span>
 
 <span class="sd">    375x speedup!</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM mv_dashboard&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">transform_one</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;Dashboard&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">"SELECT * FROM mv_dashboard"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">transform_one</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">"Dashboard"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="key-takeaways">🎯 Key Takeaways<a class="headerlink" href="#key-takeaways" title="Permanent link">&para;</a></h2>

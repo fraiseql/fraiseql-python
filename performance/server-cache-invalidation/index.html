@@ -4578,11 +4578,11 @@
 <h3 id="the-cache-invalidation-problem">The Cache Invalidation Problem<a class="headerlink" href="#the-cache-invalidation-problem" title="Permanent link">&para;</a></h3>
 <p>Traditional caching faces a fundamental challenge:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># User changes</span>
-<span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">new_name</span><span class="o">=</span><span class="s2">&quot;Alice Smith&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">new_name</span><span class="o">=</span><span class="s2">"Alice Smith"</span><span class="p">)</span>
 
 <span class="c1"># But cached posts still show old user name!</span>
-<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:posts&quot;</span><span class="p">)</span>
-<span class="c1"># Returns: Posts with &quot;Alice Johnson&quot; (stale!)</span>
+<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:posts"</span><span class="p">)</span>
+<span class="c1"># Returns: Posts with "Alice Johnson" (stale!)</span>
 </code></pre></div>
 <p><strong>Common solutions</strong>:</p>
 <ul>
@@ -4595,7 +4595,7 @@
 <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># User changes</span>
-<span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">new_name</span><span class="o">=</span><span class="s2">&quot;Alice Smith&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">new_name</span><span class="o">=</span><span class="s2">"Alice Smith"</span><span class="p">)</span>
 
 <span class="c1"># CASCADE automatically invalidates:</span>
 <span class="c1"># - user:{user_id}</span>
@@ -4658,9 +4658,9 @@ Post
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup_cascade</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Setup CASCADE invalidation rules from GraphQL schema.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Setup CASCADE invalidation rules from GraphQL schema."""</span>
 
     <span class="c1"># Auto-detect and setup CASCADE rules</span>
     <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span>
@@ -4669,7 +4669,7 @@ Post
         <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Log detected rules</span>
     <span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;CASCADE rules configured&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"CASCADE rules configured"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Output</strong> (when <code>verbose=True</code>):</p>
 <div class="highlight"><pre><span></span><code>CASCADE: Analyzing GraphQL schema...
@@ -4696,7 +4696,7 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <div class="highlight"><pre><span></span><code><span class="c"># ❌ Bad: No explicit relationships</span>
 <span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<span class="w">  </span><span class="c"># No posts field - CASCADE can&#39;t detect relationship</span>
+<span class="w">  </span><span class="c"># No posts field - CASCADE can't detect relationship</span>
 <span class="p">}</span>
 
 <span class="k">type</span><span class="w"> </span><span class="err">Post</span><span class="w"> </span><span class="p">{</span>
@@ -4711,11 +4711,11 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 
 <span class="c1"># Define custom CASCADE rule</span>
 <span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">,</span>      <span class="c1"># Invalidate all posts by this user</span>
-        <span class="s2">&quot;user:</span><span class="si">{id}</span><span class="s2">:followers&quot;</span><span class="p">,</span>   <span class="c1"># Invalidate follower list</span>
-        <span class="s2">&quot;feed:follower:*&quot;</span>        <span class="c1"># Invalidate feeds for all followers</span>
+        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>      <span class="c1"># Invalidate all posts by this user</span>
+        <span class="s2">"user:</span><span class="si">{id}</span><span class="s2">:followers"</span><span class="p">,</span>   <span class="c1"># Invalidate follower list</span>
+        <span class="s2">"feed:follower:*"</span>        <span class="c1"># Invalidate feeds for all followers</span>
     <span class="p">]</span>
 <span class="p">)</span>
 
@@ -4726,15 +4726,15 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <h4 id="pattern-1-multi-level-cascade">Pattern 1: Multi-Level CASCADE<a class="headerlink" href="#pattern-1-multi-level-cascade" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># User → Post → Comment (2 levels deep)</span>
 <span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">,</span>           <span class="c1"># Direct: User&#39;s posts</span>
-        <span class="s2">&quot;comment:post_author:</span><span class="si">{id}</span><span class="s2">&quot;</span>    <span class="c1"># Indirect: Comments on user&#39;s posts</span>
+        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>           <span class="c1"># Direct: User's posts</span>
+        <span class="s2">"comment:post_author:</span><span class="si">{id}</span><span class="s2">"</span>    <span class="c1"># Indirect: Comments on user's posts</span>
     <span class="p">]</span>
 <span class="p">)</span>
 
 <span class="c1"># When user changes:</span>
-<span class="c1"># 1. Invalidate user&#39;s posts</span>
+<span class="c1"># 1. Invalidate user's posts</span>
 <span class="c1"># 2. Invalidate comments on those posts</span>
 <span class="c1"># Result: Full cascade through 2 levels</span>
 </code></pre></div>
@@ -4743,25 +4743,25 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 
 <span class="c1"># Forward: User → Post</span>
 <span class="n">user_to_post</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">]</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="c1"># Backward: Post → User</span>
 <span class="n">post_to_user</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;user:</span><span class="si">{author_id}</span><span class="s2">&quot;</span><span class="p">]</span>  <span class="c1"># Invalidate author&#39;s cache</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"post"</span><span class="p">,</span>
+    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"user:</span><span class="si">{author_id}</span><span class="s2">"</span><span class="p">]</span>  <span class="c1"># Invalidate author's cache</span>
 <span class="p">)</span>
 
-<span class="c1"># When post changes, author&#39;s cache is invalidated</span>
+<span class="c1"># When post changes, author's cache is invalidated</span>
 <span class="c1"># When user changes, their posts are invalidated</span>
 </code></pre></div>
 <h4 id="pattern-3-conditional-cascade">Pattern 3: Conditional CASCADE<a class="headerlink" href="#pattern-3-conditional-cascade" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Only cascade published posts</span>
 <span class="n">published_posts_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">],</span>
-    <span class="n">condition</span><span class="o">=</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;published&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">],</span>
+    <span class="n">condition</span><span class="o">=</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"published"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
 <span class="p">)</span>
 
 <span class="c1"># CASCADE only triggers for published posts</span>
@@ -4793,17 +4793,17 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <h4 id="2-use-selective-cascade">2. Use Selective CASCADE<a class="headerlink" href="#2-use-selective-cascade" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ Bad: Cascade everything</span>
 <span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">]</span>  <span class="c1"># Invalidates EVERYTHING!</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">]</span>  <span class="c1"># Invalidates EVERYTHING!</span>
 <span class="p">)</span>
 
 <span class="c1"># ✅ Good: Cascade specific patterns</span>
 <span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;comment:author:</span><span class="si">{id}</span><span class="s2">&quot;</span>
-    <span class="p">]</span>  <span class="c1"># Only what&#39;s needed</span>
+        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"comment:author:</span><span class="si">{id}</span><span class="s2">"</span>
+    <span class="p">]</span>  <span class="c1"># Only what's needed</span>
 <span class="p">)</span>
 </code></pre></div>
 <h4 id="3-batch-cascade-operations">3. Batch CASCADE Operations<a class="headerlink" href="#3-batch-cascade-operations" title="Permanent link">&para;</a></h4>
@@ -4811,13 +4811,13 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <span class="n">user_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">user1</span><span class="p">,</span> <span class="n">user2</span><span class="p">,</span> <span class="n">user3</span><span class="p">]</span>
 
 <span class="c1"># Single CASCADE operation for all users</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_batch</span><span class="p">([</span><span class="sa">f</span><span class="s2">&quot;user:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">user_ids</span><span class="p">])</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_batch</span><span class="p">([</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">user_ids</span><span class="p">])</span>
 
 <span class="c1"># CASCADE propagates efficiently</span>
 </code></pre></div>
 <h3 id="monitoring-cascade-performance">Monitoring CASCADE Performance<a class="headerlink" href="#monitoring-cascade-performance" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Track CASCADE metrics</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">track_cascade_metrics</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
@@ -4825,7 +4825,7 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 
     <span class="n">cascade_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
     <span class="k">if</span> <span class="n">cascade_time</span> <span class="o">&gt;</span> <span class="mf">0.01</span><span class="p">:</span>  <span class="c1"># &gt;10ms</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Slow CASCADE: </span><span class="si">{</span><span class="n">cascade_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Slow CASCADE: </span><span class="si">{</span><span class="n">cascade_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">response</span>
 </code></pre></div>
@@ -4834,10 +4834,10 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <h3 id="pattern-1-lazy-cascade">Pattern 1: Lazy CASCADE<a class="headerlink" href="#pattern-1-lazy-cascade" title="Permanent link">&para;</a></h3>
 <p>Instead of immediate invalidation, defer to background task:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Immediate: Invalidate now (default)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">)</span>
 
 <span class="c1"># Lazy: Queue for later invalidation</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_lazy</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_lazy</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
 
 <span class="c1"># Useful for:</span>
 <span class="c1"># - Non-critical caches</span>
@@ -4847,23 +4847,23 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <h3 id="pattern-2-partial-cascade">Pattern 2: Partial CASCADE<a class="headerlink" href="#pattern-2-partial-cascade" title="Permanent link">&para;</a></h3>
 <p>Invalidate only specific fields, not entire cache:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Invalidate entire post</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;post:123&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"post:123"</span><span class="p">)</span>
 
 <span class="c1"># Or: Invalidate only post title</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_field</span><span class="p">(</span><span class="s2">&quot;post:123&quot;</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">&quot;title&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_field</span><span class="p">(</span><span class="s2">"post:123"</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"title"</span><span class="p">)</span>
 
 <span class="c1"># Author name changed? Only invalidate author field</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_field</span><span class="p">(</span><span class="s2">&quot;post:*&quot;</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">&quot;author.name&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_field</span><span class="p">(</span><span class="s2">"post:*"</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"author.name"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="pattern-3-smart-cascade">Pattern 3: Smart CASCADE<a class="headerlink" href="#pattern-3-smart-cascade" title="Permanent link">&para;</a></h3>
 <p>CASCADE based on data changes:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Only cascade if email changed (not password)</span>
-<span class="k">if</span> <span class="n">old_user</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">new_user</span><span class="p">[</span><span class="s2">&quot;email&quot;</span><span class="p">]:</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="c1"># Cascade: user&#39;s posts need new email</span>
+<span class="k">if</span> <span class="n">old_user</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">new_user</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]:</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="c1"># Cascade: user's posts need new email</span>
 
 <span class="c1"># If only password changed, no cascade needed</span>
-<span class="c1"># (posts don&#39;t show password)</span>
+<span class="c1"># (posts don't show password)</span>
 </code></pre></div>
 <hr />
 <h2 id="monitoring-cascade">Monitoring CASCADE<a class="headerlink" href="#monitoring-cascade" title="Permanent link">&para;</a></h2>
@@ -4873,13 +4873,13 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 
 <span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
 <span class="c1"># {</span>
-<span class="c1">#     &quot;total_invalidations_24h&quot;: 15234,</span>
-<span class="c1">#     &quot;cascade_triggered&quot;: 8521,</span>
-<span class="c1">#     &quot;avg_cascade_depth&quot;: 1.8,</span>
-<span class="c1">#     &quot;avg_cascade_time_ms&quot;: 4.2,</span>
-<span class="c1">#     &quot;most_frequent_cascades&quot;: [</span>
-<span class="c1">#         {&quot;pattern&quot;: &quot;user -&gt; post&quot;, &quot;count&quot;: 4521},</span>
-<span class="c1">#         {&quot;pattern&quot;: &quot;post -&gt; comment&quot;, &quot;count&quot;: 2134}</span>
+<span class="c1">#     "total_invalidations_24h": 15234,</span>
+<span class="c1">#     "cascade_triggered": 8521,</span>
+<span class="c1">#     "avg_cascade_depth": 1.8,</span>
+<span class="c1">#     "avg_cascade_time_ms": 4.2,</span>
+<span class="c1">#     "most_frequent_cascades": [</span>
+<span class="c1">#         {"pattern": "user -&gt; post", "count": 4521},</span>
+<span class="c1">#         {"pattern": "post -&gt; comment", "count": 2134}</span>
 <span class="c1">#     ]</span>
 <span class="c1"># }</span>
 </code></pre></div>
@@ -4895,7 +4895,7 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 </code></pre></div>
 <h3 id="debugging-cascade">Debugging CASCADE<a class="headerlink" href="#debugging-cascade" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Enable CASCADE logging</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_cascade_logging</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_cascade_logging</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"DEBUG"</span><span class="p">)</span>
 
 <span class="c1"># Then monitor logs:</span>
 <span class="c1"># [CASCADE] user:123 changed</span>
@@ -4912,8 +4912,8 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <p>When using explicit sync, CASCADE happens at the <strong>query side</strong> (tv_*):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Command side: Update tb_user</span>
 <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-    <span class="s2">&quot;UPDATE tb_user SET name = $1 WHERE id = $2&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;Alice Smith&quot;</span><span class="p">,</span> <span class="n">user_id</span>
+    <span class="s2">"UPDATE tb_user SET name = $1 WHERE id = $2"</span><span class="p">,</span>
+    <span class="s2">"Alice Smith"</span><span class="p">,</span> <span class="n">user_id</span>
 <span class="p">)</span>
 
 <span class="c1"># Explicit sync to query side</span>
@@ -4941,15 +4941,15 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <li>Verify entity type matches:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ Correct</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">)</span>  <span class="c1"># Matches &quot;user&quot; entity</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">)</span>  <span class="c1"># Matches "user" entity</span>
 
 <span class="c1"># ❌ Wrong</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;users:123&quot;</span><span class="p">)</span>  <span class="c1"># &quot;users&quot; != &quot;user&quot;</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"users:123"</span><span class="p">)</span>  <span class="c1"># "users" != "user"</span>
 </code></pre></div>
 <ol>
 <li>Enable CASCADE logging:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_cascade_logging</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_cascade_logging</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"DEBUG"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="too-many-invalidations">Too Many Invalidations<a class="headerlink" href="#too-many-invalidations" title="Permanent link">&para;</a></h3>
 <p><strong>Problem</strong>: CASCADE is invalidating too much, killing performance.</p>
@@ -4958,18 +4958,18 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <li>Review CASCADE rules:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ Too broad</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">])</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])</span>
 
 <span class="c1"># ✅ Specific</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">])</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">])</span>
 </code></pre></div>
 <ol>
 <li>Limit CASCADE depth:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">],</span>
-    <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span>  <span class="c1"># Don&#39;t cascade more than 2 levels</span>
+    <span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">],</span>
+    <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span>  <span class="c1"># Don't cascade more than 2 levels</span>
 <span class="p">)</span>
 </code></pre></div>
 <ol>
@@ -4977,8 +4977,8 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># Only cascade if published</span>
 <span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="s2">&quot;post&quot;</span><span class="p">,</span>
-    <span class="n">condition</span><span class="o">=</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;published&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
+    <span class="s2">"post"</span><span class="p">,</span>
+    <span class="n">condition</span><span class="o">=</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"published"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
 <hr />
@@ -4993,21 +4993,21 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
 <div class="highlight"><pre><span></span><code><span class="c1"># Track CASCADE overhead</span>
 <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cascade_stats</span><span class="p">()</span>
 
-<span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;avg_cascade_time_ms&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;CASCADE is slow, review rules&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"avg_cascade_time_ms"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"CASCADE is slow, review rules"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="3-use-selective-cascade">3. Use Selective CASCADE<a class="headerlink" href="#3-use-selective-cascade" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CASCADE only what&#39;s needed</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CASCADE only what's needed</span>
 <span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="s2">&quot;user&quot;</span><span class="p">,</span>
+    <span class="s2">"user"</span><span class="p">,</span>
     <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;post:author:</span><span class="si">{id}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;comment:author:</span><span class="si">{id}</span><span class="s2">&quot;</span>
+        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"comment:author:</span><span class="si">{id}</span><span class="s2">"</span>
     <span class="p">]</span>
 <span class="p">)</span>
 
-<span class="c1"># ❌ Don&#39;t cascade everything</span>
-<span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">])</span>
+<span class="c1"># ❌ Don't cascade everything</span>
+<span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="4-test-cascade-rules">4. Test CASCADE Rules<a class="headerlink" href="#4-test-cascade-rules" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test CASCADE in your test suite</span>
@@ -5017,13 +5017,13 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
     <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_post</span><span class="p">(</span><span class="n">author_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
 
     <span class="c1"># Cache the post</span>
-    <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
     <span class="c1"># Update user</span>
-    <span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;New Name&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"New Name"</span><span class="p">)</span>
 
     <span class="c1"># Verify CASCADE invalidated post cache</span>
-    <span class="k">assert</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
 </code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

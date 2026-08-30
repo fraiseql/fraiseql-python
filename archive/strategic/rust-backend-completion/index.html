@@ -5414,26 +5414,26 @@ pip<span class="w"> </span>install<span class="w"> </span>fraiseql<span class="o
 <p><strong>Before (v1.8 and earlier):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">PsycopgRepository</span>
 
-<span class="n">db</span> <span class="o">=</span> <span class="n">PsycopgRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">PsycopgRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"default"</span><span class="p">)</span>
 
 <span class="c1"># Legacy method (removed in v1.9)</span>
 <span class="n">results</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">select_from_json_view</span><span class="p">(</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
-    <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_users&quot;</span><span class="p">,</span>
-    <span class="n">options</span><span class="o">=</span><span class="n">QueryOptions</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">})</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"default"</span><span class="p">,</span>
+    <span class="n">view_name</span><span class="o">=</span><span class="s2">"v_users"</span><span class="p">,</span>
+    <span class="n">options</span><span class="o">=</span><span class="n">QueryOptions</span><span class="p">(</span><span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">})</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>After (v1.9+):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
 
-<span class="n">db</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">_pool</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="s2">&quot;default&quot;</span><span class="p">})</span>
+<span class="n">db</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">pool</span><span class="o">=</span><span class="n">pool</span><span class="o">.</span><span class="n">_pool</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="s2">"default"</span><span class="p">})</span>
 
 <span class="c1"># New Rust-optimized method</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-    <span class="n">view_name</span><span class="o">=</span><span class="s2">&quot;v_users&quot;</span><span class="p">,</span>
-    <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span>
+    <span class="n">view_name</span><span class="o">=</span><span class="s2">"v_users"</span><span class="p">,</span>
+    <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
     <span class="n">info</span><span class="o">=</span><span class="n">graphql_info</span><span class="p">,</span>
-    <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span>
+    <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span>
 <span class="p">)</span>
 <span class="c1"># Returns RustResponseBytes for direct HTTP response</span>
 </code></pre></div>
@@ -5442,9 +5442,9 @@ pip<span class="w"> </span>install<span class="w"> </span>fraiseql<span class="o
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
 <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_users&quot;</span><span class="p">,</span> <span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_users"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 <span class="n">duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Response time: </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">ms&quot;</span><span class="p">)</span>  <span class="c1"># Expect 2-3x improvement</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Response time: </span><span class="si">{</span><span class="n">duration</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>  <span class="c1"># Expect 2-3x improvement</span>
 </code></pre></div>
 <h3 id="breaking-changes">Breaking Changes<a class="headerlink" href="#breaking-changes" title="Permanent link">&para;</a></h3>
 <h4 id="removed-features">Removed Features<a class="headerlink" href="#removed-features" title="Permanent link">&para;</a></h4>

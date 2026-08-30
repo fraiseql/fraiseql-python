@@ -5131,15 +5131,15 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
     <span class="c1"># 1. Write to command side</span>
     <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;INSERT INTO tb_post (title, author_id) VALUES ($1, $2) RETURNING id&quot;</span><span class="p">,</span>
+        <span class="s2">"INSERT INTO tb_post (title, author_id) VALUES ($1, $2) RETURNING id"</span><span class="p">,</span>
         <span class="n">title</span><span class="p">,</span> <span class="n">author_id</span>
     <span class="p">)</span>
 
     <span class="c1"># 2. EXPLICIT SYNC 👈 THIS IS IN YOUR CODE!</span>
-    <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;incremental&#39;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'incremental'</span><span class="p">)</span>
 
     <span class="c1"># 3. Read from query side</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">&quot;SELECT data FROM tv_post WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">"SELECT data FROM tv_post WHERE id = $1"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits of explicit sync</strong>:</p>
 <table>
@@ -5185,7 +5185,7 @@
 │                                                            │
 │  1. WRITE: Command Side (tb_*)                            │
 │     INSERT INTO tb_post (title, author_id, content)       │
-│     VALUES (&#39;My Post&#39;, &#39;123&#39;, &#39;...&#39;)                       │
+│     VALUES ('My Post', '123', '...')                       │
 │     RETURNING id;                                          │
 │          ↓                                                 │
 │  2. SYNC: Your Code (EXPLICIT!)                           │
@@ -5217,27 +5217,27 @@
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">EntitySync</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles synchronization from tb_* to tv_* tables.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Handles synchronization from tb_* to tv_* tables."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pool</span><span class="p">:</span> <span class="n">asyncpg</span><span class="o">.</span><span class="n">Pool</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pool</span> <span class="o">=</span> <span class="n">pool</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sync_post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">],</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;incremental&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sync_post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">],</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"incremental"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Sync posts from tb_post to tv_post.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            post_ids: List of post IDs to sync</span>
-<span class="sd">            mode: &#39;incremental&#39; (default) or &#39;full&#39;</span>
+<span class="sd">            mode: 'incremental' (default) or 'full'</span>
 
 <span class="sd">        Example:</span>
-<span class="sd">            await sync.sync_post([post_id], mode=&#39;incremental&#39;)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">            await sync.sync_post([post_id], mode='incremental')</span>
+<span class="sd">        """</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">post_id</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">:</span>
                 <span class="c1"># 1. Fetch from command side (tb_post) with joins</span>
                 <span class="n">post_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
-<span class="w">                    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                    </span><span class="sd">"""</span>
 <span class="sd">                    SELECT</span>
 <span class="sd">                        p.id,</span>
 <span class="sd">                        p.title,</span>
@@ -5245,14 +5245,14 @@
 <span class="sd">                        p.published,</span>
 <span class="sd">                        p.created_at,</span>
 <span class="sd">                        jsonb_build_object(</span>
-<span class="sd">                            &#39;id&#39;, u.id,</span>
-<span class="sd">                            &#39;username&#39;, u.username,</span>
-<span class="sd">                            &#39;fullName&#39;, u.full_name</span>
+<span class="sd">                            'id', u.id,</span>
+<span class="sd">                            'username', u.username,</span>
+<span class="sd">                            'fullName', u.full_name</span>
 <span class="sd">                        ) as author</span>
 <span class="sd">                    FROM tb_post p</span>
 <span class="sd">                    JOIN tb_user u ON u.id = p.author_id</span>
 <span class="sd">                    WHERE p.id = $1</span>
-<span class="sd">                    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">                    """</span><span class="p">,</span>
                     <span class="n">post_id</span><span class="p">,</span>
                 <span class="p">)</span>
 
@@ -5261,69 +5261,69 @@
 
                 <span class="c1"># 2. Build denormalized JSONB structure</span>
                 <span class="n">jsonb_data</span> <span class="o">=</span> <span class="p">{</span>
-                    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span>
-                    <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;published&quot;</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;published&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">],</span>
-                    <span class="s2">&quot;createdAt&quot;</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;created_at&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                    <span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+                    <span class="s2">"title"</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span>
+                    <span class="s2">"content"</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"content"</span><span class="p">],</span>
+                    <span class="s2">"published"</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"published"</span><span class="p">],</span>
+                    <span class="s2">"author"</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"author"</span><span class="p">],</span>
+                    <span class="s2">"createdAt"</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
                 <span class="p">}</span>
 
                 <span class="c1"># 3. Upsert to query side (tv_post)</span>
                 <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-<span class="w">                    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                    </span><span class="sd">"""</span>
 <span class="sd">                    INSERT INTO tv_post (id, data, updated_at)</span>
 <span class="sd">                    VALUES ($1, $2, NOW())</span>
 <span class="sd">                    ON CONFLICT (id) DO UPDATE</span>
 <span class="sd">                    SET data = $2, updated_at = NOW()</span>
-<span class="sd">                    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">                    """</span><span class="p">,</span>
                     <span class="n">post_id</span><span class="p">,</span>
                     <span class="n">jsonb_data</span><span class="p">,</span>
                 <span class="p">)</span>
 
                 <span class="c1"># 4. Log metrics (optional but recommended)</span>
-                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_sync</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">duration_ms</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_sync</span><span class="p">(</span><span class="s2">"post"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="n">duration_ms</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="sync-with-nested-data">Sync with Nested Data<a class="headerlink" href="#sync-with-nested-data" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sync_post_with_comments</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sync posts with embedded comments (denormalized).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Sync posts with embedded comments (denormalized)."""</span>
     <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">post_id</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">:</span>
             <span class="c1"># Fetch post</span>
-            <span class="n">post_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM tb_post WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
+            <span class="n">post_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_post WHERE id = $1"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
 
             <span class="c1"># Fetch comments for this post</span>
             <span class="n">comments</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span>
-<span class="w">                </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">                </span><span class="sd">"""</span>
 <span class="sd">                SELECT</span>
 <span class="sd">                    c.id,</span>
 <span class="sd">                    c.content,</span>
 <span class="sd">                    c.created_at,</span>
 <span class="sd">                    jsonb_build_object(</span>
-<span class="sd">                        &#39;id&#39;, u.id,</span>
-<span class="sd">                        &#39;username&#39;, u.username</span>
+<span class="sd">                        'id', u.id,</span>
+<span class="sd">                        'username', u.username</span>
 <span class="sd">                    ) as author</span>
 <span class="sd">                FROM tb_comment c</span>
 <span class="sd">                JOIN tb_user u ON u.id = c.author_id</span>
 <span class="sd">                WHERE c.post_id = $1</span>
 <span class="sd">                ORDER BY c.created_at DESC</span>
-<span class="sd">                &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">                """</span><span class="p">,</span>
                 <span class="n">post_id</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="c1"># Build denormalized structure with embedded comments</span>
             <span class="n">jsonb_data</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span>
-                <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
-                <span class="s2">&quot;comments&quot;</span><span class="p">:</span> <span class="p">[</span>
+                <span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post_data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+                <span class="s2">"title"</span><span class="p">:</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span>
+                <span class="s2">"author"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span>
+                <span class="s2">"comments"</span><span class="p">:</span> <span class="p">[</span>
                     <span class="p">{</span>
-                        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span>
-                        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span>
-                        <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;author&quot;</span><span class="p">],</span>
-                        <span class="s2">&quot;createdAt&quot;</span><span class="p">:</span> <span class="n">c</span><span class="p">[</span><span class="s2">&quot;created_at&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+                        <span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+                        <span class="s2">"content"</span><span class="p">:</span> <span class="n">c</span><span class="p">[</span><span class="s2">"content"</span><span class="p">],</span>
+                        <span class="s2">"author"</span><span class="p">:</span> <span class="n">c</span><span class="p">[</span><span class="s2">"author"</span><span class="p">],</span>
+                        <span class="s2">"createdAt"</span><span class="p">:</span> <span class="n">c</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
                     <span class="p">}</span>
                     <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">comments</span>
                 <span class="p">],</span>
@@ -5331,7 +5331,7 @@
 
             <span class="c1"># Upsert to tv_post</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="s2">&quot;INSERT INTO tv_post (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2&quot;</span><span class="p">,</span>
+                <span class="s2">"INSERT INTO tv_post (id, data) VALUES ($1, $2) ON CONFLICT (id) DO UPDATE SET data = $2"</span><span class="p">,</span>
                 <span class="n">post_id</span><span class="p">,</span>
                 <span class="n">jsonb_data</span><span class="p">,</span>
             <span class="p">)</span>
@@ -5341,13 +5341,13 @@
 <h3 id="pattern-1-sync-after-create">Pattern 1: Sync After Create<a class="headerlink" href="#pattern-1-sync-after-create" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@strawberry</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">author_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a post and sync immediately.&quot;&quot;&quot;</span>
-    <span class="n">pool</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db_pool&quot;</span><span class="p">]</span>
-    <span class="n">sync</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;sync&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Create a post and sync immediately."""</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db_pool"</span><span class="p">]</span>
+    <span class="n">sync</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"sync"</span><span class="p">]</span>
 
     <span class="c1"># 1. Write to command side</span>
     <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-        <span class="s2">&quot;INSERT INTO tb_post (title, content, author_id) VALUES ($1, $2, $3) RETURNING id&quot;</span><span class="p">,</span>
+        <span class="s2">"INSERT INTO tb_post (title, content, author_id) VALUES ($1, $2, $3) RETURNING id"</span><span class="p">,</span>
         <span class="n">title</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">UUID</span><span class="p">(</span><span class="n">author_id</span><span class="p">)</span>
     <span class="p">)</span>
 
@@ -5358,26 +5358,26 @@
     <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_user</span><span class="p">([</span><span class="n">UUID</span><span class="p">(</span><span class="n">author_id</span><span class="p">)])</span>
 
     <span class="c1"># 4. Read from query side</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;tv_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="pattern-2-batch-sync">Pattern 2: Batch Sync<a class="headerlink" href="#pattern-2-batch-sync" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_many_posts</span><span class="p">(</span><span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create multiple posts and batch sync.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create multiple posts and batch sync."""</span>
     <span class="n">post_ids</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="c1"># 1. Create all posts (command side)</span>
     <span class="k">for</span> <span class="n">post_data</span> <span class="ow">in</span> <span class="n">posts</span><span class="p">:</span>
         <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">&quot;INSERT INTO tb_post (...) VALUES (...) RETURNING id&quot;</span><span class="p">,</span>
-            <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;author_id&quot;</span><span class="p">]</span>
+            <span class="s2">"INSERT INTO tb_post (...) VALUES (...) RETURNING id"</span><span class="p">,</span>
+            <span class="n">post_data</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"content"</span><span class="p">],</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"author_id"</span><span class="p">]</span>
         <span class="p">)</span>
         <span class="n">post_ids</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">post_id</span><span class="p">)</span>
 
     <span class="c1"># 2. BATCH SYNC (much faster than individual syncs!)</span>
-    <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">(</span><span class="n">post_ids</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;incremental&#39;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">(</span><span class="n">post_ids</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'incremental'</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">post_ids</span>
 </code></pre></div>
@@ -5390,15 +5390,15 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_post</span><span class="p">(</span><span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">background_tasks</span><span class="p">:</span> <span class="n">BackgroundTasks</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update post and defer sync to background.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Update post and defer sync to background."""</span>
     <span class="c1"># 1. Write to command side</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;UPDATE tb_post SET ... WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"UPDATE tb_post SET ... WHERE id = $1"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
 
     <span class="c1"># 2. DEFERRED SYNC (non-blocking)</span>
     <span class="n">background_tasks</span><span class="o">.</span><span class="n">add_task</span><span class="p">(</span><span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">,</span> <span class="p">[</span><span class="n">post_id</span><span class="p">])</span>
 
     <span class="c1"># 3. Return immediately (sync happens in background)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;updated&quot;</span><span class="p">,</span> <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post_id</span><span class="p">)}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"updated"</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post_id</span><span class="p">)}</span>
 </code></pre></div>
 <p><strong>Use cases</strong>:</p>
 <ul>
@@ -5410,29 +5410,29 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_post</span><span class="p">(</span><span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">old_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">new_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Only sync if data changed in a way that affects queries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Only sync if data changed in a way that affects queries."""</span>
     <span class="c1"># Update command side</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;UPDATE tb_post SET ... WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"UPDATE tb_post SET ... WHERE id = $1"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
 
     <span class="c1"># Only sync if title or content changed (not view count)</span>
-    <span class="k">if</span> <span class="n">new_data</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">old_data</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="n">new_data</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="n">old_data</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">new_data</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">old_data</span><span class="p">[</span><span class="s2">"title"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">new_data</span><span class="p">[</span><span class="s2">"content"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">old_data</span><span class="p">[</span><span class="s2">"content"</span><span class="p">]:</span>
         <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">])</span>
-    <span class="c1"># else: Skip sync (view count doesn&#39;t appear in queries)</span>
+    <span class="c1"># else: Skip sync (view count doesn't appear in queries)</span>
 </code></pre></div>
 <h3 id="pattern-5-cascade-sync">Pattern 5: Cascade Sync<a class="headerlink" href="#pattern-5-cascade-sync" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete user and cascade sync related entities.&quot;&quot;&quot;</span>
-    <span class="c1"># 1. Get user&#39;s posts before deleting</span>
-    <span class="n">post_ids</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;SELECT id FROM tb_post WHERE author_id = $1&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Delete user and cascade sync related entities."""</span>
+    <span class="c1"># 1. Get user's posts before deleting</span>
+    <span class="n">post_ids</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"SELECT id FROM tb_post WHERE author_id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
 
     <span class="c1"># 2. Delete from command side (CASCADE will delete posts too)</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DELETE FROM tb_user WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM tb_user WHERE id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
 
     <span class="c1"># 3. EXPLICIT CASCADE SYNC</span>
     <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">delete_user</span><span class="p">([</span><span class="n">user_id</span><span class="p">])</span>
-    <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">delete_post</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">])</span>
+    <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">delete_post</span><span class="p">([</span><span class="n">p</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">])</span>
 
     <span class="c1"># Query side is now consistent</span>
 </code></pre></div>
@@ -5461,20 +5461,20 @@
 <h3 id="3-smart-denormalization">3. Smart Denormalization<a class="headerlink" href="#3-smart-denormalization" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ Only denormalize what GraphQL queries need</span>
 <span class="n">jsonb_data</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]),</span>
-    <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">post</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">],</span>  <span class="c1"># Queried often</span>
-    <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">author</span><span class="p">[</span><span class="s2">&quot;username&quot;</span><span class="p">]</span>  <span class="c1"># Queried often</span>
+    <span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">post</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+    <span class="s2">"title"</span><span class="p">:</span> <span class="n">post</span><span class="p">[</span><span class="s2">"title"</span><span class="p">],</span>  <span class="c1"># Queried often</span>
+    <span class="s2">"author"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"username"</span><span class="p">:</span> <span class="n">author</span><span class="p">[</span><span class="s2">"username"</span><span class="p">]</span>  <span class="c1"># Queried often</span>
     <span class="p">}</span>
-    <span class="c1"># Don&#39;t include: post[&quot;content&quot;] if GraphQL doesn&#39;t query it in lists</span>
+    <span class="c1"># Don't include: post["content"] if GraphQL doesn't query it in lists</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="4-incremental-vs-full-sync">4. Incremental vs Full Sync<a class="headerlink" href="#4-incremental-vs-full-sync" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Incremental: Sync specific entities (fast)</span>
-<span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;incremental&#39;</span><span class="p">)</span>  <span class="c1"># ~5ms</span>
+<span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'incremental'</span><span class="p">)</span>  <span class="c1"># ~5ms</span>
 
 <span class="c1"># Full: Sync all entities (slow, but thorough)</span>
-<span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_all_posts</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">&#39;full&#39;</span><span class="p">)</span>  <span class="c1"># ~500ms for 1000 posts</span>
+<span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_all_posts</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s1">'full'</span><span class="p">)</span>  <span class="c1"># ~500ms for 1000 posts</span>
 
 <span class="c1"># Use incremental for:</span>
 <span class="c1"># - After mutations</span>
@@ -5494,20 +5494,20 @@
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_create_post</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test post creation without syncing.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test post creation without syncing."""</span>
     <span class="c1"># Mock the sync function</span>
     <span class="n">sync</span> <span class="o">=</span> <span class="n">AsyncMock</span><span class="p">()</span>
 
     <span class="c1"># Create post</span>
     <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_post</span><span class="p">(</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Test Post&quot;</span><span class="p">,</span>
-        <span class="n">content</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
-        <span class="n">author_id</span><span class="o">=</span><span class="n">UUID</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">),</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Test Post"</span><span class="p">,</span>
+        <span class="n">content</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
+        <span class="n">author_id</span><span class="o">=</span><span class="n">UUID</span><span class="p">(</span><span class="s2">"..."</span><span class="p">),</span>
         <span class="n">sync</span><span class="o">=</span><span class="n">sync</span>
     <span class="p">)</span>
 
     <span class="c1"># Verify sync was called</span>
-    <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">([</span><span class="n">post_id</span><span class="p">],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;incremental&#39;</span><span class="p">)</span>
+    <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="o">.</span><span class="n">assert_called_once_with</span><span class="p">([</span><span class="n">post_id</span><span class="p">],</span> <span class="n">mode</span><span class="o">=</span><span class="s1">'incremental'</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits</strong>:</p>
 <ul>
@@ -5518,28 +5518,28 @@
 <h3 id="integration-testing">Integration Testing<a class="headerlink" href="#integration-testing" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_sync_integration</span><span class="p">(</span><span class="n">db_pool</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test actual sync operation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test actual sync operation."""</span>
     <span class="n">sync</span> <span class="o">=</span> <span class="n">EntitySync</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
 
     <span class="c1"># Create in command side</span>
     <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-        <span class="s2">&quot;INSERT INTO tb_post (...) VALUES (...) RETURNING id&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Test&quot;</span><span class="p">,</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="n">author_id</span>
+        <span class="s2">"INSERT INTO tb_post (...) VALUES (...) RETURNING id"</span><span class="p">,</span>
+        <span class="s2">"Test"</span><span class="p">,</span> <span class="s2">"..."</span><span class="p">,</span> <span class="n">author_id</span>
     <span class="p">)</span>
 
     <span class="c1"># Sync to query side</span>
     <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">])</span>
 
     <span class="c1"># Verify query side has data</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">&quot;SELECT data FROM tv_post WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">"SELECT data FROM tv_post WHERE id = $1"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">row</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-    <span class="k">assert</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;Test&quot;</span>
+    <span class="k">assert</span> <span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"title"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"Test"</span>
 </code></pre></div>
 <h3 id="debugging-sync-issues">Debugging Sync Issues<a class="headerlink" href="#debugging-sync-issues" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Enable sync logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
-<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql.sync&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql.sync"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 
 <span class="c1"># Log output:</span>
 <span class="c1"># [SYNC] sync_post: Syncing post 123...</span>
@@ -5557,9 +5557,9 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;username&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">username</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'username'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">username</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">author_id</span><span class="p">;</span>
@@ -5571,10 +5571,10 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sync_post_with_ivm</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sync with IVM extension (faster!).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Sync with IVM extension (faster!)."""</span>
     <span class="c1"># IVM automatically maintains tv_post when tb_post changes</span>
     <span class="c1"># Just trigger a refresh</span>
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;REFRESH MATERIALIZED VIEW CONCURRENTLY tv_post&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"REFRESH MATERIALIZED VIEW CONCURRENTLY tv_post"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Performance</strong>:</p>
 <ul>
@@ -5584,16 +5584,16 @@
 <h3 id="setting-up-ivm">Setting up IVM<a class="headerlink" href="#setting-up-ivm" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.ivm</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_ivm</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup_ivm</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Setup IVM for all tb_/tv_ pairs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Setup IVM for all tb_/tv_ pairs."""</span>
     <span class="n">recommendation</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_ivm</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="c1"># Apply recommended IVM SQL</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">db_pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">recommendation</span><span class="o">.</span><span class="n">setup_sql</span><span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;IVM configured for fast sync&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"IVM configured for fast sync"</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="common-patterns">Common Patterns<a class="headerlink" href="#common-patterns" title="Permanent link">&para;</a></h2>
@@ -5601,10 +5601,10 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_comment</span><span class="p">(</span><span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create comment and sync all affected entities.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create comment and sync all affected entities."""</span>
     <span class="c1"># 1. Write to command side</span>
     <span class="n">comment_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;INSERT INTO tb_comment (...) VALUES (...) RETURNING id&quot;</span><span class="p">,</span>
+        <span class="s2">"INSERT INTO tb_comment (...) VALUES (...) RETURNING id"</span><span class="p">,</span>
         <span class="n">post_id</span><span class="p">,</span> <span class="n">author_id</span><span class="p">,</span> <span class="n">content</span>
     <span class="p">)</span>
 
@@ -5621,15 +5621,15 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">like_post</span><span class="p">(</span><span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Optimistic sync: update cache immediately, sync later.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Optimistic sync: update cache immediately, sync later."""</span>
     <span class="c1"># 1. Update cache optimistically (fast!)</span>
-    <span class="n">cached_post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="n">cached_post</span><span class="p">[</span><span class="s2">&quot;likes&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">cached_post</span><span class="p">)</span>
+    <span class="n">cached_post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">cached_post</span><span class="p">[</span><span class="s2">"likes"</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="sa">f</span><span class="s2">"post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">cached_post</span><span class="p">)</span>
 
     <span class="c1"># 2. Write to command side</span>
     <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;INSERT INTO tb_post_like (post_id, user_id) VALUES ($1, $2)&quot;</span><span class="p">,</span>
+        <span class="s2">"INSERT INTO tb_post_like (post_id, user_id) VALUES ($1, $2)"</span><span class="p">,</span>
         <span class="n">post_id</span><span class="p">,</span> <span class="n">user_id</span>
     <span class="p">)</span>
 
@@ -5642,19 +5642,19 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sync_with_validation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sync with validation to ensure data integrity.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Sync with validation to ensure data integrity."""</span>
     <span class="k">for</span> <span class="n">post_id</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">:</span>
         <span class="c1"># Fetch from tb_post</span>
-        <span class="n">post_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM tb_post WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
+        <span class="n">post_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_post WHERE id = $1"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">post_data</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Post </span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2"> not found in tb_post, skipping sync&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Post </span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2"> not found in tb_post, skipping sync"</span><span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="c1"># Validate author exists</span>
-        <span class="n">author</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM tb_user WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">&quot;author_id&quot;</span><span class="p">])</span>
+        <span class="n">author</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_user WHERE id = $1"</span><span class="p">,</span> <span class="n">post_data</span><span class="p">[</span><span class="s2">"author_id"</span><span class="p">])</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">author</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Author </span><span class="si">{</span><span class="n">post_data</span><span class="p">[</span><span class="s1">&#39;author_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> not found for post </span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Author </span><span class="si">{</span><span class="n">post_data</span><span class="p">[</span><span class="s1">'author_id'</span><span class="p">]</span><span class="si">}</span><span class="s2"> not found for post </span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
             <span class="k">continue</span>
 
         <span class="c1"># Proceed with sync</span>
@@ -5672,7 +5672,7 @@
 <p><strong>After (explicit sync)</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># In your mutation code</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
-    <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO tb_post ...&quot;</span><span class="p">)</span>
+    <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"INSERT INTO tb_post ..."</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_post</span><span class="p">([</span><span class="n">post_id</span><span class="p">])</span>  <span class="c1"># Explicit!</span>
 </code></pre></div>
 <h3 id="migration-steps">Migration Steps<a class="headerlink" href="#migration-steps" title="Permanent link">&para;</a></h3>
@@ -5716,10 +5716,10 @@
     <span class="c1"># Do sync...</span>
 
     <span class="n">duration_ms</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
-    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_sync</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">,</span> <span class="n">duration_ms</span><span class="p">)</span>
+    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_sync</span><span class="p">(</span><span class="s2">"post"</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">,</span> <span class="n">duration_ms</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">duration_ms</span> <span class="o">&gt;</span> <span class="mi">50</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Slow sync: </span><span class="si">{</span><span class="n">duration_ms</span><span class="si">}</span><span class="s2">ms for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">post_ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> posts&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Slow sync: </span><span class="si">{</span><span class="n">duration_ms</span><span class="si">}</span><span class="s2">ms for </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">post_ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> posts"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="4-handle-sync-errors">4. Handle Sync Errors<a class="headerlink" href="#4-handle-sync-errors" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
@@ -5729,9 +5729,9 @@
         <span class="k">try</span><span class="p">:</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_sync</span><span class="p">(</span><span class="n">post_id</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sync failed for post </span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_sync_error</span><span class="p">(</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="n">post_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
-            <span class="c1"># Continue with next post (don&#39;t fail entire batch)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sync failed for post </span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_sync_error</span><span class="p">(</span><span class="s2">"post"</span><span class="p">,</span> <span class="n">post_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+            <span class="c1"># Continue with next post (don't fail entire batch)</span>
 </code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>

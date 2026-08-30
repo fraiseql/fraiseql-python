@@ -5081,9 +5081,9 @@
 <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Vector must be a list of floats&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Vector must be a list of floats"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All vector values must be numbers&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"All vector values must be numbers"</span><span class="p">)</span>
     <span class="c1"># NO dimension validation - let PostgreSQL handle it</span>
     <span class="k">return</span> <span class="n">value</span>
 </code></pre></div>
@@ -5109,13 +5109,13 @@
 <p><strong>Detection patterns</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># In _detect_field_type_from_name()</span>
 <span class="n">vector_patterns</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;vector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;_embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;_vector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;embedding_vector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;text_embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;image_embedding&quot;</span><span class="p">,</span>
+    <span class="s2">"embedding"</span><span class="p">,</span>
+    <span class="s2">"vector"</span><span class="p">,</span>
+    <span class="s2">"_embedding"</span><span class="p">,</span>
+    <span class="s2">"_vector"</span><span class="p">,</span>
+    <span class="s2">"embedding_vector"</span><span class="p">,</span>
+    <span class="s2">"text_embedding"</span><span class="p">,</span>
+    <span class="s2">"image_embedding"</span><span class="p">,</span>
 <span class="p">]</span>
 </code></pre></div>
 <p><strong>Priority order</strong>:</p>
@@ -5125,12 +5125,12 @@
 <li>Value analysis (<code>list[float]</code> defaults to ARRAY if no pattern match)</li>
 </ol>
 <p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_document&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_document"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>              <span class="c1"># → ArrayFilter (no vector pattern)</span>
     <span class="n">scores</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>           <span class="c1"># → ArrayFilter (no vector pattern)</span>
-    <span class="n">embedding</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>        <span class="c1"># → VectorFilter (matches &quot;embedding&quot;)</span>
+    <span class="n">embedding</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>        <span class="c1"># → VectorFilter (matches "embedding")</span>
     <span class="n">text_embedding</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>   <span class="c1"># → VectorFilter (matches pattern)</span>
 </code></pre></div>
 <hr />
@@ -5154,16 +5154,16 @@
 <p>Add vector pattern detection in <code>_detect_field_type_from_name()</code> (before line 437):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Vector embedding patterns - handle both snake_case and camelCase</span>
 <span class="n">vector_patterns</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;vector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;_embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;_vector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;embedding_vector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;embeddingvector&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;text_embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;textembedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;image_embedding&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;imageembedding&quot;</span><span class="p">,</span>
+    <span class="s2">"embedding"</span><span class="p">,</span>
+    <span class="s2">"vector"</span><span class="p">,</span>
+    <span class="s2">"_embedding"</span><span class="p">,</span>
+    <span class="s2">"_vector"</span><span class="p">,</span>
+    <span class="s2">"embedding_vector"</span><span class="p">,</span>
+    <span class="s2">"embeddingvector"</span><span class="p">,</span>
+    <span class="s2">"text_embedding"</span><span class="p">,</span>
+    <span class="s2">"textembedding"</span><span class="p">,</span>
+    <span class="s2">"image_embedding"</span><span class="p">,</span>
+    <span class="s2">"imageembedding"</span><span class="p">,</span>
 <span class="p">]</span>
 
 <span class="c1"># Check vector pattern matches</span>
@@ -5208,53 +5208,53 @@
 <li>Follow pattern from <code>network.py</code> for proper type casting</li>
 <li>
 <p>Implement three pgvector operators:</p>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Vector/embedding specific operators for PostgreSQL pgvector.</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""Vector/embedding specific operators for PostgreSQL pgvector.</span>
 
-<span class="sd">This module exposes PostgreSQL&#39;s native pgvector distance operators:</span>
+<span class="sd">This module exposes PostgreSQL's native pgvector distance operators:</span>
 <span class="sd">- &lt;=&gt; : cosine distance (0.0 = identical, 2.0 = opposite)</span>
 <span class="sd">- &lt;-&gt; : L2/Euclidean distance (0.0 = identical, ∞ = very different)</span>
 <span class="sd">- &lt;#&gt; : negative inner product (more negative = more similar)</span>
 
 <span class="sd">FraiseQL exposes these operators transparently without abstraction.</span>
 <span class="sd">Distance values are returned raw from PostgreSQL (no conversion to similarity).</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">Composed</span><span class="p">,</span> <span class="n">Literal</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">build_cosine_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for cosine distance using PostgreSQL &lt;=&gt; operator.</span>
+<span class="w">    </span><span class="sd">"""Build SQL for cosine distance using PostgreSQL &lt;=&gt; operator.</span>
 
-<span class="sd">    Generates: column &lt;=&gt; &#39;[0.1,0.2,...]&#39;::vector</span>
+<span class="sd">    Generates: column &lt;=&gt; '[0.1,0.2,...]'::vector</span>
 <span class="sd">    Returns distance: 0.0 (identical) to 2.0 (opposite)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">"["</span> <span class="o">+</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"]"</span>
     <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span>
-        <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::vector &lt;=&gt; &quot;</span><span class="p">),</span>
-        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::vector&quot;</span><span class="p">)</span>
+        <span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::vector &lt;=&gt; "</span><span class="p">),</span>
+        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::vector"</span><span class="p">)</span>
     <span class="p">])</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">build_l2_distance_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for L2/Euclidean distance using PostgreSQL &lt;-&gt; operator.</span>
+<span class="w">    </span><span class="sd">"""Build SQL for L2/Euclidean distance using PostgreSQL &lt;-&gt; operator.</span>
 
-<span class="sd">    Generates: column &lt;-&gt; &#39;[0.1,0.2,...]&#39;::vector</span>
+<span class="sd">    Generates: column &lt;-&gt; '[0.1,0.2,...]'::vector</span>
 <span class="sd">    Returns distance: 0.0 (identical) to ∞ (very different)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">"["</span> <span class="o">+</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"]"</span>
     <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span>
-        <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::vector &lt;-&gt; &quot;</span><span class="p">),</span>
-        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::vector&quot;</span><span class="p">)</span>
+        <span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::vector &lt;-&gt; "</span><span class="p">),</span>
+        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::vector"</span><span class="p">)</span>
     <span class="p">])</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">build_inner_product_sql</span><span class="p">(</span><span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Build SQL for inner product using PostgreSQL &lt;#&gt; operator.</span>
+<span class="w">    </span><span class="sd">"""Build SQL for inner product using PostgreSQL &lt;#&gt; operator.</span>
 
-<span class="sd">    Generates: column &lt;#&gt; &#39;[0.1,0.2,...]&#39;::vector</span>
+<span class="sd">    Generates: column &lt;#&gt; '[0.1,0.2,...]'::vector</span>
 <span class="sd">    Returns negative inner product: more negative = more similar</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">&quot;[&quot;</span> <span class="o">+</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+<span class="sd">    """</span>
+    <span class="n">vector_literal</span> <span class="o">=</span> <span class="s2">"["</span> <span class="o">+</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"]"</span>
     <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span>
-        <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::vector &lt;#&gt; &quot;</span><span class="p">),</span>
-        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::vector&quot;</span><span class="p">)</span>
+        <span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::vector &lt;#&gt; "</span><span class="p">),</span>
+        <span class="n">Literal</span><span class="p">(</span><span class="n">vector_literal</span><span class="p">),</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::vector"</span><span class="p">)</span>
     <span class="p">])</span>
 </code></pre></div>
 </li>
@@ -5310,9 +5310,9 @@
 <li>
 <p>Add mappings to OPERATOR_MAP (after line 201):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Vector operators for PostgreSQL pgvector distance operations</span>
-<span class="p">(</span><span class="n">FieldType</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span> <span class="s2">&quot;cosine_distance&quot;</span><span class="p">):</span> <span class="n">vectors</span><span class="o">.</span><span class="n">build_cosine_distance_sql</span><span class="p">,</span>
-<span class="p">(</span><span class="n">FieldType</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span> <span class="s2">&quot;l2_distance&quot;</span><span class="p">):</span> <span class="n">vectors</span><span class="o">.</span><span class="n">build_l2_distance_sql</span><span class="p">,</span>
-<span class="p">(</span><span class="n">FieldType</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span> <span class="s2">&quot;inner_product&quot;</span><span class="p">):</span> <span class="n">vectors</span><span class="o">.</span><span class="n">build_inner_product_sql</span><span class="p">,</span>
+<span class="p">(</span><span class="n">FieldType</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span> <span class="s2">"cosine_distance"</span><span class="p">):</span> <span class="n">vectors</span><span class="o">.</span><span class="n">build_cosine_distance_sql</span><span class="p">,</span>
+<span class="p">(</span><span class="n">FieldType</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span> <span class="s2">"l2_distance"</span><span class="p">):</span> <span class="n">vectors</span><span class="o">.</span><span class="n">build_l2_distance_sql</span><span class="p">,</span>
+<span class="p">(</span><span class="n">FieldType</span><span class="o">.</span><span class="n">VECTOR</span><span class="p">,</span> <span class="s2">"inner_product"</span><span class="p">):</span> <span class="n">vectors</span><span class="o">.</span><span class="n">build_inner_product_sql</span><span class="p">,</span>
 </code></pre></div>
 </li>
 </ul>
@@ -5347,7 +5347,7 @@
 <p>Add <code>VectorFilter</code> class (after line 334, following JSONBFilter pattern):</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraise_input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">VectorFilter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;PostgreSQL pgvector field filter operations.</span>
+<span class="w">    </span><span class="sd">"""PostgreSQL pgvector field filter operations.</span>
 
 <span class="sd">    Exposes native pgvector distance operators transparently:</span>
 <span class="sd">    - cosine_distance: Cosine distance (0.0 = identical, 2.0 = opposite)</span>
@@ -5363,7 +5363,7 @@
 <span class="sd">            orderBy: { embedding: { cosine_distance: [0.1, 0.2, ...] } }</span>
 <span class="sd">            limit: 10</span>
 <span class="sd">        )</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cosine_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">l2_distance</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">inner_product</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5403,19 +5403,19 @@
 <span class="k">if</span> <span class="n">field_name</span><span class="p">:</span>
     <span class="n">field_lower</span> <span class="o">=</span> <span class="n">field_name</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
     <span class="n">vector_patterns</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;embedding&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;vector&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;_embedding&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;_vector&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;embedding_vector&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;embeddingvector&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;text_embedding&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;textembedding&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;image_embedding&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;imageembedding&quot;</span><span class="p">,</span>
+        <span class="s2">"embedding"</span><span class="p">,</span>
+        <span class="s2">"vector"</span><span class="p">,</span>
+        <span class="s2">"_embedding"</span><span class="p">,</span>
+        <span class="s2">"_vector"</span><span class="p">,</span>
+        <span class="s2">"embedding_vector"</span><span class="p">,</span>
+        <span class="s2">"embeddingvector"</span><span class="p">,</span>
+        <span class="s2">"text_embedding"</span><span class="p">,</span>
+        <span class="s2">"textembedding"</span><span class="p">,</span>
+        <span class="s2">"image_embedding"</span><span class="p">,</span>
+        <span class="s2">"imageembedding"</span><span class="p">,</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">pattern</span> <span class="ow">in</span> <span class="n">field_lower</span> <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">vector_patterns</span><span class="p">):</span>
-        <span class="c1"># Check if it&#39;s actually a list type</span>
+        <span class="c1"># Check if it's actually a list type</span>
         <span class="n">origin</span> <span class="o">=</span> <span class="n">get_origin</span><span class="p">(</span><span class="n">field_type</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">origin</span> <span class="ow">is</span> <span class="nb">list</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">VectorFilter</span>
@@ -5465,32 +5465,32 @@
 <ul>
 <li>File: <code>src/fraiseql/types/scalars/vector.py</code> (new file, optional)</li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;Vector scalar type for PostgreSQL pgvector.</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""Vector scalar type for PostgreSQL pgvector.</span>
 
 <span class="sd">Minimal validation following FraiseQL philosophy:</span>
 <span class="sd">- Verify value is list of numbers</span>
 <span class="sd">- Let PostgreSQL handle dimension validation</span>
 <span class="sd">- No conversion or transformation</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">strawberry</span>
 
 <span class="nd">@strawberry</span><span class="o">.</span><span class="n">scalar</span><span class="p">(</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;PostgreSQL vector type (list of floats for embeddings)&quot;</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"PostgreSQL vector type (list of floats for embeddings)"</span>
 <span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Vector</span><span class="p">:</span>
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize vector to GraphQL output (no transformation).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Serialize vector to GraphQL output (no transformation)."""</span>
         <span class="k">return</span> <span class="n">value</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Parse GraphQL input to vector (basic validation only).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Parse GraphQL input to vector (basic validation only)."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Vector must be a list of floats&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Vector must be a list of floats"</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;All vector values must be numbers&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"All vector values must be numbers"</span><span class="p">)</span>
         <span class="c1"># NO dimension validation - let PostgreSQL handle it</span>
         <span class="k">return</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>  <span class="c1"># Coerce ints to floats</span>
 </code></pre></div>

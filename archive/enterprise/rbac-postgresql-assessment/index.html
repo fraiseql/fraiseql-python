@@ -5014,14 +5014,14 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 </ul>
 <p><strong>Advanced Features for RBAC</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Domain versioning - auto-invalidate when roles change</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_domain_versions</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="s2">&quot;permission&quot;</span><span class="p">,</span> <span class="s2">&quot;user_role&quot;</span><span class="p">])</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_domain_versions</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="p">[</span><span class="s2">"role"</span><span class="p">,</span> <span class="s2">"permission"</span><span class="p">,</span> <span class="s2">"user_role"</span><span class="p">])</span>
 
 <span class="c1"># CASCADE rules - when roles change, invalidate user permissions</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"role"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
 
 <span class="c1"># Table triggers - auto-invalidate on INSERT/UPDATE/DELETE</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;role&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;user_roles&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;user_role&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"role"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"user_roles"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"user_role"</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="architecture-compatibility-analysis">Architecture Compatibility Analysis<a class="headerlink" href="#architecture-compatibility-analysis" title="Permanent link">&para;</a></h2>
@@ -5050,14 +5050,14 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <div class="highlight"><pre><span></span><code><span class="c1"># Automatic invalidation when roles change</span>
 <span class="c1"># 1. User updates role via GraphQL mutation</span>
 <span class="c1"># 2. PostgreSQL function fn_assign_role() executes</span>
-<span class="c1"># 3. Database trigger increments &quot;user_role&quot; domain version</span>
+<span class="c1"># 3. Database trigger increments "user_role" domain version</span>
 <span class="c1"># 4. All user permission caches auto-invalidate</span>
 <span class="c1"># 5. Next query fetches fresh permissions</span>
 
 <span class="c1"># CASCADE invalidation</span>
-<span class="c1"># 1. Admin modifies a role&#39;s permissions</span>
-<span class="c1"># 2. &quot;role&quot; domain version increments</span>
-<span class="c1"># 3. CASCADE rule triggers &quot;user_permissions&quot; invalidation</span>
+<span class="c1"># 1. Admin modifies a role's permissions</span>
+<span class="c1"># 2. "role" domain version increments</span>
+<span class="c1"># 3. CASCADE rule triggers "user_permissions" invalidation</span>
 <span class="c1"># 4. All users with that role get fresh permissions</span>
 </code></pre></div>
 <p><strong>With Redis Cache</strong>:</p>
@@ -5136,26 +5136,26 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <h3 id="solution-postgresql-domain-versioning">Solution: PostgreSQL Domain Versioning<a class="headerlink" href="#solution-postgresql-domain-versioning" title="Permanent link">&para;</a></h3>
 <p><strong>Setup</strong> (one-time):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Register domains for RBAC tables</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;role&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;permission&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;role_permissions&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;role_permission&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;user_roles&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;user_role&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"role"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"role_permissions"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"role_permission"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"user_roles"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"user_role"</span><span class="p">)</span>
 
 <span class="c1"># Register CASCADE rules</span>
 <span class="c1"># When roles change, invalidate user permissions</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;role_permission&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;user_role&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"role"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"role_permission"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"user_role"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Automatic Invalidation</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Store permissions with version metadata</span>
 <span class="n">versions</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_domain_versions</span><span class="p">(</span>
     <span class="n">tenant_id</span><span class="p">,</span>
-    <span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="s2">&quot;permission&quot;</span><span class="p">,</span> <span class="s2">&quot;role_permission&quot;</span><span class="p">,</span> <span class="s2">&quot;user_role&quot;</span><span class="p">]</span>
+    <span class="p">[</span><span class="s2">"role"</span><span class="p">,</span> <span class="s2">"permission"</span><span class="p">,</span> <span class="s2">"role_permission"</span><span class="p">,</span> <span class="s2">"user_role"</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-    <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;rbac:permissions:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">key</span><span class="o">=</span><span class="sa">f</span><span class="s2">"rbac:permissions:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
     <span class="n">value</span><span class="o">=</span><span class="n">permissions</span><span class="p">,</span>
     <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># 5 minutes</span>
     <span class="n">versions</span><span class="o">=</span><span class="n">versions</span>  <span class="c1"># Attach version metadata</span>
@@ -5181,10 +5181,10 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 <p><strong>Manual Invalidation</strong> (error-prone):</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">assign_role</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">):</span>
     <span class="c1"># 1. Update database</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO user_roles ...&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"INSERT INTO user_roles ..."</span><span class="p">)</span>
 
     <span class="c1"># 2. Manually invalidate cache (MUST REMEMBER)</span>
-    <span class="k">await</span> <span class="n">redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;rbac:permissions:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:*&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">redis</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="sa">f</span><span class="s2">"rbac:permissions:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:*"</span><span class="p">)</span>
 
     <span class="c1"># 3. What if role hierarchy changed?</span>
     <span class="c1"># Must manually invalidate ALL users with parent roles</span>

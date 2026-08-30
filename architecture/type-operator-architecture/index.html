@@ -5270,15 +5270,15 @@
 <h3 id="11-type-definition-pattern">1.1 Type Definition Pattern<a class="headerlink" href="#11-type-definition-pattern" title="Permanent link">&para;</a></h3>
 <p>FraiseQL uses a <strong>scalar marker pattern</strong> where custom types are defined as:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FieldType</span><span class="p">(</span><span class="n">ScalarMarker</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all custom scalar types.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Base class for all custom scalar types."""</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;FieldType&quot;</span>
+        <span class="k">return</span> <span class="s2">"FieldType"</span>
 </code></pre></div>
 <p>Types inherit from <code>ScalarMarker</code> (a marker class) and typically also inherit from a built-in type for storage:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">IpAddressField</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">ScalarMarker</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a validated IP address.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Represents a validated IP address."""</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
 </code></pre></div>
 <h3 id="12-supported-custom-types">1.2 Supported Custom Types<a class="headerlink" href="#12-supported-custom-types" title="Permanent link">&para;</a></h3>
@@ -5371,8 +5371,8 @@
 <p>Each scalar type follows this pattern:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># 1. GraphQL Scalar Type Definition</span>
 <span class="n">DateRangeScalar</span> <span class="o">=</span> <span class="n">GraphQLScalarType</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;DateRange&quot;</span><span class="p">,</span>
-    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Date range values&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"DateRange"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Date range values"</span><span class="p">,</span>
     <span class="n">serialize</span><span class="o">=</span><span class="n">serialize_date_range</span><span class="p">,</span>      <span class="c1"># Python -&gt; JSON</span>
     <span class="n">parse_value</span><span class="o">=</span><span class="n">parse_date_range_value</span><span class="p">,</span>  <span class="c1"># JSON -&gt; Python</span>
     <span class="n">parse_literal</span><span class="o">=</span><span class="n">parse_date_range_literal</span><span class="p">,</span>  <span class="c1"># GraphQL AST -&gt; Python</span>
@@ -5380,34 +5380,34 @@
 
 <span class="c1"># 2. Python Marker Class</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DateRangeField</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">ScalarMarker</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Python-side marker for the DateRange scalar.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Python-side marker for the DateRange scalar."""</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;DateRange&quot;</span>
+        <span class="k">return</span> <span class="s2">"DateRange"</span>
 
 <span class="c1"># 3. Validation Functions</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">serialize_date_range</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert Python value to serializable form.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Convert Python value to serializable form."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">value</span>
-    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid value: </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid value: </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_date_range_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert JSON input to Python type.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Convert JSON input to Python type."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="c1"># Validate format: [YYYY-MM-DD, YYYY-MM-DD] or (YYYY-MM-DD, YYYY-MM-DD)</span>
-        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^[\[\(](\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">),\s*(\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">)[\]\)]$&quot;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"^[\[\(](\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">),\s*(\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">)[\]\)]$"</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid format: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid format: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">value</span>
-    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Expected string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_date_range_literal</span><span class="p">(</span><span class="n">ast</span><span class="p">:</span> <span class="n">ValueNode</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert GraphQL AST literal to Python type.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Convert GraphQL AST literal to Python type."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ast</span><span class="p">,</span> <span class="n">StringValueNode</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">parse_date_range_value</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
-    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Expected string literal&quot;</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Expected string literal"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="14-type-registration">1.4 Type Registration<a class="headerlink" href="#14-type-registration" title="Permanent link">&para;</a></h3>
 <p>Types are exported from <code>/home/lionel/code/fraiseql/src/fraiseql/types/__init__.py</code>:</p>
@@ -5419,7 +5419,7 @@
 <p>Available as both GraphQL types and Python type hints:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">IpAddress</span><span class="p">,</span> <span class="n">LTree</span><span class="p">,</span> <span class="n">DateRange</span>
 
-<span class="nd">@fraise_type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;network_devices&quot;</span><span class="p">)</span>
+<span class="nd">@fraise_type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"network_devices"</span><span class="p">)</span>
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">NetworkDevice</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
@@ -5435,7 +5435,7 @@
 <p><strong>Base Protocol:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OperatorStrategy</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if this strategy can handle the given operator.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if this strategy can handle the given operator."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">build_sql</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5444,7 +5444,7 @@
         <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">field_type</span><span class="p">:</span> <span class="nb">type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build the SQL for this operator.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Build the SQL for this operator."""</span>
 </code></pre></div>
 <h3 id="22-core-operator-strategies">2.2 Core Operator Strategies<a class="headerlink" href="#22-core-operator-strategies" title="Permanent link">&para;</a></h3>
 <table>
@@ -5499,72 +5499,72 @@
 <h4 id="networkoperatorstrategy-l1004-1398"><strong>NetworkOperatorStrategy</strong> (L1004-1398)<a class="headerlink" href="#networkoperatorstrategy-l1004-1398" title="Permanent link">&para;</a></h4>
 <p>For IP addresses with network-aware operators:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Basic operators</span>
-<span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;notin&quot;</span><span class="p">,</span> <span class="s2">&quot;nin&quot;</span>
+<span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"neq"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"notin"</span><span class="p">,</span> <span class="s2">"nin"</span>
 
 <span class="c1"># Subnet/range operations</span>
-<span class="s2">&quot;inSubnet&quot;</span><span class="p">,</span>     <span class="c1"># IP is in CIDR subnet (&lt;&lt;= operator)</span>
-<span class="s2">&quot;inRange&quot;</span><span class="p">,</span>      <span class="c1"># IP is in range (&gt;= and &lt;=)</span>
+<span class="s2">"inSubnet"</span><span class="p">,</span>     <span class="c1"># IP is in CIDR subnet (&lt;&lt;= operator)</span>
+<span class="s2">"inRange"</span><span class="p">,</span>      <span class="c1"># IP is in range (&gt;= and &lt;=)</span>
 
 <span class="c1"># Classification (RFC-based)</span>
-<span class="s2">&quot;isPrivate&quot;</span>     <span class="c1"># RFC 1918 private addresses</span>
-<span class="s2">&quot;isPublic&quot;</span>      <span class="c1"># Non-private addresses</span>
-<span class="s2">&quot;isIPv4&quot;</span>        <span class="c1"># IPv4-specific (family() = 4)</span>
-<span class="s2">&quot;isIPv6&quot;</span>        <span class="c1"># IPv6-specific (family() = 6)</span>
+<span class="s2">"isPrivate"</span>     <span class="c1"># RFC 1918 private addresses</span>
+<span class="s2">"isPublic"</span>      <span class="c1"># Non-private addresses</span>
+<span class="s2">"isIPv4"</span>        <span class="c1"># IPv4-specific (family() = 4)</span>
+<span class="s2">"isIPv6"</span>        <span class="c1"># IPv6-specific (family() = 6)</span>
 
 <span class="c1"># Enhanced classification (v0.6.1+)</span>
-<span class="s2">&quot;isLoopback&quot;</span>        <span class="c1"># 127.0.0.0/8, ::1</span>
-<span class="s2">&quot;isLinkLocal&quot;</span>       <span class="c1"># 169.254.0.0/16, fe80::/10</span>
-<span class="s2">&quot;isMulticast&quot;</span>       <span class="c1"># 224.0.0.0/4, ff00::/8</span>
-<span class="s2">&quot;isDocumentation&quot;</span>   <span class="c1"># RFC 3849/5737</span>
-<span class="s2">&quot;isCarrierGrade&quot;</span>    <span class="c1"># RFC 6598 (100.64.0.0/10)</span>
+<span class="s2">"isLoopback"</span>        <span class="c1"># 127.0.0.0/8, ::1</span>
+<span class="s2">"isLinkLocal"</span>       <span class="c1"># 169.254.0.0/16, fe80::/10</span>
+<span class="s2">"isMulticast"</span>       <span class="c1"># 224.0.0.0/4, ff00::/8</span>
+<span class="s2">"isDocumentation"</span>   <span class="c1"># RFC 3849/5737</span>
+<span class="s2">"isCarrierGrade"</span>    <span class="c1"># RFC 6598 (100.64.0.0/10)</span>
 </code></pre></div>
 <h4 id="ltreeoperatorstrategy-l773-905"><strong>LTreeOperatorStrategy</strong> (L773-905)<a class="headerlink" href="#ltreeoperatorstrategy-l773-905" title="Permanent link">&para;</a></h4>
 <p>For hierarchical paths:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Basic operators</span>
-<span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;notin&quot;</span>
+<span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"neq"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"notin"</span>
 
 <span class="c1"># Hierarchical relationships</span>
-<span class="s2">&quot;ancestor_of&quot;</span>       <span class="c1"># path1 @&gt; path2 (ancestor contains descendant)</span>
-<span class="s2">&quot;descendant_of&quot;</span>     <span class="c1"># path1 &lt;@ path2 (descendant is contained)</span>
+<span class="s2">"ancestor_of"</span>       <span class="c1"># path1 @&gt; path2 (ancestor contains descendant)</span>
+<span class="s2">"descendant_of"</span>     <span class="c1"># path1 &lt;@ path2 (descendant is contained)</span>
 
 <span class="c1"># Pattern matching</span>
-<span class="s2">&quot;matches_lquery&quot;</span>    <span class="c1"># path ~ lquery (wildcard patterns)</span>
-<span class="s2">&quot;matches_ltxtquery&quot;</span> <span class="c1"># path ? ltxtquery (text queries)</span>
+<span class="s2">"matches_lquery"</span>    <span class="c1"># path ~ lquery (wildcard patterns)</span>
+<span class="s2">"matches_ltxtquery"</span> <span class="c1"># path ? ltxtquery (text queries)</span>
 
 <span class="c1"># Restricted</span>
-<span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="s2">&quot;startswith&quot;</span><span class="p">,</span> <span class="s2">&quot;endswith&quot;</span>  <span class="c1"># THROWS ERROR - not valid for ltree</span>
+<span class="s2">"contains"</span><span class="p">,</span> <span class="s2">"startswith"</span><span class="p">,</span> <span class="s2">"endswith"</span>  <span class="c1"># THROWS ERROR - not valid for ltree</span>
 </code></pre></div>
 <h4 id="daterangeoperatorstrategy-l613-771"><strong>DateRangeOperatorStrategy</strong> (L613-771)<a class="headerlink" href="#daterangeoperatorstrategy-l613-771" title="Permanent link">&para;</a></h4>
 <p>For PostgreSQL daterange type:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Basic operators</span>
-<span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;notin&quot;</span>
+<span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"neq"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"notin"</span>
 
 <span class="c1"># Range relationships</span>
-<span class="s2">&quot;contains_date&quot;</span>     <span class="c1"># range @&gt; date</span>
-<span class="s2">&quot;overlaps&quot;</span>          <span class="c1"># range1 &amp;&amp; range2</span>
-<span class="s2">&quot;adjacent&quot;</span>          <span class="c1"># range1 -|- range2</span>
-<span class="s2">&quot;strictly_left&quot;</span>     <span class="c1"># range1 &lt;&lt; range2</span>
-<span class="s2">&quot;strictly_right&quot;</span>    <span class="c1"># range1 &gt;&gt; range2</span>
-<span class="s2">&quot;not_left&quot;</span>          <span class="c1"># range1 &amp;&gt; range2</span>
-<span class="s2">&quot;not_right&quot;</span>         <span class="c1"># range1 &amp;&lt; range2</span>
+<span class="s2">"contains_date"</span>     <span class="c1"># range @&gt; date</span>
+<span class="s2">"overlaps"</span>          <span class="c1"># range1 &amp;&amp; range2</span>
+<span class="s2">"adjacent"</span>          <span class="c1"># range1 -|- range2</span>
+<span class="s2">"strictly_left"</span>     <span class="c1"># range1 &lt;&lt; range2</span>
+<span class="s2">"strictly_right"</span>    <span class="c1"># range1 &gt;&gt; range2</span>
+<span class="s2">"not_left"</span>          <span class="c1"># range1 &amp;&gt; range2</span>
+<span class="s2">"not_right"</span>         <span class="c1"># range1 &amp;&lt; range2</span>
 
 <span class="c1"># Restricted</span>
-<span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="s2">&quot;startswith&quot;</span><span class="p">,</span> <span class="s2">&quot;endswith&quot;</span>  <span class="c1"># THROWS ERROR - not valid for daterange</span>
+<span class="s2">"contains"</span><span class="p">,</span> <span class="s2">"startswith"</span><span class="p">,</span> <span class="s2">"endswith"</span>  <span class="c1"># THROWS ERROR - not valid for daterange</span>
 </code></pre></div>
 <h4 id="macaddressoperatorstrategy-l907-1002"><strong>MacAddressOperatorStrategy</strong> (L907-1002)<a class="headerlink" href="#macaddressoperatorstrategy-l907-1002" title="Permanent link">&para;</a></h4>
 <p>For MAC addresses:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Supported operators</span>
-<span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;notin&quot;</span>
-<span class="s2">&quot;isnull&quot;</span>
+<span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"neq"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"notin"</span>
+<span class="s2">"isnull"</span>
 
 <span class="c1"># Restricted - THROWS ERROR</span>
-<span class="s2">&quot;contains&quot;</span><span class="p">,</span> <span class="s2">&quot;startswith&quot;</span><span class="p">,</span> <span class="s2">&quot;endswith&quot;</span>  <span class="c1"># Not supported due to macaddr normalization</span>
+<span class="s2">"contains"</span><span class="p">,</span> <span class="s2">"startswith"</span><span class="p">,</span> <span class="s2">"endswith"</span>  <span class="c1"># Not supported due to macaddr normalization</span>
 </code></pre></div>
 <h3 id="24-operator-registry">2.4 Operator Registry<a class="headerlink" href="#24-operator-registry" title="Permanent link">&para;</a></h3>
 <p>The <code>OperatorRegistry</code> (L1400-1458) coordinates strategy selection:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OperatorRegistry</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize with all available strategies in precedence order.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Initialize with all available strategies in precedence order."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">strategies</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OperatorStrategy</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">NullOperatorStrategy</span><span class="p">(),</span>
             <span class="n">DateRangeOperatorStrategy</span><span class="p">(),</span>        <span class="c1"># Must come BEFORE ComparisonOperatorStrategy</span>
@@ -5579,7 +5579,7 @@
         <span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_strategy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">field_type</span><span class="p">:</span> <span class="nb">type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OperatorStrategy</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the appropriate strategy for an operator.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get the appropriate strategy for an operator."""</span>
         <span class="c1"># Tries specialized strategies first, then falls back to generic ones</span>
 </code></pre></div>
 <p><strong>Key Insight:</strong> Specialized type strategies must be registered BEFORE generic strategies. This allows type-specific strategies to intercept and validate operators for their types.</p>
@@ -5590,42 +5590,42 @@
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_apply_type_cast</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path_sql</span><span class="p">:</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">field_type</span><span class="p">:</span> <span class="nb">type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SQL</span> <span class="o">|</span> <span class="n">Composed</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply appropriate type casting to the JSONB path.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Apply appropriate type casting to the JSONB path."""</span>
 
     <span class="c1"># IP address types - special handling</span>
-    <span class="k">if</span> <span class="n">field_type</span> <span class="ow">and</span> <span class="n">is_ip_address_type</span><span class="p">(</span><span class="n">field_type</span><span class="p">)</span> <span class="ow">and</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;host(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;::inet)&quot;</span><span class="p">)])</span>
+    <span class="k">if</span> <span class="n">field_type</span> <span class="ow">and</span> <span class="n">is_ip_address_type</span><span class="p">(</span><span class="n">field_type</span><span class="p">)</span> <span class="ow">and</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"neq"</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"host("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"::inet)"</span><span class="p">)])</span>
 
     <span class="c1"># MAC addresses - detect from value when field_type missing</span>
     <span class="k">if</span> <span class="n">looks_like_mac_address_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::macaddr&quot;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::macaddr"</span><span class="p">)])</span>
 
     <span class="c1"># IP addresses - detect from value (production CQRS pattern)</span>
     <span class="k">if</span> <span class="n">looks_like_ip_address_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::inet&quot;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::inet"</span><span class="p">)])</span>
 
     <span class="c1"># LTree paths - detect from value</span>
     <span class="k">if</span> <span class="n">looks_like_ltree_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::ltree&quot;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::ltree"</span><span class="p">)])</span>
 
     <span class="c1"># DateRange values - detect from value</span>
     <span class="k">if</span> <span class="n">looks_like_daterange_value</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">op</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::daterange&quot;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::daterange"</span><span class="p">)])</span>
 
     <span class="c1"># Numeric values</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">Decimal</span><span class="p">)):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::numeric&quot;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::numeric"</span><span class="p">)])</span>
 
     <span class="c1"># Datetime values</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;)::timestamp&quot;</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="n">Composed</span><span class="p">([</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"("</span><span class="p">),</span> <span class="n">path_sql</span><span class="p">,</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">")::timestamp"</span><span class="p">)])</span>
 </code></pre></div>
 <p><strong>Critical:</strong> When <code>field_type</code> is not provided (common in production CQRS patterns), the system falls back to <strong>value heuristics</strong> to detect types.</p>
 <h3 id="32-production-mode-type-detection">3.2 Production-Mode Type Detection<a class="headerlink" href="#32-production-mode-type-detection" title="Permanent link">&para;</a></h3>
 <p>When field type information is lost (production CQRS queries), FraiseQL detects types from values:</p>
 <h4 id="ip-address-detection">IP Address Detection<a class="headerlink" href="#ip-address-detection" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_looks_like_ip_address_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect IP addresses (fallback when field_type missing).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Detect IP addresses (fallback when field_type missing)."""</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>      <span class="c1"># Try parse</span>
@@ -5638,51 +5638,51 @@
                 <span class="k">pass</span>
 
         <span class="c1"># Heuristic: IPv4-like pattern</span>
-        <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">255</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">val</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="mi">0</span> <span class="o">&lt;=</span> <span class="nb">int</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">255</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">val</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)):</span>
             <span class="k">return</span> <span class="kc">True</span>
 
         <span class="c1"># Heuristic: IPv6-like pattern (contains hex + colons)</span>
-        <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">val</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="s2">&quot;0123456789abcdefABCDEF:&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">":"</span> <span class="ow">in</span> <span class="n">val</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="s2">"0123456789abcdefABCDEF:"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">val</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="kc">False</span>
 </code></pre></div>
 <h4 id="mac-address-detection">MAC Address Detection<a class="headerlink" href="#mac-address-detection" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_looks_like_mac_address_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect MAC addresses.&quot;&quot;&quot;</span>
-    <span class="n">mac_clean</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+<span class="w">    </span><span class="sd">"""Detect MAC addresses."""</span>
+    <span class="n">mac_clean</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">" "</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
 
     <span class="c1"># MAC is exactly 12 hex characters</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mac_clean</span><span class="p">)</span> <span class="o">==</span> <span class="mi">12</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="s2">&quot;0123456789ABCDEF&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">mac_clean</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mac_clean</span><span class="p">)</span> <span class="o">==</span> <span class="mi">12</span> <span class="ow">and</span> <span class="nb">all</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="s2">"0123456789ABCDEF"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">mac_clean</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">return</span> <span class="kc">False</span>
 </code></pre></div>
 <h4 id="ltree-detection">LTree Detection<a class="headerlink" href="#ltree-detection" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_looks_like_ltree_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect LTree hierarchical paths.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Detect LTree hierarchical paths."""</span>
     <span class="c1"># Pattern: dots separating alphanumeric/underscore/hyphen segments</span>
     <span class="c1"># Exclude: domain names, IP addresses, .local domains</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;(&quot;</span><span class="p">))</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;)&quot;</span><span class="p">))):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">val</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">"["</span><span class="p">,</span> <span class="s2">"("</span><span class="p">))</span> <span class="ow">and</span> <span class="n">val</span><span class="o">.</span><span class="n">endswith</span><span class="p">((</span><span class="s2">"]"</span><span class="p">,</span> <span class="s2">")"</span><span class="p">))):</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="c1"># Check: at least one dot, no consecutive dots, valid chars</span>
-    <span class="n">ltree_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$&quot;</span>
+    <span class="n">ltree_pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"^[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$"</span>
 
     <span class="c1"># Avoid false positives: domain extensions, .local, IP-like patterns</span>
-    <span class="n">last_part</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">last_part</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;com&quot;</span><span class="p">,</span> <span class="s2">&quot;net&quot;</span><span class="p">,</span> <span class="s2">&quot;org&quot;</span><span class="p">,</span> <span class="s2">&quot;local&quot;</span><span class="p">,</span> <span class="s2">&quot;dev&quot;</span><span class="p">,</span> <span class="s2">&quot;app&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">}:</span>
+    <span class="n">last_part</span> <span class="o">=</span> <span class="n">val</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">last_part</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"com"</span><span class="p">,</span> <span class="s2">"net"</span><span class="p">,</span> <span class="s2">"org"</span><span class="p">,</span> <span class="s2">"local"</span><span class="p">,</span> <span class="s2">"dev"</span><span class="p">,</span> <span class="s2">"app"</span><span class="p">,</span> <span class="o">...</span><span class="p">}:</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">ltree_pattern</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
 </code></pre></div>
 <h4 id="daterange-detection">DateRange Detection<a class="headerlink" href="#daterange-detection" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_looks_like_daterange_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect PostgreSQL daterange format.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Detect PostgreSQL daterange format."""</span>
     <span class="c1"># Pattern: [2024-01-01,2024-12-31] or (2024-01-01,2024-12-31)</span>
 
-    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;^\[?\(?(\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">),\s*(\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">)\)?\]?$&quot;</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">"^\[?\(?(\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">),\s*(\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">)\)?\]?$"</span>
 
     <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">val</span><span class="p">))</span>
 </code></pre></div>
@@ -5691,12 +5691,12 @@
 <h3 id="41-where-generator-architecture">4.1 WHERE Generator Architecture<a class="headerlink" href="#41-where-generator-architecture" title="Permanent link">&para;</a></h3>
 <p>Located in: <code>/home/lionel/code/fraiseql/src/fraiseql/sql/where_generator.py</code></p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">safe_create_where_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="nb">object</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">DynamicType</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a WHERE clause type for a FraiseQL type.</span>
+<span class="w">    </span><span class="sd">"""Create a WHERE clause type for a FraiseQL type.</span>
 
 <span class="sd">    Generates a dataclass with:</span>
 <span class="sd">    - Fields for each type attribute</span>
 <span class="sd">    - A `to_sql()` method returning parameterized SQL (psycopg Composed)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div>
 <h3 id="42-filter-input-types">4.2 Filter Input Types<a class="headerlink" href="#42-filter-input-types" title="Permanent link">&para;</a></h3>
 <p>Located in: <code>/home/lionel/code/fraiseql/src/fraiseql/sql/graphql_where_generator.py</code></p>
@@ -5708,18 +5708,18 @@
     <span class="n">contains</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">startswith</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">endswith</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">in_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graphql_name</span><span class="o">=</span><span class="s2">&quot;in&quot;</span><span class="p">)</span>
+    <span class="n">in_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graphql_name</span><span class="o">=</span><span class="s2">"in"</span><span class="p">)</span>
     <span class="n">nin</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">isnull</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
 <p><strong>Restricted Filters for Complex Types:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraise_input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">NetworkAddressFilter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enhanced filter for IP addresses - EXCLUDES pattern matching operators.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Enhanced filter for IP addresses - EXCLUDES pattern matching operators."""</span>
     <span class="c1"># Basic operations</span>
     <span class="n">eq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">neq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">in_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graphql_name</span><span class="o">=</span><span class="s2">&quot;in&quot;</span><span class="p">)</span>
+    <span class="n">in_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graphql_name</span><span class="o">=</span><span class="s2">"in"</span><span class="p">)</span>
     <span class="n">nin</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">isnull</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
@@ -5740,22 +5740,22 @@
 <h3 id="43-field-type-detection">4.3 Field Type Detection<a class="headerlink" href="#43-field-type-detection" title="Permanent link">&para;</a></h3>
 <p>Located in: <code>/home/lionel/code/fraiseql/src/fraiseql/sql/where/core/field_detection.py</code></p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FieldType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enumeration of field types for where clause generation.&quot;&quot;&quot;</span>
-    <span class="n">ANY</span> <span class="o">=</span> <span class="s2">&quot;any&quot;</span>
-    <span class="n">STRING</span> <span class="o">=</span> <span class="s2">&quot;string&quot;</span>
-    <span class="n">INTEGER</span> <span class="o">=</span> <span class="s2">&quot;integer&quot;</span>
-    <span class="n">IP_ADDRESS</span> <span class="o">=</span> <span class="s2">&quot;ip_address&quot;</span>
-    <span class="n">MAC_ADDRESS</span> <span class="o">=</span> <span class="s2">&quot;mac_address&quot;</span>
-    <span class="n">LTREE</span> <span class="o">=</span> <span class="s2">&quot;ltree&quot;</span>
-    <span class="n">DATE_RANGE</span> <span class="o">=</span> <span class="s2">&quot;date_range&quot;</span>
+<span class="w">    </span><span class="sd">"""Enumeration of field types for where clause generation."""</span>
+    <span class="n">ANY</span> <span class="o">=</span> <span class="s2">"any"</span>
+    <span class="n">STRING</span> <span class="o">=</span> <span class="s2">"string"</span>
+    <span class="n">INTEGER</span> <span class="o">=</span> <span class="s2">"integer"</span>
+    <span class="n">IP_ADDRESS</span> <span class="o">=</span> <span class="s2">"ip_address"</span>
+    <span class="n">MAC_ADDRESS</span> <span class="o">=</span> <span class="s2">"mac_address"</span>
+    <span class="n">LTREE</span> <span class="o">=</span> <span class="s2">"ltree"</span>
+    <span class="n">DATE_RANGE</span> <span class="o">=</span> <span class="s2">"date_range"</span>
     <span class="c1"># ... more types</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">detect_field_type</span><span class="p">(</span><span class="n">field_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">field_type</span><span class="p">:</span> <span class="nb">type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FieldType</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect the type of field based on:</span>
+<span class="w">    </span><span class="sd">"""Detect the type of field based on:</span>
 <span class="sd">    1. Explicit type hint</span>
-<span class="sd">    2. Field name patterns (e.g., &quot;ip_address&quot;, &quot;mac_address&quot;)</span>
+<span class="sd">    2. Field name patterns (e.g., "ip_address", "mac_address")</span>
 <span class="sd">    3. Value analysis (heuristics)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 </code></pre></div>
 <hr />
 <h2 id="5-integration-repository-to-sql">5. Integration: Repository to SQL<a class="headerlink" href="#5-integration-repository-to-sql" title="Permanent link">&para;</a></h2>
@@ -5769,32 +5769,32 @@
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
     <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Query entities with filtering.</span>
+<span class="w">    </span><span class="sd">"""Query entities with filtering.</span>
 
 <span class="sd">    Converts GraphQL-style filters to SQL WHERE clauses:</span>
 <span class="sd">    {</span>
-<span class="sd">        &quot;ip_address&quot;: {&quot;isPrivate&quot;: True},</span>
-<span class="sd">        &quot;path&quot;: {&quot;ancestor_of&quot;: &quot;departments.engineering&quot;}</span>
+<span class="sd">        "ip_address": {"isPrivate": True},</span>
+<span class="sd">        "path": {"ancestor_of": "departments.engineering"}</span>
 <span class="sd">    }</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">query_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;SELECT data FROM </span><span class="si">{}</span><span class="s2"> WHERE 1=1&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">SQL</span><span class="p">(</span><span class="n">view_name</span><span class="p">))]</span>
+<span class="sd">    """</span>
+    <span class="n">query_parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT data FROM </span><span class="si">{}</span><span class="s2"> WHERE 1=1"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">SQL</span><span class="p">(</span><span class="n">view_name</span><span class="p">))]</span>
 
     <span class="k">if</span> <span class="n">filters</span><span class="p">:</span>
         <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">filters</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
                 <span class="c1"># Map GraphQL field names to operator names</span>
-                <span class="c1"># e.g., &quot;nin&quot; -&gt; &quot;notin&quot;</span>
+                <span class="c1"># e.g., "nin" -&gt; "notin"</span>
                 <span class="n">mapped_value</span> <span class="o">=</span> <span class="p">{}</span>
                 <span class="k">for</span> <span class="n">op</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                    <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">&quot;nin&quot;</span><span class="p">:</span>
-                        <span class="n">mapped_value</span><span class="p">[</span><span class="s2">&quot;notin&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+                    <span class="k">if</span> <span class="n">op</span> <span class="o">==</span> <span class="s2">"nin"</span><span class="p">:</span>
+                        <span class="n">mapped_value</span><span class="p">[</span><span class="s2">"notin"</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
                     <span class="k">else</span><span class="p">:</span>
                         <span class="n">mapped_value</span><span class="p">[</span><span class="n">op</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
 
                 <span class="c1"># Generate WHERE condition using operator strategies</span>
-                <span class="n">where_condition</span> <span class="o">=</span> <span class="n">_make_filter_field_composed</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">mapped_value</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+                <span class="n">where_condition</span> <span class="o">=</span> <span class="n">_make_filter_field_composed</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">mapped_value</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">where_condition</span><span class="p">:</span>
-                    <span class="n">query_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SQL</span><span class="p">(</span><span class="s2">&quot; AND &quot;</span><span class="p">))</span>
+                    <span class="n">query_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SQL</span><span class="p">(</span><span class="s2">" AND "</span><span class="p">))</span>
                     <span class="n">query_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">where_condition</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">Composed</span><span class="p">(</span><span class="n">query_parts</span><span class="p">))</span>
@@ -5802,18 +5802,18 @@
 <h3 id="52-sql-generation-example">5.2 SQL Generation Example<a class="headerlink" href="#52-sql-generation-example" title="Permanent link">&para;</a></h3>
 <p>For query:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-    <span class="s2">&quot;ipAddress&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;isPrivate&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-    <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;ancestor_of&quot;</span><span class="p">:</span> <span class="s2">&quot;departments.engineering&quot;</span><span class="p">},</span>
-    <span class="s2">&quot;macAddress&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;00:11:22:33:44:55&quot;</span><span class="p">}</span>
+    <span class="s2">"ipAddress"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"isPrivate"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="s2">"path"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"ancestor_of"</span><span class="p">:</span> <span class="s2">"departments.engineering"</span><span class="p">},</span>
+    <span class="s2">"macAddress"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"00:11:22:33:44:55"</span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Generates:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">network_devices</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="mi">1</span><span class="o">=</span><span class="mi">1</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;ip_address&#39;</span><span class="p">)::</span><span class="n">inet</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="s1">&#39;10.0.0.0/8&#39;</span><span class="p">::</span><span class="n">inet</span>
-<span class="w">  </span><span class="k">OR</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;ip_address&#39;</span><span class="p">)::</span><span class="n">inet</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="s1">&#39;172.16.0.0/12&#39;</span><span class="p">::</span><span class="n">inet</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'ip_address'</span><span class="p">)::</span><span class="n">inet</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="s1">'10.0.0.0/8'</span><span class="p">::</span><span class="n">inet</span>
+<span class="w">  </span><span class="k">OR</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'ip_address'</span><span class="p">)::</span><span class="n">inet</span><span class="w"> </span><span class="o">&lt;&lt;=</span><span class="w"> </span><span class="s1">'172.16.0.0/12'</span><span class="p">::</span><span class="n">inet</span>
 <span class="w">  </span><span class="c1">-- ... additional private ranges</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;path&#39;</span><span class="p">)::</span><span class="n">ltree</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">&#39;departments.engineering&#39;</span><span class="p">::</span><span class="n">ltree</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;mac_address&#39;</span><span class="p">)::</span><span class="n">macaddr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;00:11:22:33:44:55&#39;</span><span class="p">::</span><span class="n">macaddr</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'path'</span><span class="p">)::</span><span class="n">ltree</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">'departments.engineering'</span><span class="p">::</span><span class="n">ltree</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'mac_address'</span><span class="p">)::</span><span class="n">macaddr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'00:11:22:33:44:55'</span><span class="p">::</span><span class="n">macaddr</span>
 </code></pre></div>
 <hr />
 <h2 id="6-test-patterns">6. Test Patterns<a class="headerlink" href="#6-test-patterns" title="Permanent link">&para;</a></h2>
@@ -5821,21 +5821,21 @@
 <p>Located in: <code>/home/lionel/code/fraiseql/tests/unit/sql/where/test_*_operators_sql_building.py</code></p>
 <p>Pattern:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_ltree_ancestor_of_operation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test LTree ancestor_of operation (@&gt;).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test LTree ancestor_of operation (@&gt;)."""</span>
     <span class="n">registry</span> <span class="o">=</span> <span class="n">get_operator_registry</span><span class="p">()</span>
-    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">&quot;data-&gt;&gt;&#39;path&#39;&quot;</span><span class="p">)</span>
+    <span class="n">path_sql</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"data-&gt;&gt;'path'"</span><span class="p">)</span>
 
     <span class="n">sql</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">build_sql</span><span class="p">(</span>
         <span class="n">path_sql</span><span class="o">=</span><span class="n">path_sql</span><span class="p">,</span>
-        <span class="n">op</span><span class="o">=</span><span class="s2">&quot;ancestor_of&quot;</span><span class="p">,</span>
-        <span class="n">val</span><span class="o">=</span><span class="s2">&quot;departments.engineering.backend&quot;</span><span class="p">,</span>
+        <span class="n">op</span><span class="o">=</span><span class="s2">"ancestor_of"</span><span class="p">,</span>
+        <span class="n">val</span><span class="o">=</span><span class="s2">"departments.engineering.backend"</span><span class="p">,</span>
         <span class="n">field_type</span><span class="o">=</span><span class="n">LTree</span>
     <span class="p">)</span>
 
     <span class="n">sql_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="s2">&quot;::ltree&quot;</span> <span class="ow">in</span> <span class="n">sql_str</span>
-    <span class="k">assert</span> <span class="s2">&quot;@&gt;&quot;</span> <span class="ow">in</span> <span class="n">sql_str</span>
-    <span class="k">assert</span> <span class="s2">&quot;departments.engineering.backend&quot;</span> <span class="ow">in</span> <span class="n">sql_str</span>
+    <span class="k">assert</span> <span class="s2">"::ltree"</span> <span class="ow">in</span> <span class="n">sql_str</span>
+    <span class="k">assert</span> <span class="s2">"@&gt;"</span> <span class="ow">in</span> <span class="n">sql_str</span>
+    <span class="k">assert</span> <span class="s2">"departments.engineering.backend"</span> <span class="ow">in</span> <span class="n">sql_str</span>
 </code></pre></div>
 <h3 id="62-integration-tests">6.2 Integration Tests<a class="headerlink" href="#62-integration-tests" title="Permanent link">&para;</a></h3>
 <p>Located in: <code>/home/lionel/code/fraiseql/tests/integration/database/sql/where/*/test_*_operations.py</code></p>
@@ -5906,19 +5906,19 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># src/fraiseql/types/scalars/my_type.py</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">serialize_my_type</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize to GraphQL output.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Serialize to GraphQL output."""</span>
     <span class="o">...</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_my_type_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse from GraphQL input.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Parse from GraphQL input."""</span>
     <span class="o">...</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">parse_my_type_literal</span><span class="p">(</span><span class="n">ast</span><span class="p">:</span> <span class="n">ValueNode</span><span class="p">,</span> <span class="n">variables</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse from GraphQL literal.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Parse from GraphQL literal."""</span>
     <span class="o">...</span>
 
 <span class="n">MyTypeScalar</span> <span class="o">=</span> <span class="n">GraphQLScalarType</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;MyType&quot;</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"MyType"</span><span class="p">,</span>
     <span class="n">serialize</span><span class="o">=</span><span class="n">serialize_my_type</span><span class="p">,</span>
     <span class="n">parse_value</span><span class="o">=</span><span class="n">parse_my_type_value</span><span class="p">,</span>
     <span class="n">parse_literal</span><span class="o">=</span><span class="n">parse_my_type_literal</span><span class="p">,</span>
@@ -5927,7 +5927,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">MyTypeField</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">ScalarMarker</span><span class="p">):</span>
     <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;MyType&quot;</span>
+        <span class="k">return</span> <span class="s2">"MyType"</span>
 </code></pre></div>
 <h3 id="step-2-export-type">Step 2: Export Type<a class="headerlink" href="#step-2-export-type" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># src/fraiseql/types/__init__.py</span>
@@ -5939,8 +5939,8 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">MyTypeOperatorStrategy</span><span class="p">(</span><span class="n">BaseOperatorStrategy</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">([</span>
-            <span class="s2">&quot;eq&quot;</span><span class="p">,</span> <span class="s2">&quot;neq&quot;</span><span class="p">,</span> <span class="s2">&quot;in&quot;</span><span class="p">,</span> <span class="s2">&quot;notin&quot;</span><span class="p">,</span>  <span class="c1"># Basic</span>
-            <span class="s2">&quot;my_special_op_1&quot;</span><span class="p">,</span> <span class="s2">&quot;my_special_op_2&quot;</span>  <span class="c1"># Custom</span>
+            <span class="s2">"eq"</span><span class="p">,</span> <span class="s2">"neq"</span><span class="p">,</span> <span class="s2">"in"</span><span class="p">,</span> <span class="s2">"notin"</span><span class="p">,</span>  <span class="c1"># Basic</span>
+            <span class="s2">"my_special_op_1"</span><span class="p">,</span> <span class="s2">"my_special_op_2"</span>  <span class="c1"># Custom</span>
         <span class="p">])</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">can_handle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">field_type</span><span class="p">:</span> <span class="nb">type</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -5949,7 +5949,7 @@
 
         <span class="c1"># Only handle specialized ops without field_type</span>
         <span class="k">if</span> <span class="n">field_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;my_special_op_1&quot;</span><span class="p">,</span> <span class="s2">&quot;my_special_op_2&quot;</span><span class="p">}</span>
+            <span class="k">return</span> <span class="n">op</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"my_special_op_1"</span><span class="p">,</span> <span class="s2">"my_special_op_2"</span><span class="p">}</span>
 
         <span class="c1"># With field_type, handle all operators</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_my_type</span><span class="p">(</span><span class="n">field_type</span><span class="p">)</span>
@@ -5973,7 +5973,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">MyTypeFilter</span><span class="p">:</span>
     <span class="n">eq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">neq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">in_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graphql_name</span><span class="o">=</span><span class="s2">&quot;in&quot;</span><span class="p">)</span>
+    <span class="n">in_</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">graphql_name</span><span class="o">=</span><span class="s2">"in"</span><span class="p">)</span>
     <span class="n">nin</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">my_special_op_1</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">my_special_op_2</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5983,10 +5983,10 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># src/fraiseql/sql/where/core/field_detection.py</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FieldType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="n">MY_TYPE</span> <span class="o">=</span> <span class="s2">&quot;my_type&quot;</span>
+    <span class="n">MY_TYPE</span> <span class="o">=</span> <span class="s2">"my_type"</span>
 
 <span class="nd">@classmethod</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">from_python_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">python_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;FieldType&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_python_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">python_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"FieldType"</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types.scalars.my_type</span><span class="w"> </span><span class="kn">import</span> <span class="n">MyTypeField</span>
         <span class="k">if</span> <span class="n">python_type</span> <span class="o">==</span> <span class="n">MyTypeField</span> <span class="ow">or</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">python_type</span><span class="p">,</span> <span class="n">MyTypeField</span><span class="p">):</span>

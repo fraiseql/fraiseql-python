@@ -5874,7 +5874,7 @@
 Authentication, Authorization, NotFound, Conflict
 </code></pre></div>
 <p>The caller made a mistake. The same request will fail repeatedly. Example:</p>
-<div class="highlight"><pre><span></span><code><span class="c"># Query has unknown field &#39;usernam&#39; instead of &#39;username&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="c"># Query has unknown field 'usernam' instead of 'username'</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">usernam</span><span class="w">  </span><span class="c"># ← Validation error (4xx)</span>
@@ -5886,7 +5886,7 @@ Authentication, Authorization, NotFound, Conflict
 Configuration, Internal
 </code></pre></div>
 <p>System failure outside the caller's control. May succeed if retried. Example:</p>
-<div class="highlight"><pre><span></span><code>&quot;Database error: connection refused&quot;  # ← 5xx error
+<div class="highlight"><pre><span></span><code>"Database error: connection refused"  # ← 5xx error
 # May succeed if database recovers and request is retried
 </code></pre></div>
 <p><strong>Retryable Errors (can be safely retried):</strong></p>
@@ -5906,13 +5906,13 @@ Configuration, Internal
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># ✅ VALID: Proper type annotation</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
 <span class="c1"># ❌ INVALID: Unknown field type (caught by your Python type checker)</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">BadType</span>  <span class="c1"># ← Python type error before the app even starts</span>
@@ -5921,26 +5921,26 @@ Configuration, Internal
 <h3 id="layer-2-schema-assembly-validation">Layer 2: Schema-Assembly Validation<a class="headerlink" href="#layer-2-schema-assembly-validation" title="Permanent link">&para;</a></h3>
 <p>When the app starts, FraiseQL assembles the GraphQL schema in memory and validates references between types:</p>
 <p><strong>Schema Reference Validation:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">author</span><span class="p">:</span> <span class="n">User</span>  <span class="c1"># ← Must reference a registered @fraiseql.type</span>
 
 <span class="c1"># ❌ FAILS AT STARTUP: author references a type that was never registered</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">author</span><span class="p">:</span> <span class="n">NonExistentUser</span>
 
-<span class="c1"># Error: schema build fails — &quot;Unknown type &#39;NonExistentUser&#39; referenced in Post.author&quot;</span>
+<span class="c1"># Error: schema build fails — "Unknown type 'NonExistentUser' referenced in Post.author"</span>
 </code></pre></div>
 <p><strong>Read-Source Validation:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="c1"># At startup FraiseQL records that this type reads from the v_post view.</span>
-    <span class="c1"># The view&#39;s `data` JSONB column must contain the fields you expose.</span>
+    <span class="c1"># The view's `data` JSONB column must contain the fields you expose.</span>
     <span class="c1"># If the view is missing at query time, the database raises an error.</span>
 </code></pre></div>
 <p>The underlying PostgreSQL objects follow FraiseQL's naming conventions. Writes go to a normalized <code>tb_</code> table; reads come from a <code>v_</code> view (or a <code>tv_</code> projection view) that exposes a public <code>id UUID</code> plus a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>:</p>
@@ -5957,9 +5957,9 @@ Configuration, Internal
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_author</span><span class="p">;</span>
@@ -5974,7 +5974,7 @@ Configuration, Internal
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c"># Error: &quot;Expected value of type &#39;ID&#39; for argument &#39;id&#39;&quot;</span>
+<span class="c"># Error: "Expected value of type 'ID' for argument 'id'"</span>
 </code></pre></div>
 <p><strong>Parameter Range Validation:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c"># Schema defines: users(limit: Int = 20, offset: Int = 0)</span>
@@ -5985,24 +5985,24 @@ Configuration, Internal
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c"># Error: &quot;Parameter &#39;limit&#39; must be ≤ 10000, got 100000&quot;</span>
+<span class="c"># Error: "Parameter 'limit' must be ≤ 10000, got 100000"</span>
 </code></pre></div>
 <p><strong>Authorization Validation:</strong></p>
 <p>Authorization in FraiseQL v1 is implemented in Python. The <code>info.context</code> carries the authenticated principal, and resolvers (or a shared authorization helper) decide whether the operation is allowed before any SQL is executed:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdatePostInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UpdatePostSuccess</span> <span class="o">|</span> <span class="n">UpdatePostError</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">UpdatePostError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;authentication required&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;UNAUTHENTICATED&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">can_write</span><span class="p">(</span><span class="s2">&quot;Post&quot;</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">UpdatePostError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"authentication required"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"UNAUTHENTICATED"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">can_write</span><span class="p">(</span><span class="s2">"Post"</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
         <span class="c1"># Deny before touching the database</span>
-        <span class="k">return</span> <span class="n">UpdatePostError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;insufficient permissions&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;FORBIDDEN&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UpdatePostError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"insufficient permissions"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"FORBIDDEN"</span><span class="p">)</span>
 
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_post&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">title</span><span class="p">})</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">UpdatePostError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">),</span> <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">UpdatePostSuccess</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">Post</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;post&quot;</span><span class="p">]))</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_post"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="s2">"title"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">title</span><span class="p">})</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">UpdatePostError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">),</span> <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"ERROR"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">UpdatePostSuccess</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">Post</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"post"</span><span class="p">]))</span>
 </code></pre></div>
 <p>For the full authorization model and decision API, see <a href="../../security/authorization/">Authorization</a>. Describe access rules in Python; do not assume a separate server enforces them.</p>
 <h3 id="layer-4-execution-time-validation">Layer 4: Execution-Time Validation<a class="headerlink" href="#layer-4-execution-time-validation" title="Permanent link">&para;</a></h3>
@@ -6016,42 +6016,42 @@ Configuration, Internal
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;username&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'username'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CONFLICT&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;username %s is already taken&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'CONFLICT'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">'username %s is already taken'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'username'</span><span class="p">)</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">username</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;username&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'username'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user created&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;username&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user created'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'username'</span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
 <p>If a database constraint is violated despite the checks (a race condition, for example), PostgreSQL raises an error the framework surfaces as a <code>Database</code> error:</p>
 <div class="highlight"><pre><span></span><code>Database {
-  message: &quot;duplicate key value violates unique constraint \&quot;uc_user_username\&quot;&quot;,
-  sql_state: &quot;23505&quot;   -- PostgreSQL unique violation code
+  message: "duplicate key value violates unique constraint \"uc_user_username\"",
+  sql_state: "23505"   -- PostgreSQL unique violation code
 }
 </code></pre></div>
 <p><strong>Post-Fetch Authorization (field filtering):</strong></p>
 <p>Because reads return a <code>data</code> JSONB document shaped to the requested GraphQL fields, a resolver can strip fields the caller is not allowed to see before returning the object:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">can_read</span><span class="p">(</span><span class="s2">&quot;Post.secret&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">can_read</span><span class="p">(</span><span class="s2">"Post.secret"</span><span class="p">,</span> <span class="nb">id</span><span class="p">):</span>
         <span class="n">row</span><span class="o">.</span><span class="n">secret</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># silently drop the unauthorized field</span>
     <span class="k">return</span> <span class="n">row</span>
 </code></pre></div>
@@ -6062,49 +6062,49 @@ Configuration, Internal
 <p>FraiseQL follows the GraphQL specification for error responses. Errors are returned as JSON with error codes, locations, and path information.</p>
 <h3 id="single-error-response">Single Error Response<a class="headerlink" href="#single-error-response" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Unknown field &#39;usernam&#39; on type &#39;User&#39;&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UNKNOWN_FIELD&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">400</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Unknown field 'usernam' on type 'User'"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UNKNOWN_FIELD"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="mi">400</span>
 <span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;locations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;column&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="nt">"locations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="nt">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">"column"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;usernam&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="s2">"usernam"</span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="multiple-errors-response">Multiple Errors Response<a class="headerlink" href="#multiple-errors-response" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Unknown field &#39;usernam&#39; on type &#39;User&#39;&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UNKNOWN_FIELD&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;usernam&quot;</span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;locations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;column&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="p">}]</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Unknown field 'usernam' on type 'User'"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UNKNOWN_FIELD"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"user"</span><span class="p">,</span><span class="w"> </span><span class="s2">"usernam"</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"locations"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nt">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="nt">"column"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="p">}]</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Expected type &#39;ID&#39; for argument &#39;id&#39;&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GRAPHQL_VALIDATION_FAILED&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">],</span>
-<span class="w">      </span><span class="nt">&quot;locations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nt">&quot;line&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;column&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="p">}]</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Expected type 'ID' for argument 'id'"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GRAPHQL_VALIDATION_FAILED"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"user"</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"locations"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nt">"line"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="nt">"column"</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="w"> </span><span class="p">}]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="database-error-response">Database Error Response<a class="headerlink" href="#database-error-response" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Database error: duplicate key value violates unique constraint&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DATABASE_ERROR&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;sql_state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;23505&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Database error: duplicate key value violates unique constraint"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DATABASE_ERROR"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="mi">500</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"sql_state"</span><span class="p">:</span><span class="w"> </span><span class="s2">"23505"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"retryable"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
@@ -6112,15 +6112,15 @@ Configuration, Internal
 </code></pre></div>
 <h3 id="authorization-error-response">Authorization Error Response<a class="headerlink" href="#authorization-error-response" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Authorization error: insufficient permissions&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORBIDDEN&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">403</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;action&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;read&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;resource&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Post:456&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_role is &#39;viewer&#39;, requires &#39;editor&#39; or above&quot;</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Authorization error: insufficient permissions"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FORBIDDEN"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="mi">403</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"read"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"resource"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Post:456"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_role is 'viewer', requires 'editor' or above"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
@@ -6144,26 +6144,26 @@ Configuration, Internal
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>               <span class="c1"># @fraiseql.failure is an accepted alias</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">},</span>
+        <span class="s2">"fn_create_user"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">),</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">),</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"VALIDATION_ERROR"</span><span class="p">),</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
 </code></pre></div>
 <p>The PostgreSQL <code>fn_create_user</code> function performs the validation and the write, returning a JSONB document of the shape <code>{success, message, code, ...}</code>. The resolver translates that document into the success or error branch of the union.</p>
 <p>Clients select on the concrete type:</p>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Alice&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;alice@example.com&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Alice"</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"alice@example.com"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">__typename</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
@@ -6188,7 +6188,7 @@ Configuration, Internal
 # 5. Format response               → (skipped)
 
 # Response:
-# { &quot;errors&quot;: [{ &quot;message&quot;: &quot;...&quot;, &quot;extensions&quot;: { &quot;code&quot;: &quot;FORBIDDEN&quot; } }] }
+# { "errors": [{ "message": "...", "extensions": { "code": "FORBIDDEN" } }] }
 </code></pre></div>
 <p><strong>When to use:</strong> Default for all queries. Safe and predictable.</p>
 <h3 id="strategy-2-partial-execution-with-field-level-errors">Strategy 2: Partial Execution with Field-Level Errors<a class="headerlink" href="#strategy-2-partial-execution-with-field-level-errors" title="Permanent link">&para;</a></h3>
@@ -6206,20 +6206,20 @@ Configuration, Internal
 </code></pre></div>
 <p><strong>Response:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;posts&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"posts"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GraphQL Guide&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;author&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GraphQL Guide"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"author"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Authorization error: cannot read author.name&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORBIDDEN&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;posts&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;author&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Authorization error: cannot read author.name"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FORBIDDEN"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"posts"</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s2">"author"</span><span class="p">,</span><span class="w"> </span><span class="s2">"name"</span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
@@ -6261,23 +6261,23 @@ Configuration, Internal
 </ul>
 <h3 id="strategy-4-graceful-degradation">Strategy 4: Graceful Degradation<a class="headerlink" href="#strategy-4-graceful-degradation" title="Permanent link">&para;</a></h3>
 <p>Provide fallback behavior when queries fail:</p>
-<div class="highlight"><pre><span></span><code><span class="n">ANALYTICS_QUERY</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="n">ANALYTICS_QUERY</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">  query {</span>
 <span class="s2">    sales { date revenue costs margin }</span>
 <span class="s2">  }</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
-<span class="n">FALLBACK_QUERY</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="n">FALLBACK_QUERY</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">  query {</span>
 <span class="s2">    sales { date revenue }</span>
 <span class="s2">  }</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_analytics</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">ANALYTICS_QUERY</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">FraiseQLError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;TIMEOUT&quot;</span><span class="p">,</span> <span class="s2">&quot;CONNECTION_POOL_ERROR&quot;</span><span class="p">}:</span>
+        <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"TIMEOUT"</span><span class="p">,</span> <span class="s2">"CONNECTION_POOL_ERROR"</span><span class="p">}:</span>
             <span class="c1"># Fall back to a simpler, faster query</span>
             <span class="k">return</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">FALLBACK_QUERY</span><span class="p">)</span>
         <span class="k">raise</span>
@@ -6299,19 +6299,19 @@ Configuration, Internal
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
     <span class="c1"># Resolver-level business validation</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">username</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">50</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;username must be 1-50 characters&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"username must be 1-50 characters"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"VALIDATION_ERROR"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">13</span> <span class="o">&lt;=</span> <span class="nb">input</span><span class="o">.</span><span class="n">age</span> <span class="o">&lt;=</span> <span class="mi">150</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;age must be between 13 and 150&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"age must be between 13 and 150"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"VALIDATION_ERROR"</span><span class="p">)</span>
 
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-        <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
-        <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">),</span>
-        <span class="s2">&quot;age&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">age</span><span class="p">,</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">"username"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">username</span><span class="p">,</span>
+        <span class="s2">"email"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">),</span>
+        <span class="s2">"age"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">age</span><span class="p">,</span>
     <span class="p">})</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">),</span> <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">CreateUserError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">),</span> <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"ERROR"</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
 </code></pre></div>
 <p><strong>Defense in depth — enforce the same rules with database constraints:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- PostgreSQL constraints (enforced by the database, even under race conditions)</span>
@@ -6332,12 +6332,12 @@ Configuration, Internal
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;=</span> <span class="n">limit</span> <span class="o">&lt;=</span> <span class="mi">10000</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;limit must be 1-10000, got </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"limit must be 1-10000, got </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;offset must be ≥ 0&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"offset must be ≥ 0"</span><span class="p">)</span>
 
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c"># ✅ Valid request</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
@@ -6348,16 +6348,16 @@ Configuration, Internal
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">100000</span><span class="p">,</span><span class="w"> </span><span class="n">offset</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span>
 <span class="p">}</span>
-<span class="c"># Error: &quot;limit must be 1-10000&quot;</span>
+<span class="c"># Error: "limit must be 1-10000"</span>
 </code></pre></div>
 <h3 id="practice-3-string-safety-implicit-via-parameterization">Practice 3: String Safety (Implicit via Parameterization)<a class="headerlink" href="#practice-3-string-safety-implicit-via-parameterization" title="Permanent link">&para;</a></h3>
 <p>FraiseQL prevents SQL injection by never interpolating user input into SQL strings. Values are always passed as bound parameters:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ UNSAFE (never do this):</span>
-<span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT * FROM tb_user WHERE name = &#39;</span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-<span class="c1"># If user_input = &quot;&#39; OR &#39;1&#39;=&#39;1&quot;, this becomes a SQL injection.</span>
+<span class="n">query</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"SELECT * FROM tb_user WHERE name = '</span><span class="si">{</span><span class="n">user_input</span><span class="si">}</span><span class="s2">'"</span>
+<span class="c1"># If user_input = "' OR '1'='1", this becomes a SQL injection.</span>
 
 <span class="c1"># ✅ SAFE (what FraiseQL does internally — parameterized):</span>
-<span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM tb_user WHERE name = $1&quot;</span><span class="p">,</span> <span class="n">user_input</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_user WHERE name = $1"</span><span class="p">,</span> <span class="n">user_input</span><span class="p">)</span>
 <span class="c1"># user_input is treated as pure data, never as SQL</span>
 </code></pre></div>
 <p>Mutation arguments reach PostgreSQL the same way — <code>db.execute_function("fn_x", {...})</code> binds the payload as a JSONB parameter, so a hostile string is data, not executable SQL.</p>
@@ -6369,9 +6369,9 @@ Configuration, Internal
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">enum</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserRole</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
-    <span class="n">ADMIN</span> <span class="o">=</span> <span class="s2">&quot;admin&quot;</span>
-    <span class="n">EDITOR</span> <span class="o">=</span> <span class="s2">&quot;editor&quot;</span>
-    <span class="n">VIEWER</span> <span class="o">=</span> <span class="s2">&quot;viewer&quot;</span>
+    <span class="n">ADMIN</span> <span class="o">=</span> <span class="s2">"admin"</span>
+    <span class="n">EDITOR</span> <span class="o">=</span> <span class="s2">"editor"</span>
+    <span class="n">VIEWER</span> <span class="o">=</span> <span class="s2">"viewer"</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserInput</span><span class="p">:</span>
@@ -6380,13 +6380,13 @@ Configuration, Internal
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c"># Valid request</span>
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="no">ADMIN</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__typename</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="no">ADMIN</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__typename</span><span class="w"> </span><span class="p">}</span>
 <span class="p">}</span>
 
 <span class="c"># Invalid request</span>
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;superuser&quot;</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__typename</span><span class="w"> </span><span class="p">}</span>
-<span class="w">  </span><span class="c"># Error: &quot;Expected one of [ADMIN, EDITOR, VIEWER]&quot;</span>
+<span class="w">  </span><span class="n">updateUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="s">"superuser"</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">__typename</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="c"># Error: "Expected one of [ADMIN, EDITOR, VIEWER]"</span>
 <span class="p">}</span>
 </code></pre></div>
 <hr />
@@ -6396,14 +6396,14 @@ Configuration, Internal
 <p>Control access based on user role. Check the role in the resolver before fetching or returning sensitive fields:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
     <span class="c1"># Only editors and admins may see the `secret` field</span>
-    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">user</span><span class="o">.</span><span class="n">role</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;editor&quot;</span><span class="p">,</span> <span class="s2">&quot;admin&quot;</span><span class="p">}:</span>
+    <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">user</span><span class="o">.</span><span class="n">role</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">"editor"</span><span class="p">,</span> <span class="s2">"admin"</span><span class="p">}:</span>
         <span class="n">row</span><span class="o">.</span><span class="n">secret</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="n">row</span>
 </code></pre></div>
@@ -6414,11 +6414,11 @@ Configuration, Internal
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span>
 <span class="w">            </span><span class="k">CASE</span>
-<span class="w">                </span><span class="k">WHEN</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.current_user_pk&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)::</span><span class="nb">BIGINT</span>
+<span class="w">                </span><span class="k">WHEN</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_user_pk'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)::</span><span class="nb">BIGINT</span>
 <span class="w">                     </span><span class="k">OR</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">is_published</span>
 <span class="w">                </span><span class="k">THEN</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span>
 <span class="w">                </span><span class="k">ELSE</span><span class="w"> </span><span class="k">NULL</span>
@@ -6437,9 +6437,9 @@ Configuration, Internal
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">document</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Document</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">doc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_document&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_document"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">can_read_document</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="k">return</span> <span class="n">doc</span>
@@ -6447,7 +6447,7 @@ Configuration, Internal
 <hr />
 <h2 id="common-error-scenarios-and-recovery">Common Error Scenarios and Recovery<a class="headerlink" href="#common-error-scenarios-and-recovery" title="Permanent link">&para;</a></h2>
 <h3 id="scenario-1-user-tries-to-access-an-unauthorized-field">Scenario 1: User Tries to Access an Unauthorized Field<a class="headerlink" href="#scenario-1-user-tries-to-access-an-unauthorized-field" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c"># User &#39;alice&#39; with role &#39;viewer&#39; requests:</span>
+<div class="highlight"><pre><span></span><code><span class="c"># User 'alice' with role 'viewer' requests:</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">post</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="mi">123</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">title</span><span class="w">       </span><span class="c"># ✅ Allowed for viewers</span>
@@ -6457,17 +6457,17 @@ Configuration, Internal
 </code></pre></div>
 <p><strong>Response:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;post&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Public Post&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;secret&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"post"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Public Post"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"secret"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Authorization error: viewers cannot read post.secret&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORBIDDEN&quot;</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">&quot;path&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;post&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;secret&quot;</span><span class="p">]</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Authorization error: viewers cannot read post.secret"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FORBIDDEN"</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"path"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"post"</span><span class="p">,</span><span class="w"> </span><span class="s2">"secret"</span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">]</span>
 <span class="p">}</span>
@@ -6476,15 +6476,15 @@ Configuration, Internal
 <div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
-    <span class="n">auth_errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;extensions&quot;</span><span class="p">][</span><span class="s2">&quot;code&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;FORBIDDEN&quot;</span><span class="p">]</span>
-    <span class="n">other_errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">&quot;extensions&quot;</span><span class="p">][</span><span class="s2">&quot;code&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;FORBIDDEN&quot;</span><span class="p">]</span>
+    <span class="n">auth_errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">"extensions"</span><span class="p">][</span><span class="s2">"code"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"FORBIDDEN"</span><span class="p">]</span>
+    <span class="n">other_errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="k">if</span> <span class="n">e</span><span class="p">[</span><span class="s2">"extensions"</span><span class="p">][</span><span class="s2">"code"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"FORBIDDEN"</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="n">auth_errors</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
         <span class="c1"># Partially available — show what we have</span>
         <span class="n">show_data</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
-        <span class="n">notify</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Some fields unavailable (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">auth_errors</span><span class="p">)</span><span class="si">}</span><span class="s2"> access denied)&quot;</span><span class="p">)</span>
+        <span class="n">notify</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Some fields unavailable (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">auth_errors</span><span class="p">)</span><span class="si">}</span><span class="s2"> access denied)"</span><span class="p">)</span>
     <span class="k">elif</span> <span class="n">other_errors</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">other_errors</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;message&quot;</span><span class="p">])</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">other_errors</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"message"</span><span class="p">])</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="n">show_data</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
@@ -6510,25 +6510,25 @@ Client strategy: Retry with exponential backoff
 <h3 id="scenario-3-query-exceeds-timeout">Scenario 3: Query Exceeds Timeout<a class="headerlink" href="#scenario-3-query-exceeds-timeout" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>Query execution exceeds the statement timeout
 ↓
-Error: &quot;Query exceeded the 30000ms statement timeout&quot;
+Error: "Query exceeded the 30000ms statement timeout"
 ↓
 Retryable: Possibly (with a simpler query or a raised timeout)
 ↓
 Client strategy: Retry with reduced complexity
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="n">FULL_REPORT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="n">FULL_REPORT</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">  query { sales(year: 2024) { id date revenue costs margin region } }</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
-<span class="n">QUICK_REPORT</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<span class="n">QUICK_REPORT</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">  query { sales(year: 2024) { date revenue costs } }</span>
-<span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">"""</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_report</span><span class="p">(</span><span class="n">client</span><span class="p">):</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">FULL_REPORT</span><span class="p">)</span>
     <span class="k">except</span> <span class="n">FraiseQLError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="s2">&quot;TIMEOUT&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">code</span> <span class="o">==</span> <span class="s2">"TIMEOUT"</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">QUICK_REPORT</span><span class="p">)</span>
         <span class="k">raise</span>
 </code></pre></div>
@@ -6545,17 +6545,17 @@ Client strategy: Show error, ask for a different username
 </code></pre></div>
 <p>Most commonly this is caught inside <code>fn_create_user</code> (Layer 4 above) and returned as a typed <code>CreateUserError</code> with <code>code = "CONFLICT"</code>. If a race slips past the check, the raw <code>Database</code> error is surfaced:</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">CREATE_USER_MUTATION</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
-    <span class="n">payload</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;createUser&quot;</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;__typename&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;CreateUserError&quot;</span> <span class="ow">and</span> <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;code&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;CONFLICT&quot;</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">UserFriendlyError</span><span class="p">(</span><span class="s2">&quot;This username is already taken. Please try another.&quot;</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">CREATE_USER_MUTATION</span><span class="p">,</span> <span class="p">{</span><span class="s2">"username"</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s2">"createUser"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"CreateUserError"</span> <span class="ow">and</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"code"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"CONFLICT"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">UserFriendlyError</span><span class="p">(</span><span class="s2">"This username is already taken. Please try another."</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">payload</span>
 </code></pre></div>
 <hr />
 <h2 id="validation-in-different-scenarios">Validation in Different Scenarios<a class="headerlink" href="#validation-in-different-scenarios" title="Permanent link">&para;</a></h2>
 <h3 id="scenario-a-simple-read-query">Scenario A: Simple Read Query<a class="headerlink" href="#scenario-a-simple-read-query" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -6575,9 +6575,9 @@ Client strategy: Show error, ask for a different username
 <h3 id="scenario-b-mutation-with-input-validation">Scenario B: Mutation with Input Validation<a class="headerlink" href="#scenario-b-mutation-with-input-validation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">createPost</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;New Post&quot;</span>
-<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Content here&quot;</span>
-<span class="w">    </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;postgres&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;graphql&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">"New Post"</span>
+<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">"Content here"</span>
+<span class="w">    </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"postgres"</span><span class="p">,</span><span class="w"> </span><span class="s">"graphql"</span><span class="p">]</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">__typename</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreatePostSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">post</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
@@ -6643,12 +6643,12 @@ Client strategy: Show error, ask for a different username
 <h3 id="e-commerce-order-creation-with-full-validation">E-Commerce: Order Creation with Full Validation<a class="headerlink" href="#e-commerce-order-creation-with-full-validation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">createOrder</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span>
+<span class="w">    </span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span>
 <span class="w">    </span><span class="n">items</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">}</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">,</span><span class="w"> </span><span class="n">quantity</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">]</span>
-<span class="w">    </span><span class="n">shippingAddress</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123 Main St&quot;</span>
+<span class="w">    </span><span class="n">shippingAddress</span><span class="p">:</span><span class="w"> </span><span class="s">"123 Main St"</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">__typename</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateOrderSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">orderId</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="p">}</span>
@@ -6661,32 +6661,32 @@ Client strategy: Show error, ask for a different username
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateOrderSuccess</span> <span class="o">|</span> <span class="n">CreateOrderError</span><span class="p">:</span>
     <span class="c1"># LAYER 1 — input validation</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">input</span><span class="o">.</span><span class="n">items</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;order must contain at least one item&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"order must contain at least one item"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"VALIDATION_ERROR"</span><span class="p">)</span>
 
     <span class="c1"># LAYER 2 — authorization (Python, before touching the database)</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user&quot;</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;authentication required&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;UNAUTHENTICATED&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"authentication required"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"UNAUTHENTICATED"</span><span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">is_active</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">&quot;user is not active&quot;</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">&quot;FORBIDDEN&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"user is not active"</span><span class="p">,</span> <span class="n">code</span><span class="o">=</span><span class="s2">"FORBIDDEN"</span><span class="p">)</span>
 
     <span class="c1"># LAYER 3 &amp; 4 — stock check, totals, and the write happen atomically in fn_create_order</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_order&quot;</span><span class="p">,</span> <span class="p">{</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">user_id</span><span class="p">),</span>
-        <span class="s2">&quot;items&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;product_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">product_id</span><span class="p">),</span> <span class="s2">&quot;quantity&quot;</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">quantity</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">items</span><span class="p">],</span>
-        <span class="s2">&quot;shipping_address&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">shipping_address</span><span class="p">,</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_order"</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">user_id</span><span class="p">),</span>
+        <span class="s2">"items"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"product_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">product_id</span><span class="p">),</span> <span class="s2">"quantity"</span><span class="p">:</span> <span class="n">i</span><span class="o">.</span><span class="n">quantity</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">input</span><span class="o">.</span><span class="n">items</span><span class="p">],</span>
+        <span class="s2">"shipping_address"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">shipping_address</span><span class="p">,</span>
     <span class="p">})</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;failed&quot;</span><span class="p">),</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">),</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"failed"</span><span class="p">),</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"ERROR"</span><span class="p">),</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span>
-        <span class="n">order_id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;order_id&quot;</span><span class="p">],</span>
-        <span class="n">status</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">],</span>
-        <span class="n">total</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span>
+        <span class="n">order_id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">],</span>
+        <span class="n">status</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"status"</span><span class="p">],</span>
+        <span class="n">total</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"total"</span><span class="p">],</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>PostgreSQL function: stock validation, totals, and the write in one transaction:</strong></p>
@@ -6701,38 +6701,38 @@ Client strategy: Show error, ask for a different username
 <span class="w">    </span><span class="n">new_id</span><span class="w">      </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validate stock for every item</span>
-<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;</span><span class="s1">&#39;items&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;</span><span class="s1">'items'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">LOOP</span>
 <span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="n">stock_count</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">stock</span>
 <span class="w">        </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_product</span>
-<span class="w">        </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">;</span>
+<span class="w">        </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="s1">'product_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">;</span>
 
 <span class="w">        </span><span class="k">IF</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">            </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;NOT_FOUND&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;product %s not found&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;product_id&#39;</span><span class="p">));</span>
+<span class="w">            </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'NOT_FOUND'</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">'product %s not found'</span><span class="p">,</span><span class="w"> </span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="s1">'product_id'</span><span class="p">));</span>
 <span class="w">        </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">        </span><span class="k">IF</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">INT</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">            </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CONFLICT&#39;</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;only %s units available&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">));</span>
+<span class="w">        </span><span class="k">IF</span><span class="w"> </span><span class="n">stock</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="s1">'quantity'</span><span class="p">)::</span><span class="nb">INT</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">            </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'CONFLICT'</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="n">format</span><span class="p">(</span><span class="s1">'only %s units available'</span><span class="p">,</span><span class="w"> </span><span class="n">stock</span><span class="p">));</span>
 <span class="w">        </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="n">LOOP</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- ... compute total, insert the order and line items, decrement stock ...</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">shipping_address</span><span class="p">,</span><span class="w"> </span><span class="n">total_amount</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;user_id&#39;</span><span class="p">)::</span><span class="n">UUID</span><span class="p">),</span>
-<span class="w">        </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;shipping_address&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">),</span>
+<span class="w">        </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'shipping_address'</span><span class="p">,</span>
 <span class="w">        </span><span class="n">total</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;order created&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;status&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pending&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;total&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">total</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'order created'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'order_id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'status'</span><span class="p">,</span><span class="w"> </span><span class="s1">'pending'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'total'</span><span class="p">,</span><span class="w"> </span><span class="n">total</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -6740,56 +6740,56 @@ Client strategy: Show error, ask for a different username
 <p><strong>GraphQL response scenarios:</strong></p>
 <p>Success:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;createOrder&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CreateOrderSuccess&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;orderId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;ord_12345&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;pending&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">99.99</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"createOrder"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateOrderSuccess"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"orderId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ord_12345"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"pending"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"total"</span><span class="p">:</span><span class="w"> </span><span class="mf">99.99</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Validation error:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;createOrder&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CreateOrderError&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;order must contain at least one item&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VALIDATION_ERROR&quot;</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"createOrder"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateOrderError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"order must contain at least one item"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VALIDATION_ERROR"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Authorization error:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;createOrder&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CreateOrderError&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user is not active&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FORBIDDEN&quot;</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"createOrder"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateOrderError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user is not active"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FORBIDDEN"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Conflict error (insufficient stock, raised by the PostgreSQL function):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;createOrder&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CreateOrderError&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;only 5 units available&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CONFLICT&quot;</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"createOrder"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateOrderError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"only 5 units available"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CONFLICT"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>Transient database error (surfaced as a top-level GraphQL error, should retry):</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;errors&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">    </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query timeout&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;extensions&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;code&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TIMEOUT&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;retryable&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Query timeout"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"TIMEOUT"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"retryable"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}]</span>
 <span class="p">}</span>

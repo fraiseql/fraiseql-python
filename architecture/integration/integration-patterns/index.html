@@ -5089,11 +5089,11 @@ FraiseQL never sees the difference, because it only ever queries the view.</p>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">orders_fdw</span>
 <span class="w">  </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">DATA</span><span class="w"> </span><span class="n">WRAPPER</span><span class="w"> </span><span class="n">postgres_fdw</span>
-<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">host</span><span class="w"> </span><span class="s1">&#39;orders-db&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">dbname</span><span class="w"> </span><span class="s1">&#39;orders_db&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="s1">&#39;5432&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">host</span><span class="w"> </span><span class="s1">'orders-db'</span><span class="p">,</span><span class="w"> </span><span class="n">dbname</span><span class="w"> </span><span class="s1">'orders_db'</span><span class="p">,</span><span class="w"> </span><span class="n">port</span><span class="w"> </span><span class="s1">'5432'</span><span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">MAPPING</span><span class="w"> </span><span class="k">FOR</span><span class="w"> </span><span class="k">current_user</span>
 <span class="w">  </span><span class="n">SERVER</span><span class="w"> </span><span class="n">orders_fdw</span>
-<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">user</span><span class="w"> </span><span class="s1">&#39;fdw_reader&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="w"> </span><span class="s1">&#39;secret&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">user</span><span class="w"> </span><span class="s1">'fdw_reader'</span><span class="p">,</span><span class="w"> </span><span class="n">password</span><span class="w"> </span><span class="s1">'secret'</span><span class="p">);</span>
 
 <span class="c1">-- Expose the remote read view as a local foreign table.</span>
 <span class="c1">-- Mirror the remote v_order shape: a public id (UUID) plus a data JSONB column.</span>
@@ -5102,7 +5102,7 @@ FraiseQL never sees the difference, because it only ever queries the view.</p>
 <span class="w">    </span><span class="n">fk_user</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span><span class="w">    </span><span class="n">JSONB</span>
 <span class="p">)</span><span class="w"> </span><span class="n">SERVER</span><span class="w"> </span><span class="n">orders_fdw</span>
-<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">schema_name</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="s1">&#39;v_order&#39;</span><span class="p">);</span>
+<span class="w">  </span><span class="k">OPTIONS</span><span class="w"> </span><span class="p">(</span><span class="k">schema_name</span><span class="w"> </span><span class="s1">'public'</span><span class="p">,</span><span class="w"> </span><span class="k">table_name</span><span class="w"> </span><span class="s1">'v_order'</span><span class="p">);</span>
 </code></pre></div>
 <p>Now reference the foreign table from a normal FraiseQL read view. The view still
 produces the standard <code>id</code> + <code>data</code> JSONB shape that FraiseQL expects:</p>
@@ -5111,12 +5111,12 @@ produces the standard <code>id</code> + <code>data</code> JSONB shape that Frais
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="k">data</span>
 <span class="w">      </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">           </span><span class="s1">&#39;orders&#39;</span><span class="p">,</span>
+<span class="w">           </span><span class="s1">'orders'</span><span class="p">,</span>
 <span class="w">           </span><span class="k">COALESCE</span><span class="p">(</span>
-<span class="w">             </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;createdAt&#39;</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+<span class="w">             </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">o</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'createdAt'</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
 <span class="w">              </span><span class="k">FROM</span><span class="w"> </span><span class="n">remote_v_order</span><span class="w"> </span><span class="n">o</span>
 <span class="w">              </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">),</span>
-<span class="w">             </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">             </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="w">           </span><span class="p">)</span>
 <span class="w">         </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
@@ -5127,17 +5127,17 @@ produces the standard <code>id</code> + <code>data</code> JSONB shape that Frais
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user_with_orders&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user_with_orders"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">orders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">&quot;Order&quot;</span><span class="p">]</span>
+    <span class="n">orders</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s2">"Order"</span><span class="p">]</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user_with_orders&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user_with_orders"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>This is not FraiseQL federation.</strong> There is no gateway, no entity-resolution
 protocol, and no subgraph registry. The join happens entirely inside PostgreSQL,
@@ -5167,15 +5167,15 @@ need for a FraiseQL-side publisher.</p>
 <span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">();</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;userId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="p">);</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'userId'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- Emit an event on commit; any LISTENer on this channel receives it.</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;order_events&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;type&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;order_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">)::</span><span class="nb">text</span>
+<span class="w">        </span><span class="s1">'order_events'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'type'</span><span class="p">,</span><span class="w"> </span><span class="s1">'order_created'</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">)::</span><span class="nb">text</span>
 <span class="w">    </span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -5201,12 +5201,12 @@ pattern below.</p>
 <span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">();</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;userId&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="p">);</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">new_id</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'userId'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_outbox</span><span class="w"> </span><span class="p">(</span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;order_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;orderId&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">));</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'order_created'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'orderId'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">));</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -5251,7 +5251,7 @@ mount it under a path, run it beside REST routes, and share authentication.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.gzip</span><span class="w"> </span><span class="kn">import</span> <span class="n">GZipMiddleware</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
@@ -5259,8 +5259,8 @@ mount it under a path, run it beside REST routes, and share authentication.</p>
     <span class="n">middleware</span><span class="o">=</span><span class="p">[</span>
         <span class="n">Middleware</span><span class="p">(</span>
             <span class="n">CORSMiddleware</span><span class="p">,</span>
-            <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;https://app.example.com&quot;</span><span class="p">],</span>
-            <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;GET&quot;</span><span class="p">],</span>
+            <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">"https://app.example.com"</span><span class="p">],</span>
+            <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"POST"</span><span class="p">,</span> <span class="s2">"GET"</span><span class="p">],</span>
         <span class="p">),</span>
         <span class="n">Middleware</span><span class="p">(</span><span class="n">GZipMiddleware</span><span class="p">,</span> <span class="n">minimum_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">),</span>
     <span class="p">],</span>
@@ -5276,22 +5276,22 @@ sub-application. GraphQL lives under one path; the rest of your API is unchanged
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="c1"># Your existing REST API.</span>
-<span class="n">root</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Platform API&quot;</span><span class="p">)</span>
+<span class="n">root</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">"Platform API"</span><span class="p">)</span>
 
 
-<span class="nd">@root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="nd">@root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"ok"</span><span class="p">}</span>
 
 
-<span class="nd">@root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/v1/reports/</span><span class="si">{report_id}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nd">@root</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/v1/reports/</span><span class="si">{report_id}</span><span class="s2">"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_report</span><span class="p">(</span><span class="n">report_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="o">...</span>  <span class="c1"># existing REST handler</span>
 
 
 <span class="c1"># The FraiseQL GraphQL app.</span>
 <span class="n">graphql_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
@@ -5299,7 +5299,7 @@ sub-application. GraphQL lives under one path; the rest of your API is unchanged
 <span class="p">)</span>
 
 <span class="c1"># Serve GraphQL under /graphql, REST everywhere else.</span>
-<span class="n">root</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">graphql_app</span><span class="p">)</span>
+<span class="n">root</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">graphql_app</span><span class="p">)</span>
 </code></pre></div>
 <p>Run the composed app with any ASGI server:</p>
 <div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:root<span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
@@ -5325,9 +5325,9 @@ Two common approaches:</p>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">require_authenticated</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">principal</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>  <span class="c1"># populated by shared auth middleware</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">principal</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">principal</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>  <span class="c1"># populated by shared auth middleware</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">principal</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 </code></pre></div>
 <p>Because authorization is enforced per resolver, keep it consistent across every
 operation — a resolver without an authorizer is open. See
@@ -5340,9 +5340,9 @@ without special drivers.</p>
 <h3 id="31-graphql-over-http">3.1 GraphQL over HTTP<a class="headerlink" href="#31-graphql-over-http" title="Permanent link">&para;</a></h3>
 <p>Queries and mutations are plain <code>POST</code> requests to the GraphQL endpoint:</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ users { id name } }&quot;}&#39;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ users { id name } }"}'</span>
 </code></pre></div>
 <p>Any GraphQL client (Apollo Client, urql, graphql-request, Relay, or a hand-rolled
 <code>fetch</code>) connects the same way — point it at the endpoint URL and send the standard

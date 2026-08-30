@@ -5014,7 +5014,7 @@
 <p>FraiseQL v1 authentication runs <strong>inside the FastAPI app</strong> (Python). There is exactly one
 configuration knob that selects how tokens are validated — <code>auth_provider</code> on
 <code>FraiseQLConfig</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">auth_provider</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;auth0&quot;</span><span class="p">,</span> <span class="s2">&quot;custom&quot;</span><span class="p">,</span> <span class="s2">&quot;none&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;none&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="n">auth_provider</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"auth0"</span><span class="p">,</span> <span class="s2">"custom"</span><span class="p">,</span> <span class="s2">"none"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"none"</span>
 </code></pre></div>
 <p>Everything else (Google, Keycloak, Cognito, Okta, Azure AD, your own issuer) is a <em>choice of
 who issues the JWT</em>, not a separate FraiseQL provider class. You reach those issuers through
@@ -5026,34 +5026,34 @@ who issues the JWT</em>, not a separate FraiseQL provider class. You reach those
 <p>There is no <code>GoogleProvider</code>, <code>KeycloakProvider</code>, or <code>OidcProvider</code> class in FraiseQL.</p>
 <div class="highlight"><pre><span></span><code>                      auth_provider = ?
 
-   &quot;auth0&quot;  ───────────────────────────────────────────────
+   "auth0"  ───────────────────────────────────────────────
       Managed broker. Set auth0_domain / auth0_api_identifier.
       Auth0 fronts Google, GitHub, social, SAML, enterprise OIDC.
 
-   &quot;custom&quot; ───────────────────────────────────────────────
+   "custom" ───────────────────────────────────────────────
       Subclass AuthProvider and validate any OIDC/JWT issuer
       (Keycloak, Cognito, Azure AD, Okta, your own).
       RustCustomJWTProvider = accelerated JWT validation.
       NativeAuthProvider    = built-in username/password.
 
-   &quot;none&quot;   ───────────────────────────────────────────────
+   "none"   ───────────────────────────────────────────────
       Auth disabled. Dev / internal only.
 </code></pre></div>
 <hr />
 <h2 id="quick-decision">Quick Decision<a class="headerlink" href="#quick-decision" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>Do you want to write/operate token validation yourself?
 ├─ NO, give me a managed service that brokers Google/social/SAML
-│     └─ auth_provider = &quot;auth0&quot;
+│     └─ auth_provider = "auth0"
 │
 ├─ YES, I have my own OIDC/JWT issuer (Keycloak, Cognito, Azure AD, Okta, in-house)
-│     └─ auth_provider = &quot;custom&quot;  → subclass AuthProvider
+│     └─ auth_provider = "custom"  → subclass AuthProvider
 │         (use RustCustomJWTProvider for fast JWKS-based JWT validation)
 │
 ├─ I just need built-in username/password stored in PostgreSQL
-│     └─ auth_provider = &quot;custom&quot;  → NativeAuthProvider
+│     └─ auth_provider = "custom"  → NativeAuthProvider
 │
 └─ Local dev / fully internal, no auth needed yet
-      └─ auth_provider = &quot;none&quot;
+      └─ auth_provider = "none"
 </code></pre></div>
 <hr />
 <h2 id="comparison-matrix">Comparison Matrix<a class="headerlink" href="#comparison-matrix" title="Permanent link">&para;</a></h2>
@@ -5185,13 +5185,13 @@ against its JWKS, issuer, and audience inside your <code>AuthProvider</code>.</p
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">Auth0Config</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
-        <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
-        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
-        <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>            <span class="c1"># default</span>
+        <span class="n">domain</span><span class="o">=</span><span class="s2">"your-tenant.auth0.com"</span><span class="p">,</span>
+        <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.myapp.com"</span><span class="p">,</span>
+        <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"RS256"</span><span class="p">],</span>            <span class="c1"># default</span>
     <span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5199,7 +5199,7 @@ against its JWKS, issuer, and audience inside your <code>AuthProvider</code>.</p
 <div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_AUTH_PROVIDER</span><span class="o">=</span>auth0
 <span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>your-tenant.auth0.com
 <span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.myapp.com
-<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS defaults to [&quot;RS256&quot;]</span>
+<span class="c1"># FRAISEQL_AUTH0_ALGORITHMS defaults to ["RS256"]</span>
 </code></pre></div>
 <p>Auth0 then handles Google, social, SAML, MFA, and enterprise OIDC for you — FraiseQL only
 validates the RS256 JWT that Auth0 issues.</p>
@@ -5218,21 +5218,21 @@ beyond the free plan.</p>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">MyIssuerProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-        <span class="c1"># Validate against your issuer&#39;s JWKS / issuer / audience and return the payload.</span>
+        <span class="c1"># Validate against your issuer's JWKS / issuer / audience and return the payload.</span>
         <span class="o">...</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
         <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
-            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
-            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="p">[]),</span>
-            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">),</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="p">[]),</span>
         <span class="p">)</span>
 </code></pre></div>
 <p>Pass the instance to the app:</p>
 <div class="highlight"><pre><span></span><code><span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">auth</span><span class="o">=</span><span class="n">MyIssuerProvider</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
 <span class="p">)</span>
@@ -5247,9 +5247,9 @@ extension:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.rust_provider</span><span class="w"> </span><span class="kn">import</span> <span class="n">RustCustomJWTProvider</span>
 
 <span class="n">provider</span> <span class="o">=</span> <span class="n">RustCustomJWTProvider</span><span class="p">(</span>
-    <span class="n">issuer</span><span class="o">=</span><span class="s2">&quot;https://keycloak.example.com/realms/production&quot;</span><span class="p">,</span>
-    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;my-api&quot;</span><span class="p">,</span>
-    <span class="n">jwks_url</span><span class="o">=</span><span class="s2">&quot;https://keycloak.example.com/realms/production/protocol/openid-connect/certs&quot;</span><span class="p">,</span>
+    <span class="n">issuer</span><span class="o">=</span><span class="s2">"https://keycloak.example.com/realms/production"</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">"my-api"</span><span class="p">,</span>
+    <span class="n">jwks_url</span><span class="o">=</span><span class="s2">"https://keycloak.example.com/realms/production/protocol/openid-connect/certs"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>The same shape works for Cognito, Azure AD, Okta, or any OIDC issuer — point <code>issuer</code>,
@@ -5336,8 +5336,8 @@ validating, so users re-authenticate once after cutover.</p>
 
 <span class="c1"># After: Auth0 brokers it</span>
 <span class="n">auth</span><span class="o">=</span><span class="n">Auth0Config</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;your-tenant.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.myapp.com&quot;</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"your-tenant.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.myapp.com"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>Deploy the change; on first request after cutover users authenticate against Auth0. No data

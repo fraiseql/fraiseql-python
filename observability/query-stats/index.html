@@ -4795,7 +4795,7 @@ that application-level timing alone cannot provide.</p>
 <li><strong>Add to <code>shared_preload_libraries</code></strong> (requires server restart):</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1"># postgresql.conf</span>
-<span class="na">shared_preload_libraries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&#39;pg_stat_statements&#39;</span>
+<span class="na">shared_preload_libraries</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">'pg_stat_statements'</span>
 </code></pre></div>
 <ol>
 <li><strong>Create the extension</strong> (per database):</li>
@@ -4821,16 +4821,16 @@ queries will return empty until the extension is loaded and a restart is done.</
 <span class="n">collector</span> <span class="o">=</span> <span class="n">init_query_stats</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
 
 <span class="c1"># Fetch top 20 queries by total execution time</span>
-<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">get_stats</span><span class="p">(</span><span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;total_exec_time&quot;</span><span class="p">)</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">get_stats</span><span class="p">(</span><span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"total_exec_time"</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">query_preview</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span><span class="si">}</span><span class="s2">  calls=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">calls</span><span class="si">}</span><span class="s2">  &quot;</span>
-        <span class="sa">f</span><span class="s2">&quot;mean=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">mean_exec_time_ms</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">ms  cache_hit=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">cache_hit_ratio</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">query_preview</span><span class="p">[:</span><span class="mi">60</span><span class="p">]</span><span class="si">}</span><span class="s2">  calls=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">calls</span><span class="si">}</span><span class="s2">  "</span>
+        <span class="sa">f</span><span class="s2">"mean=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">mean_exec_time_ms</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">ms  cache_hit=</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">cache_hit_ratio</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%"</span>
     <span class="p">)</span>
 
 <span class="c1"># Check if the extension is available</span>
 <span class="k">if</span> <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">is_available</span><span class="p">():</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;pg_stat_statements is active&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"pg_stat_statements is active"</span><span class="p">)</span>
 
 <span class="c1"># Reset counters (e.g., after a deployment)</span>
 <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
@@ -4872,7 +4872,7 @@ on PostgreSQL 14+. If the application role lacks this permission:</p>
 <span class="k">try</span><span class="p">:</span>
     <span class="k">await</span> <span class="n">collector</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
 <span class="k">except</span> <span class="n">FraiseQLError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="c1"># &quot;Cannot reset pg_stat_statements: insufficient privileges.&quot;</span>
+    <span class="c1"># "Cannot reset pg_stat_statements: insufficient privileges."</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 </code></pre></div>
 <p>To grant the required permission:</p>
@@ -4903,13 +4903,13 @@ located at <code>deploy/docker/postgres_exporter_queries.yml</code>.</p>
 <span class="w">  </span><span class="nt">postgres-exporter</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">prometheuscommunity/postgres-exporter:latest</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">DATA_SOURCE_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgresql://prometheus:prometheus_password@db:5432/fraiseql_prod?sslmode=disable&quot;</span>
+<span class="w">      </span><span class="nt">DATA_SOURCE_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">"postgresql://prometheus:prometheus_password@db:5432/fraiseql_prod?sslmode=disable"</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./postgres_exporter_queries.yml:/etc/postgres_exporter/queries.yml:ro</span>
 <span class="w">    </span><span class="nt">command</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;--extend.query-path=/etc/postgres_exporter/queries.yml&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"--extend.query-path=/etc/postgres_exporter/queries.yml"</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;9187:9187&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"9187:9187"</span>
 </code></pre></div>
 <p>The <code>prometheus</code> role (created by <code>init.sql</code>) has <code>pg_monitor</code> which grants
 read access to <code>pg_stat_statements</code>.</p>
@@ -4962,7 +4962,7 @@ a missing extension does not make the overall health endpoint fail.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">check_query_stats</span>
 
 <span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
-<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">&quot;query_stats&quot;</span><span class="p">,</span> <span class="n">check_query_stats</span><span class="p">)</span>
+<span class="n">health</span><span class="o">.</span><span class="n">add_check</span><span class="p">(</span><span class="s2">"query_stats"</span><span class="p">,</span> <span class="n">check_query_stats</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="interpreting-the-data">Interpreting the data<a class="headerlink" href="#interpreting-the-data" title="Permanent link">&para;</a></h2>
 <h3 id="cache-hit-ratio">Cache hit ratio<a class="headerlink" href="#cache-hit-ratio" title="Permanent link">&para;</a></h3>

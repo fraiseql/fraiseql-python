@@ -5353,7 +5353,7 @@ mkdir<span class="w"> </span>fraiseql-verification
 <span class="nb">cd</span><span class="w"> </span>fraiseql-verification
 
 <span class="c1"># Download latest release wheel</span>
-gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">&quot;*.whl&quot;</span>
+gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">"*.whl"</span>
 </code></pre></div>
 <p><strong>Expected output:</strong></p>
 <div class="highlight"><pre><span></span><code>Downloading fraiseql-0.1.0-py3-none-any.whl
@@ -5384,7 +5384,7 @@ fraiseql/fraiseql  https://slsa.dev/provenance/v1  .github/workflows/publish.yml
 gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="w"> </span>fraiseql-*.whl<span class="w"> </span>--owner<span class="w"> </span>fraiseql<span class="w"> </span>--repo<span class="w"> </span>fraiseql<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>&gt;<span class="w"> </span>provenance.json
 
 <span class="c1"># View human-readable summary</span>
-cat<span class="w"> </span>provenance.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.verificationResult&#39;</span>
+cat<span class="w"> </span>provenance.json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.verificationResult'</span>
 </code></pre></div>
 <p><strong>Key fields to check:</strong></p>
 <ul>
@@ -5459,23 +5459,23 @@ pip<span class="w"> </span>download<span class="w"> </span><span class="nv">frai
 <h3 id="how-to-read-provenance-json">How to Read Provenance JSON<a class="headerlink" href="#how-to-read-provenance-json" title="Permanent link">&para;</a></h3>
 <p><strong>Example provenance snippet:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://in-toto.io/Statement/v1&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;subject&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://in-toto.io/Statement/v1"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"subject"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fraiseql-0.1.0-py3-none-any.whl&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;digest&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;sha256&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc123...&quot;</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"fraiseql-0.1.0-py3-none-any.whl"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"digest"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"sha256"</span><span class="p">:</span><span class="w"> </span><span class="s2">"abc123..."</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;predicateType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://slsa.dev/provenance/v1&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;predicate&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;buildDefinition&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;buildType&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://actions.github.io/buildtypes/workflow/v1&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;externalParameters&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;workflow&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">&quot;ref&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;refs/tags/v0.1.0&quot;</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">&quot;repository&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;https://github.com/fraiseql/fraiseql&quot;</span>
+<span class="w">  </span><span class="nt">"predicateType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://slsa.dev/provenance/v1"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"predicate"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"buildDefinition"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"buildType"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://actions.github.io/buildtypes/workflow/v1"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"externalParameters"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"workflow"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"refs/tags/v0.1.0"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"repository"</span><span class="p">:</span><span class="w"> </span><span class="s2">"https://github.com/fraiseql/fraiseql"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5506,7 +5506,7 @@ pip<span class="w"> </span>download<span class="w"> </span><span class="nv">frai
 </ol>
 <h3 id="command-line-checksum-verification">Command-Line Checksum Verification<a class="headerlink" href="#command-line-checksum-verification" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Download wheel and checksum</span>
-gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">&quot;fraiseql-*.whl*&quot;</span>
+gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">"fraiseql-*.whl*"</span>
 
 <span class="c1"># Verify checksum</span>
 sha256sum<span class="w"> </span>-c<span class="w"> </span>fraiseql-*.whl.sha256
@@ -5599,7 +5599,7 @@ Compliance Alignment:
 </ul>
 <p><strong>3. Verification Commands Used</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Commands executed for verification</span>
-gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">&quot;*.whl&quot;</span>
+gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">"*.whl"</span>
 gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="w"> </span>fraiseql-*.whl<span class="w"> </span>--owner<span class="w"> </span>fraiseql<span class="w"> </span>--repo<span class="w"> </span>fraiseql
 sha256sum<span class="w"> </span>-c<span class="w"> </span>fraiseql-*.whl.sha256
 </code></pre></div>
@@ -5670,7 +5670,7 @@ Authenticate GitHub CLI:</p>
 gh<span class="w"> </span>release<span class="w"> </span>list<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql
 
 <span class="c1"># Download specific version with attestations</span>
-gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>v0.1.0<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">&quot;*.whl&quot;</span>
+gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>v0.1.0<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">"*.whl"</span>
 </code></pre></div>
 <h4 id="issue-4-checksum-mismatch">Issue 4: Checksum Mismatch<a class="headerlink" href="#issue-4-checksum-mismatch" title="Permanent link">&para;</a></h4>
 <p><strong>Error:</strong></p>
@@ -5685,7 +5685,7 @@ gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"
 <p><strong>Solution:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Re-download the file</span>
 rm<span class="w"> </span>fraiseql-*.whl*
-gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">&quot;fraiseql-*.whl*&quot;</span>
+gh<span class="w"> </span>release<span class="w"> </span>download<span class="w"> </span>--repo<span class="w"> </span>fraiseql/fraiseql<span class="w"> </span>--pattern<span class="w"> </span><span class="s2">"fraiseql-*.whl*"</span>
 
 <span class="c1"># Verify again</span>
 sha256sum<span class="w"> </span>-c<span class="w"> </span>fraiseql-*.whl.sha256

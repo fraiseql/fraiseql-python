@@ -5317,11 +5317,11 @@
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Document answers to these questions</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Expected peak traffic: ______ requests/second&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Uptime target: ______ % (e.g., 99.9% = 8.76h downtime/year)&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Backup RPO: ______ (max data loss acceptable)&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Backup RTO: ______ (max recovery time acceptable)&quot;</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Security Profile: ______ (STANDARD/REGULATED/RESTRICTED)&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Expected peak traffic: ______ requests/second"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Uptime target: ______ % (e.g., 99.9% = 8.76h downtime/year)"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Backup RPO: ______ (max data loss acceptable)"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Backup RTO: ______ (max recovery time acceptable)"</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Security Profile: ______ (STANDARD/REGULATED/RESTRICTED)"</span>
 </code></pre></div>
 <hr />
 <h2 id="2-security-compliance">2. Security &amp; Compliance<a class="headerlink" href="#2-security-compliance" title="Permanent link">&para;</a></h2>
@@ -5357,8 +5357,8 @@ fraiseql<span class="w"> </span>security<span class="w"> </span>audit
 
 <span class="c1"># Test MFA enforcement (REGULATED+)</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer TOKEN_WITHOUT_MFA&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ user { id } }&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer TOKEN_WITHOUT_MFA"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ user { id } }"}'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="c1"># Should return 403 Forbidden</span>
 
 <span class="c1"># Test mTLS (RESTRICTED)</span>
@@ -5427,19 +5427,19 @@ curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com<sp
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check JWT secret is not hardcoded</span>
-grep<span class="w"> </span>-r<span class="w"> </span><span class="s2">&quot;jwt_secret&quot;</span><span class="w"> </span>app/<span class="w"> </span>--exclude-dir<span class="o">=</span>.git
+grep<span class="w"> </span>-r<span class="w"> </span><span class="s2">"jwt_secret"</span><span class="w"> </span>app/<span class="w"> </span>--exclude-dir<span class="o">=</span>.git
 <span class="c1"># Should return no matches with actual secrets</span>
 
 <span class="c1"># Test RLS policies</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<span class="s2">  SET LOCAL app.current_user_id = &#39;user-123&#39;;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
+<span class="s2">  SET LOCAL app.current_user_id = 'user-123';</span>
 <span class="s2">  SELECT COUNT(*) FROM v_order;</span>
-<span class="s2">&quot;</span><span class="w"> </span><span class="c1"># Should only return user-123&#39;s orders</span>
+<span class="s2">"</span><span class="w"> </span><span class="c1"># Should only return user-123's orders</span>
 
 <span class="c1"># Test field-level auth</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer USER_TOKEN&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ user { ssn } }&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer USER_TOKEN"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ user { ssn } }"}'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="c1"># Should return null or error for non-admin users</span>
 </code></pre></div>
 <h3 id="24-kms-integration-regulated-only">2.4 KMS Integration (REGULATED+ only)<a class="headerlink" href="#24-kms-integration-regulated-only" title="Permanent link">&para;</a></h3>
@@ -5485,23 +5485,23 @@ aws<span class="w"> </span>kms<span class="w"> </span>get-key-rotation-status<sp
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check audit table exists</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT COUNT(*) FROM audit_events;&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT COUNT(*) FROM audit_events;"</span>
 
 <span class="c1"># Test audit logging</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer TOKEN&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;mutation { updateUser(id: \&quot;123\&quot;, name: \&quot;Test\&quot;) { id } }&quot;}&#39;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer TOKEN"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "mutation { updateUser(id: \"123\", name: \"Test\") { id } }"}'</span>
 
 <span class="c1"># Verify event logged</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT event_type, user_id, created_at</span>
 <span class="s2">  FROM audit_events</span>
 <span class="s2">  ORDER BY created_at DESC</span>
 <span class="s2">  LIMIT 1;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Test cryptographic chain (RESTRICTED)</span>
-fraiseql<span class="w"> </span>audit<span class="w"> </span>verify-chain<span class="w"> </span>--from<span class="w"> </span><span class="s2">&quot;2025-12-01&quot;</span><span class="w"> </span>--to<span class="w"> </span><span class="s2">&quot;2025-12-08&quot;</span>
+fraiseql<span class="w"> </span>audit<span class="w"> </span>verify-chain<span class="w"> </span>--from<span class="w"> </span><span class="s2">"2025-12-01"</span><span class="w"> </span>--to<span class="w"> </span><span class="s2">"2025-12-08"</span>
 <span class="c1"># Should return: Chain integrity: VALID</span>
 </code></pre></div>
 <h3 id="26-compliance-verification">2.6 Compliance Verification<a class="headerlink" href="#26-compliance-verification" title="Permanent link">&para;</a></h3>
@@ -5544,14 +5544,14 @@ gh<span class="w"> </span>attestation<span class="w"> </span>verify<span class="
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check connection pool settings (if using pgBouncer)</span>
-psql<span class="w"> </span>-h<span class="w"> </span>pgbouncer-host<span class="w"> </span>-p<span class="w"> </span><span class="m">6432</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SHOW CONFIG;&quot;</span>
+psql<span class="w"> </span>-h<span class="w"> </span>pgbouncer-host<span class="w"> </span>-p<span class="w"> </span><span class="m">6432</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SHOW CONFIG;"</span>
 
 <span class="c1"># Test connection pool exhaustion</span>
 ab<span class="w"> </span>-n<span class="w"> </span><span class="m">1000</span><span class="w"> </span>-c<span class="w"> </span><span class="m">100</span><span class="w"> </span>https://api.yourapp.com/health
-<span class="c1"># Should not see &quot;connection pool exhausted&quot; errors</span>
+<span class="c1"># Should not see "connection pool exhausted" errors</span>
 
 <span class="c1"># Verify SSL connection</span>
-psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATABASE_URL</span><span class="s2">?sslmode=require&quot;</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT version();&quot;</span>
+psql<span class="w"> </span><span class="s2">"</span><span class="nv">$DATABASE_URL</span><span class="s2">?sslmode=require"</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT version();"</span>
 </code></pre></div>
 <h3 id="32-database-schema">3.2 Database Schema<a class="headerlink" href="#32-database-schema" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5579,31 +5579,31 @@ psql<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DATA
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check migrations</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT * FROM alembic_version;&quot;</span><span class="w"> </span><span class="c1"># or your migration tool</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT * FROM alembic_version;"</span><span class="w"> </span><span class="c1"># or your migration tool</span>
 
 <span class="c1"># List all tables and views</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<span class="s2">  SELECT schemaname, tablename, &#39;table&#39; as type FROM pg_tables</span>
-<span class="s2">  WHERE schemaname = &#39;public&#39;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
+<span class="s2">  SELECT schemaname, tablename, 'table' as type FROM pg_tables</span>
+<span class="s2">  WHERE schemaname = 'public'</span>
 <span class="s2">  UNION ALL</span>
-<span class="s2">  SELECT schemaname, viewname, &#39;view&#39; as type FROM pg_views</span>
-<span class="s2">  WHERE schemaname = &#39;public&#39;</span>
+<span class="s2">  SELECT schemaname, viewname, 'view' as type FROM pg_views</span>
+<span class="s2">  WHERE schemaname = 'public'</span>
 <span class="s2">  ORDER BY type, tablename;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Check indexes</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT schemaname, tablename, indexname, indexdef</span>
 <span class="s2">  FROM pg_indexes</span>
-<span class="s2">  WHERE schemaname = &#39;public&#39;</span>
+<span class="s2">  WHERE schemaname = 'public'</span>
 <span class="s2">  ORDER BY tablename, indexname;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Verify trinity pattern</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
-<span class="s2">  SELECT COUNT(*) FROM pg_tables WHERE tablename LIKE &#39;tb_%&#39;;</span>
-<span class="s2">  SELECT COUNT(*) FROM pg_views WHERE viewname LIKE &#39;v_%&#39;;</span>
-<span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
+<span class="s2">  SELECT COUNT(*) FROM pg_tables WHERE tablename LIKE 'tb_%';</span>
+<span class="s2">  SELECT COUNT(*) FROM pg_views WHERE viewname LIKE 'v_%';</span>
+<span class="s2">"</span>
 </code></pre></div>
 <h3 id="33-backup-recovery">3.3 Backup &amp; Recovery<a class="headerlink" href="#33-backup-recovery" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5630,11 +5630,11 @@ psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check backup schedule (AWS RDS example)</span>
 aws<span class="w"> </span>rds<span class="w"> </span>describe-db-instances<span class="w"> </span>--db-instance-identifier<span class="w"> </span>mydb<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--query<span class="w"> </span><span class="s1">&#39;DBInstances[0].[BackupRetentionPeriod,PreferredBackupWindow]&#39;</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s1">'DBInstances[0].[BackupRetentionPeriod,PreferredBackupWindow]'</span>
 
 <span class="c1"># List recent backups</span>
 aws<span class="w"> </span>rds<span class="w"> </span>describe-db-snapshots<span class="w"> </span>--db-instance-identifier<span class="w"> </span>mydb<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--query<span class="w"> </span><span class="s1">&#39;DBSnapshots[*].[DBSnapshotIdentifier,SnapshotCreateTime]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--query<span class="w"> </span><span class="s1">'DBSnapshots[*].[DBSnapshotIdentifier,SnapshotCreateTime]'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--output<span class="w"> </span>table
 
 <span class="c1"># Test restore (in staging)</span>
@@ -5659,22 +5659,22 @@ aws<span class="w"> </span>rds<span class="w"> </span>restore-db-instance-from-d
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check slow queries</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT query, calls, mean_exec_time, total_exec_time</span>
 <span class="s2">  FROM pg_stat_statements</span>
 <span class="s2">  ORDER BY mean_exec_time DESC</span>
 <span class="s2">  LIMIT 10;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Check database size</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT pg_size_pretty(pg_database_size(current_database()));</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Check connection count</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT count(*) FROM pg_stat_activity;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 </code></pre></div>
 <hr />
 <h2 id="4-application-configuration">4. Application Configuration<a class="headerlink" href="#4-application-configuration" title="Permanent link">&para;</a></h2>
@@ -5696,7 +5696,7 @@ psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check environment variables (in pod/container)</span>
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;DATABASE_URL|JWT_SECRET|FRAISEQL&quot;</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"DATABASE_URL|JWT_SECRET|FRAISEQL"</span>
 
 <span class="c1"># Verify secrets not in image</span>
 docker<span class="w"> </span><span class="nb">history</span><span class="w"> </span>fraiseql:latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>secret
@@ -5712,12 +5712,12 @@ docker<span class="w"> </span><span class="nb">history</span><span class="w"> </
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test CORS headers</span>
 curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Origin: https://app.yourapp.com&quot;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Origin: https://app.yourapp.com"</span>
 <span class="c1"># Should include: Access-Control-Allow-Origin: https://app.yourapp.com</span>
 
 <span class="c1"># Test unauthorized origin</span>
 curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Origin: https://malicious.com&quot;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Origin: https://malicious.com"</span>
 <span class="c1"># Should NOT include Access-Control-Allow-Origin header</span>
 </code></pre></div>
 <h3 id="43-rate-limiting">4.3 Rate Limiting<a class="headerlink" href="#43-rate-limiting" title="Permanent link">&para;</a></h3>
@@ -5737,7 +5737,7 @@ curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com/gr
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test rate limiting</span>
 <span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..101<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">&quot;%{http_code}\n&quot;</span><span class="w"> </span>https://api.yourapp.com/health
+<span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"%{http_code}\n"</span><span class="w"> </span>https://api.yourapp.com/health
 <span class="k">done</span>
 <span class="c1"># Last requests should return 429 (Too Many Requests)</span>
 </code></pre></div>
@@ -5762,13 +5762,13 @@ curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com/gr
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test query depth limit</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ user { posts { comments { author { posts { ... } } } } } }&quot;}&#39;</span>
-<span class="c1"># Should return error: &quot;Query depth exceeds maximum&quot;</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ user { posts { comments { author { posts { ... } } } } } }"}'</span>
+<span class="c1"># Should return error: "Query depth exceeds maximum"</span>
 
 <span class="c1"># Test introspection disabled (REGULATED+)</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ __schema { types { name } } }&quot;}&#39;</span>
-<span class="c1"># Should return error: &quot;Introspection is disabled&quot;</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ __schema { types { name } } }"}'</span>
+<span class="c1"># Should return error: "Introspection is disabled"</span>
 
 <span class="c1"># Test body size limit</span>
 dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/zero<span class="w"> </span><span class="nv">bs</span><span class="o">=</span>2M<span class="w"> </span><span class="nv">count</span><span class="o">=</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
@@ -5787,16 +5787,16 @@ dd<span class="w"> </span><span class="k">if</span><span class="o">=</span>/dev/
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test liveness probe</span>
 curl<span class="w"> </span>http://api.yourapp.com/health
-<span class="c1"># Expected: {&quot;status&quot;: &quot;healthy&quot;, &quot;timestamp&quot;: &quot;...&quot;}</span>
+<span class="c1"># Expected: {"status": "healthy", "timestamp": "..."}</span>
 
 <span class="c1"># Test readiness probe</span>
 curl<span class="w"> </span>http://api.yourapp.com/ready
-<span class="c1"># Expected: {&quot;status&quot;: &quot;ready&quot;, &quot;database&quot;: &quot;connected&quot;, &quot;timestamp&quot;: &quot;...&quot;}</span>
+<span class="c1"># Expected: {"status": "ready", "database": "connected", "timestamp": "..."}</span>
 
 <span class="c1"># Test failed database connection</span>
 <span class="c1"># (temporarily break DB connection)</span>
 curl<span class="w"> </span>http://api.yourapp.com/ready
-<span class="c1"># Expected: {&quot;status&quot;: &quot;not_ready&quot;, &quot;database&quot;: &quot;disconnected&quot;} (503 status)</span>
+<span class="c1"># Expected: {"status": "not_ready", "database": "disconnected"} (503 status)</span>
 </code></pre></div>
 <h3 id="52-logging">5.2 Logging<a class="headerlink" href="#52-logging" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5822,7 +5822,7 @@ kubectl<span class="w"> </span>logs<span class="w"> </span>fraiseql-pod<span cla
 <span class="c1"># Should be 0 or very low in production</span>
 
 <span class="c1"># Test PII sanitization</span>
-kubectl<span class="w"> </span>logs<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;ssn|credit_card|password&quot;</span>
+kubectl<span class="w"> </span>logs<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"ssn|credit_card|password"</span>
 <span class="c1"># Should return no matches or masked values</span>
 </code></pre></div>
 <h3 id="53-metrics-monitoring">5.3 Metrics &amp; Monitoring<a class="headerlink" href="#53-metrics-monitoring" title="Permanent link">&para;</a></h3>
@@ -5850,10 +5850,10 @@ kubectl<span class="w"> </span>logs<span class="w"> </span>fraiseql-pod<span cla
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check Prometheus metrics</span>
-curl<span class="w"> </span>http://api.yourapp.com/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;http_requests_total|http_request_duration&quot;</span>
+curl<span class="w"> </span>http://api.yourapp.com/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"http_requests_total|http_request_duration"</span>
 
 <span class="c1"># Test alert firing (if using Alertmanager)</span>
-curl<span class="w"> </span>http://alertmanager:9093/api/v1/alerts<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.data[] | select(.state == &quot;firing&quot;)&#39;</span>
+curl<span class="w"> </span>http://alertmanager:9093/api/v1/alerts<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.data[] | select(.state == "firing")'</span>
 </code></pre></div>
 <h3 id="54-distributed-tracing">5.4 Distributed Tracing<a class="headerlink" href="#54-distributed-tracing" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5867,7 +5867,7 @@ curl<span class="w"> </span>http://alertmanager:9093/api/v1/alerts<span class="w
 kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span>OTEL_EXPORTER
 
 <span class="c1"># Query traces (Jaeger example)</span>
-curl<span class="w"> </span><span class="s2">&quot;http://jaeger:16686/api/traces?service=fraiseql&amp;limit=10&quot;</span>
+curl<span class="w"> </span><span class="s2">"http://jaeger:16686/api/traces?service=fraiseql&amp;limit=10"</span>
 </code></pre></div>
 <hr />
 <h2 id="6-performance-optimization">6. Performance Optimization<a class="headerlink" href="#6-performance-optimization" title="Permanent link">&para;</a></h2>
@@ -5888,7 +5888,7 @@ curl<span class="w"> </span><span class="s2">&quot;http://jaeger:16686/api/trace
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test APQ</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;extensions&quot;: {&quot;persistedQuery&quot;: {&quot;version&quot;: 1, &quot;sha256Hash&quot;: &quot;HASH&quot;}}}&#39;</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"extensions": {"persistedQuery": {"version": 1, "sha256Hash": "HASH"}}}'</span>
 <span class="c1"># First request: 200 + executed query</span>
 <span class="c1"># Second request: 200 + cache hit</span>
 
@@ -5903,7 +5903,7 @@ redis-cli<span class="w"> </span>INFO<span class="w"> </span>stats<span class="w
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check Rust pipeline status</span>
-curl<span class="w"> </span>http://api.yourapp.com/health<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.rust_pipeline_enabled&#39;</span>
+curl<span class="w"> </span>http://api.yourapp.com/health<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.rust_pipeline_enabled'</span>
 <span class="c1"># Expected: true</span>
 </code></pre></div>
 <h3 id="63-load-testing">6.3 Load Testing<a class="headerlink" href="#63-load-testing" title="Permanent link">&para;</a></h3>
@@ -5955,12 +5955,12 @@ k6<span class="w"> </span>run<span class="w"> </span>--vus<span class="w"> </spa
 trivy<span class="w"> </span>image<span class="w"> </span>fraiseql:latest<span class="w"> </span>--severity<span class="w"> </span>CRITICAL,HIGH
 
 <span class="c1"># Check user</span>
-docker<span class="w"> </span>inspect<span class="w"> </span>fraiseql:latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.[0].Config.User&#39;</span>
-<span class="c1"># Expected: &quot;fraiseql&quot; (not &quot;root&quot;)</span>
+docker<span class="w"> </span>inspect<span class="w"> </span>fraiseql:latest<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.[0].Config.User'</span>
+<span class="c1"># Expected: "fraiseql" (not "root")</span>
 
 <span class="c1"># Check filesystem (in running container)</span>
 kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>touch<span class="w"> </span>/test-write
-<span class="c1"># Should fail with &quot;Read-only file system&quot; (RESTRICTED)</span>
+<span class="c1"># Should fail with "Read-only file system" (RESTRICTED)</span>
 </code></pre></div>
 <h3 id="72-kubernetes-configuration">7.2 Kubernetes Configuration<a class="headerlink" href="#72-kubernetes-configuration" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5995,10 +5995,10 @@ kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </sp
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check resource limits</span>
-kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="s2">&quot;Limits:&quot;</span>
+kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="s2">"Limits:"</span>
 
 <span class="c1"># Check probes</span>
-kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="s2">&quot;Liveness:&quot;</span>
+kubectl<span class="w"> </span>describe<span class="w"> </span>pod<span class="w"> </span>fraiseql-pod<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-A<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="s2">"Liveness:"</span>
 
 <span class="c1"># Check HPA</span>
 kubectl<span class="w"> </span>get<span class="w"> </span>hpa<span class="w"> </span>fraiseql-hpa
@@ -6065,7 +6065,7 @@ kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w
 kubectl<span class="w"> </span>rollout<span class="w"> </span>status<span class="w"> </span>deployment/fraiseql
 
 <span class="c1"># Verify previous version running</span>
-kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>fraiseql<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.items[0].spec.containers[0].image}&#39;</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>fraiseql<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{.items[0].spec.containers[0].image}'</span>
 </code></pre></div>
 <hr />
 <h2 id="8-incident-readiness">8. Incident Readiness<a class="headerlink" href="#8-incident-readiness" title="Permanent link">&para;</a></h2>
@@ -6094,7 +6094,7 @@ kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> <
 <span class="gs">**Escalation**</span>: After 30 minutes, page on-call engineer
 
 <span class="gu">### Database Connection Pool Exhausted</span>
-<span class="gs">**Symptoms**</span>: &quot;connection pool exhausted&quot; errors
+<span class="gs">**Symptoms**</span>: "connection pool exhausted" errors
 <span class="gs">**Diagnosis**</span>: Check active connections, long-running queries
 <span class="gs">**Resolution**</span>: Increase pool size, kill long-running queries, scale app
 <span class="gs">**Escalation**</span>: Immediate if production traffic affected
@@ -6139,14 +6139,14 @@ curl<span class="w"> </span>https://api.yourapp.com/health
 
 <span class="c1"># Test GraphQL query</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ __typename }&quot;}&#39;</span>
-<span class="c1"># Expected: {&quot;data&quot;: {&quot;__typename&quot;: &quot;Query&quot;}}</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ __typename }"}'</span>
+<span class="c1"># Expected: {"data": {"__typename": "Query"}}</span>
 
 <span class="c1"># Test authentication</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer VALID_TOKEN&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ user { id } }&quot;}&#39;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer VALID_TOKEN"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ user { id } }"}'</span>
 <span class="c1"># Expected: 200 OK with user data</span>
 
 <span class="c1"># Test rate limiting</span>
@@ -6196,8 +6196,8 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check metrics</span>
-curl<span class="w"> </span>http://prometheus:9090/api/v1/query?query<span class="o">=</span>http_request_duration_seconds<span class="o">{</span><span class="nv">quantile</span><span class="o">=</span><span class="s2">&quot;0.95&quot;</span><span class="o">}</span>
-curl<span class="w"> </span>http://prometheus:9090/api/v1/query?query<span class="o">=</span>rate<span class="o">(</span>http_requests_total<span class="o">{</span><span class="nv">status</span><span class="o">=</span>~<span class="s2">&quot;5..&quot;</span><span class="o">}[</span>5m<span class="o">])</span>
+curl<span class="w"> </span>http://prometheus:9090/api/v1/query?query<span class="o">=</span>http_request_duration_seconds<span class="o">{</span><span class="nv">quantile</span><span class="o">=</span><span class="s2">"0.95"</span><span class="o">}</span>
+curl<span class="w"> </span>http://prometheus:9090/api/v1/query?query<span class="o">=</span>rate<span class="o">(</span>http_requests_total<span class="o">{</span><span class="nv">status</span><span class="o">=</span>~<span class="s2">"5.."</span><span class="o">}[</span>5m<span class="o">])</span>
 
 <span class="c1"># Check resource usage</span>
 kubectl<span class="w"> </span>top<span class="w"> </span>pods<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>fraiseql
@@ -6293,7 +6293,7 @@ kubectl<span class="w"> </span>top<span class="w"> </span>nodes
 kubectl<span class="w"> </span>logs<span class="w"> </span>fraiseql-pod
 
 <span class="c1"># Check database connectivity</span>
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1;&quot;</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1;"</span>
 
 <span class="c1"># Increase startupProbe initialDelaySeconds</span>
 kubectl<span class="w"> </span>edit<span class="w"> </span>deployment<span class="w"> </span>fraiseql

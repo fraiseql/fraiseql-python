@@ -4951,34 +4951,34 @@
 <p>When you call <code>db.find()</code> or <code>db.find_one()</code>, FraiseQL automatically extracts the GraphQL field name from <code>info.field_name</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># field_name is automatically &quot;users&quot; (from function name)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># field_name is automatically "users" (from function name)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>GraphQL Response</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;users&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span><span class="w">  </span><span class="c1">// ← Matches function name</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"users"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span><span class="w">  </span><span class="c1">// ← Matches function name</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="when-field-name-matters">When Field Name Matters<a class="headerlink" href="#when-field-name-matters" title="Permanent link">&para;</a></h3>
 <p>The <code>field_name</code> parameter wraps the response in the GraphQL structure:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Function name: users</span>
-<span class="c1"># field_name inferred: &quot;users&quot;</span>
-<span class="c1"># Response: {&quot;data&quot;: {&quot;users&quot;: [...]}}</span>
+<span class="c1"># field_name inferred: "users"</span>
+<span class="c1"># Response: {"data": {"users": [...]}}</span>
 
 <span class="c1"># Function name: activeUsers</span>
-<span class="c1"># field_name inferred: &quot;activeUsers&quot;</span>
-<span class="c1"># Response: {&quot;data&quot;: {&quot;activeUsers&quot;: [...]}}</span>
+<span class="c1"># field_name inferred: "activeUsers"</span>
+<span class="c1"># Response: {"data": {"activeUsers": [...]}}</span>
 </code></pre></div>
 <h3 id="manual-override-rarely-needed">Manual Override (Rarely Needed)<a class="headerlink" href="#manual-override-rarely-needed" title="Permanent link">&para;</a></h3>
 <p>You can explicitly set <code>field_name</code> if needed:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_all_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># Explicitly set field_name to &quot;users&quot; instead of &quot;get_all_users&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># Explicitly set field_name to "users" instead of "get_all_users"</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>When to override:</strong></p>
 <ul>
@@ -4991,16 +4991,16 @@
 <p>The <code>info</code> parameter must be explicitly passed:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># info parameter is used but must be explicitly passed</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="future-state-after-pr-200">Future State (After PR #200)<a class="headerlink" href="#future-state-after-pr-200" title="Permanent link">&para;</a></h3>
 <p>The <code>info</code> parameter will be auto-injected from the GraphQL context:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>  <span class="c1"># No info parameter needed!</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Note</strong>: This documentation describes the future state. Check the current version to see if PR #200 is merged.</p>
 <hr />
@@ -5009,14 +5009,14 @@
 <p>For list queries, FraiseQL automatically adds these parameters:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>GraphQL automatically supports</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span>
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">isActive</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="p">}</span>
-<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">field</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;createdAt&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="p">:</span><span class="w"> </span><span class="no">DESC</span><span class="p">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">field</span><span class="p">:</span><span class="w"> </span><span class="s">"createdAt"</span><span class="p">,</span><span class="w"> </span><span class="n">direction</span><span class="p">:</span><span class="w"> </span><span class="no">DESC</span><span class="p">}</span>
 <span class="w">    </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">    </span><span class="n">offset</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5040,13 +5040,13 @@
     <span class="n">where</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Customize or validate parameters</span>
     <span class="k">if</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
         <span class="n">limit</span> <span class="o">=</span> <span class="mi">1000</span>  <span class="c1"># Cap at 1000</span>
 
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="4-mutation-success-fields-auto-injection">4. Mutation Success Fields Auto-Injection<a class="headerlink" href="#4-mutation-success-fields-auto-injection" title="Permanent link">&para;</a></h2>
@@ -5057,21 +5057,21 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserCreated</span><span class="p">:</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>  <span class="c1"># Your custom field</span>
-    <span class="c1"># Auto-injected fields (don&#39;t add these manually):</span>
-    <span class="c1"># status: str = &quot;success&quot;</span>
+    <span class="c1"># Auto-injected fields (don't add these manually):</span>
+    <span class="c1"># status: str = "success"</span>
     <span class="c1"># message: str | None = None</span>
     <span class="c1"># updated_fields: list[str] | None = None</span>
     <span class="c1"># id: ID | None = None</span>
 </code></pre></div>
 <p><strong>GraphQL Response</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;createUser&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;success&quot;</span><span class="p">,</span><span class="w">       </span><span class="c1">// ← Auto-injected</span>
-<span class="w">      </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">           </span><span class="c1">// ← Auto-injected</span>
-<span class="w">      </span><span class="nt">&quot;user&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span><span class="w">             </span><span class="c1">// ← Your field</span>
-<span class="w">      </span><span class="nt">&quot;updatedFields&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">     </span><span class="c1">// ← Auto-injected</span>
-<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">                 </span><span class="c1">// ← Auto-injected</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"success"</span><span class="p">,</span><span class="w">       </span><span class="c1">// ← Auto-injected</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">           </span><span class="c1">// ← Auto-injected</span>
+<span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="err">...</span><span class="p">},</span><span class="w">             </span><span class="c1">// ← Your field</span>
+<span class="w">      </span><span class="nt">"updatedFields"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span><span class="w">     </span><span class="c1">// ← Auto-injected</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="w">                 </span><span class="c1">// ← Auto-injected</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -5081,7 +5081,7 @@
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserCreated</span><span class="p">:</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;User created successfully&quot;</span>  <span class="c1"># Custom default</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"User created successfully"</span>  <span class="c1"># Custom default</span>
     <span class="c1"># Other fields still auto-injected</span>
 </code></pre></div>
 <h3 id="when-to-use-auto-injection">When to Use Auto-Injection<a class="headerlink" href="#when-to-use-auto-injection" title="Permanent link">&para;</a></h3>
@@ -5105,15 +5105,15 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">:</span>
     <span class="nd">@strawberry</span><span class="o">.</span><span class="n">field</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-        <span class="c1"># Function name &quot;users&quot; → GraphQL field name</span>
+        <span class="c1"># Function name "users" → GraphQL field name</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">User</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>FraiseQL equivalent</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Same auto-inference from function name</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="graphql-python-graphene">GraphQL-Python (Graphene)<a class="headerlink" href="#graphql-python-graphene" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">graphene</span>
@@ -5122,23 +5122,23 @@
     <span class="n">users</span> <span class="o">=</span> <span class="n">graphene</span><span class="o">.</span><span class="n">List</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">resolve_users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="c1"># Field name from attribute &quot;users&quot;</span>
-        <span class="c1"># Resolver is &quot;resolve_&quot; + field_name</span>
+        <span class="c1"># Field name from attribute "users"</span>
+        <span class="c1"># Resolver is "resolve_" + field_name</span>
         <span class="k">return</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>FraiseQL equivalent</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="c1"># Simpler - no separate resolver pattern</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="ariadne-python">Ariadne (Python)<a class="headerlink" href="#ariadne-python" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">ariadne</span><span class="w"> </span><span class="kn">import</span> <span class="n">QueryType</span>
 
 <span class="n">query</span> <span class="o">=</span> <span class="n">QueryType</span><span class="p">()</span>
 
-<span class="nd">@query</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>  <span class="c1"># Must specify field name</span>
+<span class="nd">@query</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">"users"</span><span class="p">)</span>  <span class="c1"># Must specify field name</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_users</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">get_users</span><span class="p">()</span>
 </code></pre></div>
@@ -5146,8 +5146,8 @@
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="c1"># No need to specify field name twice!</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="auto-inference-decision-matrix">Auto-Inference Decision Matrix<a class="headerlink" href="#auto-inference-decision-matrix" title="Permanent link">&para;</a></h2>
@@ -5188,25 +5188,25 @@
 <p><strong>✅ DO:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>  <span class="c1"># Clean, simple</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>  <span class="c1"># Clean, simple</span>
 </code></pre></div>
 <p><strong>❌ DON'T:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Unnecessary - field_name is auto-inferred</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="2-use-explicit-parameters-when-needed">2. Use Explicit Parameters When Needed<a class="headerlink" href="#2-use-explicit-parameters-when-needed" title="Permanent link">&para;</a></h3>
 <p><strong>✅ DO:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Explicit limit parameter for validation</span>
     <span class="k">if</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Limit cannot exceed 1000&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Limit cannot exceed 1000"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="3-follow-naming-conventions">3. Follow Naming Conventions<a class="headerlink" href="#3-follow-naming-conventions" title="Permanent link">&para;</a></h3>
 <p><strong>✅ DO:</strong></p>
@@ -5223,16 +5223,16 @@
 <p><strong>❌ DON'T:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_list</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>  <span class="c1"># Non-standard naming</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">)</span>  <span class="c1"># Now needs override</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">)</span>  <span class="c1"># Now needs override</span>
 </code></pre></div>
 <hr />
 <h2 id="debugging-auto-inference">Debugging Auto-Inference<a class="headerlink" href="#debugging-auto-inference" title="Permanent link">&para;</a></h2>
 <h3 id="check-what-field-name-was-used">Check What Field Name Was Used<a class="headerlink" href="#check-what-field-name-was-used" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Field name: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Debug: See what was inferred</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Field name: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">field_name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># Debug: See what was inferred</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="verify-graphql-response-structure">Verify GraphQL Response Structure<a class="headerlink" href="#verify-graphql-response-structure" title="Permanent link">&para;</a></h3>
 <p>Use GraphQL Playground to inspect the response:</p>
@@ -5245,8 +5245,8 @@
 </code></pre></div>
 <p>Expected response structure:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;users&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span><span class="w">  </span><span class="c1">// ← Should match function name</span>
+<span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"users"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...</span><span class="p">]</span><span class="w">  </span><span class="c1">// ← Should match function name</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>

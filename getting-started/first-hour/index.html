@@ -5301,15 +5301,15 @@
 <h3 id="step-1-update-database-schema">Step 1: Update Database Schema<a class="headerlink" href="#step-1-update-database-schema" title="Permanent link">&para;</a></h3>
 <p>First, add a tags column to your note table:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Add tags column to tb_note</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">;</span>
 
 <span class="c1">-- Update sample data with tags</span>
-<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;work&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;urgent&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;First Note&#39;</span><span class="p">;</span>
-<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;personal&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;ideas&#39;</span><span class="p">]</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Second Note&#39;</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'work'</span><span class="p">,</span><span class="w"> </span><span class="s1">'urgent'</span><span class="p">]</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'First Note'</span><span class="p">;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'personal'</span><span class="p">,</span><span class="w"> </span><span class="s1">'ideas'</span><span class="p">]</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'Second Note'</span><span class="p">;</span>
 
-<span class="c1">-- Add a note with &#39;work&#39; in the title for filter examples</span>
+<span class="c1">-- Add a note with 'work' in the title for filter examples</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">)</span>
-<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Work Meeting Notes&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Discussed Q4 project timeline&#39;</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;work&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;meeting&#39;</span><span class="p">]);</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'Work Meeting Notes'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Discussed Q4 project timeline'</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'work'</span><span class="p">,</span><span class="w"> </span><span class="s1">'meeting'</span><span class="p">]);</span>
 </code></pre></div>
 <h3 id="step-2-update-the-view">Step 2: Update the View<a class="headerlink" href="#step-2-update-the-view" title="Permanent link">&para;</a></h3>
 <p>Modify <code>v_note</code> to include tags. <strong>Important</strong>: Views must include both an <code>id</code> column AND a <code>data</code> column containing the JSONB object:</p>
@@ -5319,10 +5319,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Required: FraiseQL queries filter by this column</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;tags&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'tags'</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span><span class="w">  </span><span class="c1">-- Required: Contains the GraphQL response data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_note</span><span class="p">;</span>
 </code></pre></div>
@@ -5346,10 +5346,10 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">notes</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">NoteWhereInput</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Note</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get notes with optional filtering.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># Use repository&#39;s find method with where parameter</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_note&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Get notes with optional filtering."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># Use repository's find method with where parameter</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Restart your server</strong> to register the updated query with where filtering.</p>
 <h3 id="step-5-test-your-changes">Step 5: Test Your Changes<a class="headerlink" href="#step-5-test-your-changes" title="Permanent link">&para;</a></h3>
@@ -5362,14 +5362,14 @@
 <span class="w">    </span><span class="n">tags</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="c"># Filter notes by title containing &quot;work&quot;</span>
-<span class="w">  </span><span class="nl">workNotes</span><span class="p">:</span><span class="w"> </span><span class="n">notes</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;work&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c"># Filter notes by title containing "work"</span>
+<span class="w">  </span><span class="nl">workNotes</span><span class="p">:</span><span class="w"> </span><span class="n">notes</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"work"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">    </span><span class="n">content</span>
 <span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="c"># Filter notes with specific tag using array contains</span>
-<span class="w">  </span><span class="nl">urgentNotes</span><span class="p">:</span><span class="w"> </span><span class="n">notes</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;urgent&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">urgentNotes</span><span class="p">:</span><span class="w"> </span><span class="n">notes</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"urgent"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">    </span><span class="n">tags</span>
 <span class="w">  </span><span class="p">}</span>
@@ -5377,8 +5377,8 @@
 <span class="w">  </span><span class="c"># Combine multiple conditions</span>
 <span class="w">  </span><span class="nl">complexFilter</span><span class="p">:</span><span class="w"> </span><span class="n">notes</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;meeting&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;work&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"meeting"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"work"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">title</span>
@@ -5416,15 +5416,15 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_note</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a note by ID (returns true if deleted, false if not found).&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">&quot;SELECT fn_delete_note($1)&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Delete a note by ID (returns true if deleted, false if not found)."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">"SELECT fn_delete_note($1)"</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Restart your server</strong> to register the new mutation.</p>
 <h3 id="step-3-test-the-mutation">Step 3: Test the Mutation<a class="headerlink" href="#step-3-test-the-mutation" title="Permanent link">&para;</a></h3>
 <p>Try this in GraphQL playground:</p>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">deleteNote</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-note-id-here&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="n">deleteNote</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"your-note-id-here"</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="step-4-improve-error-handling-production-pattern">Step 4: Improve Error Handling (Production Pattern)<a class="headerlink" href="#step-4-improve-error-handling-production-pattern" title="Permanent link">&para;</a></h3>
@@ -5441,14 +5441,14 @@
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">deleted_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Note not found&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;NOT_FOUND&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Note not found'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'NOT_FOUND'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">ELSE</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Note deleted successfully&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Note deleted successfully'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
@@ -5458,30 +5458,30 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeleteNoteSuccess</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Successful deletion response.&quot;&quot;&quot;</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;Note deleted successfully&quot;</span>
+<span class="w">    </span><span class="sd">"""Successful deletion response."""</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"Note deleted successfully"</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">failure</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DeleteNoteError</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletion error response.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Deletion error response."""</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;NOT_FOUND&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"NOT_FOUND"</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_note</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeleteNoteSuccess</span> <span class="o">|</span> <span class="n">DeleteNoteError</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a note by ID with detailed error handling.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Delete a note by ID with detailed error handling."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Call function that returns JSONB directly from database</span>
     <span class="c1"># FraiseQL automatically maps JSONB to the appropriate type</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">&quot;SELECT fn_delete_note($1)&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">"SELECT fn_delete_note($1)"</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
 
     <span class="c1"># Return the appropriate type based on success field</span>
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">DeleteNoteSuccess</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">DeleteNoteSuccess</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"message"</span><span class="p">])</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">DeleteNoteError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;message&quot;</span><span class="p">],</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;UNKNOWN_ERROR&quot;</span><span class="p">)</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"message"</span><span class="p">],</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"UNKNOWN_ERROR"</span><span class="p">)</span>
         <span class="p">)</span>
 </code></pre></div>
 <p><strong>Why this pattern?</strong> Using <code>@success</code> and <code>@error</code> decorators creates a proper GraphQL union type, allowing clients to handle success and error cases explicitly in their queries.</p>
@@ -5506,9 +5506,9 @@
 <span class="c1">-- Python mutation example:</span>
 <span class="c1">-- @mutation</span>
 <span class="c1">-- async def update_note(id: str, title: str, context: Context) -&gt; Note:</span>
-<span class="c1">--     return await context.db.update(&quot;tb_note&quot;, id, {</span>
-<span class="c1">--         &quot;title&quot;: title,</span>
-<span class="c1">--         &quot;updated_at&quot;: datetime.utcnow()  # Explicit!</span>
+<span class="c1">--     return await context.db.update("tb_note", id, {</span>
+<span class="c1">--         "title": title,</span>
+<span class="c1">--         "updated_at": datetime.utcnow()  # Explicit!</span>
 <span class="c1">--     })</span>
 
 <span class="c1">-- Or use DEFAULT for automatic creation timestamps:</span>
@@ -5521,19 +5521,19 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Required: enables WHERE clause filtering</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;tags&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;createdAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;updatedAt&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'tags'</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'updatedAt'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span><span class="w">  </span><span class="c1">-- Required: contains GraphQL response</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_note</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Restart your server</strong> after updating the view.</p>
 <h3 id="step-4-update-python-type">Step 4: Update Python Type<a class="headerlink" href="#step-4-update-python-type" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_note&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_note"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Note</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>

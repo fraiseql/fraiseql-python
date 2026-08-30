@@ -5707,7 +5707,7 @@ processes. Once you saturate the database, optimize there.</p>
 one SQL statement. The patterns below show how shape affects cost.</p>
 <p><strong>Pattern 1: Simple Single-Row Query</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">email</span>
@@ -5735,7 +5735,7 @@ one SQL statement. The patterns below show how shape affects cost.</p>
 </ul>
 <p><strong>Pattern 3: Nested Read via a Projection View</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
@@ -5754,7 +5754,7 @@ one SQL statement. The patterns below show how shape affects cost.</p>
 </ul>
 <p><strong>Pattern 4: Deeply Nested (use a projection view)</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;…&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"…"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">posts</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">comments</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">author</span><span class="w"> </span><span class="p">{</span>
@@ -5786,7 +5786,7 @@ work is not recomputed:</p>
 <p>When data is modified, dependent cached entries are invalidated so stale reads are not
 served:</p>
 <div class="highlight"><pre><span></span><code>Cache key: hash(query + params)
-Example:   hash(&quot;user(id) { id name }&quot; + {id: …})
+Example:   hash("user(id) { id name }" + {id: …})
 
 When a mutation writes to the underlying table (via an fn_ function),
 entries that read from that table are invalidated, and future queries recompute.
@@ -5832,7 +5832,7 @@ environment variables:</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
     <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">],</span>
@@ -5840,7 +5840,7 @@ environment variables:</p>
 <span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Equivalent toggles via environment variables</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_PRODUCTION</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
 <p>See <a href="../../guides/performance-optimization/">Performance Optimization</a> for the full set of
@@ -5983,7 +5983,7 @@ keep TTLs conservative for data that changes often.</p>
 <hr />
 <h2 id="performance-anti-patterns">Performance Anti-Patterns<a class="headerlink" href="#performance-anti-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="anti-pattern-1-n1-reads">Anti-Pattern 1: N+1 Reads<a class="headerlink" href="#anti-pattern-1-n1-reads" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c"># Risky: a generic resolver that fetches each user&#39;s posts separately</span>
+<div class="highlight"><pre><span></span><code><span class="c"># Risky: a generic resolver that fetches each user's posts separately</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5996,14 +5996,14 @@ keep TTLs conservative for data that changes often.</p>
 </code></pre></div>
 <p><strong>Fix</strong>: model the nested shape in a <code>tv_</code> projection view so the tree returns in one
 read, or compose it inside the <code>v_</code> view's <code>data</code> JSONB with <code>jsonb_build_object(...)</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- The view already nests posts inside the user&#39;s data JSONB</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The view already nests posts inside the user's data JSONB</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
-<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w">  </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
 <span class="w">        </span><span class="p">)</span>
@@ -6053,7 +6053,7 @@ JSON-shaping step do more work.</p>
 </ul>
 <h3 id="anti-pattern-4-missing-indexes">Anti-Pattern 4: Missing Indexes<a class="headerlink" href="#anti-pattern-4-missing-indexes" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Slow: frequently filtered field has no index (sequential scan: 500-5000ms)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;PUBLISHED&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'PUBLISHED'</span><span class="p">;</span>
 
 <span class="c1">-- Fast: index the underlying column (index scan: 5-50ms)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_status</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">status</span><span class="p">);</span>

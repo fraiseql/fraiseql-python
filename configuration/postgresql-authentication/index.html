@@ -4931,13 +4931,13 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:secure_password@localhost:5432/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:secure_password@localhost:5432/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 <p>Or via environment variable:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:secure_password@localhost:5432/mydb&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:secure_password@localhost:5432/mydb"</span>
 </code></pre></div>
 <h3 id="scram-sha-256-plus-channel-binding">SCRAM-SHA-256-PLUS (Channel Binding)<a class="headerlink" href="#scram-sha-256-plus-channel-binding" title="Permanent link">&para;</a></h3>
 <p><strong>Status</strong>: Best for highly sensitive deployments</p>
@@ -4959,7 +4959,7 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:secure_password@localhost:5432/mydb?sslmode=require&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:secure_password@localhost:5432/mydb?sslmode=require"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="o">...</span><span class="p">],</span>
 <span class="p">)</span>
@@ -5064,18 +5064,18 @@ hostssl mydb       fraiseql_user   0.0.0.0/0       scram-sha-256
 <h3 id="step-3-reset-user-passwords">Step 3: Reset User Passwords<a class="headerlink" href="#step-3-reset-user-passwords" title="Permanent link">&para;</a></h3>
 <p>PostgreSQL stores password hashes. Existing passwords hashed under MD5 are not automatically re-hashed — you must set the password again after enabling <code>scram-sha-256</code> so a new SCRAM hash is created:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Reset password for FraiseQL user (creates a SCRAM-SHA-256 hash)</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;new_secure_password&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">'new_secure_password'</span><span class="p">;</span>
 
 <span class="c1">-- For new users, this is automatic with password_encryption = scram-sha-256</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;secure_password&#39;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">'secure_password'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="step-4-update-the-connection-url">Step 4: Update the Connection URL<a class="headerlink" href="#step-4-update-the-connection-url" title="Permanent link">&para;</a></h3>
 <p>Point FraiseQL at the database with the new credentials. Set it via the <code>FRAISEQL_DATABASE_URL</code> environment variable or pass it to <code>create_fraiseql_app(database_url=...)</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Old (MD5 - deprecated)</span>
-<span class="c1"># FRAISEQL_DATABASE_URL=&quot;postgresql://fraiseql_user:password@localhost:5432/mydb&quot;</span>
+<span class="c1"># FRAISEQL_DATABASE_URL="postgresql://fraiseql_user:password@localhost:5432/mydb"</span>
 
 <span class="c1"># New (SCRAM-SHA-256 negotiated automatically by psycopg/libpq)</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:secure_password@localhost:5432/mydb&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:secure_password@localhost:5432/mydb"</span>
 </code></pre></div>
 <p>No code change is required to switch from MD5 to SCRAM — the negotiation is handled by the client library based on <code>pg_hba.conf</code>.</p>
 <h2 id="verifying-scram-authentication">Verifying SCRAM Authentication<a class="headerlink" href="#verifying-scram-authentication" title="Permanent link">&para;</a></h2>
@@ -5085,21 +5085,21 @@ hostssl mydb       fraiseql_user   0.0.0.0/0       scram-sha-256
 <span class="c1">-- Should output: scram-sha-256</span>
 
 <span class="c1">-- Check authentication method in pg_hba.conf</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_hba_file_rules</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">auth_method</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;scram%&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_hba_file_rules</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">auth_method</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">'scram%'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="check-user-authentication-method">Check User Authentication Method<a class="headerlink" href="#check-user-authentication-method" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check a specific user (only visible to superusers)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">usename</span><span class="p">,</span><span class="w"> </span><span class="n">usesuper</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">usename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">usename</span><span class="p">,</span><span class="w"> </span><span class="n">usesuper</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">usename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'fraiseql_user'</span><span class="p">;</span>
 
 <span class="c1">-- The password is stored as a SCRAM hash, not MD5</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">substring</span><span class="p">(</span><span class="n">rolpassword</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">13</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">hash_prefix</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;fraiseql_user&#39;</span><span class="p">;</span>
-<span class="c1">-- Should start with &quot;SCRAM-SHA-256&quot; not &quot;md5&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_authid</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rolname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'fraiseql_user'</span><span class="p">;</span>
+<span class="c1">-- Should start with "SCRAM-SHA-256" not "md5"</span>
 </code></pre></div>
 <h3 id="test-the-connection">Test the Connection<a class="headerlink" href="#test-the-connection" title="Permanent link">&para;</a></h3>
 <p>Use <code>psql</code> with the same credentials FraiseQL will use to confirm SCRAM negotiation succeeds before starting the app:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Connect as the FraiseQL role</span>
-psql<span class="w"> </span><span class="s2">&quot;postgresql://fraiseql_user:secure_password@localhost:5432/mydb&quot;</span>
+psql<span class="w"> </span><span class="s2">"postgresql://fraiseql_user:secure_password@localhost:5432/mydb"</span>
 <span class="c1"># A successful connection means SCRAM-SHA-256 was negotiated per pg_hba.conf</span>
 </code></pre></div>
 <p>You can also start the FraiseQL FastAPI app and confirm it connects:</p>
@@ -5154,10 +5154,10 @@ sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> <
 </code></pre></div>
 <p>In <code>psql</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Enable SCRAM for future password changes</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;scram-sha-256&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">password_encryption</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'scram-sha-256'</span><span class="p">;</span>
 
 <span class="c1">-- Create a dedicated, least-privilege FraiseQL role</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;your_secure_password_here&#39;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">fraiseql_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">'your_secure_password_here'</span><span class="p">;</span>
 
 <span class="c1">-- Grant only the privileges FraiseQL needs.</span>
 <span class="c1">-- Reads happen through v_/tv_ views; writes happen through fn_ functions.</span>
@@ -5173,15 +5173,15 @@ sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> <
 sudo<span class="w"> </span>systemctl<span class="w"> </span>restart<span class="w"> </span>postgresql
 
 <span class="c1"># 2. Verify SCRAM is enabled</span>
-sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>psql<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SHOW password_encryption;&quot;</span>
+sudo<span class="w"> </span>-u<span class="w"> </span>postgres<span class="w"> </span>psql<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SHOW password_encryption;"</span>
 <span class="c1"># Should output: scram-sha-256</span>
 
 <span class="c1"># 3. Test the connection with the FraiseQL credentials</span>
-psql<span class="w"> </span><span class="s2">&quot;postgresql://fraiseql_user:your_secure_password_here@localhost:5432/mydb&quot;</span>
+psql<span class="w"> </span><span class="s2">"postgresql://fraiseql_user:your_secure_password_here@localhost:5432/mydb"</span>
 <span class="c1"># Should authenticate via SCRAM-SHA-256</span>
 
 <span class="c1"># 4. Point FraiseQL at the database</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://fraiseql_user:your_secure_password_here@localhost:5432/mydb&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://fraiseql_user:your_secure_password_here@localhost:5432/mydb"</span>
 </code></pre></div>
 <h2 id="security-implications">Security Implications<a class="headerlink" href="#security-implications" title="Permanent link">&para;</a></h2>
 <table>

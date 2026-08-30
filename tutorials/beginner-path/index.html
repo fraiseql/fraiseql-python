@@ -4889,7 +4889,7 @@ python<span class="w"> </span>app.py
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># Create a simple Note API</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_note&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_note"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Note</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
@@ -4898,7 +4898,7 @@ python<span class="w"> </span>app.py
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">notes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Note</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all notes.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get all notes."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 </code></pre></div>
 <hr />
@@ -4915,15 +4915,15 @@ python<span class="w"> </span>app.py
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
 <span class="w">            </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
+<span class="w">                </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
 <span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_author</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="p">),</span>
-<span class="w">            </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">            </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
@@ -4948,7 +4948,7 @@ python<span class="w"> </span>app.py
 <span class="w">    </span><span class="n">v_note_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_user_pk</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="c1">-- Get user&#39;s internal pk</span>
+<span class="w">    </span><span class="c1">-- Get user's internal pk</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_user_pk</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_user_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_note</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
@@ -4964,7 +4964,7 @@ python<span class="w"> </span>app.py
 <span class="c1"># Python mutation</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_note</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Note</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new note.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create a new note."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 </code></pre></div>
 <hr />
@@ -4989,7 +4989,7 @@ python<span class="w"> </span>app.py
 ✅ Handle pagination and filtering</p>
 <h2 id="common-beginner-mistakes">Common Beginner Mistakes<a class="headerlink" href="#common-beginner-mistakes" title="Permanent link">&para;</a></h2>
 <h3 id="mistake-1-no-id-column-in-view">❌ Mistake 1: No ID column in view<a class="headerlink" href="#mistake-1-no-id-column-in-view" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- WRONG: Can&#39;t filter efficiently</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- WRONG: Can't filter efficiently</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(...)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
@@ -5029,12 +5029,12 @@ python<span class="w"> </span>app.py
 </code></pre></div>
 <h3 id="mistake-4-forgetting-coalesce-in-arrays">❌ Mistake 4: Forgetting COALESCE in arrays<a class="headerlink" href="#mistake-4-forgetting-coalesce-in-arrays" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- WRONG: Returns NULL instead of empty array</span>
-<span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">)</span>
+<span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">)</span>
 
 <span class="c1">-- CORRECT: Use COALESCE</span>
-<span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
+<span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span>
 <span class="w">    </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">),</span>
-<span class="w">    </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">    </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="quick-reference-card">Quick Reference Card<a class="headerlink" href="#quick-reference-card" title="Permanent link">&para;</a></h2>
@@ -5043,7 +5043,7 @@ python<span class="w"> </span>app.py
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># 1. Define type</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_item&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_item"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Item</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5053,16 +5053,16 @@ python<span class="w"> </span>app.py
 <span class="n">SELECT</span>
     <span class="nb">id</span><span class="p">,</span>
     <span class="n">jsonb_build_object</span><span class="p">(</span>
-        <span class="s1">&#39;__typename&#39;</span><span class="p">,</span> <span class="s1">&#39;Item&#39;</span><span class="p">,</span>
-        <span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span>
-        <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="n">name</span>
+        <span class="s1">'__typename'</span><span class="p">,</span> <span class="s1">'Item'</span><span class="p">,</span>
+        <span class="s1">'id'</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span>
+        <span class="s1">'name'</span><span class="p">,</span> <span class="n">name</span>
     <span class="p">)</span> <span class="n">AS</span> <span class="n">data</span>
 <span class="n">FROM</span> <span class="n">tb_item</span><span class="p">;</span>
 
 <span class="c1"># 3. Query</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">items</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Item</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all items.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get all items."""</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by framework</span>
 </code></pre></div>
 <h3 id="essential-commands">Essential Commands<a class="headerlink" href="#essential-commands" title="Permanent link">&para;</a></h3>
@@ -5077,7 +5077,7 @@ python<span class="w"> </span>app.py
 <span class="c1"># Open http://localhost:8000/graphql</span>
 
 <span class="c1"># Test SQL view</span>
-psql<span class="w"> </span>myapp<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT * FROM v_item LIMIT 1;&quot;</span>
+psql<span class="w"> </span>myapp<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT * FROM v_item LIMIT 1;"</span>
 </code></pre></div>
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <h3 id="continue-learning">Continue Learning<a class="headerlink" href="#continue-learning" title="Permanent link">&para;</a></h3>

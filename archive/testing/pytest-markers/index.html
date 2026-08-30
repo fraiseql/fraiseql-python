@@ -5034,21 +5034,21 @@
 <span class="c1"># PostgreSQL-only test</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_postgres</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_user_creation</span><span class="p">(</span><span class="n">db_connection</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test creating a user in the database.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test creating a user in the database."""</span>
     <span class="c1"># Test code here</span>
     <span class="k">pass</span>
 
 <span class="c1"># Vault KMS test</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_vault</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_data_encryption</span><span class="p">(</span><span class="n">vault_client</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test encrypting data with Vault.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test encrypting data with Vault."""</span>
     <span class="c1"># Test code here</span>
     <span class="k">pass</span>
 
 <span class="c1"># Auth0 authentication test</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_auth0</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_jwt_validation</span><span class="p">(</span><span class="n">auth0_config</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test JWT token validation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test JWT token validation."""</span>
     <span class="c1"># Test code here</span>
     <span class="k">pass</span>
 </code></pre></div>
@@ -5057,7 +5057,7 @@
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_postgres</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_vault</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_encrypted_database_storage</span><span class="p">(</span><span class="n">db_connection</span><span class="p">,</span> <span class="n">vault_client</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test storing encrypted data in database.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test storing encrypted data in database."""</span>
     <span class="k">pass</span>
 </code></pre></div>
 <h3 id="conditional-testing">Conditional Testing<a class="headerlink" href="#conditional-testing" title="Permanent link">&para;</a></h3>
@@ -5066,39 +5066,39 @@
 
 <span class="c1"># Skip if Vault not available</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_vault</span>
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;VAULT_ADDR&quot;</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Vault not available&quot;</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"VAULT_ADDR"</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">"Vault not available"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vault_integration</span><span class="p">():</span>
     <span class="k">pass</span>
 </code></pre></div>
 <h2 id="running-tests-by-marker">Running Tests by Marker<a class="headerlink" href="#running-tests-by-marker" title="Permanent link">&para;</a></h2>
 <h3 id="command-line-usage">Command Line Usage<a class="headerlink" href="#command-line-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run only PostgreSQL tests (fast, reliable)</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres'</span>
 
 <span class="c1"># Run everything except enterprise features</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;not requires_vault and not requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'not requires_vault and not requires_auth0'</span>
 
 <span class="c1"># Run only enterprise tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault or requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault or requires_auth0'</span>
 
 <span class="c1"># Run tests requiring all services</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_all&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_all'</span>
 
 <span class="c1"># Combine with other filters</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres and not slow&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres and not slow'</span>
 </code></pre></div>
 <h3 id="ci-usage">CI Usage<a class="headerlink" href="#ci-usage" title="Permanent link">&para;</a></h3>
 <p>The CI pipeline uses markers to split test execution:</p>
 <p><strong>Main CI (quality-gate.yml):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Only PostgreSQL tests - fast and reliable</span>
-<span class="l l-Scalar l-Scalar-Plain">pytest -m &#39;requires_postgres and not requires_vault and not requires_auth0&#39;</span>
+<span class="l l-Scalar l-Scalar-Plain">pytest -m 'requires_postgres and not requires_vault and not requires_auth0'</span>
 </code></pre></div>
 <p><strong>Enterprise CI (enterprise-tests.yml):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Vault tests</span>
-<span class="l l-Scalar l-Scalar-Plain">pytest -m &#39;requires_vault&#39;</span>
+<span class="l l-Scalar l-Scalar-Plain">pytest -m 'requires_vault'</span>
 
 <span class="l l-Scalar l-Scalar-Plain"># Auth0 tests</span>
-<span class="l l-Scalar l-Scalar-Plain">pytest -m &#39;requires_auth0&#39;</span>
+<span class="l l-Scalar l-Scalar-Plain">pytest -m 'requires_auth0'</span>
 </code></pre></div>
 <h2 id="adding-markers-to-tests">Adding Markers to Tests<a class="headerlink" href="#adding-markers-to-tests" title="Permanent link">&para;</a></h2>
 <h3 id="manual-addition">Manual Addition<a class="headerlink" href="#manual-addition" title="Permanent link">&para;</a></h3>
@@ -5113,8 +5113,8 @@ pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;re
 <h3 id="batch-application">Batch Application<a class="headerlink" href="#batch-application" title="Permanent link">&para;</a></h3>
 <p>For applying markers to many tests, use scripts or IDE find/replace:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Add markers to all tests in a directory</span>
-find<span class="w"> </span>tests/integration<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.py&quot;</span><span class="w"> </span>-exec<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;1a import pytest&#39;</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
-find<span class="w"> </span>tests/integration<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.py&quot;</span><span class="w"> </span>-exec<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;/^def test_/i @pytest.mark.requires_postgres\n@pytest.mark.integration&#39;</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
+find<span class="w"> </span>tests/integration<span class="w"> </span>-name<span class="w"> </span><span class="s2">"*.py"</span><span class="w"> </span>-exec<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">'1a import pytest'</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
+find<span class="w"> </span>tests/integration<span class="w"> </span>-name<span class="w"> </span><span class="s2">"*.py"</span><span class="w"> </span>-exec<span class="w"> </span>sed<span class="w"> </span>-i<span class="w"> </span><span class="s1">'/^def test_/i @pytest.mark.requires_postgres\n@pytest.mark.integration'</span><span class="w"> </span><span class="o">{}</span><span class="w"> </span><span class="se">\;</span>
 </code></pre></div>
 <h3 id="automated-tools">Automated Tools<a class="headerlink" href="#automated-tools" title="Permanent link">&para;</a></h3>
 <p>Use the helper script from the CI implementation guide:</p>
@@ -5130,19 +5130,19 @@ find<span class="w"> </span>tests/integration<span class="w"> </span>-name<span 
 <div class="highlight"><pre><span></span><code><span class="k">[tool.pytest.ini_options]</span>
 <span class="n">markers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="c1"># Service dependencies</span>
-<span class="w">    </span><span class="s2">&quot;requires_postgres: Test requires PostgreSQL database only&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;requires_vault: Test requires HashiCorp Vault for KMS encryption&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;requires_auth0: Test requires Auth0 authentication service&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;requires_all: Test requires all services (PostgreSQL, Vault, Auth0)&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"requires_postgres: Test requires PostgreSQL database only"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"requires_vault: Test requires HashiCorp Vault for KMS encryption"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"requires_auth0: Test requires Auth0 authentication service"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"requires_all: Test requires all services (PostgreSQL, Vault, Auth0)"</span><span class="p">,</span>
 
 <span class="w">    </span><span class="c1"># Legacy markers</span>
-<span class="w">    </span><span class="s2">&quot;asyncio: Async tests&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;database: Requires database&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;integration: Integration tests&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;e2e: End-to-end tests&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;enterprise: Enterprise features&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;slow: Slow-running tests&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;forked: Requires process isolation&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"asyncio: Async tests"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"database: Requires database"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"integration: Integration tests"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"e2e: End-to-end tests"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"enterprise: Enterprise features"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"slow: Slow-running tests"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"forked: Requires process isolation"</span><span class="p">,</span>
 <span class="p">]</span>
 </code></pre></div>
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
@@ -5197,25 +5197,25 @@ find<span class="w"> </span>tests/integration<span class="w"> </span>-name<span 
 pytest<span class="w"> </span>--markers<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>requires_
 
 <span class="c1"># Ensure pyproject.toml has the marker</span>
-grep<span class="w"> </span><span class="s2">&quot;requires_postgres&quot;</span><span class="w"> </span>pyproject.toml
+grep<span class="w"> </span><span class="s2">"requires_postgres"</span><span class="w"> </span>pyproject.toml
 </code></pre></div>
 <p><strong>Tests not running with marker</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check marker application</span>
-pytest<span class="w"> </span>--collect-only<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres&#39;</span><span class="w"> </span>-q
+pytest<span class="w"> </span>--collect-only<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres'</span><span class="w"> </span>-q
 
 <span class="c1"># Verify test has the marker</span>
-grep<span class="w"> </span><span class="s2">&quot;@pytest.mark.requires_postgres&quot;</span><span class="w"> </span>tests/path/to/test.py
+grep<span class="w"> </span><span class="s2">"@pytest.mark.requires_postgres"</span><span class="w"> </span>tests/path/to/test.py
 </code></pre></div>
 <p><strong>CI marker filtering not working</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test the exact command locally</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres and not requires_vault and not requires_auth0&#39;</span><span class="w"> </span>--collect-only
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres and not requires_vault and not requires_auth0'</span><span class="w"> </span>--collect-only
 </code></pre></div>
 <h3 id="debugging-marker-issues">Debugging Marker Issues<a class="headerlink" href="#debugging-marker-issues" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># List all markers in use</span>
-pytest<span class="w"> </span>--collect-only<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;test_.*\[&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/.*\[//&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/\].*//&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq
+pytest<span class="w"> </span>--collect-only<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">"test_.*\["</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/.*\[//'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/\].*//'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq
 
 <span class="c1"># Find tests without markers</span>
-pytest<span class="w"> </span>--collect-only<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;test_&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;::&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">&quot;\[&quot;</span>
+pytest<span class="w"> </span>--collect-only<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"test_"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"::"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"\["</span>
 </code></pre></div>
 <h2 id="migration-guide">Migration Guide<a class="headerlink" href="#migration-guide" title="Permanent link">&para;</a></h2>
 <p>When adding markers to existing tests:</p>
@@ -5235,7 +5235,7 @@ pytest<span class="w"> </span>--collect-only<span class="w"> </span><span class=
 <p><strong>After:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_postgres</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_database_query</span><span class="p">(</span><span class="n">db_connection</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test database query functionality.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test database query functionality."""</span>
     <span class="k">pass</span>
 </code></pre></div>
 <h2 id="future-extensions">Future Extensions<a class="headerlink" href="#future-extensions" title="Permanent link">&para;</a></h2>

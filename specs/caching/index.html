@@ -5316,13 +5316,13 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CacheConfig</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for result caching.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Configuration for result caching."""</span>
 
     <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">default_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span>  <span class="c1"># 5 minutes</span>
     <span class="n">max_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span>     <span class="c1"># 1 hour</span>
     <span class="n">cache_errors</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">key_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;fraiseql&quot;</span>
+    <span class="n">key_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"fraiseql"</span>
 </code></pre></div>
 <h4 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h4>
 <p><code>CacheConfig</code> configures a <code>ResultCache</code>; it is <strong>not</strong> a <code>create_fraiseql_app</code> kwarg. Build the cache explicitly and wire it into your repository (see <a href="#25-repository-integration">Section 2.5</a>):</p>
@@ -5332,8 +5332,8 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
     <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>     <span class="c1"># 5 minutes for normal queries</span>
     <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>        <span class="c1"># Never cache longer than 1 hour</span>
-    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Don&#39;t cache errors</span>
-    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Don't cache errors</span>
+    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
@@ -5345,7 +5345,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">CacheBackend</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Protocol for cache backends.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Protocol for cache backends."""</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span> <span class="o">...</span>
@@ -5366,11 +5366,11 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span>
 
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">&quot;postgresql://user:pass@db/mydb&quot;</span><span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">"postgresql://user:pass@db/mydb"</span><span class="p">)</span>
 
 <span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span>
     <span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">,</span>
-    <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">,</span>  <span class="c1"># default</span>
+    <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">,</span>  <span class="c1"># default</span>
     <span class="n">auto_initialize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>         <span class="c1"># create the table on first use</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5403,7 +5403,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">RedisCacheBackend</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Example: Redis cache backend implementing the CacheBackend protocol.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Example: Redis cache backend implementing the CacheBackend protocol."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_client</span><span class="p">,</span> <span class="n">default_ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis_client</span>
@@ -5428,7 +5428,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">ResultCache</span>
 
-<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">)</span>
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">"redis://localhost:6379/0"</span><span class="p">)</span>
 <span class="n">backend</span> <span class="o">=</span> <span class="n">RedisCacheBackend</span><span class="p">(</span><span class="n">redis_client</span><span class="p">,</span> <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">())</span>
 </code></pre></div>
@@ -5439,16 +5439,16 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">)</span>
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">))</span>
 
-<span class="c1"># `base_repo` is the FraiseQLRepository from info.context[&quot;db&quot;]</span>
+<span class="c1"># `base_repo` is the FraiseQLRepository from info.context["db"]</span>
 <span class="n">cached_repo</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">base_repo</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
 
 <span class="c1"># Reads are cached (per-call opt-out + custom TTL available):</span>
-<span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span>
-<span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
-<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span>
+<span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Writes invalidate related cache entries automatically:</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
 </code></pre></div>
 <p><code>find</code>/<code>find_one</code> accept <code>skip_cache: bool = False</code> and <code>cache_ttl: int | None = None</code>. <code>execute_function</code> derives the affected table from the function name (e.g. <code>fn_update_user</code> → <code>user</code>/<code>users</code>) and invalidates the matching key pattern. Any method not overridden is delegated to the underlying repository.</p>
 <h3 id="26-caching-arbitrary-query-functions">2.6 Caching Arbitrary Query Functions<a class="headerlink" href="#26-caching-arbitrary-query-functions" title="Permanent link">&para;</a></h3>
@@ -5461,11 +5461,11 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">top_sellers</span><span class="p">(</span><span class="n">region</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="o">...</span>  <span class="c1"># your FraiseQLRepository</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_top_sellers&quot;</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_top_sellers"</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="n">region</span><span class="p">)</span>
 
 
 <span class="c1"># Bypass the cache for a single call:</span>
-<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">top_sellers</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="s2">&quot;emea&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">top_sellers</span><span class="p">(</span><span class="n">region</span><span class="o">=</span><span class="s2">"emea"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <p>The decorator auto-generates a key from the function name and arguments, or you can pass <code>key_func=...</code> for a custom key.</p>
 <h3 id="27-cache-invalidation-strategies">2.7 Cache Invalidation Strategies<a class="headerlink" href="#27-cache-invalidation-strategies" title="Permanent link">&para;</a></h3>
@@ -5473,7 +5473,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <p><strong>How it works:</strong> Each cache entry is written with a TTL; <code>expires_at</code> is set to <code>NOW() + ttl</code>. <code>ResultCache.get_or_set</code> clamps the requested TTL to <code>min(ttl or default_ttl, max_ttl)</code>. Reads only return entries where <code>expires_at &gt; NOW()</code>.</p>
 <p>You can vary TTL per query based on how expensive or volatile it is:</p>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">choose_ttl</span><span class="p">(</span><span class="n">query_cost</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">CacheConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cheaper / more stable queries can be cached longer.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Cheaper / more stable queries can be cached longer."""</span>
     <span class="k">if</span> <span class="n">query_cost</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">:</span>
         <span class="k">return</span> <span class="nb">min</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">default_ttl</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">max_ttl</span><span class="p">)</span>  <span class="c1"># up to 600s</span>
     <span class="k">if</span> <span class="n">query_cost</span> <span class="o">&lt;</span> <span class="mi">50</span><span class="p">:</span>
@@ -5484,15 +5484,15 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 
 <span class="n">ttl</span> <span class="o">=</span> <span class="n">choose_ttl</span><span class="p">(</span><span class="n">query_cost</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cache</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_report&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="n">ttl</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_report"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="n">ttl</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="272-manual-invalidation">2.7.2 Manual Invalidation<a class="headerlink" href="#272-manual-invalidation" title="Permanent link">&para;</a></h4>
 <p>Invalidate through the <code>ResultCache</code> instance:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Invalidate a specific key</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">&quot;fraiseql:org_123:v_user:one:id:550e8400&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"fraiseql:org_123:v_user:one:id:550e8400"</span><span class="p">)</span>
 
 <span class="c1"># Pattern-based invalidation (all entries for a query/tenant)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="s2">&quot;fraiseql:org_123:v_user:*&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="s2">"fraiseql:org_123:v_user:*"</span><span class="p">)</span>
 </code></pre></div>
 <p><code>invalidate</code> / <code>invalidate_pattern</code> delegate to the backend's <code>delete</code> / <code>delete_pattern</code>. <code>CacheKeyBuilder.build_mutation_pattern(table_name)</code> produces a <code>"{prefix}:{table_name}:*"</code> pattern for write-side invalidation.</p>
 <h4 id="273-cascade-invalidation-automatic">2.7.3 CASCADE Invalidation (Automatic)<a class="headerlink" href="#273-cascade-invalidation-automatic" title="Permanent link">&para;</a></h4>
@@ -5502,13 +5502,13 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <p><code>CacheKeyBuilder</code> places <code>tenant_id</code> immediately after the prefix:</p>
 <div class="highlight"><pre><span></span><code>{prefix}:{tenant_id}:{query_name}:...
           ^^^^^^^^^^^
-          Cannot retrieve another tenant&#39;s data
+          Cannot retrieve another tenant's data
 </code></pre></div>
 <p><code>CachedRepository</code> reads <code>tenant_id</code> from the repository context (<code>self._base.context.get("tenant_id")</code>), which FraiseQL populates from <code>info.context["tenant_id"]</code>. Because tenant context flows from the authenticated request, a request as tenant B can only ever build — and therefore read — tenant-B keys.</p>
 <p><strong>Proof of Isolation:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Two tenants, same logical query → different keys → isolated entries</span>
-<span class="n">org_a_key</span> <span class="o">=</span> <span class="s2">&quot;fraiseql:org_a:v_user:status:active&quot;</span>
-<span class="n">org_b_key</span> <span class="o">=</span> <span class="s2">&quot;fraiseql:org_b:v_user:status:active&quot;</span>
+<span class="n">org_a_key</span> <span class="o">=</span> <span class="s2">"fraiseql:org_a:v_user:status:active"</span>
+<span class="n">org_b_key</span> <span class="o">=</span> <span class="s2">"fraiseql:org_b:v_user:status:active"</span>
 
 <span class="k">assert</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">org_a_key</span><span class="p">)</span> <span class="o">!=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">org_b_key</span><span class="p">)</span>
 </code></pre></div>
@@ -5519,10 +5519,10 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;List users — automatically tenant-scoped via the repository context.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>  <span class="c1"># a CachedRepository in production</span>
+<span class="w">    </span><span class="sd">"""List users — automatically tenant-scoped via the repository context."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>  <span class="c1"># a CachedRepository in production</span>
     <span class="c1"># tenant_id is read from info.context and baked into the cache key</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="29-performance-characteristics">2.9 Performance Characteristics<a class="headerlink" href="#29-performance-characteristics" title="Permanent link">&para;</a></h3>
 <h4 id="postgresql-backend">PostgreSQL Backend<a class="headerlink" href="#postgresql-backend" title="Permanent link">&para;</a></h4>
@@ -5553,7 +5553,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <p><code>ResultCache</code> tracks hits, misses, and errors:</p>
 <div class="highlight"><pre><span></span><code><span class="n">stats</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>        <span class="c1"># CacheStats</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="p">,</span> <span class="n">stats</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>  <span class="c1"># 0–100</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%"</span><span class="p">)</span>  <span class="c1"># 0–100</span>
 <span class="n">cache</span><span class="o">.</span><span class="n">reset_stats</span><span class="p">()</span>
 </code></pre></div>
 <p><code>PostgresCache.get_stats()</code> returns backend-level counts (e.g. total/expired entries, size) you can export to Prometheus or OpenTelemetry.</p>
@@ -5562,7 +5562,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w">                                    </span><span class="k">AS</span><span class="w"> </span><span class="n">total_entries</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">expires_at</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">NOW</span><span class="p">())</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">expired_entries</span><span class="p">,</span>
-<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">&#39;fraiseql_cache&#39;</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">table_size</span>
+<span class="w">    </span><span class="n">pg_size_pretty</span><span class="p">(</span><span class="n">pg_total_relation_size</span><span class="p">(</span><span class="s1">'fraiseql_cache'</span><span class="p">))</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">table_size</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="monitoring-dashboard-recommendations">Monitoring Dashboard Recommendations<a class="headerlink" href="#monitoring-dashboard-recommendations" title="Permanent link">&para;</a></h4>
@@ -5585,11 +5585,11 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CascadeRule</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A CASCADE invalidation rule.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""A CASCADE invalidation rule."""</span>
 
     <span class="n">source_domain</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># domain that triggers invalidation when it changes</span>
     <span class="n">target_domain</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># domain whose caches should be invalidated</span>
-    <span class="n">rule_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;invalidate&quot;</span>
+    <span class="n">rule_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"invalidate"</span>
     <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
 </code></pre></div>
 <h3 id="42-setup-at-startup">4.2 Setup at Startup<a class="headerlink" href="#42-setup-at-startup" title="Permanent link">&para;</a></h3>
@@ -5597,11 +5597,11 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
 
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">configure_cache_cascade</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="c1"># `cache` is a PostgresCache; `schema` is the GraphQL schema</span>
     <span class="n">registered</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered </span><span class="si">%d</span><span class="s2"> CASCADE rules&quot;</span><span class="p">,</span> <span class="n">registered</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Registered </span><span class="si">%d</span><span class="s2"> CASCADE rules"</span><span class="p">,</span> <span class="n">registered</span><span class="p">)</span>
 </code></pre></div>
 <p>For finer control, drive <code>SchemaAnalyzer</code> directly:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">SchemaAnalyzer</span>
@@ -5671,9 +5671,9 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
     <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>     <span class="c1"># 5 minutes</span>
-    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># don&#39;t cache errors in staging</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># don't cache errors in staging</span>
 <span class="p">)</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;STAGING_DB_URL&quot;</span><span class="p">])</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"STAGING_DB_URL"</span><span class="p">])</span>
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">),</span> <span class="n">config</span><span class="o">=</span><span class="n">cache_config</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="53-production-configuration">5.3 Production Configuration<a class="headerlink" href="#53-production-configuration" title="Permanent link">&para;</a></h3>
@@ -5687,9 +5687,9 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
     <span class="n">default_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>     <span class="c1"># 10 minutes (conservative)</span>
     <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>        <span class="c1"># never cache longer than 1 hour</span>
     <span class="n">cache_errors</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
+    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;PROD_DB_URL&quot;</span><span class="p">])</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"PROD_DB_URL"</span><span class="p">])</span>
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">),</span> <span class="n">config</span><span class="o">=</span><span class="n">cache_config</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="54-environment-variables">5.4 Environment Variables<a class="headerlink" href="#54-environment-variables" title="Permanent link">&para;</a></h3>
@@ -5719,8 +5719,8 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 │   │   ├─ YES: Shorter TTL (60-300 seconds)
 │   │   └─ NO: Longer TTL (300-3600 seconds)
 │   └─ End: Use caching
-└─ NO: Don&#39;t cache
-    └─ Monitor to ensure cache isn&#39;t wasted
+└─ NO: Don't cache
+    └─ Monitor to ensure cache isn't wasted
 </code></pre></div>
 <h3 id="62-ttl-guidelines">6.2 TTL Guidelines<a class="headerlink" href="#62-ttl-guidelines" title="Permanent link">&para;</a></h3>
 <table>
@@ -5768,8 +5768,8 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <p><code>CacheConfig.max_ttl</code> (default 3600s) caps every entry, so set it deliberately for very-long-lived data.</p>
 <h3 id="63-per-query-ttl">6.3 Per-Query TTL<a class="headerlink" href="#63-per-query-ttl" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Cheap, stable queries → long TTL; expensive/volatile → short TTL</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_country&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>   <span class="c1"># reference data</span>
-<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_dashboard&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>   <span class="c1"># expensive aggregate</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_country"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>   <span class="c1"># reference data</span>
+<span class="k">await</span> <span class="n">cached_repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_dashboard"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>   <span class="c1"># expensive aggregate</span>
 </code></pre></div>
 <h3 id="64-monitoring-checklist">6.4 Monitoring Checklist<a class="headerlink" href="#64-monitoring-checklist" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
@@ -5834,10 +5834,10 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># CORRECT: tenant_id comes from info.context (set from the auth token),</span>
     <span class="c1"># which the CachedRepository folds into the cache key.</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 
     <span class="c1"># WRONG: never trust a client-supplied tenant_id for cache scoping.</span>
 </code></pre></div>
@@ -5847,7 +5847,7 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 
 <span class="c1"># Cache errors only in development</span>
 <span class="n">cache_config</span> <span class="o">=</span> <span class="n">CacheConfig</span><span class="p">(</span>
-    <span class="n">cache_errors</span><span class="o">=</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ENVIRONMENT&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;development&quot;</span><span class="p">),</span>
+    <span class="n">cache_errors</span><span class="o">=</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"ENVIRONMENT"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"development"</span><span class="p">),</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="83-sensitive-data">8.3 Sensitive Data<a class="headerlink" href="#83-sensitive-data" title="Permanent link">&para;</a></h3>
@@ -5858,9 +5858,9 @@ Because <code>tenant_id</code> is part of the key, even an attacker who knows th
 <span class="c1"># Prefer caching a public-profile view over a full user record:</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_profile</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserProfile</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns only public profile fields from v_user_profile.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user_profile&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Returns only public profile fields from v_user_profile."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user_profile"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="9-performance-example">9. Performance Example<a class="headerlink" href="#9-performance-example" title="Permanent link">&para;</a></h2>

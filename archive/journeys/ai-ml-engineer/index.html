@@ -4928,21 +4928,21 @@ python<span class="w"> </span>app.py
 <span class="c1"># Setup FraiseQL vector store</span>
 <span class="n">embeddings</span> <span class="o">=</span> <span class="n">OpenAIEmbeddings</span><span class="p">()</span>
 <span class="n">vectorstore</span> <span class="o">=</span> <span class="n">FraiseQLVectorStore</span><span class="p">(</span>
-    <span class="n">graphql_endpoint</span><span class="o">=</span><span class="s2">&quot;http://localhost:8000/graphql&quot;</span><span class="p">,</span>
-    <span class="n">embedding_field</span><span class="o">=</span><span class="s2">&quot;embedding&quot;</span><span class="p">,</span>
-    <span class="n">text_field</span><span class="o">=</span><span class="s2">&quot;content&quot;</span>
+    <span class="n">graphql_endpoint</span><span class="o">=</span><span class="s2">"http://localhost:8000/graphql"</span><span class="p">,</span>
+    <span class="n">embedding_field</span><span class="o">=</span><span class="s2">"embedding"</span><span class="p">,</span>
+    <span class="n">text_field</span><span class="o">=</span><span class="s2">"content"</span>
 <span class="p">)</span>
 
 <span class="c1"># Create RAG chain</span>
-<span class="n">llm</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4&quot;</span><span class="p">)</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4"</span><span class="p">)</span>
 <span class="n">qa_chain</span> <span class="o">=</span> <span class="n">RetrievalQA</span><span class="o">.</span><span class="n">from_chain_type</span><span class="p">(</span>
     <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
-    <span class="n">chain_type</span><span class="o">=</span><span class="s2">&quot;stuff&quot;</span><span class="p">,</span>
-    <span class="n">retriever</span><span class="o">=</span><span class="n">vectorstore</span><span class="o">.</span><span class="n">as_retriever</span><span class="p">(</span><span class="n">search_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;k&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
+    <span class="n">chain_type</span><span class="o">=</span><span class="s2">"stuff"</span><span class="p">,</span>
+    <span class="n">retriever</span><span class="o">=</span><span class="n">vectorstore</span><span class="o">.</span><span class="n">as_retriever</span><span class="p">(</span><span class="n">search_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">"k"</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
 <span class="p">)</span>
 
 <span class="c1"># Ask questions</span>
-<span class="n">answer</span> <span class="o">=</span> <span class="n">qa_chain</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;How does FraiseQL handle vector search?&quot;</span><span class="p">)</span>
+<span class="n">answer</span> <span class="o">=</span> <span class="n">qa_chain</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"How does FraiseQL handle vector search?"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Advantages Over Traditional Vector DBs:</strong></p>
@@ -5027,21 +5027,21 @@ python<span class="w"> </span>app.py
 <div class="highlight"><pre><span></span><code><span class="c1"># Option A: Synchronous (simple, blocks API)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_document_with_embedding</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="n">embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;text-embedding-ada-002&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">"text-embedding-ada-002"</span><span class="p">,</span>
         <span class="nb">input</span><span class="o">=</span><span class="n">content</span>
     <span class="p">)</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;documents&quot;</span><span class="p">,</span> <span class="p">{</span>
-        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
-        <span class="s2">&quot;embedding&quot;</span><span class="p">:</span> <span class="n">embedding</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">"documents"</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+        <span class="s2">"embedding"</span><span class="p">:</span> <span class="n">embedding</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span>
     <span class="p">})</span>
 
 <span class="c1"># Option B: Async with queue (production)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_document_async</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="c1"># Insert document first</span>
-    <span class="n">doc_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">&quot;documents&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">content</span><span class="p">})</span>
+    <span class="n">doc_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="s2">"documents"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"content"</span><span class="p">:</span> <span class="n">content</span><span class="p">})</span>
 
     <span class="c1"># Queue embedding generation</span>
-    <span class="k">await</span> <span class="n">celery_app</span><span class="o">.</span><span class="n">send_task</span><span class="p">(</span><span class="s2">&quot;generate_embedding&quot;</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">doc_id</span><span class="p">])</span>
+    <span class="k">await</span> <span class="n">celery_app</span><span class="o">.</span><span class="n">send_task</span><span class="p">(</span><span class="s2">"generate_embedding"</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">doc_id</span><span class="p">])</span>
 
     <span class="k">return</span> <span class="n">doc_id</span>
 </code></pre></div>
@@ -5050,18 +5050,18 @@ python<span class="w"> </span>app.py
 <span class="nd">@cache</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>  <span class="c1"># 1 hour</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_query_embedding</span><span class="p">(</span><span class="n">query_text</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">openai</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;text-embedding-ada-002&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">"text-embedding-ada-002"</span><span class="p">,</span>
         <span class="nb">input</span><span class="o">=</span><span class="n">query_text</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>3. Monitoring RAG Systems:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Track RAG-specific metrics</span>
 <span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;embedding_generation_latency&quot;</span><span class="p">:</span> <span class="n">Histogram</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-    <span class="s2">&quot;vector_search_latency&quot;</span><span class="p">:</span> <span class="n">Histogram</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-    <span class="s2">&quot;llm_call_latency&quot;</span><span class="p">:</span> <span class="n">Histogram</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
-    <span class="s2">&quot;retrieval_relevance_score&quot;</span><span class="p">:</span> <span class="n">Gauge</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>  <span class="c1"># User feedback</span>
-    <span class="s2">&quot;cache_hit_rate&quot;</span><span class="p">:</span> <span class="n">Gauge</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="s2">"embedding_generation_latency"</span><span class="p">:</span> <span class="n">Histogram</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="s2">"vector_search_latency"</span><span class="p">:</span> <span class="n">Histogram</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="s2">"llm_call_latency"</span><span class="p">:</span> <span class="n">Histogram</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>
+    <span class="s2">"retrieval_relevance_score"</span><span class="p">:</span> <span class="n">Gauge</span><span class="p">(</span><span class="o">...</span><span class="p">),</span>  <span class="c1"># User feedback</span>
+    <span class="s2">"cache_hit_rate"</span><span class="p">:</span> <span class="n">Gauge</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>4. Cost Optimization:</strong></p>
@@ -5087,14 +5087,14 @@ python<span class="w"> </span>app.py
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
 <span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span>
-<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;500m&quot;</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"512Mi"</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"500m"</span>
 <span class="w">          </span><span class="nt">limits</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2Gi&quot;</span>
-<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2000m&quot;</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"2Gi"</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"2000m"</span>
 <span class="w">        </span><span class="nt">env</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PG_POOL_SIZE</span>
-<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;20&quot;</span><span class="w">  </span><span class="c1"># Connection pool</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"20"</span><span class="w">  </span><span class="c1"># Connection pool</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span>
 <span class="w">          </span><span class="nt">valueFrom</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">secretKeyRef</span><span class="p">:</span>
@@ -5107,17 +5107,17 @@ python<span class="w"> </span>app.py
 <p><strong>Advanced Techniques:</strong></p>
 <p><strong>1. Hybrid Search (Semantic + Keyword):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Combine pgvector with PostgreSQL full-text search</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="w"> </span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">));</span>
 
 <span class="c1">-- Query combines both</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="o">*</span><span class="p">,</span>
 <span class="w">       </span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">embedding</span><span class="w"> </span><span class="o">&lt;=&gt;</span><span class="w"> </span><span class="n">query_embedding</span><span class="p">))</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">semantic_score</span><span class="p">,</span>
-<span class="w">       </span><span class="n">ts_rank</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">),</span><span class="w"> </span><span class="n">query_tsquery</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">keyword_score</span><span class="p">,</span>
+<span class="w">       </span><span class="n">ts_rank</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">),</span><span class="w"> </span><span class="n">query_tsquery</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">keyword_score</span><span class="p">,</span>
 <span class="w">       </span><span class="p">((</span><span class="mi">1</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">embedding</span><span class="w"> </span><span class="o">&lt;=&gt;</span><span class="w"> </span><span class="n">query_embedding</span><span class="p">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">7</span><span class="w"> </span><span class="o">+</span>
-<span class="w">        </span><span class="n">ts_rank</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">),</span><span class="w"> </span><span class="n">query_tsquery</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">combined_score</span>
+<span class="w">        </span><span class="n">ts_rank</span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">),</span><span class="w"> </span><span class="n">query_tsquery</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">combined_score</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">d</span>
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tv_document_embedding</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">document_id</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="o">@@</span><span class="w"> </span><span class="n">query_tsquery</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="o">@@</span><span class="w"> </span><span class="n">query_tsquery</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">combined_score</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
 </code></pre></div>

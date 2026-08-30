@@ -5336,56 +5336,56 @@
 <p><strong>Problem:</strong> GraphQL response has <code>code</code>, <code>status</code>, <code>message</code>, but <code>errors</code> array is empty or missing.</p>
 <h3 id="diagnosis">Diagnosis<a class="headerlink" href="#diagnosis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test function directly</span>
-SELECT<span class="w"> </span>*<span class="w"> </span>FROM<span class="w"> </span>your_function<span class="o">(</span><span class="s1">&#39;{&quot;test&quot;: &quot;data&quot;}&#39;</span>::jsonb<span class="o">)</span><span class="p">;</span>
+SELECT<span class="w"> </span>*<span class="w"> </span>FROM<span class="w"> </span>your_function<span class="o">(</span><span class="s1">'{"test": "data"}'</span>::jsonb<span class="o">)</span><span class="p">;</span>
 
 <span class="c1"># Check metadata field</span>
-SELECT<span class="w"> </span>metadata<span class="w"> </span>FROM<span class="w"> </span>your_function<span class="o">(</span><span class="s1">&#39;{&quot;test&quot;: &quot;data&quot;}&#39;</span>::jsonb<span class="o">)</span><span class="p">;</span>
+SELECT<span class="w"> </span>metadata<span class="w"> </span>FROM<span class="w"> </span>your_function<span class="o">(</span><span class="s1">'{"test": "data"}'</span>::jsonb<span class="o">)</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="common-causes">Common Causes<a class="headerlink" href="#common-causes" title="Permanent link">&para;</a></h3>
 <h4 id="1-malformed-metadataerrors-jsonb">1. Malformed metadata.errors JSONB<a class="headerlink" href="#1-malformed-metadataerrors-jsonb" title="Permanent link">&para;</a></h4>
 <p><strong>Symptom:</strong> <code>errors</code> array is empty</p>
 <p><strong>Cause:</strong> <code>metadata.errors</code> is not a valid JSONB array</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: String instead of JSONB array</span>
-<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;{&quot;errors&quot;: &quot;[...]&quot;}&#39;</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'{"errors": "[...]"}'</span><span class="p">;</span>
 
 <span class="c1">-- ❌ WRONG: Not an array</span>
-<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(...));</span>
+<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'errors'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(...));</span>
 
 <span class="c1">-- ✅ CORRECT: JSONB array</span>
 <span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;validation&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
+<span class="w">    </span><span class="s1">'errors'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'validation'</span><span class="p">,</span><span class="w"> </span><span class="p">...)</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="p">);</span>
 </code></pre></div>
 <h4 id="2-missing-required-error-fields">2. Missing Required Error Fields<a class="headerlink" href="#2-missing-required-error-fields" title="Permanent link">&para;</a></h4>
 <p><strong>Symptom:</strong> Rust pipeline error in logs</p>
 <p><strong>Cause:</strong> <code>metadata.errors</code> objects missing required fields</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: Missing &#39;message&#39; field</span>
-<span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;validation&#39;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: Missing 'message' field</span>
+<span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'validation'</span><span class="p">)</span>
 
 <span class="c1">-- ✅ CORRECT: All required fields</span>
 <span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;validation&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Validation failed&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;details&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">null</span>
+<span class="w">    </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'validation'</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Validation failed'</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'details'</span><span class="p">,</span><span class="w"> </span><span class="k">null</span>
 <span class="p">)</span>
 </code></pre></div>
 <h4 id="3-pattern-1-status-string-format-invalid">3. Pattern 1 Status String Format Invalid<a class="headerlink" href="#3-pattern-1-status-string-format-invalid" title="Permanent link">&para;</a></h4>
 <p><strong>Symptom:</strong> Auto-generated error has <code>identifier: "general_error"</code></p>
 <p><strong>Cause:</strong> Status string doesn't follow <code>prefix:identifier</code> format</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: No colon separator</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;failed_validation&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → identifier: &quot;general_error&quot;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'failed_validation'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → identifier: "general_error"</span>
 
 <span class="c1">-- ✅ CORRECT: Use colon</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → identifier: &quot;validation&quot;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → identifier: "validation"</span>
 </code></pre></div>
 <h3 id="solution">Solution<a class="headerlink" href="#solution" title="Permanent link">&para;</a></h3>
 <p><strong>Validate your status string:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Add assertion in your function</span>
-<span class="n">ASSERT</span><span class="w"> </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;^(created|updated|deleted|failed|not_found|conflict|noop)(:.+)?$&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;Invalid status format: %s&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="p">);</span>
+<span class="n">ASSERT</span><span class="w"> </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">'^(created|updated|deleted|failed|not_found|conflict|noop)(:.+)?$'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">format</span><span class="p">(</span><span class="s1">'Invalid status format: %s'</span><span class="p">,</span><span class="w"> </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="p">);</span>
 </code></pre></div>
 <hr />
 <h2 id="wrong-error-code">Wrong Error Code<a class="headerlink" href="#wrong-error-code" title="Permanent link">&para;</a></h2>
@@ -5394,20 +5394,20 @@ SELECT<span class="w"> </span>metadata<span class="w"> </span>FROM<span class="w
 <div class="highlight"><pre><span></span><code><span class="c1"># Check what code your status generates</span>
 SELECT<span class="w"> </span>status,
 <span class="w">    </span>CASE
-<span class="w">        </span>WHEN<span class="w"> </span>status<span class="w"> </span>LIKE<span class="w"> </span><span class="s1">&#39;failed:%&#39;</span><span class="w"> </span>THEN<span class="w"> </span><span class="m">422</span>
-<span class="w">        </span>WHEN<span class="w"> </span>status<span class="w"> </span>LIKE<span class="w"> </span><span class="s1">&#39;not_found:%&#39;</span><span class="w"> </span>THEN<span class="w"> </span><span class="m">404</span>
-<span class="w">        </span>WHEN<span class="w"> </span>status<span class="w"> </span>LIKE<span class="w"> </span><span class="s1">&#39;conflict:%&#39;</span><span class="w"> </span>THEN<span class="w"> </span><span class="m">409</span>
+<span class="w">        </span>WHEN<span class="w"> </span>status<span class="w"> </span>LIKE<span class="w"> </span><span class="s1">'failed:%'</span><span class="w"> </span>THEN<span class="w"> </span><span class="m">422</span>
+<span class="w">        </span>WHEN<span class="w"> </span>status<span class="w"> </span>LIKE<span class="w"> </span><span class="s1">'not_found:%'</span><span class="w"> </span>THEN<span class="w"> </span><span class="m">404</span>
+<span class="w">        </span>WHEN<span class="w"> </span>status<span class="w"> </span>LIKE<span class="w"> </span><span class="s1">'conflict:%'</span><span class="w"> </span>THEN<span class="w"> </span><span class="m">409</span>
 <span class="w">        </span>--<span class="w"> </span>...<span class="w"> </span>etc
 <span class="w">    </span>END<span class="w"> </span>as<span class="w"> </span>expected_code
 FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class="o">)</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="common-causes_1">Common Causes<a class="headerlink" href="#common-causes_1" title="Permanent link">&para;</a></h3>
 <h4 id="wrong-status-prefix">Wrong Status Prefix<a class="headerlink" href="#wrong-status-prefix" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: Using &#39;failed:&#39; for not found</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;failed:user_not_found&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → 422</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: Using 'failed:' for not found</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'failed:user_not_found'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → 422</span>
 
-<span class="c1">-- ✅ CORRECT: Use &#39;not_found:&#39; prefix</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;not_found:user&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → 404</span>
+<span class="c1">-- ✅ CORRECT: Use 'not_found:' prefix</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'not_found:user'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- → 404</span>
 </code></pre></div>
 <h3 id="status-prefix-to-code-mapping">Status Prefix to Code Mapping<a class="headerlink" href="#status-prefix-to-code-mapping" title="Permanent link">&para;</a></h3>
 <table>
@@ -5490,7 +5490,7 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <p>GraphQL is case-sensitive and follows camelCase (if <code>auto_camel_case=True</code>).</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Python definition (snake_case)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
-    <span class="n">error_code</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># ← Will become &quot;errorCode&quot; in GraphQL</span>
+    <span class="n">error_code</span><span class="p">:</span> <span class="nb">int</span>  <span class="c1"># ← Will become "errorCode" in GraphQL</span>
 
 <span class="c1"># GraphQL query must match</span>
 <span class="n">mutation</span> <span class="p">{</span>
@@ -5506,7 +5506,7 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check function exists</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">proname</span><span class="p">,</span><span class="w"> </span><span class="n">pronamespace</span><span class="p">::</span><span class="n">regnamespace</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_proc</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">proname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;create_user&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">proname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'create_user'</span><span class="p">;</span>
 
 <span class="c1">-- Check search path</span>
 <span class="k">SHOW</span><span class="w"> </span><span class="n">search_path</span><span class="p">;</span>
@@ -5514,13 +5514,13 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <h3 id="common-causes_3">Common Causes<a class="headerlink" href="#common-causes_3" title="Permanent link">&para;</a></h3>
 <h4 id="1-wrong-schema">1. Wrong Schema<a class="headerlink" href="#1-wrong-schema" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Function created in different schema</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">create_user</span><span class="p">(...)</span><span class="w"> </span><span class="c1">-- ← Created in &#39;public&#39;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="k">public</span><span class="p">.</span><span class="n">create_user</span><span class="p">(...)</span><span class="w"> </span><span class="c1">-- ← Created in 'public'</span>
 
-<span class="c1">-- But app expects &#39;app&#39; schema</span>
+<span class="c1">-- But app expects 'app' schema</span>
 <span class="c1">-- FraiseQL looks in: app schema first, then search_path</span>
 </code></pre></div>
 <p><strong>Solution:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Option 1: Create in &#39;app&#39; schema</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Option 1: Create in 'app' schema</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">create_user</span><span class="p">(...)</span>
 
 <span class="c1">-- Option 2: Set search path</span>
@@ -5531,7 +5531,7 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">data</span><span class="w"> </span><span class="n">json</span><span class="p">)</span><span class="w"> </span><span class="c1">-- ← json not jsonb</span>
 
 <span class="c1">-- But called with jsonb</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="s1">&#39;{&quot;test&quot;: 1}&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">);</span><span class="w">  </span><span class="c1">-- ← Fails</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="s1">'{"test": 1}'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">);</span><span class="w">  </span><span class="c1">-- ← Fails</span>
 </code></pre></div>
 <p><strong>Solution:</strong> Use <code>jsonb</code> consistently:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="n">input_payload</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
@@ -5575,13 +5575,13 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <h3 id="common-causes_4">Common Causes<a class="headerlink" href="#common-causes_4" title="Permanent link">&para;</a></h3>
 <h4 id="1-forgot-to-set-entity-field">1. Forgot to Set entity Field<a class="headerlink" href="#1-forgot-to-set-entity-field" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG: entity not set</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;created&#39;</span><span class="p">;</span>
-<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;User created&#39;</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'created'</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'User created'</span><span class="p">;</span>
 <span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span><span class="w">  </span><span class="c1">-- entity is NULL</span>
 
 <span class="c1">-- ✅ CORRECT: Set entity</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;created&#39;</span><span class="p">;</span>
-<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;User created&#39;</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'created'</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'User created'</span><span class="p">;</span>
 <span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="k">NEW</span><span class="p">);</span><span class="w">  </span><span class="c1">-- ← Set entity!</span>
 <span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 </code></pre></div>
@@ -5600,8 +5600,8 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 </code></pre></div>
 <h4 id="3-entity-not-found-delete">3. Entity Not Found (DELETE)<a class="headerlink" href="#3-entity-not-found-delete" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- DELETE operations: entity should be null (deleted)</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;deleted&#39;</span><span class="p">;</span>
-<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;User deleted&#39;</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'deleted'</span><span class="p">;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'User deleted'</span><span class="p">;</span>
 <span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span><span class="w">  </span><span class="c1">-- ← Correct for DELETE</span>
 <span class="k">result</span><span class="p">.</span><span class="n">entity_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">old_user_id</span><span class="p">::</span><span class="nb">text</span><span class="p">;</span><span class="w">  </span><span class="c1">-- ← Use entity_id instead</span>
 </code></pre></div>
@@ -5658,12 +5658,12 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <h4 id="3-large-jsonb-objects">3. Large JSONB Objects<a class="headerlink" href="#3-large-jsonb-objects" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ SLOW: Building huge nested objects</span>
 <span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;all_related_data&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">massive_table</span><span class="p">)</span>
+<span class="w">    </span><span class="s1">'all_related_data'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">massive_table</span><span class="p">)</span>
 <span class="p">);</span>
 
 <span class="c1">-- ✅ FAST: Only include necessary data</span>
 <span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;related_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">massive_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="p">...)</span>
+<span class="w">    </span><span class="s1">'related_count'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">massive_table</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="p">...)</span>
 <span class="p">);</span>
 </code></pre></div>
 <h4 id="4-missing-where-clause">4. Missing WHERE Clause<a class="headerlink" href="#4-missing-where-clause" title="Permanent link">&para;</a></h4>
@@ -5676,12 +5676,12 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <h4 id="5-redundant-row_to_json-calls">5. Redundant row_to_json Calls<a class="headerlink" href="#5-redundant-row_to_json-calls" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ SLOW: Converting same data multiple times</span>
 <span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="n">user_record</span><span class="p">);</span>
-<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="n">user_record</span><span class="p">));</span>
+<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="n">user_record</span><span class="p">));</span>
 
 <span class="c1">-- ✅ FAST: Convert once, reuse</span>
 <span class="k">DECLARE</span><span class="w"> </span><span class="n">entity_json</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="n">user_record</span><span class="p">);</span>
 <span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">entity_json</span><span class="p">;</span>
-<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">entity_json</span><span class="p">);</span>
+<span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">entity_json</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h3>
 <ol>
@@ -5697,10 +5697,10 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <p>When mutation isn't working, follow this systematic checklist:</p>
 <h3 id="1-test-sql-directly-isolate-the-issue">1. Test SQL Directly (Isolate the Issue)<a class="headerlink" href="#1-test-sql-directly-isolate-the-issue" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Test function in psql</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">your_function</span><span class="p">(</span><span class="s1">&#39;{&quot;test&quot;: &quot;data&quot;}&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">your_function</span><span class="p">(</span><span class="s1">'{"test": "data"}'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">);</span>
 
 <span class="c1">-- Check raw JSON output</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="n">your_function</span><span class="p">(</span><span class="s1">&#39;{&quot;test&quot;: &quot;data&quot;}&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">));</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="n">your_function</span><span class="p">(</span><span class="s1">'{"test": "data"}'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">));</span>
 </code></pre></div>
 <p><strong>What to look for:</strong></p>
 <ul>
@@ -5710,12 +5710,12 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 </ul>
 <h3 id="2-validate-response-structure">2. Validate Response Structure<a class="headerlink" href="#2-validate-response-structure" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check status format</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">&#39;^(created|updated|deleted|failed|not_found|conflict|unauthorized|forbidden|timeout|noop)(:.+)?$&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">valid_status</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">~</span><span class="w"> </span><span class="s1">'^(created|updated|deleted|failed|not_found|conflict|unauthorized|forbidden|timeout|noop)(:.+)?$'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">valid_status</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">your_function</span><span class="p">(...);</span>
 
 <span class="c1">-- Validate metadata.errors if present</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_typeof</span><span class="p">(</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">&#39;errors&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;array&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">is_array</span><span class="p">,</span>
-<span class="w">       </span><span class="n">jsonb_array_length</span><span class="p">(</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">&#39;errors&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">error_count</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_typeof</span><span class="p">(</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">'errors'</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'array'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">is_array</span><span class="p">,</span>
+<span class="w">       </span><span class="n">jsonb_array_length</span><span class="p">(</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">'errors'</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">error_count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">your_function</span><span class="p">(...);</span>
 
 <span class="c1">-- Use validation helpers</span>
@@ -5768,7 +5768,7 @@ FROM<span class="w"> </span>your_function<span class="o">(</span>...<span class=
 <h3 id="5-check-field-naming-camelcase-vs-snake_case">5. Check Field Naming (camelCase vs snake_case)<a class="headerlink" href="#5-check-field-naming-camelcase-vs-snake_case" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># If auto_camel_case=True in schema</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">YourType</span><span class="p">:</span>
-    <span class="n">entity_id</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># ← Becomes &quot;entityId&quot; in GraphQL</span>
+    <span class="n">entity_id</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># ← Becomes "entityId" in GraphQL</span>
 
 <span class="c1"># GraphQL query must match:</span>
 <span class="p">{</span>
@@ -5789,18 +5789,18 @@ tail<span class="w"> </span>-f<span class="w"> </span>/var/log/fraiseql/mutation
 </code></pre></div>
 <h3 id="7-common-quick-fixes">7. Common Quick Fixes<a class="headerlink" href="#7-common-quick-fixes" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Missing message field</span>
-<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Your message here&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Always required!</span>
+<span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Your message here'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Always required!</span>
 
 <span class="c1">-- Forgot to set entity</span>
 <span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">row_to_json</span><span class="p">(</span><span class="k">NEW</span><span class="p">);</span><span class="w">  </span><span class="c1">-- For success responses</span>
 
 <span class="c1">-- Wrong status prefix</span>
-<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;not_found:user&#39;</span><span class="p">;</span><span class="w">  </span><span class="c1">-- NOT &#39;failed:user_not_found&#39;</span>
+<span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'not_found:user'</span><span class="p">;</span><span class="w">  </span><span class="c1">-- NOT 'failed:user_not_found'</span>
 
 <span class="c1">-- Malformed errors array</span>
 <span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span><span class="w">  </span><span class="c1">-- Must be array!</span>
-<span class="w">        </span><span class="n">build_error_object</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;msg&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
+<span class="w">    </span><span class="s1">'errors'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span><span class="w">  </span><span class="c1">-- Must be array!</span>
+<span class="w">        </span><span class="n">build_error_object</span><span class="p">(</span><span class="mi">422</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="s1">'msg'</span><span class="p">,</span><span class="w"> </span><span class="k">null</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="p">);</span>
 </code></pre></div>

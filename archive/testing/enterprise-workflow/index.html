@@ -5073,7 +5073,7 @@ Enterprise CI Pipeline (enterprise-tests.yml)
 ├── Runs weekly + manual
 ├── Vault + Auth0 services
 ├── Comprehensive testing
-└── Optional (doesn&#39;t block) ⚠️
+└── Optional (doesn't block) ⚠️
 </code></pre></div>
 <h2 id="when-enterprise-ci-runs">When Enterprise CI Runs<a class="headerlink" href="#when-enterprise-ci-runs" title="Permanent link">&para;</a></h2>
 <h3 id="automatic-triggers">Automatic Triggers<a class="headerlink" href="#automatic-triggers" title="Permanent link">&para;</a></h3>
@@ -5102,8 +5102,8 @@ Enterprise CI Pipeline (enterprise-tests.yml)
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_vault</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_data_encryption</span><span class="p">(</span><span class="n">vault_client</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test encrypting sensitive data.&quot;&quot;&quot;</span>
-    <span class="n">encrypted</span> <span class="o">=</span> <span class="n">vault_client</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="s2">&quot;test-key&quot;</span><span class="p">,</span> <span class="s2">&quot;sensitive data&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Test encrypting sensitive data."""</span>
+    <span class="n">encrypted</span> <span class="o">=</span> <span class="n">vault_client</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="s2">"test-key"</span><span class="p">,</span> <span class="s2">"sensitive data"</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">encrypted</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </code></pre></div>
 <h3 id="auth0-tests">Auth0 Tests<a class="headerlink" href="#auth0-tests" title="Permanent link">&para;</a></h3>
@@ -5118,7 +5118,7 @@ Enterprise CI Pipeline (enterprise-tests.yml)
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_auth0</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_jwt_validation</span><span class="p">(</span><span class="n">auth_config</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test JWT token validation.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test JWT token validation."""</span>
     <span class="n">token</span> <span class="o">=</span> <span class="n">create_test_jwt</span><span class="p">()</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">validate_jwt_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
     <span class="k">assert</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -5136,35 +5136,35 @@ docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </sp
 <span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_TOKEN</span><span class="o">=</span>fraiseql-ci-token
 
 <span class="c1"># Initialize for testing</span>
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8200/v1/sys/mounts/transit<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;type&quot;:&quot;transit&quot;}&#39;</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"type":"transit"}'</span>
 
 <span class="c1"># Create test keys</span>
 <span class="k">for</span><span class="w"> </span>key<span class="w"> </span><span class="k">in</span><span class="w"> </span>test-integration-key<span class="w"> </span>test-data-key<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>http://localhost:8200/v1/transit/keys/<span class="nv">$key</span>
 <span class="k">done</span>
 </code></pre></div>
 <h3 id="running-enterprise-tests-locally">Running Enterprise Tests Locally<a class="headerlink" href="#running-enterprise-tests-locally" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run all enterprise tests (requires services)</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault or requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault or requires_auth0'</span>
 
 <span class="c1"># Run only Vault tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault'</span>
 
 <span class="c1"># Run only Auth0 tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_auth0'</span>
 
 <span class="c1"># Run with verbose output</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault&#39;</span><span class="w"> </span>-v
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault'</span><span class="w"> </span>-v
 </code></pre></div>
 <h3 id="skipping-enterprise-tests">Skipping Enterprise Tests<a class="headerlink" href="#skipping-enterprise-tests" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run everything except enterprise features</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;not requires_vault and not requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'not requires_vault and not requires_auth0'</span>
 
 <span class="c1"># This is the same as main CI</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres and not requires_vault and not requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres and not requires_vault and not requires_auth0'</span>
 </code></pre></div>
 <h2 id="ci-reliability-features">CI Reliability Features<a class="headerlink" href="#ci-reliability-features" title="Permanent link">&para;</a></h2>
 <h3 id="vault-startup-handling">Vault Startup Handling<a class="headerlink" href="#vault-startup-handling" title="Permanent link">&para;</a></h3>
@@ -5186,7 +5186,7 @@ pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;re
 <h3 id="service-dependencies">Service Dependencies<a class="headerlink" href="#service-dependencies" title="Permanent link">&para;</a></h3>
 <p><strong>PostgreSQL</strong>: Always available (required for all tests)</p>
 <p><strong>Vault</strong>: Optional, with fallback handling:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;VAULT_ADDR&quot;</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Vault not available&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"VAULT_ADDR"</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">"Vault not available"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vault_feature</span><span class="p">():</span>
     <span class="k">pass</span>
 </code></pre></div>
@@ -5224,17 +5224,17 @@ docker<span class="w"> </span>restart<span class="w"> </span>vault
 curl<span class="w"> </span>http://localhost:8200/v1/sys/health
 
 <span class="c1"># Check Vault status</span>
-curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8200/v1/sys/seal-status
 </code></pre></div>
 <p><strong>Encryption failing</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># List available keys</span>
-curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8200/v1/transit/keys
 
 <span class="c1"># Test encryption manually</span>
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;plaintext&quot;:&quot;dGVzdA==&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"plaintext":"dGVzdA=="}'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8200/v1/transit/encrypt/test-key
 </code></pre></div>
 <h3 id="auth0-issues">Auth0 Issues<a class="headerlink" href="#auth0-issues" title="Permanent link">&para;</a></h3>
@@ -5262,7 +5262,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <li><strong>Handle service unavailability</strong>:</li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_vault</span>
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;VAULT_ADDR&quot;</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Vault not available&quot;</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"VAULT_ADDR"</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">"Vault not available"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vault_feature</span><span class="p">(</span><span class="n">vault_client</span><span class="p">):</span>
     <span class="k">pass</span>
 </code></pre></div>

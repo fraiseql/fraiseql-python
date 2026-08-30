@@ -5046,7 +5046,7 @@
 <span class="c1">-- With jsonb_ivm, merge only changed fields:</span>
 <span class="k">UPDATE</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_merge_shallow</span><span class="p">(</span>
 <span class="w">  </span><span class="k">data</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Keep unchanged fields</span>
-<span class="w">  </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">)</span><span class="w">  </span><span class="c1">-- Only changed</span>
+<span class="w">  </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">)</span><span class="w">  </span><span class="c1">-- Only changed</span>
 <span class="p">);</span>
 </code></pre></div>
 <p><strong>Performance</strong>: 10-100x faster for partial updates!</p>
@@ -5061,7 +5061,7 @@ make
 sudo<span class="w"> </span>make<span class="w"> </span>install
 
 <span class="c1"># Verify installation</span>
-psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;CREATE EXTENSION jsonb_ivm;&quot;</span>
+psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="w"> </span>-c<span class="w"> </span><span class="s2">"CREATE EXTENSION jsonb_ivm;"</span>
 </code></pre></div>
 <h3 id="installation-requirements">Installation Requirements<a class="headerlink" href="#installation-requirements" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ubuntu/Debian</span>
@@ -5109,17 +5109,17 @@ sudo<span class="w"> </span>pacman<span class="w"> </span>-S<span class="w"> </s
 <span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">jsonb_ivm</span><span class="p">;</span>
 
 <span class="c1">-- Verify installation</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;jsonb_ivm&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'jsonb_ivm'</span><span class="p">;</span>
 
 <span class="c1">-- Check version</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">extversion</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;jsonb_ivm&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">extversion</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'jsonb_ivm'</span><span class="p">;</span>
 <span class="c1">-- Expected: 1.1</span>
 </code></pre></div>
 <h3 id="using-with-fraiseql">Using with FraiseQL<a class="headerlink" href="#using-with-fraiseql" title="Permanent link">&para;</a></h3>
 <p>FraiseQL automatically detects and uses <code>jsonb_ivm</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.ivm</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_ivm</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
     <span class="c1"># Analyzes tv_ tables and recommends IVM strategy</span>
     <span class="n">recommendation</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_ivm</span><span class="p">(</span>
@@ -5136,7 +5136,7 @@ sudo<span class="w"> </span>pacman<span class="w"> </span>-S<span class="w"> </s
 <h3 id="what-it-does_1">What It Does<a class="headerlink" href="#what-it-does_1" title="Permanent link">&para;</a></h3>
 <p>The <code>pg_fraiseql_cache</code> extension provides <strong>intelligent cache invalidation</strong> with CASCADE rules:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- When user changes, automatically invalidate related caches:</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">cache_invalidate</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;123&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cache_invalidate</span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'123'</span><span class="p">);</span>
 
 <span class="c1">-- CASCADE automatically invalidates:</span>
 <span class="c1">-- - user:123</span>
@@ -5154,12 +5154,12 @@ make
 sudo<span class="w"> </span>make<span class="w"> </span>install
 
 <span class="c1"># Enable in database</span>
-psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;CREATE EXTENSION pg_fraiseql_cache;&quot;</span>
+psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="w"> </span>-c<span class="w"> </span><span class="s2">"CREATE EXTENSION pg_fraiseql_cache;"</span>
 </code></pre></div>
 <h3 id="using-with-fraiseql_1">Using with FraiseQL<a class="headerlink" href="#using-with-fraiseql_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup</span><span class="p">():</span>
     <span class="c1"># Auto-detect CASCADE rules from GraphQL schema</span>
     <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span>
@@ -5178,7 +5178,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <h3 id="method-1-docker-recommended-for-development">Method 1: Docker (Recommended for Development)<a class="headerlink" href="#method-1-docker-recommended-for-development" title="Permanent link">&para;</a></h3>
 <p>The easiest way is to use Docker with pre-built extensions:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># docker-compose.yml</span>
-<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3.8'</span>
 
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
@@ -5190,7 +5190,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
 <span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myapp</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"5432:5432"</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c"># Dockerfile.postgres</span>
 <span class="k">FROM</span><span class="w"> </span><span class="s">postgres:17.5</span>
@@ -5242,7 +5242,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <div class="highlight"><pre><span></span><code><span class="c1"># Clone and build in debug mode</span>
 git<span class="w"> </span>clone<span class="w"> </span>https://github.com/fraiseql/jsonb_ivm.git
 <span class="nb">cd</span><span class="w"> </span>jsonb_ivm
-make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span><span class="nv">CFLAGS</span><span class="o">=</span><span class="s2">&quot;-g -O0&quot;</span>
+make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span><span class="nv">CFLAGS</span><span class="o">=</span><span class="s2">"-g -O0"</span>
 sudo<span class="w"> </span>make<span class="w"> </span>install
 
 <span class="c1"># Reload in PostgreSQL</span>
@@ -5255,7 +5255,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <h2 id="docker-setup">Docker Setup<a class="headerlink" href="#docker-setup" title="Permanent link">&para;</a></h2>
 <h3 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h3>
 <p>Here's a complete <code>docker-compose.yml</code> with all extensions:</p>
-<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3.8'</span>
 
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
@@ -5265,12 +5265,12 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
 <span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">myapp</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"5432:5432"</span>
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres_data:/var/lib/postgresql/data</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./init_extensions.sql:/docker-entrypoint-initdb.d/01_extensions.sql</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">fraiseql&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD-SHELL"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">fraiseql"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
@@ -5283,13 +5283,13 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <span class="w">      </span><span class="nt">postgres</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8000:8000"</span>
 
 <span class="nt">volumes</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">postgres_data</span><span class="p">:</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- init_extensions.sql</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="ss">&quot;uuid-ossp&quot;</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="ss">"uuid-ossp"</span><span class="p">;</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">jsonb_ivm</span><span class="p">;</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">pg_fraiseql_cache</span><span class="p">;</span>
 </code></pre></div>
@@ -5299,7 +5299,7 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <div class="highlight"><pre><span></span><code><span class="c1">-- List all installed extensions</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">extname</span><span class="p">,</span><span class="w"> </span><span class="n">extversion</span><span class="p">,</span><span class="w"> </span><span class="n">extrelocatable</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;jsonb_ivm&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pg_fraiseql_cache&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;uuid-ossp&#39;</span><span class="p">)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">'jsonb_ivm'</span><span class="p">,</span><span class="w"> </span><span class="s1">'pg_fraiseql_cache'</span><span class="p">,</span><span class="w"> </span><span class="s1">'uuid-ossp'</span><span class="p">)</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">extname</span><span class="p">;</span>
 </code></pre></div>
 <p>Expected output:</p>
@@ -5312,11 +5312,11 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 <h3 id="test-jsonb_ivm">Test jsonb_ivm<a class="headerlink" href="#test-jsonb_ivm" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Test jsonb_merge_shallow function</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_merge_shallow</span><span class="p">(</span>
-<span class="w">  </span><span class="s1">&#39;{&quot;name&quot;: &quot;Alice&quot;, &quot;age&quot;: 30, &quot;city&quot;: &quot;NYC&quot;}&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
-<span class="w">  </span><span class="s1">&#39;{&quot;age&quot;: 31}&#39;</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="w">  </span><span class="s1">'{"name": "Alice", "age": 30, "city": "NYC"}'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">  </span><span class="s1">'{"age": 31}'</span><span class="p">::</span><span class="n">jsonb</span>
 <span class="p">);</span>
 
-<span class="c1">-- Expected: {&quot;name&quot;: &quot;Alice&quot;, &quot;age&quot;: 31, &quot;city&quot;: &quot;NYC&quot;}</span>
+<span class="c1">-- Expected: {"name": "Alice", "age": 31, "city": "NYC"}</span>
 <span class="c1">-- (only age was updated, other fields kept)</span>
 </code></pre></div>
 <h3 id="test-from-fraiseql">Test from FraiseQL<a class="headerlink" href="#test-from-fraiseql" title="Permanent link">&para;</a></h3>
@@ -5329,8 +5329,8 @@ psql<span class="w"> </span>-d<span class="w"> </span>your_database<span class="
 
     <span class="c1"># Check jsonb_ivm</span>
     <span class="n">has_ivm</span> <span class="o">=</span> <span class="k">await</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">check_extension</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;jsonb_ivm available: </span><span class="si">{</span><span class="n">has_ivm</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Version: </span><span class="si">{</span><span class="n">analyzer</span><span class="o">.</span><span class="n">extension_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"jsonb_ivm available: </span><span class="si">{</span><span class="n">has_ivm</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Version: </span><span class="si">{</span><span class="n">analyzer</span><span class="o">.</span><span class="n">extension_version</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="n">test_extensions</span><span class="p">()</span>
 </code></pre></div>
@@ -5379,10 +5379,10 @@ GRANT<span class="w"> </span>USAGE<span class="w"> </span>ON<span class="w"> </s
 <p><strong>Problem</strong>: Extension version doesn't match after update</p>
 <p><strong>Solution</strong>: Upgrade the extension</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check current version</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">extversion</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;jsonb_ivm&#39;</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">extversion</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">pg_extension</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">extname</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'jsonb_ivm'</span><span class="p">;</span>
 
 <span class="c1">-- Upgrade to latest</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">jsonb_ivm</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="s1">&#39;1.1&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">jsonb_ivm</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="s1">'1.1'</span><span class="p">;</span>
 
 <span class="c1">-- Or reinstall</span>
 <span class="k">DROP</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="n">jsonb_ivm</span><span class="w"> </span><span class="k">CASCADE</span><span class="p">;</span>
@@ -5426,10 +5426,10 @@ GRANT<span class="w"> </span>USAGE<span class="w"> </span>ON<span class="w"> </s
 <div class="highlight"><pre><span></span><code><span class="c1"># FraiseQL checks for jsonb_ivm</span>
 <span class="k">if</span> <span class="n">has_jsonb_ivm</span><span class="p">:</span>
     <span class="c1"># Use fast incremental merge</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;UPDATE tv_user SET data = jsonb_merge_shallow(data, $1)&quot;</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="s2">"UPDATE tv_user SET data = jsonb_merge_shallow(data, $1)"</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="c1"># Fall back to full rebuild (slower but works)</span>
-    <span class="n">sql</span> <span class="o">=</span> <span class="s2">&quot;UPDATE tv_user SET data = $1&quot;</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="s2">"UPDATE tv_user SET data = $1"</span>
 </code></pre></div>
 <p>You'll see a warning in logs:</p>
 <div class="highlight"><pre><span></span><code>[WARNING] jsonb_ivm extension not installed, using fallback (slower)

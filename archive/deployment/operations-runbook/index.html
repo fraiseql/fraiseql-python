@@ -5199,7 +5199,7 @@
 <h4 id="1-detection-triage-0-15-minutes">1. Detection &amp; Triage (0-15 minutes)<a class="headerlink" href="#1-detection-triage-0-15-minutes" title="Permanent link">&para;</a></h4>
 <p><strong>For SEV-1 incidents:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Immediately assess system status</span>
-curl<span class="w"> </span>-f<span class="w"> </span>https://yourdomain.com/health<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Application DOWN&quot;</span>
+curl<span class="w"> </span>-f<span class="w"> </span>https://yourdomain.com/health<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"Application DOWN"</span>
 
 <span class="c1"># Check database connectivity</span>
 docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>pg_isready<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod
@@ -5233,13 +5233,13 @@ tail<span class="w"> </span>-f<span class="w"> </span>/var/log/nginx/access.log
 tail<span class="w"> </span>-f<span class="w"> </span>/var/log/nginx/error.log
 
 <span class="c1"># Check system logs</span>
-journalctl<span class="w"> </span>-u<span class="w"> </span>docker<span class="w"> </span>-f<span class="w"> </span>--since<span class="w"> </span><span class="s2">&quot;1 hour ago&quot;</span>
+journalctl<span class="w"> </span>-u<span class="w"> </span>docker<span class="w"> </span>-f<span class="w"> </span>--since<span class="w"> </span><span class="s2">"1 hour ago"</span>
 
 <span class="c1"># Database query analysis</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT state, count(*) FROM pg_stat_activity GROUP BY state;</span>
-<span class="s2">SELECT * FROM pg_stat_activity WHERE state != &#39;idle&#39;;</span>
-<span class="s2">&quot;</span>
+<span class="s2">SELECT * FROM pg_stat_activity WHERE state != 'idle';</span>
+<span class="s2">"</span>
 </code></pre></div>
 <p><strong>Performance Metrics Check:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check Prometheus metrics</span>
@@ -5249,10 +5249,10 @@ curl<span class="w"> </span>http://localhost:9090/api/v1/query?query<span class=
 curl<span class="w"> </span>https://yourdomain.com/metrics
 
 <span class="c1"># Database performance</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT * FROM pg_stat_user_tables ORDER BY n_tup_ins DESC LIMIT 10;</span>
 <span class="s2">SELECT * FROM pg_stat_user_indexes WHERE idx_scan = 0;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 </code></pre></div>
 <h4 id="3-containment-30-120-minutes">3. Containment (30-120 minutes)<a class="headerlink" href="#3-containment-30-120-minutes" title="Permanent link">&para;</a></h4>
 <p><strong>Common Containment Actions:</strong></p>
@@ -5269,16 +5269,16 @@ docker-compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w
 </code></pre></div>
 <p><strong>For Database Issues:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check connection pool</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SHOW max_connections;</span>
 <span class="s2">SELECT count(*) FROM pg_stat_activity;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Restart database if needed</span>
 docker-compose<span class="w"> </span>restart<span class="w"> </span>db
 
 <span class="c1"># Failover to replica (if available)</span>
-<span class="c1"># kubectl patch deployment postgres -p &#39;{&quot;spec&quot;:{&quot;template&quot;:{&quot;spec&quot;:{&quot;containers&quot;:[{&quot;name&quot;:&quot;postgres&quot;,&quot;env&quot;:[{&quot;name&quot;:&quot;POSTGRES_MASTER&quot;,&quot;value&quot;:&quot;replica-host&quot;}]}}]}}}}</span>
+<span class="c1"># kubectl patch deployment postgres -p '{"spec":{"template":{"spec":{"containers":[{"name":"postgres","env":[{"name":"POSTGRES_MASTER","value":"replica-host"}]}}]}}}}</span>
 </code></pre></div>
 <p><strong>For Infrastructure Issues:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check disk space</span>
@@ -5302,7 +5302,7 @@ systemctl<span class="w"> </span>restart<span class="w"> </span>nginx
 curl<span class="w"> </span>https://yourdomain.com/health
 
 <span class="c1"># Run smoke tests</span>
-npm<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>--grep<span class="w"> </span><span class="s2">&quot;smoke&quot;</span>
+npm<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--<span class="w"> </span>--grep<span class="w"> </span><span class="s2">"smoke"</span>
 
 <span class="c1"># Gradually increase traffic</span>
 <span class="c1"># Use load balancer to slowly route traffic back</span>
@@ -5313,10 +5313,10 @@ gunzip<span class="w"> </span>/opt/fraiseql/backups/fraiseql_backup.sql.gz
 docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-T<span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>fraiseql_prod<span class="w"> </span>&lt;<span class="w"> </span>/opt/fraiseql/backups/fraiseql_backup.sql
 
 <span class="c1"># Verify data integrity</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT count(*) FROM your_table;</span>
 <span class="s2">SELECT max(updated_at) FROM your_table;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 </code></pre></div>
 <h4 id="5-post-incident-review-24-72-hours">5. Post-Incident Review (24-72 hours)<a class="headerlink" href="#5-post-incident-review-24-72-hours" title="Permanent link">&para;</a></h4>
 <p><strong>Incident Review Process:</strong></p>
@@ -5361,37 +5361,37 @@ docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w
 <div class="highlight"><pre><span></span><code><span class="ch">#!/bin/bash</span>
 <span class="c1"># Daily health check script</span>
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== Daily Health Check ===&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"=== Daily Health Check ==="</span>
 
 <span class="c1"># Application health</span>
-curl<span class="w"> </span>-f<span class="w"> </span>https://yourdomain.com/health<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;❌ Application health check failed&quot;</span>
+curl<span class="w"> </span>-f<span class="w"> </span>https://yourdomain.com/health<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"❌ Application health check failed"</span>
 
 <span class="c1"># Database connectivity</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>pg_isready<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;❌ Database connectivity failed&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>pg_isready<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"❌ Database connectivity failed"</span>
 
 <span class="c1"># Redis connectivity</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>redis<span class="w"> </span>redis-cli<span class="w"> </span>ping<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;❌ Redis connectivity failed&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>redis<span class="w"> </span>redis-cli<span class="w"> </span>ping<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"❌ Redis connectivity failed"</span>
 
 <span class="c1"># Disk space check</span>
-<span class="nv">DISK_USAGE</span><span class="o">=</span><span class="k">$(</span>df<span class="w"> </span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-1<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{print $5}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">&#39;s/%//&#39;</span><span class="k">)</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$DISK_USAGE</span><span class="s2">&quot;</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">90</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;❌ Disk usage critical: </span><span class="si">${</span><span class="nv">DISK_USAGE</span><span class="si">}</span><span class="s2">%&quot;</span>
+<span class="nv">DISK_USAGE</span><span class="o">=</span><span class="k">$(</span>df<span class="w"> </span>/<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-1<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $5}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sed<span class="w"> </span><span class="s1">'s/%//'</span><span class="k">)</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$DISK_USAGE</span><span class="s2">"</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">90</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"❌ Disk usage critical: </span><span class="si">${</span><span class="nv">DISK_USAGE</span><span class="si">}</span><span class="s2">%"</span>
 <span class="k">fi</span>
 
 <span class="c1"># Memory usage check</span>
-<span class="nv">MEMORY_USAGE</span><span class="o">=</span><span class="k">$(</span>free<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Mem<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">&#39;{printf &quot;%.0f&quot;, $3/$2 * 100.0}&#39;</span><span class="k">)</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$MEMORY_USAGE</span><span class="s2">&quot;</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">90</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;❌ Memory usage critical: </span><span class="si">${</span><span class="nv">MEMORY_USAGE</span><span class="si">}</span><span class="s2">%&quot;</span>
+<span class="nv">MEMORY_USAGE</span><span class="o">=</span><span class="k">$(</span>free<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>Mem<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{printf "%.0f", $3/$2 * 100.0}'</span><span class="k">)</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$MEMORY_USAGE</span><span class="s2">"</span><span class="w"> </span>-gt<span class="w"> </span><span class="m">90</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"❌ Memory usage critical: </span><span class="si">${</span><span class="nv">MEMORY_USAGE</span><span class="si">}</span><span class="s2">%"</span>
 <span class="k">fi</span>
 
 <span class="c1"># Certificate expiry check</span>
 <span class="nv">CERT_EXPIRY</span><span class="o">=</span><span class="k">$(</span>openssl<span class="w"> </span>x509<span class="w"> </span>-enddate<span class="w"> </span>-noout<span class="w"> </span>-in<span class="w"> </span>/etc/letsencrypt/live/yourdomain.com/cert.pem<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d<span class="o">=</span><span class="w"> </span>-f2<span class="k">)</span>
-<span class="nv">CERT_DAYS</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="o">(</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CERT_EXPIRY</span><span class="s2">&quot;</span><span class="w"> </span>+%s<span class="k">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">86400</span><span class="w"> </span><span class="k">))</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$CERT_DAYS</span><span class="s2">&quot;</span><span class="w"> </span>-lt<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;⚠️  SSL certificate expires in </span><span class="si">${</span><span class="nv">CERT_DAYS</span><span class="si">}</span><span class="s2"> days&quot;</span>
+<span class="nv">CERT_DAYS</span><span class="o">=</span><span class="k">$((</span><span class="w"> </span><span class="o">(</span><span class="k">$(</span>date<span class="w"> </span>-d<span class="w"> </span><span class="s2">"</span><span class="nv">$CERT_EXPIRY</span><span class="s2">"</span><span class="w"> </span>+%s<span class="k">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="o">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="m">86400</span><span class="w"> </span><span class="k">))</span>
+<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">"</span><span class="nv">$CERT_DAYS</span><span class="s2">"</span><span class="w"> </span>-lt<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">"⚠️  SSL certificate expires in </span><span class="si">${</span><span class="nv">CERT_DAYS</span><span class="si">}</span><span class="s2"> days"</span>
 <span class="k">fi</span>
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✅ Health check completed&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"✅ Health check completed"</span>
 </code></pre></div>
 <h4 id="log-rotation">Log Rotation<a class="headerlink" href="#log-rotation" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Rotate application logs</span>
@@ -5401,7 +5401,7 @@ docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w
 logrotate<span class="w"> </span>/etc/logrotate.d/nginx
 
 <span class="c1"># Clean old logs (keep 30 days)</span>
-find<span class="w"> </span>/var/log<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.log.*&quot;</span><span class="w"> </span>-mtime<span class="w"> </span>+30<span class="w"> </span>-delete
+find<span class="w"> </span>/var/log<span class="w"> </span>-name<span class="w"> </span><span class="s2">"*.log.*"</span><span class="w"> </span>-mtime<span class="w"> </span>+30<span class="w"> </span>-delete
 </code></pre></div>
 <h3 id="weekly-maintenance">Weekly Maintenance<a class="headerlink" href="#weekly-maintenance" title="Permanent link">&para;</a></h3>
 <h4 id="security-updates-monday-200-am">Security Updates (Monday 2:00 AM)<a class="headerlink" href="#security-updates-monday-200-am" title="Permanent link">&para;</a></h4>
@@ -5419,42 +5419,42 @@ trivy<span class="w"> </span>image<span class="w"> </span>--exit-code<span class
 </code></pre></div>
 <h4 id="database-maintenance">Database Maintenance<a class="headerlink" href="#database-maintenance" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Vacuum and analyze database</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;VACUUM ANALYZE;&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"VACUUM ANALYZE;"</span>
 
 <span class="c1"># Reindex if needed</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">REINDEX DATABASE fraiseql_prod;</span>
 <span class="s2">REINDEX SYSTEM fraiseql_prod;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Check for unused indexes</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT schemaname, tablename, indexname</span>
 <span class="s2">FROM pg_indexes</span>
-<span class="s2">WHERE schemaname = &#39;public&#39;</span>
+<span class="s2">WHERE schemaname = 'public'</span>
 <span class="s2">AND indexname NOT IN (</span>
 <span class="s2">    SELECT indexname</span>
 <span class="s2">    FROM pg_stat_user_indexes</span>
 <span class="s2">    WHERE idx_scan &gt; 0</span>
 <span class="s2">);</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 </code></pre></div>
 <h4 id="performance-optimization">Performance Optimization<a class="headerlink" href="#performance-optimization" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Analyze slow queries</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT query, calls, total_time, mean_time, rows</span>
 <span class="s2">FROM pg_stat_statements</span>
 <span class="s2">ORDER BY total_time DESC</span>
 <span class="s2">LIMIT 10;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Check table bloat</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT schemaname, tablename, n_dead_tup, n_live_tup</span>
 <span class="s2">FROM pg_stat_user_tables</span>
 <span class="s2">WHERE n_dead_tup &gt; 0</span>
 <span class="s2">ORDER BY n_dead_tup DESC;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 </code></pre></div>
 <h3 id="monthly-maintenance">Monthly Maintenance<a class="headerlink" href="#monthly-maintenance" title="Permanent link">&para;</a></h3>
 <h4 id="capacity-planning-review">Capacity Planning Review<a class="headerlink" href="#capacity-planning-review" title="Permanent link">&para;</a></h4>
@@ -5471,21 +5471,21 @@ trivy<span class="w"> </span>fs<span class="w"> </span>--exit-code<span class="w
 gitleaks<span class="w"> </span>detect<span class="w"> </span>--verbose<span class="w"> </span>--redact
 
 <span class="c1"># Review access logs for suspicious activity</span>
-grep<span class="w"> </span><span class="s2">&quot; 40[0-9] &quot;</span><span class="w"> </span>/var/log/nginx/access.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
+grep<span class="w"> </span><span class="s2">" 40[0-9] "</span><span class="w"> </span>/var/log/nginx/access.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
 </code></pre></div>
 <h4 id="backup-verification">Backup Verification<a class="headerlink" href="#backup-verification" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test backup restoration</span>
 <span class="nv">BACKUP_FILE</span><span class="o">=</span><span class="k">$(</span>ls<span class="w"> </span>-t<span class="w"> </span>/opt/fraiseql/backups/*.sql.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1<span class="k">)</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Testing backup: </span><span class="nv">$BACKUP_FILE</span><span class="s2">&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"Testing backup: </span><span class="nv">$BACKUP_FILE</span><span class="s2">"</span>
 
 <span class="c1"># Create test database</span>
 docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>createdb<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>fraiseql_test_restore
 
 <span class="c1"># Restore backup</span>
-gunzip<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$BACKUP_FILE</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-T<span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>fraiseql_test_restore
+gunzip<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span><span class="nv">$BACKUP_FILE</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-T<span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>fraiseql_test_restore
 
 <span class="c1"># Verify restoration</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_test_restore<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT count(*) FROM your_table;&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_test_restore<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT count(*) FROM your_table;"</span>
 
 <span class="c1"># Clean up</span>
 docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>dropdb<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>fraiseql_test_restore
@@ -5591,10 +5591,10 @@ docker-compose<span class="w"> </span>stop<span class="w"> </span>fraiseql
 ./restore-backup.sh<span class="w"> </span>latest
 
 <span class="c1"># Verify data integrity</span>
-docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>db<span class="w"> </span>psql<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-d<span class="w"> </span>fraiseql_prod<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">SELECT count(*) FROM users;</span>
 <span class="s2">SELECT max(created_at) FROM users;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># Restart application</span>
 docker-compose<span class="w"> </span>start<span class="w"> </span>fraiseql

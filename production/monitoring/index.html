@@ -5073,7 +5073,7 @@ FraiseQL Stack:
 <span class="c1"># Initialize error tracker</span>
 <span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span>
     <span class="n">db_pool</span><span class="p">,</span>
-    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
     <span class="n">notification_channels</span><span class="o">=</span><span class="p">[</span>
         <span class="n">ErrorNotificationChannel</span><span class="o">.</span><span class="n">EMAIL</span><span class="p">,</span>
         <span class="n">ErrorNotificationChannel</span><span class="o">.</span><span class="n">SLACK</span>
@@ -5087,10 +5087,10 @@ FraiseQL Stack:
     <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span>
         <span class="n">error</span><span class="p">,</span>
         <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-            <span class="s2">&quot;order_id&quot;</span><span class="p">:</span> <span class="n">order_id</span><span class="p">,</span>
-            <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">request_id</span><span class="p">,</span>
-            <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="s2">&quot;process_payment&quot;</span>
+            <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">,</span>
+            <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">request_id</span><span class="p">,</span>
+            <span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"process_payment"</span>
         <span class="p">}</span>
     <span class="p">)</span>
     <span class="k">raise</span>
@@ -5098,16 +5098,16 @@ FraiseQL Stack:
 <h3 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
 <p><strong>Automatic Error Fingerprinting:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Errors are automatically grouped by fingerprint</span>
-<span class="c1"># Similar to Sentry&#39;s issue grouping</span>
+<span class="c1"># Similar to Sentry's issue grouping</span>
 
-<span class="c1"># Example: All &quot;payment timeout&quot; errors grouped together</span>
+<span class="c1"># Example: All "payment timeout" errors grouped together</span>
 <span class="n">SELECT</span>
     <span class="n">fingerprint</span><span class="p">,</span>
     <span class="n">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span> <span class="k">as</span> <span class="n">occurrences</span><span class="p">,</span>
     <span class="n">MAX</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">)</span> <span class="k">as</span> <span class="n">last_seen</span><span class="p">,</span>
     <span class="n">MIN</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">)</span> <span class="k">as</span> <span class="n">first_seen</span>
 <span class="n">FROM</span> <span class="n">monitoring</span><span class="o">.</span><span class="n">errors</span>
-<span class="n">WHERE</span> <span class="n">environment</span> <span class="o">=</span> <span class="s1">&#39;production&#39;</span>
+<span class="n">WHERE</span> <span class="n">environment</span> <span class="o">=</span> <span class="s1">'production'</span>
   <span class="n">AND</span> <span class="n">resolved_at</span> <span class="n">IS</span> <span class="n">NULL</span>
 <span class="n">GROUP</span> <span class="n">BY</span> <span class="n">fingerprint</span>
 <span class="n">ORDER</span> <span class="n">BY</span> <span class="n">occurrences</span> <span class="n">DESC</span><span class="p">;</span>
@@ -5123,7 +5123,7 @@ FraiseQL Stack:
 <span class="w">    </span><span class="n">context</span><span class="p">,</span>
 <span class="w">    </span><span class="n">occurred_at</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;payment_timeout_error&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'payment_timeout_error'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
 </code></pre></div>
@@ -5131,26 +5131,26 @@ FraiseQL Stack:
 <div class="highlight"><pre><span></span><code><span class="c1">-- Correlate errors with distributed traces</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">error</span><span class="p">,</span>
-<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;user_id&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="n">trace_id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="n">duration_ms</span><span class="p">,</span>
 <span class="w">    </span><span class="n">t</span><span class="p">.</span><span class="n">status_code</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span><span class="w"> </span><span class="n">e</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">traces</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">trace_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">trace_id</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;database_connection_error&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'database_connection_error'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Issue Management:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Resolve errors</span>
-<span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">resolve_error</span><span class="p">(</span><span class="n">fingerprint</span><span class="o">=</span><span class="s2">&quot;payment_timeout_error&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">resolve_error</span><span class="p">(</span><span class="n">fingerprint</span><span class="o">=</span><span class="s2">"payment_timeout_error"</span><span class="p">)</span>
 
 <span class="c1"># Ignore specific errors</span>
-<span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">ignore_error</span><span class="p">(</span><span class="n">fingerprint</span><span class="o">=</span><span class="s2">&quot;known_external_api_issue&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">ignore_error</span><span class="p">(</span><span class="n">fingerprint</span><span class="o">=</span><span class="s2">"known_external_api_issue"</span><span class="p">)</span>
 
 <span class="c1"># Assign errors to team members</span>
 <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">assign_error</span><span class="p">(</span>
-    <span class="n">fingerprint</span><span class="o">=</span><span class="s2">&quot;critical_bug&quot;</span><span class="p">,</span>
-    <span class="n">assignee</span><span class="o">=</span><span class="s2">&quot;dev@example.com&quot;</span>
+    <span class="n">fingerprint</span><span class="o">=</span><span class="s2">"critical_bug"</span><span class="p">,</span>
+    <span class="n">assignee</span><span class="o">=</span><span class="s2">"dev@example.com"</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Custom Notifications:</strong></p>
@@ -5158,15 +5158,15 @@ FraiseQL Stack:
 
 <span class="c1"># Configure email notifications</span>
 <span class="n">email_notifier</span> <span class="o">=</span> <span class="n">EmailNotifier</span><span class="p">(</span>
-    <span class="n">smtp_host</span><span class="o">=</span><span class="s2">&quot;smtp.gmail.com&quot;</span><span class="p">,</span>
+    <span class="n">smtp_host</span><span class="o">=</span><span class="s2">"smtp.gmail.com"</span><span class="p">,</span>
     <span class="n">smtp_port</span><span class="o">=</span><span class="mi">587</span><span class="p">,</span>
-    <span class="n">from_email</span><span class="o">=</span><span class="s2">&quot;alerts@myapp.com&quot;</span><span class="p">,</span>
-    <span class="n">to_emails</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;team@myapp.com&quot;</span><span class="p">]</span>
+    <span class="n">from_email</span><span class="o">=</span><span class="s2">"alerts@myapp.com"</span><span class="p">,</span>
+    <span class="n">to_emails</span><span class="o">=</span><span class="p">[</span><span class="s2">"team@myapp.com"</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="c1"># Configure Slack notifications</span>
 <span class="n">slack_notifier</span> <span class="o">=</span> <span class="n">SlackNotifier</span><span class="p">(</span>
-    <span class="n">webhook_url</span><span class="o">=</span><span class="s2">&quot;https://hooks.slack.com/services/YOUR/WEBHOOK/URL&quot;</span>
+    <span class="n">webhook_url</span><span class="o">=</span><span class="s2">"https://hooks.slack.com/services/YOUR/WEBHOOK/URL"</span>
 <span class="p">)</span>
 
 <span class="c1"># Add to tracker</span>
@@ -5175,7 +5175,7 @@ FraiseQL Stack:
 
 <span class="c1"># Rate limiting: Only notify on first occurrence and every 100th occurrence</span>
 <span class="n">tracker</span><span class="o">.</span><span class="n">set_notification_rate_limit</span><span class="p">(</span>
-    <span class="n">fingerprint</span><span class="o">=</span><span class="s2">&quot;payment_timeout_error&quot;</span><span class="p">,</span>
+    <span class="n">fingerprint</span><span class="o">=</span><span class="s2">"payment_timeout_error"</span><span class="p">,</span>
     <span class="n">notify_on_occurrence</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">300</span><span class="p">]</span>  <span class="c1"># 1st, 100th, 200th, etc.</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5188,7 +5188,7 @@ FraiseQL Stack:
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">count</span><span class="p">,</span>
 <span class="w">    </span><span class="k">MAX</span><span class="p">(</span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">last_seen</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;24 hours&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'24 hours'</span>
 <span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">resolved_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">fingerprint</span><span class="p">,</span><span class="w"> </span><span class="n">exception_type</span><span class="p">,</span><span class="w"> </span><span class="n">message</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">count</span><span class="w"> </span><span class="k">DESC</span>
@@ -5196,21 +5196,21 @@ FraiseQL Stack:
 
 <span class="c1">-- Errors by user</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;user_id&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">user_id</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">error_count</span><span class="p">,</span>
 <span class="w">    </span><span class="n">array_agg</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">exception_type</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">error_types</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;7 days&#39;</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;user_id&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'7 days'</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">error_count</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
 
 <span class="c1">-- Error rate over time (hourly)</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">date_trunc</span><span class="p">(</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">hour</span><span class="p">,</span>
+<span class="w">    </span><span class="n">date_trunc</span><span class="p">(</span><span class="s1">'hour'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">hour</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">error_count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;24 hours&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'24 hours'</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">hour</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">hour</span><span class="p">;</span>
 </code></pre></div>
@@ -5282,21 +5282,21 @@ FraiseQL Stack:
 <span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
 
 <span class="c1"># Basic operations</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>  <span class="c1"># 1 hour TTL</span>
-<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">&quot;user:123&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">,</span> <span class="n">user_data</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>  <span class="c1"># 1 hour TTL</span>
+<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">)</span>
 
 <span class="c1"># Pattern-based deletion</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">delete_pattern</span><span class="p">(</span><span class="s2">&quot;user:*&quot;</span><span class="p">)</span>  <span class="c1"># Clear all user caches</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">delete_pattern</span><span class="p">(</span><span class="s2">"user:*"</span><span class="p">)</span>  <span class="c1"># Clear all user caches</span>
 
 <span class="c1"># Batch operations</span>
 <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_many</span><span class="p">({</span>
-    <span class="s2">&quot;product:1&quot;</span><span class="p">:</span> <span class="n">product1</span><span class="p">,</span>
-    <span class="s2">&quot;product:2&quot;</span><span class="p">:</span> <span class="n">product2</span><span class="p">,</span>
-    <span class="s2">&quot;product:3&quot;</span><span class="p">:</span> <span class="n">product3</span>
+    <span class="s2">"product:1"</span><span class="p">:</span> <span class="n">product1</span><span class="p">,</span>
+    <span class="s2">"product:2"</span><span class="p">:</span> <span class="n">product2</span><span class="p">,</span>
+    <span class="s2">"product:3"</span><span class="p">:</span> <span class="n">product3</span>
 <span class="p">},</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">1800</span><span class="p">)</span>
 
-<span class="n">values</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_many</span><span class="p">([</span><span class="s2">&quot;product:1&quot;</span><span class="p">,</span> <span class="s2">&quot;product:2&quot;</span><span class="p">,</span> <span class="s2">&quot;product:3&quot;</span><span class="p">])</span>
+<span class="n">values</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_many</span><span class="p">([</span><span class="s2">"product:1"</span><span class="p">,</span> <span class="s2">"product:2"</span><span class="p">,</span> <span class="s2">"product:3"</span><span class="p">])</span>
 </code></pre></div>
 <h3 id="features_1">Features<a class="headerlink" href="#features_1" title="Permanent link">&para;</a></h3>
 <p><strong>UNLOGGED Tables:</strong></p>
@@ -5315,7 +5315,7 @@ FraiseQL Stack:
 </code></pre></div>
 <p><strong>Automatic Expiration:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># TTL-based expiration (automatic cleanup)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;session:abc&quot;</span><span class="p">,</span> <span class="n">session_data</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">900</span><span class="p">)</span>  <span class="c1"># 15 minutes</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"session:abc"</span><span class="p">,</span> <span class="n">session_data</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">900</span><span class="p">)</span>  <span class="c1"># 15 minutes</span>
 
 <span class="c1"># Cleanup runs periodically (configurable)</span>
 <span class="c1"># DELETE FROM cache_entries WHERE expires_at &lt; NOW();</span>
@@ -5325,10 +5325,10 @@ FraiseQL Stack:
 <span class="c1"># All app instances see the same cached data</span>
 
 <span class="c1"># Instance 1</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;config:feature_flags&quot;</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"config:feature_flags"</span><span class="p">,</span> <span class="n">flags</span><span class="p">)</span>
 
 <span class="c1"># Instance 2 (immediately available)</span>
-<span class="n">flags</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;config:feature_flags&quot;</span><span class="p">)</span>
+<span class="n">flags</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"config:feature_flags"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="performance_1">Performance<a class="headerlink" href="#performance_1" title="Permanent link">&para;</a></h3>
 <p><strong>UNLOGGED Table Benefits:</strong></p>
@@ -5402,8 +5402,8 @@ FraiseQL Stack:
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">sentry_sdk</span>
 
 <span class="n">sentry_sdk</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
-    <span class="n">dsn</span><span class="o">=</span><span class="s2">&quot;https://key@sentry.io/project&quot;</span><span class="p">,</span>
-    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">dsn</span><span class="o">=</span><span class="s2">"https://key@sentry.io/project"</span><span class="p">,</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
     <span class="n">traces_sample_rate</span><span class="o">=</span><span class="mf">0.1</span>
 <span class="p">)</span>
 
@@ -5413,12 +5413,12 @@ FraiseQL Stack:
 <p><strong>After (PostgreSQL):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_error_tracker</span>
 
-<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">)</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">)</span>
 
 <span class="c1"># Capture exception (same interface)</span>
 <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-    <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-    <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request_id</span>
+    <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+    <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span>
 <span class="p">})</span>
 </code></pre></div>
 <p><strong>Migration Steps:</strong></p>
@@ -5434,18 +5434,18 @@ FraiseQL Stack:
 <p><strong>Before (Redis):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
 
-<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">&quot;redis://localhost:6379&quot;</span><span class="p">)</span>
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">"redis://localhost:6379"</span><span class="p">)</span>
 
-<span class="k">await</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">ex</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
-<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"key"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">,</span> <span class="n">ex</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"key"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>After (PostgreSQL):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span>
 
 <span class="n">cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
 
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
-<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">"key"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">)</span>
+<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"key"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Migration Steps:</strong></p>
 <ol>
@@ -5468,43 +5468,43 @@ FraiseQL Stack:
 
 <span class="c1"># Metrics</span>
 <span class="n">graphql_requests_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;graphql_requests_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total GraphQL requests&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;operation&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">]</span>
+    <span class="s1">'graphql_requests_total'</span><span class="p">,</span>
+    <span class="s1">'Total GraphQL requests'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'operation'</span><span class="p">,</span> <span class="s1">'status'</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">graphql_request_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;graphql_request_duration_seconds&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;GraphQL request duration&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;operation&#39;</span><span class="p">],</span>
+    <span class="s1">'graphql_request_duration_seconds'</span><span class="p">,</span>
+    <span class="s1">'GraphQL request duration'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'operation'</span><span class="p">],</span>
     <span class="n">buckets</span><span class="o">=</span><span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="mf">10.0</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">graphql_query_complexity</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;graphql_query_complexity&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;GraphQL query complexity score&#39;</span><span class="p">,</span>
+    <span class="s1">'graphql_query_complexity'</span><span class="p">,</span>
+    <span class="s1">'GraphQL query complexity score'</span><span class="p">,</span>
     <span class="n">buckets</span><span class="o">=</span><span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">500</span><span class="p">,</span> <span class="mi">1000</span><span class="p">]</span>
 <span class="p">)</span>
 
 <span class="n">db_pool_connections</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
-    <span class="s1">&#39;db_pool_connections&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Database pool connections&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;state&#39;</span><span class="p">]</span>  <span class="c1"># active, idle</span>
+    <span class="s1">'db_pool_connections'</span><span class="p">,</span>
+    <span class="s1">'Database pool connections'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'state'</span><span class="p">]</span>  <span class="c1"># active, idle</span>
 <span class="p">)</span>
 
-<span class="n">cache_hits</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">&#39;cache_hits_total&#39;</span><span class="p">,</span> <span class="s1">&#39;Cache hits&#39;</span><span class="p">)</span>
-<span class="n">cache_misses</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">&#39;cache_misses_total&#39;</span><span class="p">,</span> <span class="s1">&#39;Cache misses&#39;</span><span class="p">)</span>
+<span class="n">cache_hits</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">'cache_hits_total'</span><span class="p">,</span> <span class="s1">'Cache hits'</span><span class="p">)</span>
+<span class="n">cache_misses</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="s1">'cache_misses_total'</span><span class="p">,</span> <span class="s1">'Cache misses'</span><span class="p">)</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/metrics&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/metrics"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">metrics</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prometheus metrics endpoint.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Prometheus metrics endpoint."""</span>
     <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
         <span class="n">content</span><span class="o">=</span><span class="n">generate_latest</span><span class="p">(),</span>
-        <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/plain&quot;</span>
+        <span class="n">media_type</span><span class="o">=</span><span class="s2">"text/plain"</span>
     <span class="p">)</span>
 
 <span class="c1"># Middleware to track metrics</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">metrics_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
     <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
@@ -5515,9 +5515,9 @@ FraiseQL Stack:
     <span class="n">duration</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
 
     <span class="c1"># Track request duration</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;/graphql&quot;</span><span class="p">:</span>
-        <span class="n">operation</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Operation-Name&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
-        <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;success&quot;</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&lt;</span> <span class="mi">400</span> <span class="k">else</span> <span class="s2">&quot;error&quot;</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">"/graphql"</span><span class="p">:</span>
+        <span class="n">operation</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-Operation-Name"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="s2">"success"</span> <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">&lt;</span> <span class="mi">400</span> <span class="k">else</span> <span class="s2">"error"</span>
 
         <span class="n">graphql_requests_total</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
         <span class="n">graphql_request_duration</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">)</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
@@ -5528,33 +5528,33 @@ FraiseQL Stack:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetricsCollector</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FraiseQLMetrics</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom metrics for FraiseQL operations.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Custom metrics for FraiseQL operations."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">passthrough_queries</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-            <span class="s1">&#39;fraiseql_passthrough_queries_total&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;Queries using JSON passthrough&#39;</span>
+            <span class="s1">'fraiseql_passthrough_queries_total'</span><span class="p">,</span>
+            <span class="s1">'Queries using JSON passthrough'</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">turbo_router_hits</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-            <span class="s1">&#39;fraiseql_turbo_router_hits_total&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;TurboRouter cache hits&#39;</span>
+            <span class="s1">'fraiseql_turbo_router_hits_total'</span><span class="p">,</span>
+            <span class="s1">'TurboRouter cache hits'</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">apq_cache_hits</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-            <span class="s1">&#39;fraiseql_apq_cache_hits_total&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;APQ cache hits&#39;</span>
+            <span class="s1">'fraiseql_apq_cache_hits_total'</span><span class="p">,</span>
+            <span class="s1">'APQ cache hits'</span>
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mutation_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-            <span class="s1">&#39;fraiseql_mutation_duration_seconds&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;Mutation execution time&#39;</span><span class="p">,</span>
-            <span class="p">[</span><span class="s1">&#39;mutation_name&#39;</span><span class="p">]</span>
+            <span class="s1">'fraiseql_mutation_duration_seconds'</span><span class="p">,</span>
+            <span class="s1">'Mutation execution time'</span><span class="p">,</span>
+            <span class="p">[</span><span class="s1">'mutation_name'</span><span class="p">]</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">track_query_execution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">complexity</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Track query execution metrics.&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">&quot;passthrough&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Track query execution metrics."""</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="s2">"passthrough"</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">passthrough_queries</span><span class="o">.</span><span class="n">inc</span><span class="p">()</span>
 
         <span class="n">graphql_request_duration</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="n">duration</span><span class="p">)</span>
@@ -5569,30 +5569,30 @@ FraiseQL Stack:
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">StructuredFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;JSON structured logging formatter.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""JSON structured logging formatter."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
         <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
-            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span>
-            <span class="s2">&quot;logger&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
-            <span class="s2">&quot;module&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">module</span><span class="p">,</span>
-            <span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">funcName</span><span class="p">,</span>
-            <span class="s2">&quot;line&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span>
+            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s2">"level"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span>
+            <span class="s2">"logger"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
+            <span class="s2">"module"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">module</span><span class="p">,</span>
+            <span class="s2">"function"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">funcName</span><span class="p">,</span>
+            <span class="s2">"line"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">lineno</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># Add extra fields</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;user_id&quot;</span><span class="p">):</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">user_id</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;query_id&quot;</span><span class="p">):</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;query_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">query_id</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;duration&quot;</span><span class="p">):</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;duration_ms&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">duration</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"user_id"</span><span class="p">):</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">user_id</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"query_id"</span><span class="p">):</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"query_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">query_id</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"duration"</span><span class="p">):</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"duration_ms"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">duration</span>
 
         <span class="c1"># Add exception info</span>
         <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">:</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;exception&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"exception"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">log_data</span><span class="p">)</span>
 
@@ -5612,12 +5612,12 @@ FraiseQL Stack:
 
 <span class="c1"># Usage</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-    <span class="s2">&quot;GraphQL query executed&quot;</span><span class="p">,</span>
+    <span class="s2">"GraphQL query executed"</span><span class="p">,</span>
     <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-123&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;query_id&quot;</span><span class="p">:</span> <span class="s2">&quot;query-456&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;duration&quot;</span><span class="p">:</span> <span class="mf">125.5</span><span class="p">,</span>
-        <span class="s2">&quot;complexity&quot;</span><span class="p">:</span> <span class="mi">45</span>
+        <span class="s2">"user_id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span>
+        <span class="s2">"query_id"</span><span class="p">:</span> <span class="s2">"query-456"</span><span class="p">,</span>
+        <span class="s2">"duration"</span><span class="p">:</span> <span class="mf">125.5</span><span class="p">,</span>
+        <span class="s2">"complexity"</span><span class="p">:</span> <span class="mi">45</span>
     <span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5634,13 +5634,13 @@ FraiseQL Stack:
 
         <span class="c1"># Log request</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="s2">&quot;Request started&quot;</span><span class="p">,</span>
+            <span class="s2">"Request started"</span><span class="p">,</span>
             <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
-                <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
-                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
-                <span class="s2">&quot;client_ip&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span> <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">client</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-                <span class="s2">&quot;user_agent&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user-agent&quot;</span><span class="p">)</span>
+                <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
+                <span class="s2">"method"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
+                <span class="s2">"path"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span><span class="p">,</span>
+                <span class="s2">"client_ip"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span> <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">client</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">"user_agent"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user-agent"</span><span class="p">)</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -5653,16 +5653,16 @@ FraiseQL Stack:
 
             <span class="c1"># Log response</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                <span class="s2">&quot;Request completed&quot;</span><span class="p">,</span>
+                <span class="s2">"Request completed"</span><span class="p">,</span>
                 <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-                    <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
-                    <span class="s2">&quot;status_code&quot;</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
-                    <span class="s2">&quot;duration_ms&quot;</span><span class="p">:</span> <span class="n">duration</span>
+                    <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
+                    <span class="s2">"status_code"</span><span class="p">:</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span>
+                    <span class="s2">"duration_ms"</span><span class="p">:</span> <span class="n">duration</span>
                 <span class="p">}</span>
             <span class="p">)</span>
 
             <span class="c1"># Add request ID to response headers</span>
-            <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;X-Request-ID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">request_id</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">"X-Request-ID"</span><span class="p">]</span> <span class="o">=</span> <span class="n">request_id</span>
 
             <span class="k">return</span> <span class="n">response</span>
 
@@ -5670,11 +5670,11 @@ FraiseQL Stack:
             <span class="n">duration</span> <span class="o">=</span> <span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">)</span> <span class="o">*</span> <span class="mi">1000</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-                <span class="s2">&quot;Request failed&quot;</span><span class="p">,</span>
+                <span class="s2">"Request failed"</span><span class="p">,</span>
                 <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-                    <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
-                    <span class="s2">&quot;duration_ms&quot;</span><span class="p">:</span> <span class="n">duration</span><span class="p">,</span>
-                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                    <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
+                    <span class="s2">"duration_ms"</span><span class="p">:</span> <span class="n">duration</span><span class="p">,</span>
+                    <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
                 <span class="p">},</span>
                 <span class="n">exc_info</span><span class="o">=</span><span class="kc">True</span>
             <span class="p">)</span>
@@ -5691,31 +5691,31 @@ FraiseQL Stack:
 
 <span class="c1"># Initialize Sentry</span>
 <span class="n">sentry_sdk</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
-    <span class="n">dsn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SENTRY_DSN&quot;</span><span class="p">),</span>
-    <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;production&quot;</span><span class="p">,</span>
+    <span class="n">dsn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"SENTRY_DSN"</span><span class="p">),</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
     <span class="n">traces_sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>  <span class="c1"># 10% of traces</span>
     <span class="n">profiles_sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-    <span class="n">release</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;fraiseql@</span><span class="si">{</span><span class="n">VERSION</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">release</span><span class="o">=</span><span class="sa">f</span><span class="s2">"fraiseql@</span><span class="si">{</span><span class="n">VERSION</span><span class="si">}</span><span class="s2">"</span>
 <span class="p">)</span>
 
 <span class="c1"># In GraphQL context</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sentry_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
     <span class="c1"># Set user context</span>
-    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">):</span>
         <span class="n">user</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user</span>
         <span class="n">sentry_sdk</span><span class="o">.</span><span class="n">set_user</span><span class="p">({</span>
-            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
-            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
-            <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span>
+            <span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+            <span class="s2">"username"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span>
         <span class="p">})</span>
 
     <span class="c1"># Set GraphQL context</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;/graphql&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">"/graphql"</span><span class="p">:</span>
         <span class="n">query</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">body</span><span class="p">()</span>
-        <span class="n">sentry_sdk</span><span class="o">.</span><span class="n">set_context</span><span class="p">(</span><span class="s2">&quot;graphql&quot;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="o">.</span><span class="n">decode</span><span class="p">()[:</span><span class="mi">1000</span><span class="p">],</span>  <span class="c1"># Limit size</span>
-            <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;X-Operation-Name&quot;</span><span class="p">)</span>
+        <span class="n">sentry_sdk</span><span class="o">.</span><span class="n">set_context</span><span class="p">(</span><span class="s2">"graphql"</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"query"</span><span class="p">:</span> <span class="n">query</span><span class="o">.</span><span class="n">decode</span><span class="p">()[:</span><span class="mi">1000</span><span class="p">],</span>  <span class="c1"># Limit size</span>
+            <span class="s2">"operation"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-Operation-Name"</span><span class="p">)</span>
         <span class="p">})</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
@@ -5737,13 +5737,13 @@ FraiseQL Stack:
 <span class="c1"># Custom span</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">&quot;get_user&quot;</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">span</span><span class="p">:</span>
-        <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">&quot;user.id&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
-        <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">&quot;operation&quot;</span><span class="p">,</span> <span class="s2">&quot;query&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">tracer</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="s2">"get_user"</span><span class="p">,</span> <span class="n">service</span><span class="o">=</span><span class="s2">"fraiseql"</span><span class="p">)</span> <span class="k">as</span> <span class="n">span</span><span class="p">:</span>
+        <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">"user.id"</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+        <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">"operation"</span><span class="p">,</span> <span class="s2">"query"</span><span class="p">)</span>
 
         <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_user</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span>
 
-        <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">&quot;user.found&quot;</span><span class="p">,</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">span</span><span class="o">.</span><span class="n">set_tag</span><span class="p">(</span><span class="s2">"user.found"</span><span class="p">,</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">user</span>
 </code></pre></div>
@@ -5751,9 +5751,9 @@ FraiseQL Stack:
 <h3 id="query-timing">Query Timing<a class="headerlink" href="#query-timing" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">query_duration_histogram</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_timing_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">!=</span> <span class="s2">&quot;/graphql&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">!=</span> <span class="s2">"/graphql"</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
     <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -5761,8 +5761,8 @@ FraiseQL Stack:
 
     <span class="c1"># Parse query</span>
     <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">operation_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;operationName&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">operation_name</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"operationName"</span><span class="p">,</span> <span class="s2">"unknown"</span><span class="p">)</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
@@ -5776,11 +5776,11 @@ FraiseQL Stack:
     <span class="c1"># Log slow queries</span>
     <span class="k">if</span> <span class="n">duration</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">:</span>  <span class="c1"># Slower than 1 second</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Slow query detected&quot;</span><span class="p">,</span>
+            <span class="s2">"Slow query detected"</span><span class="p">,</span>
             <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">operation_name</span><span class="p">,</span>
-                <span class="s2">&quot;duration_ms&quot;</span><span class="p">:</span> <span class="n">duration</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
-                <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">500</span><span class="p">]</span>
+                <span class="s2">"operation"</span><span class="p">:</span> <span class="n">operation_name</span><span class="p">,</span>
+                <span class="s2">"duration_ms"</span><span class="p">:</span> <span class="n">duration</span> <span class="o">*</span> <span class="mi">1000</span><span class="p">,</span>
+                <span class="s2">"query"</span><span class="p">:</span> <span class="n">query</span><span class="p">[:</span><span class="mi">500</span><span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -5790,19 +5790,19 @@ FraiseQL Stack:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.analysis.complexity</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_query_complexity</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">track_query_complexity</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">operation_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Track query complexity metrics.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Track query complexity metrics."""</span>
     <span class="n">complexity</span> <span class="o">=</span> <span class="n">analyze_query_complexity</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="n">graphql_query_complexity</span><span class="o">.</span><span class="n">observe</span><span class="p">(</span><span class="n">complexity</span><span class="o">.</span><span class="n">score</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">complexity</span><span class="o">.</span><span class="n">score</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;High complexity query&quot;</span><span class="p">,</span>
+            <span class="s2">"High complexity query"</span><span class="p">,</span>
             <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;operation&quot;</span><span class="p">:</span> <span class="n">operation_name</span><span class="p">,</span>
-                <span class="s2">&quot;complexity&quot;</span><span class="p">:</span> <span class="n">complexity</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
-                <span class="s2">&quot;depth&quot;</span><span class="p">:</span> <span class="n">complexity</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span>
-                <span class="s2">&quot;fields&quot;</span><span class="p">:</span> <span class="n">complexity</span><span class="o">.</span><span class="n">field_count</span>
+                <span class="s2">"operation"</span><span class="p">:</span> <span class="n">operation_name</span><span class="p">,</span>
+                <span class="s2">"complexity"</span><span class="p">:</span> <span class="n">complexity</span><span class="o">.</span><span class="n">score</span><span class="p">,</span>
+                <span class="s2">"depth"</span><span class="p">:</span> <span class="n">complexity</span><span class="o">.</span><span class="n">depth</span><span class="p">,</span>
+                <span class="s2">"fields"</span><span class="p">:</span> <span class="n">complexity</span><span class="o">.</span><span class="n">field_count</span>
             <span class="p">}</span>
         <span class="p">)</span>
 </code></pre></div>
@@ -5811,27 +5811,27 @@ FraiseQL Stack:
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">collect_pool_metrics</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Collect database pool metrics.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Collect database pool metrics."""</span>
     <span class="n">pool</span> <span class="o">=</span> <span class="n">get_db_pool</span><span class="p">()</span>
     <span class="n">stats</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
 
     <span class="c1"># Update Prometheus gauges</span>
-    <span class="n">db_pool_connections</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;pool_size&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;pool_available&quot;</span><span class="p">]</span>
+    <span class="n">db_pool_connections</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">"pool_size"</span><span class="p">]</span> <span class="o">-</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"pool_available"</span><span class="p">]</span>
     <span class="p">)</span>
-    <span class="n">db_pool_connections</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="s2">&quot;idle&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
-        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;pool_available&quot;</span><span class="p">]</span>
+    <span class="n">db_pool_connections</span><span class="o">.</span><span class="n">labels</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="s2">"idle"</span><span class="p">)</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">"pool_available"</span><span class="p">]</span>
     <span class="p">)</span>
 
     <span class="c1"># Log if pool is saturated</span>
-    <span class="n">utilization</span> <span class="o">=</span> <span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;pool_size&quot;</span><span class="p">]</span> <span class="o">/</span> <span class="n">pool</span><span class="o">.</span><span class="n">max_size</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+    <span class="n">utilization</span> <span class="o">=</span> <span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="s2">"pool_size"</span><span class="p">]</span> <span class="o">/</span> <span class="n">pool</span><span class="o">.</span><span class="n">max_size</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
     <span class="k">if</span> <span class="n">utilization</span> <span class="o">&gt;</span> <span class="mi">90</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;Database pool highly utilized&quot;</span><span class="p">,</span>
+            <span class="s2">"Database pool highly utilized"</span><span class="p">,</span>
             <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;pool_size&quot;</span><span class="p">:</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;pool_size&quot;</span><span class="p">],</span>
-                <span class="s2">&quot;max_size&quot;</span><span class="p">:</span> <span class="n">pool</span><span class="o">.</span><span class="n">max_size</span><span class="p">,</span>
-                <span class="s2">&quot;utilization_pct&quot;</span><span class="p">:</span> <span class="n">utilization</span>
+                <span class="s2">"pool_size"</span><span class="p">:</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"pool_size"</span><span class="p">],</span>
+                <span class="s2">"max_size"</span><span class="p">:</span> <span class="n">pool</span><span class="o">.</span><span class="n">max_size</span><span class="p">,</span>
+                <span class="s2">"utilization_pct"</span><span class="p">:</span> <span class="n">utilization</span>
             <span class="p">}</span>
         <span class="p">)</span>
 
@@ -5850,7 +5850,7 @@ FraiseQL Stack:
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="n">database_echo</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Development only</span>
 <span class="p">)</span>
 
@@ -5866,13 +5866,13 @@ FraiseQL Stack:
 <span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># High error rate</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighErrorRate</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(graphql_requests_total{status=&quot;error&quot;}[5m]) &gt; 0.05</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(graphql_requests_total{status="error"}[5m]) &gt; 0.05</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">GraphQL</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">errors/sec&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">GraphQL</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">errors/sec"</span>
 
 <span class="w">      </span><span class="c1"># High latency</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighLatency</span>
@@ -5881,18 +5881,18 @@ FraiseQL Stack:
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">GraphQL</span><span class="nv"> </span><span class="s">latency&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;P99</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}s&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">GraphQL</span><span class="nv"> </span><span class="s">latency"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"P99</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}s"</span>
 
 <span class="w">      </span><span class="c1"># Database pool saturation</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DatabasePoolSaturated</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db_pool_connections{state=&quot;active&quot;} / db_pool_max_connections &gt; 0.9</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db_pool_connections{state="active"} / db_pool_max_connections &gt; 0.9</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Database</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">saturated&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Pool</span><span class="nv"> </span><span class="s">utilization</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}%&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Database</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">saturated"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Pool</span><span class="nv"> </span><span class="s">utilization</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}%"</span>
 
 <span class="w">      </span><span class="c1"># Low cache hit rate</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LowCacheHitRate</span>
@@ -5901,8 +5901,8 @@ FraiseQL Stack:
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Low</span><span class="nv"> </span><span class="s">cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">rate&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Low</span><span class="nv"> </span><span class="s">cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">rate"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}"</span>
 </code></pre></div>
 <h3 id="pagerduty-integration">PagerDuty Integration<a class="headerlink" href="#pagerduty-integration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
@@ -5912,87 +5912,87 @@ FraiseQL Stack:
     <span class="n">severity</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">details</span><span class="p">:</span> <span class="nb">dict</span>
 <span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Send alert to PagerDuty.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Send alert to PagerDuty."""</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;routing_key&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PAGERDUTY_ROUTING_KEY&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;event_action&quot;</span><span class="p">:</span> <span class="s2">&quot;trigger&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;payload&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">&quot;summary&quot;</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
-            <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="n">severity</span><span class="p">,</span>
-            <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;fraiseql&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;custom_details&quot;</span><span class="p">:</span> <span class="n">details</span>
+        <span class="s2">"routing_key"</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"PAGERDUTY_ROUTING_KEY"</span><span class="p">),</span>
+        <span class="s2">"event_action"</span><span class="p">:</span> <span class="s2">"trigger"</span><span class="p">,</span>
+        <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
+            <span class="s2">"severity"</span><span class="p">:</span> <span class="n">severity</span><span class="p">,</span>
+            <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"fraiseql"</span><span class="p">,</span>
+            <span class="s2">"custom_details"</span><span class="p">:</span> <span class="n">details</span>
         <span class="p">}</span>
     <span class="p">}</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="s2">&quot;https://events.pagerduty.com/v2/enqueue&quot;</span><span class="p">,</span>
+            <span class="s2">"https://events.pagerduty.com/v2/enqueue"</span><span class="p">,</span>
             <span class="n">json</span><span class="o">=</span><span class="n">payload</span>
         <span class="p">)</span>
 
 <span class="c1"># Example usage</span>
 <span class="k">if</span> <span class="n">error_rate</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
     <span class="k">await</span> <span class="n">send_pagerduty_alert</span><span class="p">(</span>
-        <span class="n">summary</span><span class="o">=</span><span class="s2">&quot;High GraphQL error rate detected&quot;</span><span class="p">,</span>
-        <span class="n">severity</span><span class="o">=</span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"High GraphQL error rate detected"</span><span class="p">,</span>
+        <span class="n">severity</span><span class="o">=</span><span class="s2">"error"</span><span class="p">,</span>
         <span class="n">details</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;error_rate&quot;</span><span class="p">:</span> <span class="n">error_rate</span><span class="p">,</span>
-            <span class="s2">&quot;time_window&quot;</span><span class="p">:</span> <span class="s2">&quot;5m&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;affected_operations&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;getUser&quot;</span><span class="p">,</span> <span class="s2">&quot;getOrders&quot;</span><span class="p">]</span>
+            <span class="s2">"error_rate"</span><span class="p">:</span> <span class="n">error_rate</span><span class="p">,</span>
+            <span class="s2">"time_window"</span><span class="p">:</span> <span class="s2">"5m"</span><span class="p">,</span>
+            <span class="s2">"affected_operations"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"getUser"</span><span class="p">,</span> <span class="s2">"getOrders"</span><span class="p">]</span>
         <span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
 <h2 id="dashboards">Dashboards<a class="headerlink" href="#dashboards" title="Permanent link">&para;</a></h2>
 <h3 id="grafana-dashboard">Grafana Dashboard<a class="headerlink" href="#grafana-dashboard" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;dashboard&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;FraiseQL Production Metrics&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;panels&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"dashboard"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FraiseQL Production Metrics"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"panels"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Request Rate&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Request Rate"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"targets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rate(graphql_requests_total[5m])&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{{operation}}&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rate(graphql_requests_total[5m])"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"{{operation}}"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">]</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Latency (P50, P95, P99)&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Latency (P50, P95, P99)"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"targets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.50, rate(graphql_request_duration_seconds_bucket[5m]))&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P50&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"histogram_quantile(0.50, rate(graphql_request_duration_seconds_bucket[5m]))"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P50"</span>
 <span class="w">          </span><span class="p">},</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.95, rate(graphql_request_duration_seconds_bucket[5m]))&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P95&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"histogram_quantile(0.95, rate(graphql_request_duration_seconds_bucket[5m]))"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P95"</span>
 <span class="w">          </span><span class="p">},</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.99, rate(graphql_request_duration_seconds_bucket[5m]))&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P99&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"histogram_quantile(0.99, rate(graphql_request_duration_seconds_bucket[5m]))"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P99"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">]</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Error Rate&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Error Rate"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"targets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rate(graphql_requests_total{status=\&quot;error\&quot;}[5m])&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Errors/sec&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rate(graphql_requests_total{status=\"error\"}[5m])"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Errors/sec"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">]</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Database Pool&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Database Pool"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"targets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;db_pool_connections{state=\&quot;active\&quot;}&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Active&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"db_pool_connections{state=\"active\"}"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Active"</span>
 <span class="w">          </span><span class="p">},</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;db_pool_connections{state=\&quot;idle\&quot;}&quot;</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Idle&quot;</span>
+<span class="w">            </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"db_pool_connections{state=\"idle\"}"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Idle"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">]</span>
 <span class="w">      </span><span class="p">}</span>

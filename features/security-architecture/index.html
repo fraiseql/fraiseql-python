@@ -4802,9 +4802,9 @@
     <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>  <span class="c1"># Loads ALL fields</span>
     <span class="c1"># Then filter sensitive data in Python</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-        <span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
-        <span class="c1"># Hope we didn&#39;t forget to exclude user.password_hash</span>
+        <span class="s1">'id'</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="s1">'email'</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+        <span class="c1"># Hope we didn't forget to exclude user.password_hash</span>
     <span class="p">}</span>
 </code></pre></div>
 <p><strong>✅ FraiseQL Security by Design:</strong></p>
@@ -4828,7 +4828,7 @@
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">password</span><span class="w">  </span><span class="c"># ❌ Field doesn&#39;t exist in database view</span>
+<span class="w">    </span><span class="n">password</span><span class="w">  </span><span class="c"># ❌ Field doesn't exist in database view</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -4848,7 +4848,7 @@
 </ul>
 <h2 id="best-practices-for-secure-views">Best Practices for Secure Views<a class="headerlink" href="#best-practices-for-secure-views" title="Permanent link">&para;</a></h2>
 <h3 id="1-principle-of-least-privilege">1. Principle of Least Privilege<a class="headerlink" href="#1-principle-of-least-privilege" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Only expose what&#39;s needed for the specific use case</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Only expose what's needed for the specific use case</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">user_profile</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
@@ -4875,7 +4875,7 @@
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">posts_visible</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">posts</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">author_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_user_id</span><span class="p">()</span>
-<span class="w">   </span><span class="k">OR</span><span class="w"> </span><span class="n">visibility</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;public&#39;</span><span class="p">;</span>
+<span class="w">   </span><span class="k">OR</span><span class="w"> </span><span class="n">visibility</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'public'</span><span class="p">;</span>
 
 <span class="k">ALTER</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">posts_visible</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="p">(</span><span class="n">security_barrier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">);</span>
 </code></pre></div>

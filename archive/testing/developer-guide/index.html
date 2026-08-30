@@ -5047,13 +5047,13 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># 1. Set up environment</span>
 git<span class="w"> </span>clone<span class="w"> </span>https://github.com/fraiseql/fraiseql.git
 <span class="nb">cd</span><span class="w"> </span>fraiseql
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,all]&quot;</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev,all]"</span>
 
 <span class="c1"># 2. Start PostgreSQL</span>
 ./scripts/development/start-postgres-daemon.sh
 
 <span class="c1"># 3. Run tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres&#39;</span><span class="w">  </span><span class="c1"># Fast, reliable tests</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres'</span><span class="w">  </span><span class="c1"># Fast, reliable tests</span>
 </code></pre></div>
 <h2 id="test-categories">Test Categories<a class="headerlink" href="#test-categories" title="Permanent link">&para;</a></h2>
 <h3 id="main-ci-tests-always-run">Main CI Tests (Always Run)<a class="headerlink" href="#main-ci-tests-always-run" title="Permanent link">&para;</a></h3>
@@ -5062,24 +5062,24 @@ pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;re
 pytest<span class="w"> </span>tests/unit/
 
 <span class="c1"># PostgreSQL integration tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres'</span>
 
 <span class="c1"># Config tests</span>
 pytest<span class="w"> </span>tests/config/
 
 <span class="c1"># Combined main CI test suite</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres and not requires_vault and not requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres and not requires_vault and not requires_auth0'</span>
 </code></pre></div>
 <h3 id="enterprise-tests-optional">Enterprise Tests (Optional)<a class="headerlink" href="#enterprise-tests-optional" title="Permanent link">&para;</a></h3>
 <p>These tests run in the separate enterprise CI pipeline:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Vault KMS tests (requires Vault running)</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault'</span>
 
 <span class="c1"># Auth0 tests (uses mocks)</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_auth0'</span>
 
 <span class="c1"># All enterprise tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault or requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault or requires_auth0'</span>
 </code></pre></div>
 <h2 id="local-setup">Local Setup<a class="headerlink" href="#local-setup" title="Permanent link">&para;</a></h2>
 <h3 id="postgresql-setup">PostgreSQL Setup<a class="headerlink" href="#postgresql-setup" title="Permanent link">&para;</a></h3>
@@ -5088,7 +5088,7 @@ pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;re
 
 <span class="c1"># Option 2: Manual setup</span>
 createdb<span class="w"> </span>fraiseql_test
-<span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_test&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://localhost/fraiseql_test"</span>
 </code></pre></div>
 <h3 id="vault-setup-for-enterprise-tests">Vault Setup (for Enterprise Tests)<a class="headerlink" href="#vault-setup-for-enterprise-tests" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Start Vault in development mode</span>
@@ -5101,9 +5101,9 @@ docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </sp
 <span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_TOKEN</span><span class="o">=</span>fraiseql-ci-token
 
 <span class="c1"># Initialize Vault for testing</span>
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Vault-Token: </span><span class="nv">$VAULT_TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:8200/v1/sys/mounts/transit<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;type&quot;:&quot;transit&quot;}&#39;</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"type":"transit"}'</span>
 </code></pre></div>
 <h2 id="running-specific-test-types">Running Specific Test Types<a class="headerlink" href="#running-specific-test-types" title="Permanent link">&para;</a></h2>
 <h3 id="by-test-file">By Test File<a class="headerlink" href="#by-test-file" title="Permanent link">&para;</a></h3>
@@ -5118,16 +5118,16 @@ pytest<span class="w"> </span>tests/config/test_apq_backend_config.py<span class
 </code></pre></div>
 <h3 id="by-marker">By Marker<a class="headerlink" href="#by-marker" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># PostgreSQL tests only</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres'</span>
 
 <span class="c1"># Exclude enterprise tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;not requires_vault and not requires_auth0&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'not requires_vault and not requires_auth0'</span>
 
 <span class="c1"># Only integration tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;integration&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'integration'</span>
 
 <span class="c1"># Only slow tests</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;slow&#39;</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'slow'</span>
 </code></pre></div>
 <h3 id="by-directory">By Directory<a class="headerlink" href="#by-directory" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Unit tests</span>
@@ -5168,10 +5168,10 @@ docker<span class="w"> </span>restart<span class="w"> </span>vault
 </code></pre></div>
 <p><strong>Import errors:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Reinstall in development mode</span>
-pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;.[dev,all]&quot;</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev,all]"</span>
 
 <span class="c1"># Check Python path</span>
-python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import fraiseql; print(fraiseql.__file__)&quot;</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import fraiseql; print(fraiseql.__file__)"</span>
 </code></pre></div>
 <h3 id="debugging-commands">Debugging Commands<a class="headerlink" href="#debugging-commands" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># List all available tests</span>
@@ -5198,11 +5198,11 @@ pytest<span class="w"> </span>-n<span class="w"> </span>auto
 <h2 id="test-configuration">Test Configuration<a class="headerlink" href="#test-configuration" title="Permanent link">&para;</a></h2>
 <h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Database</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/fraiseql_test&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://localhost/fraiseql_test"</span>
 
 <span class="c1"># Vault (for enterprise tests)</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_ADDR</span><span class="o">=</span><span class="s2">&quot;http://localhost:8200&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_TOKEN</span><span class="o">=</span><span class="s2">&quot;fraiseql-ci-token&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_ADDR</span><span class="o">=</span><span class="s2">"http://localhost:8200"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">VAULT_TOKEN</span><span class="o">=</span><span class="s2">"fraiseql-ci-token"</span>
 
 <span class="c1"># Test settings</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">PYTEST_DISABLE_PLUGIN_AUTOLOAD</span><span class="o">=</span><span class="m">1</span><span class="w">  </span><span class="c1"># Disable auto-loading</span>
@@ -5217,7 +5217,7 @@ pytest<span class="w"> </span>-n<span class="w"> </span>auto
 
 <span class="c1"># ❌ Avoid: Manual config creation</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_feature</span><span class="p">():</span>
-    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">&quot;testing&quot;</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"testing"</span><span class="p">)</span>
     <span class="c1"># Error-prone, inconsistent</span>
 </code></pre></div>
 <p>Available fixtures:</p>
@@ -5234,10 +5234,10 @@ pytest<span class="w"> </span>-n<span class="w"> </span>auto
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_postgres</span>  <span class="c1"># Required marker</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_user_creation</span><span class="p">(</span><span class="n">test_config</span><span class="p">,</span> <span class="n">db_connection</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test creating a new user.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test creating a new user."""</span>
 
     <span class="c1"># Arrange</span>
-    <span class="n">user_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Alice&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;alice@example.com&quot;</span><span class="p">}</span>
+    <span class="n">user_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Alice"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"alice@example.com"</span><span class="p">}</span>
 
     <span class="c1"># Act</span>
     <span class="c1"># ... test code ...</span>
@@ -5259,7 +5259,7 @@ pytest<span class="w"> </span>-n<span class="w"> </span>auto
 
 <span class="c1"># Conditional markers</span>
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">requires_vault</span>
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;VAULT_ADDR&quot;</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;Vault not available&quot;</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"VAULT_ADDR"</span><span class="p">),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">"Vault not available"</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">test_vault_feature</span><span class="p">():</span>
     <span class="k">pass</span>
 </code></pre></div>
@@ -5295,14 +5295,14 @@ pytest<span class="w"> </span>tests/load/<span class="w"> </span>--concurrency<s
 <h2 id="ci-simulation">CI Simulation<a class="headerlink" href="#ci-simulation" title="Permanent link">&para;</a></h2>
 <h3 id="simulate-main-ci">Simulate Main CI<a class="headerlink" href="#simulate-main-ci" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run the same tests as main CI</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_postgres and not requires_vault and not requires_auth0&#39;</span><span class="w"> </span><span class="se">\</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_postgres and not requires_vault and not requires_auth0'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">       </span>--cov<span class="o">=</span>src/fraiseql<span class="w"> </span><span class="se">\</span>
 <span class="w">       </span>--cov-report<span class="o">=</span>term-missing<span class="w"> </span><span class="se">\</span>
 <span class="w">       </span>-v
 </code></pre></div>
 <h3 id="simulate-enterprise-ci">Simulate Enterprise CI<a class="headerlink" href="#simulate-enterprise-ci" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run enterprise tests (requires services)</span>
-pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">&#39;requires_vault or requires_auth0&#39;</span><span class="w"> </span><span class="se">\</span>
+pytest<span class="w"> </span>-m<span class="w"> </span><span class="s1">'requires_vault or requires_auth0'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">       </span>-v<span class="w"> </span><span class="se">\</span>
 <span class="w">       </span>--tb<span class="o">=</span>short
 </code></pre></div>
@@ -5359,7 +5359,7 @@ pg_isready<span class="w"> </span>-h<span class="w"> </span>localhost<span class
 <div class="highlight"><pre><span></span><code><span class="c1"># Custom pytest configuration in conftest.py</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">pytest_configure</span><span class="p">(</span><span class="n">config</span><span class="p">):</span>
     <span class="n">config</span><span class="o">.</span><span class="n">addinivalue_line</span><span class="p">(</span>
-        <span class="s2">&quot;markers&quot;</span><span class="p">,</span> <span class="s2">&quot;custom_marker: Custom test marker&quot;</span>
+        <span class="s2">"markers"</span><span class="p">,</span> <span class="s2">"custom_marker: Custom test marker"</span>
     <span class="p">)</span>
 
 <span class="c1"># Custom fixtures</span>
@@ -5379,10 +5379,10 @@ pytest<span class="w"> </span>-n<span class="w"> </span><span class="m">4</span>
 </code></pre></div>
 <h3 id="test-selection">Test Selection<a class="headerlink" href="#test-selection" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run tests matching pattern</span>
-pytest<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;user and create&quot;</span>
+pytest<span class="w"> </span>-k<span class="w"> </span><span class="s2">"user and create"</span>
 
 <span class="c1"># Run tests from specific class</span>
-pytest<span class="w"> </span>-k<span class="w"> </span><span class="s2">&quot;TestUser&quot;</span>
+pytest<span class="w"> </span>-k<span class="w"> </span><span class="s2">"TestUser"</span>
 
 <span class="c1"># Run tests slower than 1 second</span>
 pytest<span class="w"> </span>--durations<span class="o">=</span><span class="m">10</span>

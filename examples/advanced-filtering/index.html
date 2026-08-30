@@ -4900,8 +4900,8 @@
 <span class="w">    </span><span class="n">description</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">price</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">sku</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">attributes</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">attributes</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">search_vector</span><span class="w"> </span><span class="n">TSVECTOR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
 <span class="p">);</span>
 
@@ -4922,13 +4922,13 @@
 <span class="w">    </span><span class="n">attributes</span><span class="p">,</span>
 <span class="w">    </span><span class="n">search_vector</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;description&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;price&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;sku&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;tags&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;attributes&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">attributes</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'description'</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'price'</span><span class="p">,</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'sku'</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'tags'</span><span class="p">,</span><span class="w"> </span><span class="n">tags</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'attributes'</span><span class="p">,</span><span class="w"> </span><span class="n">attributes</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_product</span><span class="p">;</span>
 </code></pre></div>
@@ -4940,14 +4940,14 @@
 <span class="w">        </span><span class="c"># Full-text search with relevance threshold</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">searchVector</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">websearch_query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gaming laptop&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">websearch_query</span><span class="p">:</span><span class="w"> </span><span class="s">"gaming laptop"</span><span class="p">,</span>
 <span class="w">            </span><span class="n">rank_gt</span><span class="p">:</span><span class="w"> </span><span class="mf">0.1</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Must have gaming-related tags</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">overlaps</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;gaming&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;laptop&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;high-performance&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="n">overlaps</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"gaming"</span><span class="p">,</span><span class="w"> </span><span class="s">"laptop"</span><span class="p">,</span><span class="w"> </span><span class="s">"high-performance"</span><span class="p">]</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Price range</span>
@@ -4966,7 +4966,7 @@
 <span class="w">        </span><span class="c"># Must have GPU info</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">attributes</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;gpu&quot;</span>
+<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">"gpu"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -4985,14 +4985,14 @@
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_product</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="n">search_vector</span><span class="w"> </span><span class="o">@@</span><span class="w"> </span><span class="n">websearch_to_tsquery</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;gaming laptop&#39;</span><span class="p">)</span>
-<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="n">ts_rank</span><span class="p">(</span><span class="n">search_vector</span><span class="p">,</span><span class="w"> </span><span class="n">websearch_to_tsquery</span><span class="p">(</span><span class="s1">&#39;english&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;gaming laptop&#39;</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">1</span>
+<span class="w">    </span><span class="n">search_vector</span><span class="w"> </span><span class="o">@@</span><span class="w"> </span><span class="n">websearch_to_tsquery</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="s1">'gaming laptop'</span><span class="p">)</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="n">ts_rank</span><span class="p">(</span><span class="n">search_vector</span><span class="p">,</span><span class="w"> </span><span class="n">websearch_to_tsquery</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="s1">'gaming laptop'</span><span class="p">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">1</span>
 <span class="p">)</span>
-<span class="k">AND</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;gaming&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;laptop&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;high-performance&#39;</span><span class="p">]::</span><span class="nb">text</span><span class="p">[]</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'gaming'</span><span class="p">,</span><span class="w"> </span><span class="s1">'laptop'</span><span class="p">,</span><span class="w"> </span><span class="s1">'high-performance'</span><span class="p">]::</span><span class="nb">text</span><span class="p">[]</span>
 <span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">800</span>
 <span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">2000</span>
-<span class="k">AND</span><span class="w"> </span><span class="n">attributes</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">&#39;{&quot;inStock&quot;: true}&#39;</span><span class="p">::</span><span class="n">jsonb</span>
-<span class="k">AND</span><span class="w"> </span><span class="n">attributes</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">&#39;gpu&#39;</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">attributes</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">'{"inStock": true}'</span><span class="p">::</span><span class="n">jsonb</span>
+<span class="k">AND</span><span class="w"> </span><span class="n">attributes</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="s1">'gpu'</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Result</strong>: High-relevance gaming laptops within budget, in-stock, with GPU specifications.</p>
@@ -5034,7 +5034,7 @@
 </code></pre></div>
 <p><strong>Variables</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;productTags&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;electronics&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;smartphone&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;5G&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="nt">"productTags"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"electronics"</span><span class="p">,</span><span class="w"> </span><span class="s2">"smartphone"</span><span class="p">,</span><span class="w"> </span><span class="s2">"5G"</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Use Case</strong>: Product recommendation engine, "Similar Products" section.</p>
@@ -5046,7 +5046,7 @@
 <span class="w">  </span><span class="n">products</span><span class="p">(</span>
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">sku</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">not_matches</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;^PROD-[0-9]{4}$&quot;</span>
+<span class="w">        </span><span class="n">not_matches</span><span class="p">:</span><span class="w"> </span><span class="s">"^PROD-[0-9]{4}$"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5069,8 +5069,8 @@
 <span class="w">    </span><span class="n">author_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">published_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span>
-<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">search_vector</span><span class="w"> </span><span class="n">TSVECTOR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
 <span class="p">);</span>
 
@@ -5082,7 +5082,7 @@
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">tb_post_search_update</span>
 <span class="k">BEFORE</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
 <span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span>
-<span class="w">  </span><span class="n">tsvector_update_trigger</span><span class="p">(</span><span class="n">search_vector</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pg_catalog.english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">);</span>
+<span class="w">  </span><span class="n">tsvector_update_trigger</span><span class="p">(</span><span class="n">search_vector</span><span class="p">,</span><span class="w"> </span><span class="s1">'pg_catalog.english'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">);</span>
 </code></pre></div>
 <p><strong>GraphQL Query</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">SearchPublishedPosts</span><span class="p">(</span><span class="nv">$query</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!,</span><span class="w"> </span><span class="nv">$category</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
@@ -5090,11 +5090,11 @@
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="c"># Must be published</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"published"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Published in last 90 days</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">publishedAt</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-07-01T00:00:00Z&quot;</span>
+<span class="w">            </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-07-01T00:00:00Z"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Full-text search in title/content</span>
@@ -5113,7 +5113,7 @@
 <span class="w">        </span><span class="c"># Must have featured image</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.featuredImage&quot;</span>
+<span class="w">            </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">"$.featuredImage"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5130,8 +5130,8 @@
 </code></pre></div>
 <p><strong>Variables</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;query&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;graphql api tutorial&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;category&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tutorial&quot;</span>
+<span class="w">  </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"graphql api tutorial"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"category"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tutorial"</span>
 <span class="p">}</span>
 </code></pre></div>
 <hr />
@@ -5142,14 +5142,14 @@
 <span class="w">  </span><span class="n">posts</span><span class="p">(</span>
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;draft&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"draft"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">OR</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">            </span><span class="c"># Missing featured image</span>
 <span class="w">            </span><span class="p">{</span>
 <span class="w">              </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                  </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.featuredImage&quot;</span>
+<span class="w">                  </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">"$.featuredImage"</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">              </span><span class="p">}</span>
 <span class="w">            </span><span class="p">},</span>
@@ -5163,7 +5163,7 @@
 <span class="w">            </span><span class="p">{</span>
 <span class="w">              </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                  </span><span class="n">has_all_keys</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;seoTitle&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;seoDescription&quot;</span><span class="p">]</span>
+<span class="w">                  </span><span class="n">has_all_keys</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"seoTitle"</span><span class="p">,</span><span class="w"> </span><span class="s">"seoDescription"</span><span class="p">]</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">              </span><span class="p">}</span>
 <span class="w">            </span><span class="p">}</span>
@@ -5189,7 +5189,7 @@
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">authorId</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="nv">$authorId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"published"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="n">overlaps</span><span class="p">:</span><span class="w"> </span><span class="nv">$topics</span>
@@ -5198,7 +5198,7 @@
 <span class="w">        </span><span class="c"># High engagement (stored in metadata)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.stats.views &gt; 1000&quot;</span>
+<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">"$.stats.views &gt; 1000"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5214,8 +5214,8 @@
 </code></pre></div>
 <p><strong>Variables</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;authorId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;topics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;javascript&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;tutorial&quot;</span><span class="p">]</span>
+<span class="w">  </span><span class="nt">"authorId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"topics"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"python"</span><span class="p">,</span><span class="w"> </span><span class="s2">"javascript"</span><span class="p">,</span><span class="w"> </span><span class="s2">"tutorial"</span><span class="p">]</span>
 <span class="p">}</span>
 </code></pre></div>
 <hr />
@@ -5227,9 +5227,9 @@
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
 <span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">username</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">roles</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">permissions</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<span class="w">    </span><span class="n">roles</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">permissions</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span>
 <span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_roles</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">roles</span><span class="p">);</span>
@@ -5243,19 +5243,19 @@
 <span class="w">        </span><span class="c"># Has admin role</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">roles</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span>
+<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"admin"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Has explicit billing permission</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">permissions</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;manage_billing&quot;</span>
+<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">"manage_billing"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Member of billing team</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">team</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;billing&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">team</span><span class="p">:</span><span class="w"> </span><span class="s">"billing"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5281,7 +5281,7 @@
 <span class="w">        </span><span class="c"># Has admin or moderator role</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">roles</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">overlaps</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;admin&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;moderator&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="n">overlaps</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"admin"</span><span class="p">,</span><span class="w"> </span><span class="s">"moderator"</span><span class="p">]</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
@@ -5290,14 +5290,14 @@
 <span class="w">            </span><span class="p">{</span>
 <span class="w">              </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">                </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                  </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.lastLogin&quot;</span>
+<span class="w">                  </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">"$.lastLogin"</span>
 <span class="w">                </span><span class="p">}</span>
 <span class="w">              </span><span class="p">}</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="c"># Last login before threshold</span>
 <span class="w">            </span><span class="p">{</span>
 <span class="w">              </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">                </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.lastLogin &lt; </span><span class="se">\&quot;</span><span class="s">$thresholdDate</span><span class="se">\&quot;</span><span class="s">&quot;</span>
+<span class="w">                </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">"$.lastLogin &lt; </span><span class="se">\"</span><span class="s">$thresholdDate</span><span class="se">\"</span><span class="s">"</span>
 <span class="w">              </span><span class="p">}</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">          </span><span class="p">]</span>
@@ -5314,7 +5314,7 @@
 </code></pre></div>
 <p><strong>Variables</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;thresholdDate&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2024-07-01T00:00:00Z&quot;</span>
+<span class="w">  </span><span class="nt">"thresholdDate"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-07-01T00:00:00Z"</span>
 <span class="p">}</span>
 </code></pre></div>
 <hr />
@@ -5365,8 +5365,8 @@
 <span class="w">    </span><span class="k">timestamp</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="k">level</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tags</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">search_vector</span><span class="w"> </span><span class="n">TSVECTOR</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
 <span class="p">);</span>
 
@@ -5382,7 +5382,7 @@
 <span class="w">        </span><span class="c"># Error or critical level</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">level</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;ERROR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;CRITICAL&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"ERROR"</span><span class="p">,</span><span class="w"> </span><span class="s">"CRITICAL"</span><span class="p">]</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Time range</span>
@@ -5395,19 +5395,19 @@
 <span class="w">        </span><span class="c"># Search for database-related errors</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">searchVector</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">websearch_query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;database connection OR timeout&quot;</span>
+<span class="w">            </span><span class="n">websearch_query</span><span class="p">:</span><span class="w"> </span><span class="s">"database connection OR timeout"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># From production environment</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;production&quot;</span>
+<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"production"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Has request ID (correlate errors)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">context</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;requestId&quot;</span>
+<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">"requestId"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5434,7 +5434,7 @@
 <span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">timestamp</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="nv">$since</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;rate_limit&quot;</span>
+<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"rate_limit"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># HTTP 429 status</span>
@@ -5446,7 +5446,7 @@
 <span class="w">        </span><span class="c"># Group by IP (filter shows repeated violations)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">message</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">matches</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Rate limit exceeded&quot;</span>
+<span class="w">            </span><span class="n">matches</span><span class="p">:</span><span class="w"> </span><span class="s">"Rate limit exceeded"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5468,9 +5468,9 @@
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
 <span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">plan</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">features</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">settings</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="n">usage_stats</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<span class="w">    </span><span class="n">features</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">[]</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">settings</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">usage_stats</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span>
 <span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_tenant_features</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_tenant</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">features</span><span class="p">);</span>
@@ -5484,25 +5484,25 @@
 <span class="w">        </span><span class="c"># Premium or enterprise plan</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">plan</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;premium&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;enterprise&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"premium"</span><span class="p">,</span><span class="w"> </span><span class="s">"enterprise"</span><span class="p">]</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Has API access feature</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">features</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;api_access&quot;</span>
+<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"api_access"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># High API usage (&gt;10,000 requests/month)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">usageStats</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.api.requestsThisMonth &gt; 10000&quot;</span>
+<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">"$.api.requestsThisMonth &gt; 10000"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Has custom domain configured</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">settings</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;customDomain&quot;</span>
+<span class="w">            </span><span class="n">has_key</span><span class="p">:</span><span class="w"> </span><span class="s">"customDomain"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5542,19 +5542,19 @@
 <span class="w">        </span><span class="c"># Active within last 30 days</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">usageStats</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.lastActive&quot;</span>
+<span class="w">            </span><span class="n">path_exists</span><span class="p">:</span><span class="w"> </span><span class="s">"$.lastActive"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># On compatible plan</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">plan</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;premium&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;enterprise&quot;</span><span class="p">]</span>
+<span class="w">            </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"premium"</span><span class="p">,</span><span class="w"> </span><span class="s">"enterprise"</span><span class="p">]</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Meets minimum usage threshold</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">usageStats</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.activeUsers &gt; 5&quot;</span>
+<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">"$.activeUsers &gt; 5"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
@@ -5578,26 +5578,26 @@
 <span class="w">        </span><span class="c"># High error rate</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">usageStats</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.errors.rate &gt; 0.05&quot;</span>
+<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">"$.errors.rate &gt; 0.05"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Low engagement (no activity in 14 days)</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">usageStats</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$.daysSinceLastActive &gt; 14&quot;</span>
+<span class="w">            </span><span class="n">path_match</span><span class="p">:</span><span class="w"> </span><span class="s">"$.daysSinceLastActive &gt; 14"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Payment issues</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">settings</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">paymentStatus</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;failed&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">paymentStatus</span><span class="p">:</span><span class="w"> </span><span class="s">"failed"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="c"># Missing required configuration</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="n">settings</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">              </span><span class="n">has_all_keys</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;webhookUrl&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;apiKey&quot;</span><span class="p">]</span>
+<span class="w">              </span><span class="n">has_all_keys</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"webhookUrl"</span><span class="p">,</span><span class="w"> </span><span class="s">"apiKey"</span><span class="p">]</span>
 <span class="w">            </span><span class="p">}</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
@@ -5637,16 +5637,16 @@
 <span class="err">where:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nl">AND</span><span class="p">:</span><span class="w"> </span><span class="err">[</span>
 <span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">eq</span><span class="p">:</span><span class="w"> </span><span class="err">$</span><span class="n">specificId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">           </span><span class="c"># Very selective</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">eq</span><span class="p">:</span><span class="w"> </span><span class="err">&quot;</span><span class="n">active</span><span class="err">&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">          </span><span class="c"># Selective</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">overlaps</span><span class="p">:</span><span class="w"> </span><span class="err">[&quot;</span><span class="n">featured</span><span class="err">&quot;]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Less selective</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">eq</span><span class="p">:</span><span class="w"> </span><span class="err">"</span><span class="n">active</span><span class="err">"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">          </span><span class="c"># Selective</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">overlaps</span><span class="p">:</span><span class="w"> </span><span class="err">["</span><span class="n">featured</span><span class="err">"]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">  </span><span class="c"># Less selective</span>
 <span class="w">  </span><span class="err">]</span>
 <span class="p">}</span>
 
 <span class="c"># ❌ Less optimal: Broad filters first</span>
 <span class="err">where:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nl">AND</span><span class="p">:</span><span class="w"> </span><span class="err">[</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">overlaps</span><span class="p">:</span><span class="w"> </span><span class="err">[&quot;</span><span class="n">common</span><span class="err">&quot;]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">   </span><span class="c"># Matches many rows</span>
-<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">eq</span><span class="p">:</span><span class="w"> </span><span class="err">&quot;</span><span class="n">active</span><span class="err">&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">          </span><span class="c"># Filters after scanning</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">tags</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">overlaps</span><span class="p">:</span><span class="w"> </span><span class="err">["</span><span class="n">common</span><span class="err">"]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">   </span><span class="c"># Matches many rows</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">eq</span><span class="p">:</span><span class="w"> </span><span class="err">"</span><span class="n">active</span><span class="err">"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span><span class="w">          </span><span class="c"># Filters after scanning</span>
 <span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nl">eq</span><span class="p">:</span><span class="w"> </span><span class="err">$</span><span class="n">specificId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w">           </span><span class="c"># Should be first!</span>
 <span class="w">  </span><span class="err">]</span>
 <span class="p">}</span>
@@ -5655,7 +5655,7 @@
 <p>Always limit result sets, especially with full-text search:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">posts</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">searchVector</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">websearch_query</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tutorial&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">searchVector</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">websearch_query</span><span class="p">:</span><span class="w"> </span><span class="s">"tutorial"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
 <span class="w">    </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span>
 <span class="w">    </span><span class="n">offset</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="p">}</span>
@@ -5665,12 +5665,12 @@
 <p>Use <code>EXPLAIN ANALYZE</code> to verify index usage:</p>
 <div class="highlight"><pre><span></span><code><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_product</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">&#39;electronics&#39;</span><span class="p">]::</span><span class="nb">text</span><span class="p">[]</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tags</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'electronics'</span><span class="p">]::</span><span class="nb">text</span><span class="p">[]</span>
 <span class="k">AND</span><span class="w"> </span><span class="n">price</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">100</span><span class="p">;</span>
 
 <span class="c1">-- Look for:</span>
-<span class="c1">-- ✅ &quot;Bitmap Index Scan on idx_product_tags&quot;</span>
-<span class="c1">-- ❌ &quot;Seq Scan on tb_product&quot; (means no index used!)</span>
+<span class="c1">-- ✅ "Bitmap Index Scan on idx_product_tags"</span>
+<span class="c1">-- ❌ "Seq Scan on tb_product" (means no index used!)</span>
 </code></pre></div>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

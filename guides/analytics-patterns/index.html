@@ -6569,7 +6569,7 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_sales&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_sales"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Sales</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
@@ -6594,8 +6594,8 @@
 <h3 id="sql-execution-postgresql">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
-<span class="w">    </span><span class="k">AVG</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_avg</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_avg</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~0.2ms for 1M rows (with no WHERE clause, uses table statistics)</p>
@@ -6613,11 +6613,11 @@
 </code></pre></div>
 <h3 id="sql-execution-postgresql_1">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~1-2ms for 1M rows (with a GIN index on <code>data</code>)</p>
 <hr />
@@ -6635,12 +6635,12 @@
 </code></pre></div>
 <h3 id="sql-execution-postgresql_2">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_2" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">quantity_sum</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'quantity'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">quantity_sum</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~2-3ms for 1M rows</p>
 <hr />
@@ -6652,8 +6652,8 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;occurred_at_day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<span class="w">        </span><span class="s1">'occurred_at_day'</span><span class="p">,</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'revenue'</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="p">;</span>
 </code></pre></div>
@@ -6668,11 +6668,11 @@
 </code></pre></div>
 <h3 id="sql-execution-postgresql_3">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_3" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at_day&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">occurred_at_day</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'occurred_at_day'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">occurred_at_day</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales_daily</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at_day&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'occurred_at_day'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurred_at_day</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~5-10ms for 1M rows (with an index on the source <code>occurred_at</code> column)</p>
@@ -6682,7 +6682,7 @@
 <p>Filters are passed as GraphQL <code>where</code> arguments; FraiseQL translates them into a parameterized <code>WHERE</code> clause. PostgreSQL WHERE operators use bare names (<code>eq</code>, <code>gte</code>, <code>lt</code>, <code>in</code>, ...).</p>
 <h3 id="graphql-query_4">GraphQL Query<a class="headerlink" href="#graphql-query_4" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">sales</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">customerId</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;uuid-123&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">sales</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">customerId</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"uuid-123"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">count</span>
 <span class="w">    </span><span class="n">revenueSum</span>
 <span class="w">  </span><span class="p">}</span>
@@ -6691,10 +6691,10 @@
 <h3 id="sql-execution-postgresql_4">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_4" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
-<span class="c1">-- Parameters: [&quot;uuid-123&quot;]</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="p">;</span>
+<span class="c1">-- Parameters: ["uuid-123"]</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~0.05ms when <code>customer_id</code> is a native indexed column (B-tree index)</p>
 <hr />
@@ -6704,14 +6704,14 @@
 <h3 id="view-definition-postgresql_1">View Definition (PostgreSQL)<a class="headerlink" href="#view-definition-postgresql_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_top_categories</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;revenue_sum&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'category'</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'revenue_sum'</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span>
-<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span>
+<span class="k">HAVING</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10000</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="graphql-query_5">GraphQL Query<a class="headerlink" href="#graphql-query_5" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
@@ -6732,14 +6732,14 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="mi">1</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;count&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;revenue_sum&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;revenue_sum_credit_card&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
-<span class="w">            </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;payment_method&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;credit_card&#39;</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;revenue_sum_paypal&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
-<span class="w">            </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;payment_method&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;paypal&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'count'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'revenue_sum'</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'revenue_sum_credit_card'</span><span class="p">,</span>
+<span class="w">            </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
+<span class="w">            </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'payment_method'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'credit_card'</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'revenue_sum_paypal'</span><span class="p">,</span>
+<span class="w">            </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span>
+<span class="w">            </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'payment_method'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'paypal'</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span><span class="p">;</span>
 </code></pre></div>
@@ -6761,10 +6761,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;occurred_at_month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;region&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
+<span class="w">        </span><span class="s1">'occurred_at_month'</span><span class="p">,</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'month'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'category'</span><span class="p">,</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'region'</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'revenue'</span><span class="p">,</span><span class="w"> </span><span class="n">revenue</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span><span class="p">;</span>
 </code></pre></div>
@@ -6781,16 +6781,16 @@
 </code></pre></div>
 <h3 id="sql-execution-postgresql_5">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_5" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at_month&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">occurred_at_month</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'occurred_at_month'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">occurred_at_month</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">count</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales_monthly</span>
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;occurred_at_month&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'occurred_at_month'</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurred_at_month</span><span class="p">,</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~10-20ms for 1M rows</p>
@@ -6799,10 +6799,10 @@
 <p><strong>Use Case</strong>: Revenue by customer segment (nested JSONB)</p>
 <p>FraiseQL extracts nested dimension paths from the <code>data</code> JSONB column using the <code>#&gt;&gt;</code> path operator. Declare the field on the type and shape the path in your view.</p>
 <h3 id="schema-definition">Schema Definition<a class="headerlink" href="#schema-definition" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_sales&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_sales"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Sales</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">customer_segment</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Maps to data#&gt;&gt;&#39;{customer,segment}&#39;</span>
+    <span class="n">customer_segment</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Maps to data#&gt;&gt;'{customer,segment}'</span>
     <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
 </code></pre></div>
 <h3 id="graphql-query_8">GraphQL Query<a class="headerlink" href="#graphql-query_8" title="Permanent link">&para;</a></h3>
@@ -6815,10 +6815,10 @@
 </code></pre></div>
 <h3 id="sql-execution-postgresql_6">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_6" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">#&gt;&gt;</span><span class="s1">&#39;{customer,segment}&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_segment</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
+<span class="w">    </span><span class="k">data</span><span class="o">#&gt;&gt;</span><span class="s1">'{customer,segment}'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_segment</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">#&gt;&gt;</span><span class="s1">&#39;{customer,segment}&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">#&gt;&gt;</span><span class="s1">'{customer,segment}'</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="pattern-10-combining-filters-and-grouping">Pattern 10: Combining Filters and Grouping<a class="headerlink" href="#pattern-10-combining-filters-and-grouping" title="Permanent link">&para;</a></h2>
@@ -6828,8 +6828,8 @@
 <span class="w">  </span><span class="n">sales</span><span class="p">(</span>
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">occurredAt</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-01-01&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">lt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-04-01&quot;</span>
+<span class="w">        </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-01-01"</span><span class="p">,</span>
+<span class="w">        </span><span class="n">lt</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-04-01"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -6841,13 +6841,13 @@
 </code></pre></div>
 <h3 id="sql-execution-postgresql_7">SQL Execution (PostgreSQL)<a class="headerlink" href="#sql-execution-postgresql_7" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;quantity&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">quantity_sum</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'quantity'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">quantity_sum</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;region&#39;</span><span class="p">;</span>
-<span class="c1">-- Parameters: [&quot;2024-01-01&quot;, &quot;2024-04-01&quot;]</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'region'</span><span class="p">;</span>
+<span class="c1">-- Parameters: ["2024-01-01", "2024-04-01"]</span>
 </code></pre></div>
 <p><strong>Performance</strong>: ~0.5-1ms (using an index on a native <code>occurred_at</code> column)</p>
 <hr />
@@ -6855,11 +6855,11 @@
 <h3 id="use-native-columns-for-filters">Use Native Columns for Filters<a class="headerlink" href="#use-native-columns-for-filters" title="Permanent link">&para;</a></h3>
 <p>Expose frequently-filtered fields as <strong>native indexed columns</strong> in your view (alongside the <code>data</code> JSONB), not just JSONB paths.</p>
 <p>Slower (JSONB filter):</p>
-<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;customer_id&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;uuid-123&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'uuid-123'</span>
 <span class="c1">-- ~5-10ms (even with a GIN index)</span>
 </code></pre></div>
 <p>Faster (indexed native column):</p>
-<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;uuid-123&#39;</span>
+<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'uuid-123'</span>
 <span class="c1">-- ~0.05ms (B-tree index)</span>
 </code></pre></div>
 <p>This can be 100-200x faster for selective filters.</p>
@@ -6876,14 +6876,14 @@
 <span class="c1">-- Populate / refresh via a scheduled job (ETL) or a fn_ function</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_sales_daily</span><span class="w"> </span><span class="p">(</span><span class="k">day</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">day</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;revenue&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;quantity&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">quantity</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;transaction_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'revenue'</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">revenue</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'quantity'</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">quantity</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'transaction_count'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">'day'</span><span class="p">,</span><span class="w"> </span><span class="n">occurred_at</span><span class="p">)::</span><span class="nb">DATE</span>
 <span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="k">day</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">SET</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">EXCLUDED</span><span class="p">.</span><span class="k">data</span><span class="p">;</span>
 </code></pre></div>
@@ -6891,24 +6891,24 @@
 <h3 id="statistical-aggregates-and-window-functions">Statistical Aggregates and Window Functions<a class="headerlink" href="#statistical-aggregates-and-window-functions" title="Permanent link">&para;</a></h3>
 <p>PostgreSQL statistical aggregates (<code>STDDEV</code>, <code>VARIANCE</code>) and window functions (<code>ROW_NUMBER</code>, <code>RANK</code>, <code>LAG</code>, <code>LEAD</code>, <code>OVER (PARTITION BY ...)</code>) are <strong>not</strong> a FraiseQL GraphQL API — they are standard PostgreSQL that you embed in your <code>v_</code>/<code>tv_</code> view SQL. The view then exposes the computed result as an ordinary field that GraphQL can select.</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
-<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
-<span class="w">    </span><span class="n">STDDEV</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_stddev</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">category</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_sum</span><span class="p">,</span>
+<span class="w">    </span><span class="n">STDDEV</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue_stddev</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">&#39;{&quot;region&quot;: &quot;North America&quot;}&#39;</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="o">@&gt;</span><span class="w"> </span><span class="s1">'{"region": "North America"}'</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Window function inside a view: rank categories by revenue</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_category_rank</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;category&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;revenue_sum&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;revenue_rank&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;revenue&#39;</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'category'</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'revenue_sum'</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'revenue_rank'</span><span class="p">,</span><span class="w"> </span><span class="n">RANK</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">SUM</span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'revenue'</span><span class="p">)::</span><span class="nb">numeric</span><span class="p">)</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">v_sales</span>
-<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;category&#39;</span><span class="p">;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'category'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="postgresql-jsonb-features-for-analytics">PostgreSQL JSONB Features for Analytics<a class="headerlink" href="#postgresql-jsonb-features-for-analytics" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6942,7 +6942,7 @@
 <h3 id="saas-metrics">SaaS Metrics<a class="headerlink" href="#saas-metrics" title="Permanent link">&para;</a></h3>
 <p><strong>Monthly Recurring Revenue by Plan</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">subscriptions</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">subscriptions</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"active"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">plan</span>
 <span class="w">    </span><span class="n">occurredAtMonth</span>
 <span class="w">    </span><span class="n">revenueSum</span>
@@ -6952,7 +6952,7 @@
 </code></pre></div>
 <p><strong>Churn Rate</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">subscriptions</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cancelled&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">subscriptions</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"cancelled"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">occurredAtMonth</span>
 <span class="w">    </span><span class="n">count</span>
 <span class="w">  </span><span class="p">}</span>

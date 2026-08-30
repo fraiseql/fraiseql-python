@@ -4956,14 +4956,14 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">&quot;SELECT * FROM users WHERE id = $1&quot;</span><span class="p">,</span>
+            <span class="s2">"SELECT * FROM users WHERE id = $1"</span><span class="p">,</span>
             <span class="n">user_id</span>  <span class="c1"># Automatically escaped</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
 
 <span class="c1"># UNSAFE: String interpolation (never do this!)</span>
 <span class="c1"># async def get_user_unsafe(user_id: str) -&gt; User:</span>
-<span class="c1">#     query = f&quot;SELECT * FROM users WHERE id = &#39;{user_id}&#39;&quot;</span>
+<span class="c1">#     query = f"SELECT * FROM users WHERE id = '{user_id}'"</span>
 <span class="c1">#     result = await conn.execute(query)  # VULNERABLE</span>
 </code></pre></div>
 <h3 id="input-validation">Input Validation<a class="headerlink" href="#input-validation" title="Permanent link">&para;</a></h3>
@@ -4972,11 +4972,11 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">InputValidator</span><span class="p">,</span> <span class="n">ValidationResult</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">UserInputValidator</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate user inputs.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Validate user inputs."""</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_user_id</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidationResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate UUID format.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate UUID format."""</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -4985,21 +4985,21 @@
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span>
                 <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">error</span><span class="o">=</span><span class="s2">&quot;Invalid user ID format&quot;</span>
+                <span class="n">error</span><span class="o">=</span><span class="s2">"Invalid user ID format"</span>
             <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_email</span><span class="p">(</span><span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidationResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate email format.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate email format."""</span>
         <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 
-        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$&#39;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'</span>
         <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span><span class="n">valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span>
                 <span class="n">valid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">error</span><span class="o">=</span><span class="s2">&quot;Invalid email format&quot;</span>
+                <span class="n">error</span><span class="o">=</span><span class="s2">"Invalid email format"</span>
             <span class="p">)</span>
 
 <span class="c1"># Usage in resolver</span>
@@ -5021,7 +5021,7 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse</span><span class="p">,</span> <span class="n">validate</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">sanitize_graphql_query</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate GraphQL query syntax.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Validate GraphQL query syntax."""</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># Parse to AST (validates syntax)</span>
         <span class="n">document</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
@@ -5029,19 +5029,19 @@
         <span class="c1"># Validate against schema</span>
         <span class="n">errors</span> <span class="o">=</span> <span class="n">validate</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">document</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid query: </span><span class="si">{</span><span class="n">errors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Invalid query: </span><span class="si">{</span><span class="n">errors</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">query</span>
 
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Query validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="query-complexity-limits">Query Complexity Limits<a class="headerlink" href="#query-complexity-limits" title="Permanent link">&para;</a></h2>
 <h3 id="complexity-analysis">Complexity Analysis<a class="headerlink" href="#complexity-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="c1"># Query complexity limits</span>
     <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
@@ -5049,9 +5049,9 @@
     <span class="n">complexity_default_list_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="c1"># Field-specific multipliers</span>
     <span class="n">complexity_field_multipliers</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;users&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Expensive field</span>
-        <span class="s2">&quot;orders&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="s2">&quot;analytics&quot;</span><span class="p">:</span> <span class="mi">10</span>
+        <span class="s2">"users"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Expensive field</span>
+        <span class="s2">"orders"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="s2">"analytics"</span><span class="p">:</span> <span class="mi">10</span>
     <span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5059,33 +5059,33 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLError</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">enforce_max_depth</span><span class="p">(</span><span class="n">document</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prevent excessively nested queries.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Prevent excessively nested queries."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">visit</span>
 
     <span class="n">current_depth</span> <span class="o">=</span> <span class="mi">0</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">enter_field</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">ancestors</span><span class="p">):</span>
         <span class="k">nonlocal</span> <span class="n">current_depth</span>
-        <span class="n">depth</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">ancestors</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s2">&quot;kind&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;field&quot;</span><span class="p">])</span>
+        <span class="n">depth</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">ancestors</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"field"</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="n">max_depth</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Query depth </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> exceeds maximum </span><span class="si">{</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;MAX_DEPTH_EXCEEDED&quot;</span><span class="p">}</span>
+                <span class="sa">f</span><span class="s2">"Query depth </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> exceeds maximum </span><span class="si">{</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"code"</span><span class="p">:</span> <span class="s2">"MAX_DEPTH_EXCEEDED"</span><span class="p">}</span>
             <span class="p">)</span>
 
-    <span class="n">visit</span><span class="p">(</span><span class="n">document</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;Field&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;enter&quot;</span><span class="p">:</span> <span class="n">enter_field</span><span class="p">}})</span>
+    <span class="n">visit</span><span class="p">(</span><span class="n">document</span><span class="p">,</span> <span class="p">{</span><span class="s2">"Field"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"enter"</span><span class="p">:</span> <span class="n">enter_field</span><span class="p">}})</span>
 </code></pre></div>
 <h3 id="cost-analysis">Cost Analysis<a class="headerlink" href="#cost-analysis" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.analysis.complexity</span><span class="w"> </span><span class="kn">import</span> <span class="n">calculate_query_cost</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_cost_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">!=</span> <span class="s2">&quot;/graphql&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">!=</span> <span class="s2">"/graphql"</span><span class="p">:</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
     <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
 
     <span class="c1"># Calculate cost</span>
     <span class="n">cost</span> <span class="o">=</span> <span class="n">calculate_query_cost</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
@@ -5094,13 +5094,13 @@
     <span class="k">if</span> <span class="n">cost</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
             <span class="n">content</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-                <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[{</span>
-                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Query cost </span><span class="si">{</span><span class="n">cost</span><span class="si">}</span><span class="s2"> exceeds limit 1000&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;extensions&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;QUERY_TOO_EXPENSIVE&quot;</span><span class="p">}</span>
+                <span class="s2">"errors"</span><span class="p">:</span> <span class="p">[{</span>
+                    <span class="s2">"message"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Query cost </span><span class="si">{</span><span class="n">cost</span><span class="si">}</span><span class="s2"> exceeds limit 1000"</span><span class="p">,</span>
+                    <span class="s2">"extensions"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"code"</span><span class="p">:</span> <span class="s2">"QUERY_TOO_EXPENSIVE"</span><span class="p">}</span>
                 <span class="p">}]</span>
             <span class="p">}),</span>
             <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
@@ -5116,33 +5116,33 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">redis.asyncio</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">redis</span>
 
 <span class="c1"># Redis client</span>
-<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">)</span>
+<span class="n">redis_client</span> <span class="o">=</span> <span class="n">redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="s2">"redis://localhost:6379/0"</span><span class="p">)</span>
 
 <span class="c1"># Rate limit rules</span>
 <span class="n">rate_limits</span> <span class="o">=</span> <span class="p">[</span>
     <span class="c1"># GraphQL endpoint</span>
     <span class="n">RateLimitRule</span><span class="p">(</span>
-        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
+        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/graphql"</span><span class="p">,</span>
         <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>  <span class="c1"># 100/min</span>
-        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;GraphQL rate limit exceeded&quot;</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">"GraphQL rate limit exceeded"</span>
     <span class="p">),</span>
     <span class="c1"># Authentication endpoints</span>
     <span class="n">RateLimitRule</span><span class="p">(</span>
-        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/auth/login&quot;</span><span class="p">,</span>
+        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/auth/login"</span><span class="p">,</span>
         <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">300</span><span class="p">),</span>  <span class="c1"># 5 per 5 min</span>
-        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Too many login attempts&quot;</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">"Too many login attempts"</span>
     <span class="p">),</span>
     <span class="n">RateLimitRule</span><span class="p">(</span>
-        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/auth/register&quot;</span><span class="p">,</span>
+        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/auth/register"</span><span class="p">,</span>
         <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">3600</span><span class="p">),</span>  <span class="c1"># 3 per hour</span>
-        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Too many registration attempts&quot;</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">"Too many registration attempts"</span>
     <span class="p">),</span>
     <span class="c1"># Mutations</span>
     <span class="n">RateLimitRule</span><span class="p">(</span>
-        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span>
+        <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/graphql"</span><span class="p">,</span>
         <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>  <span class="c1"># 20/min for mutations</span>
-        <span class="n">http_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;POST&quot;</span><span class="p">],</span>
-        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Mutation rate limit exceeded&quot;</span>
+        <span class="n">http_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"POST"</span><span class="p">],</span>
+        <span class="n">message</span><span class="o">=</span><span class="s2">"Mutation rate limit exceeded"</span>
     <span class="p">)</span>
 <span class="p">]</span>
 
@@ -5157,7 +5157,7 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLRateLimiter</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">PerUserRateLimiter</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rate limit per authenticated user.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Rate limit per authenticated user."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">redis_client</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis_client</span>
@@ -5168,8 +5168,8 @@
         <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
         <span class="n">window</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">60</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user is within rate limit.&quot;&quot;&quot;</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;rate_limit:user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">        </span><span class="sd">"""Check if user is within rate limit."""</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"rate_limit:user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">current</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">redis</span><span class="o">.</span><span class="n">incr</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">current</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -5180,9 +5180,9 @@
 
         <span class="k">return</span> <span class="kc">True</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">&quot;http&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_rate_limit_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">):</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
     <span class="n">user_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span>
@@ -5193,13 +5193,13 @@
     <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
             <span class="n">content</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-                <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[{</span>
-                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Rate limit exceeded for user&quot;</span><span class="p">,</span>
-                    <span class="s2">&quot;extensions&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;USER_RATE_LIMIT_EXCEEDED&quot;</span><span class="p">}</span>
+                <span class="s2">"errors"</span><span class="p">:</span> <span class="p">[{</span>
+                    <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Rate limit exceeded for user"</span><span class="p">,</span>
+                    <span class="s2">"extensions"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"code"</span><span class="p">:</span> <span class="s2">"USER_RATE_LIMIT_EXCEEDED"</span><span class="p">}</span>
                 <span class="p">}]</span>
             <span class="p">}),</span>
             <span class="n">status_code</span><span class="o">=</span><span class="mi">429</span><span class="p">,</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
@@ -5209,19 +5209,19 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="c1"># CORS - disabled by default, configure explicitly</span>
     <span class="n">cors_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">cors_origins</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;https://app.yourapp.com&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;https://www.yourapp.com&quot;</span><span class="p">,</span>
-        <span class="c1"># NEVER use &quot;*&quot; in production</span>
+        <span class="s2">"https://app.yourapp.com"</span><span class="p">,</span>
+        <span class="s2">"https://www.yourapp.com"</span><span class="p">,</span>
+        <span class="c1"># NEVER use "*" in production</span>
     <span class="p">],</span>
-    <span class="n">cors_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">],</span>
+    <span class="n">cors_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"POST"</span><span class="p">],</span>
     <span class="n">cors_headers</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;Content-Type&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Authorization&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;X-Request-ID&quot;</span>
+        <span class="s2">"Content-Type"</span><span class="p">,</span>
+        <span class="s2">"Authorization"</span><span class="p">,</span>
+        <span class="s2">"X-Request-ID"</span>
     <span class="p">]</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5231,18 +5231,18 @@
 <span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
     <span class="n">CORSMiddleware</span><span class="p">,</span>
     <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;https://app.yourapp.com&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;https://www.yourapp.com&quot;</span>
+        <span class="s2">"https://app.yourapp.com"</span><span class="p">,</span>
+        <span class="s2">"https://www.yourapp.com"</span>
     <span class="p">],</span>
     <span class="n">allow_credentials</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;GET&quot;</span><span class="p">,</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="s2">&quot;OPTIONS&quot;</span><span class="p">],</span>
+    <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">"GET"</span><span class="p">,</span> <span class="s2">"POST"</span><span class="p">,</span> <span class="s2">"OPTIONS"</span><span class="p">],</span>
     <span class="n">allow_headers</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">&quot;Content-Type&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;Authorization&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;X-Request-ID&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;X-Correlation-ID&quot;</span>
+        <span class="s2">"Content-Type"</span><span class="p">,</span>
+        <span class="s2">"Authorization"</span><span class="p">,</span>
+        <span class="s2">"X-Request-ID"</span><span class="p">,</span>
+        <span class="s2">"X-Correlation-ID"</span>
     <span class="p">],</span>
-    <span class="n">expose_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;X-Request-ID&quot;</span><span class="p">],</span>
+    <span class="n">expose_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">"X-Request-ID"</span><span class="p">],</span>
     <span class="n">max_age</span><span class="o">=</span><span class="mi">3600</span>  <span class="c1"># Cache preflight for 1 hour</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5254,10 +5254,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">CustomJWTProvider</span>
 
 <span class="n">auth_provider</span> <span class="o">=</span> <span class="n">CustomJWTProvider</span><span class="p">(</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;JWT_SECRET_KEY&quot;</span><span class="p">),</span>  <span class="c1"># NEVER hardcode</span>
-    <span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;HS256&quot;</span><span class="p">,</span>
-    <span class="n">issuer</span><span class="o">=</span><span class="s2">&quot;https://yourapp.com&quot;</span><span class="p">,</span>
-    <span class="n">audience</span><span class="o">=</span><span class="s2">&quot;https://api.yourapp.com&quot;</span>
+    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"JWT_SECRET_KEY"</span><span class="p">),</span>  <span class="c1"># NEVER hardcode</span>
+    <span class="n">algorithm</span><span class="o">=</span><span class="s2">"HS256"</span><span class="p">,</span>
+    <span class="n">issuer</span><span class="o">=</span><span class="s2">"https://yourapp.com"</span><span class="p">,</span>
+    <span class="n">audience</span><span class="o">=</span><span class="s2">"https://api.yourapp.com"</span>
 <span class="p">)</span>
 
 <span class="c1"># Token expiration</span>
@@ -5267,23 +5267,23 @@
 <span class="c1"># Token rotation</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_access_token</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rotate access token using refresh token.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Rotate access token using refresh token."""</span>
     <span class="c1"># Validate refresh token</span>
     <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">refresh_token</span><span class="p">)</span>
 
     <span class="c1"># Check token type</span>
-    <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;token_type&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;refresh&quot;</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid token type&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"token_type"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"refresh"</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid token type"</span><span class="p">)</span>
 
     <span class="c1"># Generate new access token</span>
     <span class="n">new_access_token</span> <span class="o">=</span> <span class="n">generate_access_token</span><span class="p">(</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
         <span class="n">ttl</span><span class="o">=</span><span class="n">ACCESS_TOKEN_TTL</span>
     <span class="p">)</span>
 
     <span class="c1"># Optionally rotate refresh token too</span>
     <span class="n">new_refresh_token</span> <span class="o">=</span> <span class="n">generate_refresh_token</span><span class="p">(</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
         <span class="n">ttl</span><span class="o">=</span><span class="n">REFRESH_TOKEN_TTL</span>
     <span class="p">)</span>
 
@@ -5291,32 +5291,32 @@
     <span class="k">await</span> <span class="n">revocation_service</span><span class="o">.</span><span class="n">revoke_token</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;access_token&quot;</span><span class="p">:</span> <span class="n">new_access_token</span><span class="p">,</span>
-        <span class="s2">&quot;refresh_token&quot;</span><span class="p">:</span> <span class="n">new_refresh_token</span><span class="p">,</span>
-        <span class="s2">&quot;token_type&quot;</span><span class="p">:</span> <span class="s2">&quot;bearer&quot;</span>
+        <span class="s2">"access_token"</span><span class="p">:</span> <span class="n">new_access_token</span><span class="p">,</span>
+        <span class="s2">"refresh_token"</span><span class="p">:</span> <span class="n">new_refresh_token</span><span class="p">,</span>
+        <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span>
     <span class="p">}</span>
 </code></pre></div>
 <h3 id="password-security">Password Security<a class="headerlink" href="#password-security" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">bcrypt</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">PasswordHasher</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Secure password hashing with bcrypt.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Secure password hashing with bcrypt."""</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">hash_password</span><span class="p">(</span><span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Hash password with bcrypt.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Hash password with bcrypt."""</span>
         <span class="n">salt</span> <span class="o">=</span> <span class="n">bcrypt</span><span class="o">.</span><span class="n">gensalt</span><span class="p">(</span><span class="n">rounds</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
         <span class="n">hashed</span> <span class="o">=</span> <span class="n">bcrypt</span><span class="o">.</span><span class="n">hashpw</span><span class="p">(</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">salt</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">hashed</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">verify_password</span><span class="p">(</span><span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">hashed</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Verify password against hash.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Verify password against hash."""</span>
         <span class="k">return</span> <span class="n">bcrypt</span><span class="o">.</span><span class="n">checkpw</span><span class="p">(</span><span class="n">password</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">hashed</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">validate_password_strength</span><span class="p">(</span><span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate password meets security requirements.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate password meets security requirements."""</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">password</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">12</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">isupper</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">password</span><span class="p">):</span>
@@ -5325,7 +5325,7 @@
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">password</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="s2">&quot;!@#$%^&amp;*()-_=+[]</span><span class="si">{}</span><span class="s2">|;:,.&lt;&gt;?&quot;</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">password</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span> <span class="ow">in</span> <span class="s2">"!@#$%^&amp;*()-_=+[]</span><span class="si">{}</span><span class="s2">|;:,.&lt;&gt;?"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">password</span><span class="p">):</span>
             <span class="k">return</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
@@ -5337,7 +5337,7 @@
 
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User with PII protection.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User with PII protection."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5346,17 +5346,17 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ssn_masked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return masked SSN.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return masked SSN."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;***-**-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"***-**-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">credit_card_masked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return masked credit card.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Return masked credit card."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credit_card</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;****-****-****-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_credit_card</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"****-****-****-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_credit_card</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">"</span>
 
 <span class="c1"># GraphQL type</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type_</span>
@@ -5366,7 +5366,7 @@
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="c1"># Only admins can see full SSN</span>
-    <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">))</span>
+    <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">))</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ssn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span>
 
@@ -5379,33 +5379,33 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">FieldEncryption</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Encrypt sensitive database fields.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Encrypt sensitive database fields."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ENCRYPTION_KEY&quot;</span><span class="p">)</span>  <span class="c1"># Store in secrets manager</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"ENCRYPTION_KEY"</span><span class="p">)</span>  <span class="c1"># Store in secrets manager</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span> <span class="o">=</span> <span class="n">Fernet</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">encrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Encrypt field value.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Encrypt field value."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">decrypt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encrypted</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Decrypt field value.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Decrypt field value."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cipher</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">encrypted</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
 
 <span class="c1"># Usage</span>
 <span class="n">encryptor</span> <span class="o">=</span> <span class="n">FieldEncryption</span><span class="p">()</span>
 
 <span class="c1"># Store encrypted</span>
-<span class="n">encrypted_ssn</span> <span class="o">=</span> <span class="n">encryptor</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="s2">&quot;123-45-6789&quot;</span><span class="p">)</span>
+<span class="n">encrypted_ssn</span> <span class="o">=</span> <span class="n">encryptor</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="s2">"123-45-6789"</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-    <span class="s2">&quot;INSERT INTO users (id, ssn_encrypted) VALUES ($1, $2)&quot;</span><span class="p">,</span>
+    <span class="s2">"INSERT INTO users (id, ssn_encrypted) VALUES ($1, $2)"</span><span class="p">,</span>
     <span class="n">user_id</span><span class="p">,</span> <span class="n">encrypted_ssn</span>
 <span class="p">)</span>
 
 <span class="c1"># Retrieve and decrypt</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT ssn_encrypted FROM users WHERE id = $1&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
-<span class="n">encrypted</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="s2">&quot;ssn_encrypted&quot;</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT ssn_encrypted FROM users WHERE id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+<span class="n">encrypted</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="s2">"ssn_encrypted"</span><span class="p">]</span>
 <span class="n">ssn</span> <span class="o">=</span> <span class="n">encryptor</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">encrypted</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="audit-logging">Audit Logging<a class="headerlink" href="#audit-logging" title="Permanent link">&para;</a></h2>
@@ -5425,24 +5425,24 @@
         <span class="n">security_logger</span><span class="o">.</span><span class="n">log_auth_success</span><span class="p">(</span>
             <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
             <span class="n">user_email</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
-            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;request&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span><span class="p">}</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"ip"</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"request"</span><span class="p">]</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span><span class="p">}</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;token&quot;</span><span class="p">:</span> <span class="n">generate_token</span><span class="p">(</span><span class="n">user</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"token"</span><span class="p">:</span> <span class="n">generate_token</span><span class="p">(</span><span class="n">user</span><span class="p">)}</span>
 
     <span class="k">except</span> <span class="n">AuthenticationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">security_logger</span><span class="o">.</span><span class="n">log_auth_failure</span><span class="p">(</span>
             <span class="n">reason</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
             <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;username&quot;</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
-                <span class="s2">&quot;ip&quot;</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;request&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span>
+                <span class="s2">"username"</span><span class="p">:</span> <span class="n">username</span><span class="p">,</span>
+                <span class="s2">"ip"</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"request"</span><span class="p">]</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">host</span>
             <span class="p">}</span>
         <span class="p">)</span>
         <span class="k">raise</span>
 
 <span class="c1"># Log data access</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">&quot;pii:read&quot;</span><span class="p">)</span>
+<span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"pii:read"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_pii</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserPII</span><span class="p">:</span>
     <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_user_pii</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
 
@@ -5450,10 +5450,10 @@
         <span class="n">SecurityEvent</span><span class="p">(</span>
             <span class="n">event_type</span><span class="o">=</span><span class="n">SecurityEventType</span><span class="o">.</span><span class="n">DATA_ACCESS</span><span class="p">,</span>
             <span class="n">severity</span><span class="o">=</span><span class="n">SecurityEventSeverity</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
             <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;accessed_user&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-                <span class="s2">&quot;pii_fields&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;ssn&quot;</span><span class="p">,</span> <span class="s2">&quot;credit_card&quot;</span><span class="p">]</span>
+                <span class="s2">"accessed_user"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+                <span class="s2">"pii_fields"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"ssn"</span><span class="p">,</span> <span class="s2">"credit_card"</span><span class="p">]</span>
             <span class="p">}</span>
         <span class="p">)</span>
     <span class="p">)</span>
@@ -5468,19 +5468,19 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_order_status</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Update order status - automatically logged.&quot;&quot;&quot;</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
+<span class="w">    </span><span class="sd">"""Update order status - automatically logged."""</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="c1"># Set user context for trigger</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">&quot;SET LOCAL app.current_user_id = $1&quot;</span><span class="p">,</span>
+            <span class="s2">"SET LOCAL app.current_user_id = $1"</span><span class="p">,</span>
             <span class="n">user_id</span>
         <span class="p">)</span>
 
         <span class="c1"># Update (trigger logs before/after state)</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">&quot;UPDATE orders SET status = $1 WHERE id = $2&quot;</span><span class="p">,</span>
+            <span class="s2">"UPDATE orders SET status = $1 WHERE id = $2"</span><span class="p">,</span>
             <span class="n">status</span><span class="p">,</span> <span class="n">order_id</span>
         <span class="p">)</span>
 
@@ -5493,15 +5493,15 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">export_my_data</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;GDPR: Export all user data.&quot;&quot;&quot;</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
+<span class="w">    </span><span class="sd">"""GDPR: Export all user data."""</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
 
     <span class="c1"># Gather all user data</span>
     <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
-        <span class="s2">&quot;orders&quot;</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user_orders</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
-        <span class="s2">&quot;activity&quot;</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user_activity</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
-        <span class="s2">&quot;consents&quot;</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user_consents</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="s2">"user"</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
+        <span class="s2">"orders"</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user_orders</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
+        <span class="s2">"activity"</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user_activity</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
+        <span class="s2">"consents"</span><span class="p">:</span> <span class="k">await</span> <span class="n">fetch_user_consents</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
     <span class="p">}</span>
 
     <span class="c1"># Log export</span>
@@ -5518,22 +5518,22 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_my_account</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;GDPR: Right to be forgotten.&quot;&quot;&quot;</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
+<span class="w">    </span><span class="sd">"""GDPR: Right to be forgotten."""</span>
+    <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
             <span class="c1"># Anonymize or delete data</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="s2">&quot;UPDATE users SET email = $1, name = $2, deleted_at = NOW() WHERE id = $3&quot;</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;deleted-</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">@deleted.com&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;Deleted User&quot;</span><span class="p">,</span>
+                <span class="s2">"UPDATE users SET email = $1, name = $2, deleted_at = NOW() WHERE id = $3"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"deleted-</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">@deleted.com"</span><span class="p">,</span>
+                <span class="s2">"Deleted User"</span><span class="p">,</span>
                 <span class="n">user_id</span>
             <span class="p">)</span>
 
             <span class="c1"># Delete related data</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DELETE FROM user_sessions WHERE user_id = $1&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DELETE FROM user_consents WHERE user_id = $1&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM user_sessions WHERE user_id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM user_consents WHERE user_id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
 
     <span class="c1"># Log deletion</span>
     <span class="n">security_logger</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
@@ -5551,17 +5551,17 @@
 
 <span class="c1"># Access control matrix</span>
 <span class="n">ROLE_PERMISSIONS</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;orders:read:self&quot;</span><span class="p">,</span> <span class="s2">&quot;profile:write:self&quot;</span><span class="p">],</span>
-    <span class="s2">&quot;manager&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;orders:read:team&quot;</span><span class="p">,</span> <span class="s2">&quot;users:read:team&quot;</span><span class="p">],</span>
-    <span class="s2">&quot;admin&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;admin:all&quot;</span><span class="p">]</span>
+    <span class="s2">"user"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"orders:read:self"</span><span class="p">,</span> <span class="s2">"profile:write:self"</span><span class="p">],</span>
+    <span class="s2">"manager"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"orders:read:team"</span><span class="p">,</span> <span class="s2">"users:read:team"</span><span class="p">],</span>
+    <span class="s2">"admin"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"admin:all"</span><span class="p">]</span>
 <span class="p">}</span>
 
 <span class="c1"># Audit all administrative actions</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">&quot;admin&quot;</span><span class="p">)</span>
+<span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin_update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Admin action - fully audited.&quot;&quot;&quot;</span>
-    <span class="n">admin_user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Admin action - fully audited."""</span>
+    <span class="n">admin_user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
 
     <span class="c1"># Log before change</span>
     <span class="n">before_state</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
@@ -5576,11 +5576,11 @@
             <span class="n">severity</span><span class="o">=</span><span class="n">SecurityEventSeverity</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span>
             <span class="n">user_id</span><span class="o">=</span><span class="n">admin_user</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
             <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;update_user&quot;</span><span class="p">,</span>
-                <span class="s2">&quot;target_user&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-                <span class="s2">&quot;before&quot;</span><span class="p">:</span> <span class="n">before_state</span><span class="p">,</span>
-                <span class="s2">&quot;after&quot;</span><span class="p">:</span> <span class="n">updated_user</span><span class="p">,</span>
-                <span class="s2">&quot;changed_fields&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"update_user"</span><span class="p">,</span>
+                <span class="s2">"target_user"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+                <span class="s2">"before"</span><span class="p">:</span> <span class="n">before_state</span><span class="p">,</span>
+                <span class="s2">"after"</span><span class="p">:</span> <span class="n">updated_user</span><span class="p">,</span>
+                <span class="s2">"changed_fields"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
             <span class="p">}</span>
         <span class="p">)</span>
     <span class="p">)</span>

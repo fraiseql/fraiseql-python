@@ -4865,13 +4865,13 @@
 </blockquote>
 <p>FraiseQL provides powerful, flexible filtering capabilities for both GraphQL queries and programmatic data access. This guide helps you choose the right approach and get started quickly.</p>
 <h2 id="quick-start-complete-example">Quick Start - Complete Example<a class="headerlink" href="#quick-start-complete-example" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="sd">&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="sd">"""</span>
 <span class="sd">Complete runnable example showing FraiseQL filtering.</span>
 
 <span class="sd">Prerequisites:</span>
 <span class="sd">- PostgreSQL with a users table/view</span>
 <span class="sd">- FraiseQL installed: pip install fraiseql</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
@@ -4880,7 +4880,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringFilter</span><span class="p">,</span> <span class="n">BooleanFilter</span><span class="p">,</span> <span class="n">DateTimeFilter</span>
 
 <span class="c1"># 1. Define your GraphQL type</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -4892,24 +4892,24 @@
 <span class="c1"># 2. Create a filtered query resolver</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_verified_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all active, verified users created after 2024.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Get all active, verified users created after 2024."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">repo</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span>
-            <span class="s2">&quot;is_verified&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-            <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gte&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-01-01T00:00:00Z&quot;</span><span class="p">}</span>
+            <span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
+            <span class="s2">"is_verified"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">}</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
 <span class="c1"># 3. Execute the query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">schema</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">)</span>
+    <span class="n">schema</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
 
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
 <span class="s2">    {</span>
 <span class="s2">      activeVerifiedUsers {</span>
 <span class="s2">        id</span>
@@ -4918,18 +4918,18 @@
 <span class="s2">        createdAt</span>
 <span class="s2">      }</span>
 <span class="s2">    }</span>
-<span class="s2">    &quot;&quot;&quot;</span>
+<span class="s2">    """</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Errors: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Errors: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;activeVerifiedUsers&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> users&quot;</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;activeVerifiedUsers&#39;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;email&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'activeVerifiedUsers'</span><span class="p">])</span><span class="si">}</span><span class="s2"> users"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'activeVerifiedUsers'</span><span class="p">]:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  - </span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'email'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
     <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <p><strong>Expected Output:</strong></p>
@@ -4985,9 +4985,9 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="n">UserWhere</span><span class="p">(</span>
-            <span class="n">status</span><span class="o">=</span><span class="n">StringFilter</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">),</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">StringFilter</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="s2">"active"</span><span class="p">),</span>
             <span class="n">is_verified</span><span class="o">=</span><span class="n">BooleanFilter</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="p">)</span>
     <span class="p">)</span>
@@ -5004,48 +5004,48 @@
 <p>Dict-based filters are ideal for dynamic, runtime-built queries. Use this when filter criteria come from user input or configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
 
-<span class="c1"># Usage: {&quot;status&quot;: {&quot;eq&quot;: &quot;active&quot;}, &quot;age&quot;: {&quot;gte&quot;: 18}}</span>
+<span class="c1"># Usage: {"status": {"eq": "active"}, "age": {"gte": 18}}</span>
 </code></pre></div>
 <h3 id="simple-filter-example">Simple Filter Example<a class="headerlink" href="#simple-filter-example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span>
-    <span class="s2">&quot;created_at&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gte&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-01-01T00:00:00Z&quot;</span><span class="p">}</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
+    <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">}</span>
 <span class="p">}</span>
-<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="nested-object-filtering">Nested Object Filtering<a class="headerlink" href="#nested-object-filtering" title="Permanent link">&para;</a></h3>
 <p>Filter on properties of related objects stored in JSONB:</p>
 <div class="highlight"><pre><span></span><code><span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">},</span>
-    <span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;contains&quot;</span><span class="p">:</span> <span class="s2">&quot;router&quot;</span><span class="p">}</span>
+    <span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
+    <span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"is_active"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"contains"</span><span class="p">:</span> <span class="s2">"router"</span><span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
-<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;assignments&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"assignments"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Generated SQL:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">assignments</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;status&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;active&#39;</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;device&#39;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;is_active&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;true&#39;</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;device&#39;</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%router%&#39;</span><span class="w">  </span><span class="c1">-- icontains operator (case-insensitive)</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'status'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'active'</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'device'</span><span class="o">-&gt;&gt;</span><span class="s1">'is_active'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'true'</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'device'</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">'%router%'</span><span class="w">  </span><span class="c1">-- icontains operator (case-insensitive)</span>
 </code></pre></div>
 <h3 id="camelcase-support">CamelCase Support<a class="headerlink" href="#camelcase-support" title="Permanent link">&para;</a></h3>
 <p>Dict-based filters automatically convert GraphQL-style camelCase to database snake_case:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># GraphQL-style input</span>
-<span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;isActive&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}}}</span>
+<span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"isActive"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}}}</span>
 
 <span class="c1"># Automatically converts to:</span>
-<span class="c1"># data-&gt;&#39;device&#39;-&gt;&gt;&#39;is_active&#39; = &#39;true&#39;</span>
+<span class="c1"># data-&gt;'device'-&gt;&gt;'is_active' = 'true'</span>
 </code></pre></div>
 <h3 id="mixed-fk-jsonb-filtering">Mixed FK + JSONB Filtering<a class="headerlink" href="#mixed-fk-jsonb-filtering" title="Permanent link">&para;</a></h3>
 <p>Filter by both foreign key relationship and JSONB properties:</p>
 <div class="highlight"><pre><span></span><code><span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="n">device_uuid</span><span class="p">},</span>     <span class="c1"># FK: device_id = &#39;uuid&#39;</span>
-        <span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>      <span class="c1"># JSONB: data-&gt;&#39;device&#39;-&gt;&gt;&#39;is_active&#39;</span>
+    <span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">device_uuid</span><span class="p">},</span>     <span class="c1"># FK: device_id = 'uuid'</span>
+        <span class="s2">"is_active"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>      <span class="c1"># JSONB: data-&gt;'device'-&gt;&gt;'is_active'</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5057,7 +5057,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">fraise_field</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_network&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_network"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">NetworkConfiguration</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5065,19 +5065,19 @@
         <span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">,</span>
         <span class="n">supports_where_filtering</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
         <span class="n">nested_where_type</span><span class="o">=</span><span class="n">PrintServer</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Network print servers with optional filtering&quot;</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Network print servers with optional filtering"</span>
     <span class="p">)</span>
 </code></pre></div>
 <h3 id="query-with-complex-filters">Query with Complex Filters<a class="headerlink" href="#query-with-complex-filters" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">network</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;123e4567-e89b-12d3-a456-426614174000&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">network</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"123e4567-e89b-12d3-a456-426614174000"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
 <span class="w">    </span><span class="n">printServers</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">operatingSystem</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;Linux&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Windows&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">operatingSystem</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">in</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"Linux"</span><span class="p">,</span><span class="w"> </span><span class="s">"Windows"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">OR</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="n">nTotalAllocations</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
-<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="n">hostname</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;critical&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="p">{</span><span class="w"> </span><span class="n">hostname</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">contains</span><span class="p">:</span><span class="w"> </span><span class="s">"critical"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">          </span><span class="p">]</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">ipAddress</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">isnull</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
@@ -5209,7 +5209,7 @@
 
 <span class="c1">-- Path-specific index for frequently filtered fields</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_assignments_device_active</span>
-<span class="k">ON</span><span class="w"> </span><span class="n">assignments</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">&#39;device&#39;</span><span class="o">-&gt;</span><span class="s1">&#39;is_active&#39;</span><span class="p">));</span>
+<span class="k">ON</span><span class="w"> </span><span class="n">assignments</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="w"> </span><span class="p">((</span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'device'</span><span class="o">-&gt;</span><span class="s1">'is_active'</span><span class="p">));</span>
 </code></pre></div>
 <h3 id="performance-characteristics">Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Permanent link">&para;</a></h3>
 <table>
@@ -5254,10 +5254,10 @@
 <h3 id="nested-filters-not-working">Nested Filters Not Working<a class="headerlink" href="#nested-filters-not-working" title="Permanent link">&para;</a></h3>
 <p>Dict-based filters support 2-level nesting only:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ Supported: 2 levels</span>
-<span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;Seattle&quot;</span><span class="p">}}}</span>
+<span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">}}}</span>
 
 <span class="c1"># ❌ Not supported: 3+ levels</span>
-<span class="p">{</span><span class="s2">&quot;device&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;address&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;city&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;Seattle&quot;</span><span class="p">}}}}}</span>
+<span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"address"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">}}}}}</span>
 </code></pre></div>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>

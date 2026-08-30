@@ -4975,7 +4975,7 @@
 <h3 id="key-retrieval-flow">Key Retrieval Flow<a class="headerlink" href="#key-retrieval-flow" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># At startup</span>
 <span class="n">kms_provider</span> <span class="o">=</span> <span class="n">VaultKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<span class="n">data_key</span> <span class="o">=</span> <span class="k">await</span> <span class="n">kms_provider</span><span class="o">.</span><span class="n">generate_data_key</span><span class="p">(</span><span class="n">key_id</span><span class="o">=</span><span class="s2">&quot;fraiseql-data-key&quot;</span><span class="p">)</span>
+<span class="n">data_key</span> <span class="o">=</span> <span class="k">await</span> <span class="n">kms_provider</span><span class="o">.</span><span class="n">generate_data_key</span><span class="p">(</span><span class="n">key_id</span><span class="o">=</span><span class="s2">"fraiseql-data-key"</span><span class="p">)</span>
 <span class="c1"># data_key contains: plaintext_dek, encrypted_dek, key_id</span>
 
 <span class="c1"># Cache for runtime use</span>
@@ -4991,7 +4991,7 @@
 </code></pre></div>
 <h3 id="key-rotation">Key Rotation<a class="headerlink" href="#key-rotation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rotate_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Background task to rotate DEK.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Background task to rotate DEK."""</span>
     <span class="n">new_key</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">kms_provider</span><span class="o">.</span><span class="n">generate_data_key</span><span class="p">()</span>
     <span class="c1"># Atomically update cached key</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_cached_dek</span> <span class="o">=</span> <span class="n">new_key</span><span class="o">.</span><span class="n">plaintext</span>
@@ -5001,14 +5001,14 @@
 <h2 id="providers-supported">Providers Supported<a class="headerlink" href="#providers-supported" title="Permanent link">&para;</a></h2>
 <h3 id="hashicorp-vault">HashiCorp Vault<a class="headerlink" href="#hashicorp-vault" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Uses transit/datakey endpoint</span>
-<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">vault_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/v1/transit/datakey/plaintext/my-key&quot;</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">vault_client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/v1/transit/datakey/plaintext/my-key"</span><span class="p">)</span>
 <span class="c1"># Returns: plaintext (DEK), ciphertext (encrypted DEK)</span>
 </code></pre></div>
 <h3 id="aws-kms">AWS KMS<a class="headerlink" href="#aws-kms" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Uses GenerateDataKey</span>
 <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">kms_client</span><span class="o">.</span><span class="n">generate_data_key</span><span class="p">(</span>
     <span class="n">KeyId</span><span class="o">=</span><span class="n">key_id</span><span class="p">,</span>
-    <span class="n">KeySpec</span><span class="o">=</span><span class="s1">&#39;AES_256&#39;</span>
+    <span class="n">KeySpec</span><span class="o">=</span><span class="s1">'AES_256'</span>
 <span class="p">)</span>
 <span class="c1"># Returns: Plaintext (DEK), CiphertextBlob (encrypted DEK)</span>
 </code></pre></div>

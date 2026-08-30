@@ -4873,7 +4873,7 @@ python<span class="w"> </span>src/main.py
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">documents</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
 <span class="w">    </span><span class="n">content</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span><span class="p">,</span>
 <span class="w">    </span><span class="n">embedding</span><span class="w"> </span><span class="n">vector</span><span class="p">(</span><span class="mi">1536</span><span class="p">),</span><span class="w"> </span><span class="c1">-- OpenAI ada-002 dimension</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="k">TIME</span><span class="w"> </span><span class="k">ZONE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
 <span class="p">);</span>
@@ -4893,26 +4893,26 @@ python<span class="w"> </span>src/main.py
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;A document in the RAG system.&quot;&quot;&quot;</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Document ID&quot;</span><span class="p">)</span>
-    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Document content&quot;</span><span class="p">)</span>
-    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Document metadata&quot;</span><span class="p">)</span>
-    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Creation timestamp&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""A document in the RAG system."""</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Document ID"</span><span class="p">)</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Document content"</span><span class="p">)</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Document metadata"</span><span class="p">)</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Creation timestamp"</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">SearchResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search result with similarity score.&quot;&quot;&quot;</span>
-    <span class="n">document</span><span class="p">:</span> <span class="n">Document</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Matching document&quot;</span><span class="p">)</span>
-    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Similarity score&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Search result with similarity score."""</span>
+    <span class="n">document</span><span class="p">:</span> <span class="n">Document</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Matching document"</span><span class="p">)</span>
+    <span class="n">score</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Similarity score"</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">QueryRoot</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Root query type.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Root query type."""</span>
     <span class="n">search_documents</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">SearchResult</span><span class="p">]</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search documents by semantic similarity&quot;</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Search documents by semantic similarity"</span>
     <span class="p">)</span>
     <span class="n">ask_question</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Ask a question and get an AI-generated answer&quot;</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Ask a question and get an AI-generated answer"</span>
     <span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_search_documents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
@@ -4925,9 +4925,9 @@ python<span class="w"> </span>src/main.py
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MutationRoot</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Root mutation type.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Root mutation type."""</span>
     <span class="n">upload_document</span><span class="p">:</span> <span class="n">Document</span> <span class="o">=</span> <span class="n">fraise_field</span><span class="p">(</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Upload a new document to the knowledge base&quot;</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Upload a new document to the knowledge base"</span>
     <span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_upload_document</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
@@ -4944,20 +4944,20 @@ python<span class="w"> </span>src/main.py
 
 <span class="c1"># Initialize embeddings and LLM</span>
 <span class="n">embeddings</span> <span class="o">=</span> <span class="n">OpenAIEmbeddings</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;text-embedding-ada-002&quot;</span><span class="p">,</span>
-    <span class="n">openai_api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"text-embedding-ada-002"</span><span class="p">,</span>
+    <span class="n">openai_api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"OPENAI_API_KEY"</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="n">llm</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-3.5-turbo&quot;</span><span class="p">,</span>
-    <span class="n">openai_api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;OPENAI_API_KEY&quot;</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-3.5-turbo"</span><span class="p">,</span>
+    <span class="n">openai_api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"OPENAI_API_KEY"</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Initialize vector store</span>
 <span class="n">vector_store</span> <span class="o">=</span> <span class="n">PGVector</span><span class="p">(</span>
-    <span class="n">connection_string</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">),</span>
+    <span class="n">connection_string</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">),</span>
     <span class="n">embedding_function</span><span class="o">=</span><span class="n">embeddings</span><span class="p">,</span>
-    <span class="n">collection_name</span><span class="o">=</span><span class="s2">&quot;documents&quot;</span>
+    <span class="n">collection_name</span><span class="o">=</span><span class="s2">"documents"</span>
 <span class="p">)</span>
 
 <span class="c1"># Text splitter for document chunking</span>
@@ -4969,14 +4969,14 @@ python<span class="w"> </span>src/main.py
 <h3 id="5-implement-resolvers">5. Implement Resolvers<a class="headerlink" href="#5-implement-resolvers" title="Permanent link">&para;</a></h3>
 <p>Complete the GraphQL resolvers:</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_search_documents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Search documents by semantic similarity.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Search documents by semantic similarity."""</span>
     <span class="c1"># Search for similar documents</span>
     <span class="n">docs</span> <span class="o">=</span> <span class="n">vector_store</span><span class="o">.</span><span class="n">similarity_search_with_score</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 
     <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">doc</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">:</span>
         <span class="c1"># Get document from database</span>
-        <span class="n">doc_id</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+        <span class="n">doc_id</span> <span class="o">=</span> <span class="n">doc</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span>
         <span class="c1"># Query your documents table to get full document info</span>
         <span class="c1"># (Implementation depends on your database setup)</span>
 
@@ -4988,15 +4988,15 @@ python<span class="w"> </span>src/main.py
     <span class="k">return</span> <span class="n">results</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_ask_question</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate an answer using RAG.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Generate an answer using RAG."""</span>
     <span class="c1"># Retrieve relevant documents</span>
     <span class="n">docs</span> <span class="o">=</span> <span class="n">vector_store</span><span class="o">.</span><span class="n">similarity_search</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
     <span class="c1"># Create context from retrieved documents</span>
-    <span class="n">context</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">])</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">])</span>
 
     <span class="c1"># Generate answer using LLM</span>
-    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;Use the following context to answer the question.</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"""Use the following context to answer the question.</span>
 <span class="s2">If you cannot find the answer in the context, say so.</span>
 
 <span class="s2">Context:</span>
@@ -5004,13 +5004,13 @@ python<span class="w"> </span>src/main.py
 
 <span class="s2">Question: </span><span class="si">{</span><span class="n">question</span><span class="si">}</span>
 
-<span class="s2">Answer:&quot;&quot;&quot;</span>
+<span class="s2">Answer:"""</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="n">llm</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_upload_document</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Upload and index a new document.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Upload and index a new document."""</span>
     <span class="c1"># Split document into chunks</span>
     <span class="n">chunks</span> <span class="o">=</span> <span class="n">text_splitter</span><span class="o">.</span><span class="n">split_text</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
 
@@ -5018,7 +5018,7 @@ python<span class="w"> </span>src/main.py
     <span class="n">langchain_docs</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">LangChainDocument</span><span class="p">(</span>
             <span class="n">page_content</span><span class="o">=</span><span class="n">chunk</span><span class="p">,</span>
-            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span> <span class="o">**</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})}</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()),</span> <span class="o">**</span><span class="p">(</span><span class="n">metadata</span> <span class="ow">or</span> <span class="p">{})}</span>
         <span class="p">)</span>
         <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chunks</span>
     <span class="p">]</span>
@@ -5038,7 +5038,7 @@ python<span class="w"> </span>src/main.py
 
 <span class="c1"># Use local HuggingFace model</span>
 <span class="n">embeddings</span> <span class="o">=</span> <span class="n">HuggingFaceEmbeddings</span><span class="p">(</span>
-    <span class="n">model_name</span><span class="o">=</span><span class="s2">&quot;sentence-transformers/all-MiniLM-L6-v2&quot;</span>
+    <span class="n">model_name</span><span class="o">=</span><span class="s2">"sentence-transformers/all-MiniLM-L6-v2"</span>
 <span class="p">)</span>
 
 <span class="c1"># Update vector dimension in database schema</span>
@@ -5054,15 +5054,15 @@ python<span class="w"> </span>src/main.py
     <span class="n">llm</span><span class="o">=</span><span class="n">llm</span><span class="p">,</span>
     <span class="n">retriever</span><span class="o">=</span><span class="n">vector_store</span><span class="o">.</span><span class="n">as_retriever</span><span class="p">(),</span>
     <span class="n">memory</span><span class="o">=</span><span class="n">ConversationBufferMemory</span><span class="p">(</span>
-        <span class="n">memory_key</span><span class="o">=</span><span class="s2">&quot;chat_history&quot;</span><span class="p">,</span>
+        <span class="n">memory_key</span><span class="o">=</span><span class="s2">"chat_history"</span><span class="p">,</span>
         <span class="n">return_messages</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Use in resolver</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_ask_question</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">conversation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="n">response</span> <span class="o">=</span> <span class="n">qa_chain</span><span class="p">({</span><span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">question</span><span class="p">})</span>
-    <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">]</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">qa_chain</span><span class="p">({</span><span class="s2">"question"</span><span class="p">:</span> <span class="n">question</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]</span>
 </code></pre></div>
 <h3 id="document-filtering">Document Filtering<a class="headerlink" href="#document-filtering" title="Permanent link">&para;</a></h3>
 <p>Filter documents by metadata:</p>
@@ -5070,7 +5070,7 @@ python<span class="w"> </span>src/main.py
 <span class="n">docs</span> <span class="o">=</span> <span class="n">vector_store</span><span class="o">.</span><span class="n">similarity_search</span><span class="p">(</span>
     <span class="n">query</span><span class="p">,</span>
     <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="s2">&quot;technical&quot;</span><span class="p">}</span>
+    <span class="nb">filter</span><span class="o">=</span><span class="p">{</span><span class="s2">"category"</span><span class="p">:</span> <span class="s2">"technical"</span><span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="streaming-responses">Streaming Responses<a class="headerlink" href="#streaming-responses" title="Permanent link">&para;</a></h3>
@@ -5081,19 +5081,19 @@ python<span class="w"> </span>src/main.py
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">():</span>
         <span class="c1"># Retrieve context</span>
         <span class="n">docs</span> <span class="o">=</span> <span class="n">vector_store</span><span class="o">.</span><span class="n">similarity_search</span><span class="p">(</span><span class="n">question</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
-        <span class="n">context</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">])</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">doc</span><span class="o">.</span><span class="n">page_content</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">docs</span><span class="p">])</span>
 
         <span class="c1"># Stream the response</span>
         <span class="k">async</span> <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">llm</span><span class="o">.</span><span class="n">astream</span><span class="p">(</span><span class="n">prompt</span><span class="p">):</span>
             <span class="k">yield</span> <span class="n">chunk</span><span class="o">.</span><span class="n">content</span>
 
-    <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span><span class="n">generate</span><span class="p">(),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/plain&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span><span class="n">generate</span><span class="p">(),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">"text/plain"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="deployment">Deployment<a class="headerlink" href="#deployment" title="Permanent link">&para;</a></h2>
 <h3 id="docker-configuration">Docker Configuration<a class="headerlink" href="#docker-configuration" title="Permanent link">&para;</a></h3>
 <p>Use the provided Docker setup for production:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># docker-compose.yml</span>
-<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3.8'</span>
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">db</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pgvector/pgvector:pg16</span>
@@ -5104,7 +5104,7 @@ python<span class="w"> </span>src/main.py
 <span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pgdata:/var/lib/postgresql/data</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"5432:5432"</span>
 
 <span class="w">  </span><span class="nt">app</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
@@ -5112,7 +5112,7 @@ python<span class="w"> </span>src/main.py
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=postgresql://user:password@db:5432/ragdb</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY=${OPENAI_API_KEY}</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8000:8000"</span>
 <span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db</span>
 </code></pre></div>

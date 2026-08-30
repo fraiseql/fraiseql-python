@@ -4951,28 +4951,28 @@ docs/enterprise/
 <div class="highlight"><pre><span></span><code><span class="c1"># tests/integration/enterprise/rbac/test_rbac_schema.py</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_rbac_tables_exist</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify RBAC tables exist with correct schema.&quot;&quot;&quot;</span>
-    <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;roles&#39;</span><span class="p">,</span> <span class="s1">&#39;permissions&#39;</span><span class="p">,</span> <span class="s1">&#39;role_permissions&#39;</span><span class="p">,</span> <span class="s1">&#39;user_roles&#39;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Verify RBAC tables exist with correct schema."""</span>
+    <span class="n">tables</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'roles'</span><span class="p">,</span> <span class="s1">'permissions'</span><span class="p">,</span> <span class="s1">'role_permissions'</span><span class="p">,</span> <span class="s1">'user_roles'</span><span class="p">]</span>
 
     <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
-            <span class="n">statement</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="n">statement</span><span class="o">=</span><span class="sa">f</span><span class="s2">"""</span>
 <span class="s2">                SELECT column_name, data_type</span>
 <span class="s2">                FROM information_schema.columns</span>
-<span class="s2">                WHERE table_name = &#39;</span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">&#39;</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="s2">                WHERE table_name = '</span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">'</span>
+<span class="s2">            """</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="p">{},</span>
             <span class="n">fetch_result</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">))</span>
-        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Table </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2"> should exist&quot;</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"Table </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2"> should exist"</span>
 
     <span class="c1"># Verify roles table structure</span>
-    <span class="n">roles_columns</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_table_columns</span><span class="p">(</span><span class="s1">&#39;roles&#39;</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="s1">&#39;id&#39;</span> <span class="ow">in</span> <span class="n">roles_columns</span>
-    <span class="k">assert</span> <span class="s1">&#39;name&#39;</span> <span class="ow">in</span> <span class="n">roles_columns</span>
-    <span class="k">assert</span> <span class="s1">&#39;parent_role_id&#39;</span> <span class="ow">in</span> <span class="n">roles_columns</span>  <span class="c1"># For hierarchy</span>
-    <span class="k">assert</span> <span class="s1">&#39;tenant_id&#39;</span> <span class="ow">in</span> <span class="n">roles_columns</span>  <span class="c1"># Multi-tenancy</span>
-    <span class="c1"># Expected failure: tables don&#39;t exist</span>
+    <span class="n">roles_columns</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_table_columns</span><span class="p">(</span><span class="s1">'roles'</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="s1">'id'</span> <span class="ow">in</span> <span class="n">roles_columns</span>
+    <span class="k">assert</span> <span class="s1">'name'</span> <span class="ow">in</span> <span class="n">roles_columns</span>
+    <span class="k">assert</span> <span class="s1">'parent_role_id'</span> <span class="ow">in</span> <span class="n">roles_columns</span>  <span class="c1"># For hierarchy</span>
+    <span class="k">assert</span> <span class="s1">'tenant_id'</span> <span class="ow">in</span> <span class="n">roles_columns</span>  <span class="c1"># Multi-tenancy</span>
+    <span class="c1"># Expected failure: tables don't exist</span>
 </code></pre></div>
 <p><strong>GREEN</strong>: Implement RBAC schema</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- src/fraiseql/enterprise/migrations/002_rbac_tables.sql</span>
@@ -4984,7 +4984,7 @@ docs/enterprise/
 <span class="w">    </span><span class="n">description</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">parent_role_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">roles</span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DELETE</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">tenant_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span><span class="w">  </span><span class="c1">-- NULL for global roles</span>
-<span class="w">    </span><span class="n">is_system</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">FALSE</span><span class="p">,</span><span class="w">  </span><span class="c1">-- System roles can&#39;t be deleted</span>
+<span class="w">    </span><span class="n">is_system</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">FALSE</span><span class="p">,</span><span class="w">  </span><span class="c1">-- System roles can't be deleted</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
 <span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
 <span class="w">    </span><span class="k">UNIQUE</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">tenant_id</span><span class="p">)</span><span class="w">  </span><span class="c1">-- Unique per tenant</span>
@@ -4993,10 +4993,10 @@ docs/enterprise/
 <span class="c1">-- Permissions catalog</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">permissions</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
-<span class="w">    </span><span class="n">resource</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">  </span><span class="c1">-- e.g., &#39;user&#39;, &#39;product&#39;, &#39;order&#39;</span>
-<span class="w">    </span><span class="n">action</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">     </span><span class="c1">-- e.g., &#39;create&#39;, &#39;read&#39;, &#39;update&#39;, &#39;delete&#39;</span>
+<span class="w">    </span><span class="n">resource</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">  </span><span class="c1">-- e.g., 'user', 'product', 'order'</span>
+<span class="w">    </span><span class="n">action</span><span class="w"> </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">     </span><span class="c1">-- e.g., 'create', 'read', 'update', 'delete'</span>
 <span class="w">    </span><span class="n">description</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="k">constraints</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Optional constraints (e.g., {&quot;own_data_only&quot;: true})</span>
+<span class="w">    </span><span class="k">constraints</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Optional constraints (e.g., {"own_data_only": true})</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
 <span class="w">    </span><span class="k">UNIQUE</span><span class="p">(</span><span class="n">resource</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">)</span>
 <span class="p">);</span>
@@ -5058,23 +5058,23 @@ docs/enterprise/
 <p><strong>REFACTOR</strong>: Add seed data for common roles</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Seed common system roles</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">roles</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">,</span><span class="w"> </span><span class="n">parent_role_id</span><span class="p">,</span><span class="w"> </span><span class="n">is_system</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;00000000-0000-0000-0000-000000000001&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;super_admin&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Full system access&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;00000000-0000-0000-0000-000000000002&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;admin&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Tenant administrator&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;00000000-0000-0000-0000-000000000003&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;manager&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Department manager&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;00000000-0000-0000-0000-000000000002&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;00000000-0000-0000-0000-000000000004&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Standard user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;00000000-0000-0000-0000-000000000003&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;00000000-0000-0000-0000-000000000005&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;viewer&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Read-only access&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;00000000-0000-0000-0000-000000000004&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'00000000-0000-0000-0000-000000000001'</span><span class="p">,</span><span class="w"> </span><span class="s1">'super_admin'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Full system access'</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'00000000-0000-0000-0000-000000000002'</span><span class="p">,</span><span class="w"> </span><span class="s1">'admin'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Tenant administrator'</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'00000000-0000-0000-0000-000000000003'</span><span class="p">,</span><span class="w"> </span><span class="s1">'manager'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Department manager'</span><span class="p">,</span><span class="w"> </span><span class="s1">'00000000-0000-0000-0000-000000000002'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'00000000-0000-0000-0000-000000000004'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Standard user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'00000000-0000-0000-0000-000000000003'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'00000000-0000-0000-0000-000000000005'</span><span class="p">,</span><span class="w"> </span><span class="s1">'viewer'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Read-only access'</span><span class="p">,</span><span class="w"> </span><span class="s1">'00000000-0000-0000-0000-000000000004'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">)</span>
 <span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">tenant_id</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">NOTHING</span><span class="p">;</span>
 
 <span class="c1">-- Seed common permissions</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">permissions</span><span class="w"> </span><span class="p">(</span><span class="n">resource</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="n">description</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;create&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Create new users&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;read&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;View user data&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;update&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Modify user data&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;delete&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Delete users&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;assign&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Assign roles to users&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;create&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Create new roles&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;audit&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;read&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;View audit logs&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;settings&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;update&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Modify system settings&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'create'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Create new users'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'read'</span><span class="p">,</span><span class="w"> </span><span class="s1">'View user data'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'update'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Modify user data'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="s1">'delete'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Delete users'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'role'</span><span class="p">,</span><span class="w"> </span><span class="s1">'assign'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Assign roles to users'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'role'</span><span class="p">,</span><span class="w"> </span><span class="s1">'create'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Create new roles'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'audit'</span><span class="p">,</span><span class="w"> </span><span class="s1">'read'</span><span class="p">,</span><span class="w"> </span><span class="s1">'View audit logs'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'settings'</span><span class="p">,</span><span class="w"> </span><span class="s1">'update'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Modify system settings'</span><span class="p">)</span>
 <span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">resource</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">NOTHING</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>QA</strong>: Verify schema and hierarchy function</p>
@@ -5086,28 +5086,28 @@ docs/enterprise/
 <div class="highlight"><pre><span></span><code><span class="c1"># tests/integration/enterprise/rbac/test_cache_setup.py</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_rbac_cache_domains_registered</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify RBAC cache domains are registered with triggers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify RBAC cache domains are registered with triggers."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_cache</span>
 
     <span class="n">cache</span> <span class="o">=</span> <span class="n">get_cache</span><span class="p">()</span>
 
     <span class="c1"># Check if pg_fraiseql_cache extension is available</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">:</span>
-        <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">&quot;pg_fraiseql_cache extension not installed&quot;</span><span class="p">)</span>
+        <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">"pg_fraiseql_cache extension not installed"</span><span class="p">)</span>
 
     <span class="c1"># Verify domains exist</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">,</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cur</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+        <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            SELECT domain</span>
 <span class="s2">            FROM fraiseql_cache.domain_version</span>
-<span class="s2">            WHERE domain IN (&#39;role&#39;, &#39;permission&#39;, &#39;role_permission&#39;, &#39;user_role&#39;)</span>
-<span class="s2">        &quot;&quot;&quot;</span><span class="p">)</span>
+<span class="s2">            WHERE domain IN ('role', 'permission', 'role_permission', 'user_role')</span>
+<span class="s2">        """</span><span class="p">)</span>
         <span class="n">domains</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()}</span>
 
-    <span class="k">assert</span> <span class="s1">&#39;role&#39;</span> <span class="ow">in</span> <span class="n">domains</span>
-    <span class="k">assert</span> <span class="s1">&#39;permission&#39;</span> <span class="ow">in</span> <span class="n">domains</span>
-    <span class="k">assert</span> <span class="s1">&#39;role_permission&#39;</span> <span class="ow">in</span> <span class="n">domains</span>
-    <span class="k">assert</span> <span class="s1">&#39;user_role&#39;</span> <span class="ow">in</span> <span class="n">domains</span>
+    <span class="k">assert</span> <span class="s1">'role'</span> <span class="ow">in</span> <span class="n">domains</span>
+    <span class="k">assert</span> <span class="s1">'permission'</span> <span class="ow">in</span> <span class="n">domains</span>
+    <span class="k">assert</span> <span class="s1">'role_permission'</span> <span class="ow">in</span> <span class="n">domains</span>
+    <span class="k">assert</span> <span class="s1">'user_role'</span> <span class="ow">in</span> <span class="n">domains</span>
     <span class="c1"># Expected failure: domains not registered</span>
 </code></pre></div>
 <p><strong>GREEN</strong>: Implement cache domain setup</p>
@@ -5117,25 +5117,25 @@ docs/enterprise/
 <span class="c1">-- Requires pg_fraiseql_cache extension</span>
 
 <span class="c1">-- Domain for roles table</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">&#39;roles&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;tenant_id&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">'roles'</span><span class="p">,</span><span class="w"> </span><span class="s1">'role'</span><span class="p">,</span><span class="w"> </span><span class="s1">'tenant_id'</span><span class="p">);</span>
 
 <span class="c1">-- Domain for permissions table (no tenant_id - global)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">&#39;permissions&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;permission&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">'permissions'</span><span class="p">,</span><span class="w"> </span><span class="s1">'permission'</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">);</span>
 
 <span class="c1">-- Domain for role_permissions table (no tenant_id - inherits from role)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">&#39;role_permissions&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;role_permission&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">'role_permissions'</span><span class="p">,</span><span class="w"> </span><span class="s1">'role_permission'</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">);</span>
 
 <span class="c1">-- Domain for user_roles table</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">&#39;user_roles&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user_role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;tenant_id&#39;</span><span class="p">);</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">setup_table_invalidation</span><span class="p">(</span><span class="s1">'user_roles'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user_role'</span><span class="p">,</span><span class="w"> </span><span class="s1">'tenant_id'</span><span class="p">);</span>
 
 <span class="c1">-- CASCADE rules: when RBAC tables change, invalidate user permissions</span>
 <span class="c1">-- This ensures user permission caches are invalidated when roles/permissions change</span>
 
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">fraiseql_cache</span><span class="p">.</span><span class="n">cascade_rules</span><span class="w"> </span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span><span class="w"> </span><span class="n">target_domain</span><span class="p">,</span><span class="w"> </span><span class="n">rule_type</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user_permissions&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalidate&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;permission&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user_permissions&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalidate&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;role_permission&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user_permissions&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalidate&#39;</span><span class="p">),</span>
-<span class="w">    </span><span class="p">(</span><span class="s1">&#39;user_role&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;user_permissions&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;invalidate&#39;</span><span class="p">)</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'role'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user_permissions'</span><span class="p">,</span><span class="w"> </span><span class="s1">'invalidate'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'permission'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user_permissions'</span><span class="p">,</span><span class="w"> </span><span class="s1">'invalidate'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'role_permission'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user_permissions'</span><span class="p">,</span><span class="w"> </span><span class="s1">'invalidate'</span><span class="p">),</span>
+<span class="w">    </span><span class="p">(</span><span class="s1">'user_role'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user_permissions'</span><span class="p">,</span><span class="w"> </span><span class="s1">'invalidate'</span><span class="p">)</span>
 <span class="k">ON</span><span class="w"> </span><span class="n">CONFLICT</span><span class="w"> </span><span class="p">(</span><span class="n">source_domain</span><span class="p">,</span><span class="w"> </span><span class="n">target_domain</span><span class="p">)</span><span class="w"> </span><span class="k">DO</span><span class="w"> </span><span class="k">NOTHING</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>REFACTOR</strong>: Add Python cache initialization</p>
@@ -5147,32 +5147,32 @@ docs/enterprise/
 <span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup_rbac_cache</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize RBAC cache domains and CASCADE rules.</span>
+<span class="w">    </span><span class="sd">"""Initialize RBAC cache domains and CASCADE rules.</span>
 
 <span class="sd">    This should be called during application startup.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">cache</span> <span class="o">=</span> <span class="n">get_cache</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;pg_fraiseql_cache extension not available. &quot;</span>
-            <span class="s2">&quot;RBAC will use TTL-only caching without automatic invalidation.&quot;</span>
+            <span class="s2">"pg_fraiseql_cache extension not available. "</span>
+            <span class="s2">"RBAC will use TTL-only caching without automatic invalidation."</span>
         <span class="p">)</span>
         <span class="k">return</span>
 
     <span class="c1"># Setup table triggers (idempotent)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;roles&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="n">tenant_column</span><span class="o">=</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;permissions&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;permission&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;role_permissions&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;role_permission&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">&quot;user_roles&quot;</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">&quot;user_role&quot;</span><span class="p">,</span> <span class="n">tenant_column</span><span class="o">=</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"role"</span><span class="p">,</span> <span class="n">tenant_column</span><span class="o">=</span><span class="s2">"tenant_id"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"role_permissions"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"role_permission"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"user_roles"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"user_role"</span><span class="p">,</span> <span class="n">tenant_column</span><span class="o">=</span><span class="s2">"tenant_id"</span><span class="p">)</span>
 
     <span class="c1"># Setup CASCADE rules (idempotent)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;role&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;permission&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;role_permission&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">&quot;user_role&quot;</span><span class="p">,</span> <span class="s2">&quot;user_permissions&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"role"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"permission"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"role_permission"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"user_role"</span><span class="p">,</span> <span class="s2">"user_permissions"</span><span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;✓ RBAC cache domains and CASCADE rules configured&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"✓ RBAC cache domains and CASCADE rules configured"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>QA</strong>: Test cache setup</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/integration/enterprise/rbac/test_cache_setup.py<span class="w"> </span>-v
@@ -5185,7 +5185,7 @@ docs/enterprise/
 <div class="highlight"><pre><span></span><code><span class="c1"># tests/integration/enterprise/rbac/test_permission_cache.py</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_permission_cache_stores_and_retrieves</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify permissions can be cached and retrieved from PostgreSQL.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify permissions can be cached and retrieved from PostgreSQL."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionCache</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Permission</span>
 
@@ -5195,15 +5195,15 @@ docs/enterprise/
     <span class="n">permissions</span> <span class="o">=</span> <span class="p">[</span>
         <span class="n">Permission</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">uuid4</span><span class="p">(),</span>
-            <span class="n">resource</span><span class="o">=</span><span class="s1">&#39;user&#39;</span><span class="p">,</span>
-            <span class="n">action</span><span class="o">=</span><span class="s1">&#39;read&#39;</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Read users&#39;</span>
+            <span class="n">resource</span><span class="o">=</span><span class="s1">'user'</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s1">'read'</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">'Read users'</span>
         <span class="p">),</span>
         <span class="n">Permission</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">uuid4</span><span class="p">(),</span>
-            <span class="n">resource</span><span class="o">=</span><span class="s1">&#39;user&#39;</span><span class="p">,</span>
-            <span class="n">action</span><span class="o">=</span><span class="s1">&#39;write&#39;</span><span class="p">,</span>
-            <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Write users&#39;</span>
+            <span class="n">resource</span><span class="o">=</span><span class="s1">'user'</span><span class="p">,</span>
+            <span class="n">action</span><span class="o">=</span><span class="s1">'write'</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="s1">'Write users'</span>
         <span class="p">)</span>
     <span class="p">]</span>
 
@@ -5218,7 +5218,7 @@ docs/enterprise/
 
     <span class="k">assert</span> <span class="n">cached</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
     <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">cached</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span>
-    <span class="k">assert</span> <span class="n">cached</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource</span> <span class="o">==</span> <span class="s1">&#39;user&#39;</span>
+    <span class="k">assert</span> <span class="n">cached</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">resource</span> <span class="o">==</span> <span class="s1">'user'</span>
     <span class="c1"># Expected failure: PermissionCache not implemented</span>
 </code></pre></div>
 <p><strong>GREEN</strong>: Implement PostgreSQL permission cache</p>
@@ -5234,46 +5234,46 @@ docs/enterprise/
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">PermissionCache</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;2-layer permission cache (request-level + PostgreSQL).</span>
+<span class="w">    </span><span class="sd">"""2-layer permission cache (request-level + PostgreSQL).</span>
 
 <span class="sd">    Architecture:</span>
 <span class="sd">    - Layer 1: Request-level in-memory dict (fastest, same request only)</span>
 <span class="sd">    - Layer 2: PostgreSQL UNLOGGED table (0.1-0.3ms, shared across instances)</span>
 <span class="sd">    - Automatic invalidation via domain versioning (requires pg_fraiseql_cache)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_pool</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize permission cache.</span>
+<span class="w">        </span><span class="sd">"""Initialize permission cache.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            db_pool: PostgreSQL connection pool</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="sd">        """</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Permission</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_cache_ttl</span> <span class="o">=</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># 5 minute TTL</span>
 
         <span class="c1"># RBAC domains for version checking</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rbac_domains</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;role&#39;</span><span class="p">,</span> <span class="s1">&#39;permission&#39;</span><span class="p">,</span> <span class="s1">&#39;role_permission&#39;</span><span class="p">,</span> <span class="s1">&#39;user_role&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rbac_domains</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'role'</span><span class="p">,</span> <span class="s1">'permission'</span><span class="p">,</span> <span class="s1">'role_permission'</span><span class="p">,</span> <span class="s1">'user_role'</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_make_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate cache key for user permissions.</span>
+<span class="w">        </span><span class="sd">"""Generate cache key for user permissions.</span>
 
 <span class="sd">        Format: rbac:permissions:{user_id}:{tenant_id}</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">tenant_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">tenant_id</span> <span class="k">else</span> <span class="s1">&#39;global&#39;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;rbac:permissions:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">tenant_str</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="sd">        """</span>
+        <span class="n">tenant_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">tenant_id</span> <span class="k">else</span> <span class="s1">'global'</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"rbac:permissions:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">tenant_str</span><span class="si">}</span><span class="s2">"</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span>
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Permission</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get cached permissions with version checking.</span>
+<span class="w">        </span><span class="sd">"""Get cached permissions with version checking.</span>
 
 <span class="sd">        Flow:</span>
 <span class="sd">        1. Check request-level cache (instant)</span>
 <span class="sd">        2. Check PostgreSQL cache (0.1-0.3ms)</span>
-<span class="sd">        3. If found, verify domain versions haven&#39;t changed</span>
+<span class="sd">        3. If found, verify domain versions haven't changed</span>
 <span class="sd">        4. If stale, return None (caller will recompute)</span>
 
 <span class="sd">        Args:</span>
@@ -5282,25 +5282,25 @@ docs/enterprise/
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of permissions or None if not cached/stale</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
         <span class="c1"># Try request-level cache first (fastest)</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Permission cache HIT (request-level): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Permission cache HIT (request-level): </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
 
         <span class="c1"># Try PostgreSQL cache with version checking</span>
         <span class="n">result</span><span class="p">,</span> <span class="n">cached_versions</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">get_with_metadata</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Permission cache MISS: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Permission cache MISS: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
 
         <span class="c1"># Verify domain versions if extension is available</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">has_domain_versioning</span> <span class="ow">and</span> <span class="n">cached_versions</span><span class="p">:</span>
             <span class="n">current_versions</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">get_domain_versions</span><span class="p">(</span>
-                <span class="n">tenant_id</span> <span class="ow">or</span> <span class="s1">&#39;global&#39;</span><span class="p">,</span>
+                <span class="n">tenant_id</span> <span class="ow">or</span> <span class="s1">'global'</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_rbac_domains</span>
             <span class="p">)</span>
 
@@ -5311,7 +5311,7 @@ docs/enterprise/
 
                 <span class="k">if</span> <span class="n">current_version</span> <span class="o">!=</span> <span class="n">cached_version</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="s2">&quot;Permission cache STALE (domain </span><span class="si">%s</span><span class="s2"> changed: </span><span class="si">%d</span><span class="s2"> → </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="s2">"Permission cache STALE (domain </span><span class="si">%s</span><span class="s2"> changed: </span><span class="si">%d</span><span class="s2"> → </span><span class="si">%d</span><span class="s2">): </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
                         <span class="n">domain</span><span class="p">,</span> <span class="n">cached_version</span><span class="p">,</span> <span class="n">current_version</span><span class="p">,</span> <span class="n">key</span>
                     <span class="p">)</span>
                     <span class="k">return</span> <span class="kc">None</span>
@@ -5322,7 +5322,7 @@ docs/enterprise/
         <span class="c1"># Populate request cache</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">permissions</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Permission cache HIT (PostgreSQL): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Permission cache HIT (PostgreSQL): </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">permissions</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span>
@@ -5331,7 +5331,7 @@ docs/enterprise/
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">permissions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Permission</span><span class="p">]</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cache permissions with domain version metadata.</span>
+<span class="w">        </span><span class="sd">"""Cache permissions with domain version metadata.</span>
 
 <span class="sd">        Stores in both request-level and PostgreSQL cache.</span>
 <span class="sd">        Attaches domain versions for automatic invalidation detection.</span>
@@ -5340,17 +5340,17 @@ docs/enterprise/
 <span class="sd">            user_id: User ID</span>
 <span class="sd">            tenant_id: Tenant ID (None for global)</span>
 <span class="sd">            permissions: List of permissions to cache</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
         <span class="c1"># Serialize permissions</span>
         <span class="n">serialized</span> <span class="o">=</span> <span class="p">[</span>
             <span class="p">{</span>
-                <span class="s1">&#39;id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
-                <span class="s1">&#39;resource&#39;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">resource</span><span class="p">,</span>
-                <span class="s1">&#39;action&#39;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">action</span><span class="p">,</span>
-                <span class="s1">&#39;description&#39;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
-                <span class="s1">&#39;constraints&#39;</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">constraints</span>
+                <span class="s1">'id'</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+                <span class="s1">'resource'</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">resource</span><span class="p">,</span>
+                <span class="s1">'action'</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">action</span><span class="p">,</span>
+                <span class="s1">'description'</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+                <span class="s1">'constraints'</span><span class="p">:</span> <span class="n">p</span><span class="o">.</span><span class="n">constraints</span>
             <span class="p">}</span>
             <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">permissions</span>
         <span class="p">]</span>
@@ -5359,7 +5359,7 @@ docs/enterprise/
         <span class="n">versions</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">:</span>
             <span class="n">versions</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">get_domain_versions</span><span class="p">(</span>
-                <span class="n">tenant_id</span> <span class="ow">or</span> <span class="s1">&#39;global&#39;</span><span class="p">,</span>
+                <span class="n">tenant_id</span> <span class="ow">or</span> <span class="s1">'global'</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_rbac_domains</span>
             <span class="p">)</span>
 
@@ -5374,10 +5374,10 @@ docs/enterprise/
         <span class="c1"># Store in request cache</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">permissions</span>
 
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Cached permissions for user </span><span class="si">%s</span><span class="s2"> (versions: </span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">versions</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Cached permissions for user </span><span class="si">%s</span><span class="s2"> (versions: </span><span class="si">%s</span><span class="s2">)"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">versions</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">clear_request_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear request-level cache (called at end of request).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Clear request-level cache (called at end of request)."""</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_user</span><span class="p">(</span>
@@ -5385,7 +5385,7 @@ docs/enterprise/
         <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span>
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Manually invalidate cache for user.</span>
+<span class="w">        </span><span class="sd">"""Manually invalidate cache for user.</span>
 
 <span class="sd">        Note: With domain versioning, manual invalidation is rarely needed</span>
 <span class="sd">        as cache is automatically invalidated when RBAC tables change.</span>
@@ -5393,42 +5393,42 @@ docs/enterprise/
 <span class="sd">        Args:</span>
 <span class="sd">            user_id: User ID</span>
 <span class="sd">            tenant_id: Tenant ID (None for global)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_make_key</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Invalidated permissions cache for user </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Invalidated permissions cache for user </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">invalidate_all</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Invalidate all cached permissions.</span>
+<span class="w">        </span><span class="sd">"""Invalidate all cached permissions.</span>
 
 <span class="sd">        Useful for testing or emergency cache clearing.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">delete_pattern</span><span class="p">(</span><span class="s2">&quot;rbac:permissions:*&quot;</span><span class="p">)</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Invalidated all permission caches&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">delete_pattern</span><span class="p">(</span><span class="s2">"rbac:permissions:*"</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Invalidated all permission caches"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>REFACTOR</strong>: Add cache statistics and monitoring</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Add to PermissionCache class</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get cache statistics.</span>
+<span class="w">    </span><span class="sd">"""Get cache statistics.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Dict with cache stats (hits, misses, size, etc.)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">pg_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
 
     <span class="c1"># Count RBAC-specific entries</span>
     <span class="c1"># (would need to query fraiseql_cache table with LIKE filter)</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s1">&#39;request_cache_size&#39;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">),</span>
-        <span class="s1">&#39;postgres_cache_total&#39;</span><span class="p">:</span> <span class="n">pg_stats</span><span class="p">[</span><span class="s1">&#39;total_entries&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;postgres_cache_active&#39;</span><span class="p">:</span> <span class="n">pg_stats</span><span class="p">[</span><span class="s1">&#39;active_entries&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;postgres_cache_size_bytes&#39;</span><span class="p">:</span> <span class="n">pg_stats</span><span class="p">[</span><span class="s1">&#39;table_size_bytes&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;has_domain_versioning&#39;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">,</span>
-        <span class="s1">&#39;cache_ttl_seconds&#39;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_ttl</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()),</span>
+        <span class="s1">'request_cache_size'</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_request_cache</span><span class="p">),</span>
+        <span class="s1">'postgres_cache_total'</span><span class="p">:</span> <span class="n">pg_stats</span><span class="p">[</span><span class="s1">'total_entries'</span><span class="p">],</span>
+        <span class="s1">'postgres_cache_active'</span><span class="p">:</span> <span class="n">pg_stats</span><span class="p">[</span><span class="s1">'active_entries'</span><span class="p">],</span>
+        <span class="s1">'postgres_cache_size_bytes'</span><span class="p">:</span> <span class="n">pg_stats</span><span class="p">[</span><span class="s1">'table_size_bytes'</span><span class="p">],</span>
+        <span class="s1">'has_domain_versioning'</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">pg_cache</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">,</span>
+        <span class="s1">'cache_ttl_seconds'</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_cache_ttl</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()),</span>
     <span class="p">}</span>
 </code></pre></div>
 <p><strong>QA</strong>: Test PostgreSQL permission cache</p>
@@ -5440,7 +5440,7 @@ docs/enterprise/
 <div class="highlight"><pre><span></span><code><span class="c1"># tests/integration/enterprise/rbac/test_cache_invalidation.py</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_permission_cache_invalidates_on_role_change</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify cache invalidates when user roles change.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify cache invalidates when user roles change."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionCache</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.resolver</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionResolver</span>
 
@@ -5455,10 +5455,10 @@ docs/enterprise/
     <span class="n">initial_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">permissions1</span><span class="p">)</span>
 
     <span class="c1"># Assign new role to user</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">        INSERT INTO user_roles (user_id, role_id, tenant_id)</span>
 <span class="s2">        VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s1">&#39;some-new-role-id&#39;</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">))</span>
+<span class="s2">    """</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="s1">'some-new-role-id'</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">))</span>
 
     <span class="c1"># Get permissions again (should recompute due to invalidation)</span>
     <span class="n">permissions2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
@@ -5473,7 +5473,7 @@ docs/enterprise/
 
 <span class="c1"># However, add helper to manually trigger invalidation for testing</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_manual_invalidation</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify manual invalidation works.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify manual invalidation works."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionCache</span>
 
     <span class="n">cache</span> <span class="o">=</span> <span class="n">PermissionCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
@@ -5494,12 +5494,12 @@ docs/enterprise/
 </code></pre></div>
 <p><strong>REFACTOR</strong>: Add CASCADE invalidation test</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_cascade_invalidation_on_role_permission_change</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify CASCADE rule invalidates user permissions when role permissions change.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify CASCADE rule invalidates user permissions when role permissions change."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionCache</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.resolver</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionResolver</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="k">await</span> <span class="n">get_cache</span><span class="p">())</span><span class="o">.</span><span class="n">has_domain_versioning</span><span class="p">:</span>
-        <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">&quot;Requires pg_fraiseql_cache extension&quot;</span><span class="p">)</span>
+        <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">"Requires pg_fraiseql_cache extension"</span><span class="p">)</span>
 
     <span class="n">cache</span> <span class="o">=</span> <span class="n">PermissionCache</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
     <span class="n">resolver</span> <span class="o">=</span> <span class="n">PermissionResolver</span><span class="p">(</span><span class="n">db_repo</span><span class="p">,</span> <span class="n">cache</span><span class="p">)</span>
@@ -5510,19 +5510,19 @@ docs/enterprise/
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">uuid4</span><span class="p">()</span>
 
     <span class="c1"># Setup: user has role</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">        INSERT INTO user_roles (user_id, role_id, tenant_id)</span>
 <span class="s2">        VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">))</span>
+<span class="s2">    """</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">role_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">))</span>
 
     <span class="c1"># Get initial permissions (caches result)</span>
     <span class="n">permissions1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolver</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
     <span class="c1"># Add permission to role</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">        INSERT INTO role_permissions (role_id, permission_id)</span>
 <span class="s2">        VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">(</span><span class="n">role_id</span><span class="p">,</span> <span class="n">permission_id</span><span class="p">))</span>
+<span class="s2">    """</span><span class="p">,</span> <span class="p">(</span><span class="n">role_id</span><span class="p">,</span> <span class="n">permission_id</span><span class="p">))</span>
 
     <span class="c1"># Domain version increments:</span>
     <span class="c1"># 1. role_permissions INSERT → role_permission domain version++</span>
@@ -5546,18 +5546,18 @@ docs/enterprise/
 <div class="highlight"><pre><span></span><code><span class="c1"># tests/integration/enterprise/rbac/test_role_hierarchy.py</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_role_inheritance_chain</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify role inherits permissions from parent roles.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify role inherits permissions from parent roles."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.hierarchy</span><span class="w"> </span><span class="kn">import</span> <span class="n">RoleHierarchy</span>
 
     <span class="c1"># Create role chain: admin -&gt; manager -&gt; developer -&gt; junior_dev</span>
     <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">RoleHierarchy</span><span class="p">(</span><span class="n">db_repo</span><span class="p">)</span>
-    <span class="n">inherited_roles</span> <span class="o">=</span> <span class="k">await</span> <span class="n">hierarchy</span><span class="o">.</span><span class="n">get_inherited_roles</span><span class="p">(</span><span class="s1">&#39;junior-dev-role-id&#39;</span><span class="p">)</span>
+    <span class="n">inherited_roles</span> <span class="o">=</span> <span class="k">await</span> <span class="n">hierarchy</span><span class="o">.</span><span class="n">get_inherited_roles</span><span class="p">(</span><span class="s1">'junior-dev-role-id'</span><span class="p">)</span>
 
     <span class="n">role_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">inherited_roles</span><span class="p">]</span>
-    <span class="k">assert</span> <span class="s1">&#39;junior_dev&#39;</span> <span class="ow">in</span> <span class="n">role_names</span>
-    <span class="k">assert</span> <span class="s1">&#39;developer&#39;</span> <span class="ow">in</span> <span class="n">role_names</span>
-    <span class="k">assert</span> <span class="s1">&#39;manager&#39;</span> <span class="ow">in</span> <span class="n">role_names</span>
-    <span class="k">assert</span> <span class="s1">&#39;admin&#39;</span> <span class="ow">in</span> <span class="n">role_names</span>
+    <span class="k">assert</span> <span class="s1">'junior_dev'</span> <span class="ow">in</span> <span class="n">role_names</span>
+    <span class="k">assert</span> <span class="s1">'developer'</span> <span class="ow">in</span> <span class="n">role_names</span>
+    <span class="k">assert</span> <span class="s1">'manager'</span> <span class="ow">in</span> <span class="n">role_names</span>
+    <span class="k">assert</span> <span class="s1">'admin'</span> <span class="ow">in</span> <span class="n">role_names</span>
     <span class="c1"># Expected failure: get_inherited_roles not implemented</span>
 </code></pre></div>
 <p><strong>GREEN</strong>: Implement hierarchy engine (same as original)</p>
@@ -5569,13 +5569,13 @@ docs/enterprise/
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">RoleHierarchy</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes role hierarchy and inheritance.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Computes role hierarchy and inheritance."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">repo</span> <span class="o">=</span> <span class="n">repo</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_inherited_roles</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">role_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Role</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all roles in inheritance chain (including self).</span>
+<span class="w">        </span><span class="sd">"""Get all roles in inheritance chain (including self).</span>
 
 <span class="sd">        Uses PostgreSQL recursive CTE for efficient computation.</span>
 
@@ -5587,10 +5587,10 @@ docs/enterprise/
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If cycle detected</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
-            <span class="n">statement</span><span class="o">=</span><span class="s2">&quot;SELECT * FROM get_inherited_roles(</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;role_id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">role_id</span><span class="p">)},</span>
+            <span class="n">statement</span><span class="o">=</span><span class="s2">"SELECT * FROM get_inherited_roles(</span><span class="si">%s</span><span class="s2">)"</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">'role_id'</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">role_id</span><span class="p">)},</span>
             <span class="n">fetch_result</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">))</span>
 
@@ -5598,18 +5598,18 @@ docs/enterprise/
             <span class="k">return</span> <span class="p">[]</span>
 
         <span class="c1"># Check if we hit cycle detection limit</span>
-        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;depth&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">10</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cycle detected in role hierarchy for role </span><span class="si">{</span><span class="n">role_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">'depth'</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">10</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cycle detected in role hierarchy for role </span><span class="si">{</span><span class="n">role_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
         <span class="c1"># Get full role details</span>
-        <span class="n">role_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;role_id&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+        <span class="n">role_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s1">'role_id'</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
         <span class="n">roles_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
-            <span class="n">statement</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="n">statement</span><span class="o">=</span><span class="s2">"""</span>
 <span class="s2">                SELECT * FROM roles</span>
 <span class="s2">                WHERE id = ANY(</span><span class="si">%s</span><span class="s2">::uuid[])</span>
 <span class="s2">                ORDER BY name</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;ids&#39;</span><span class="p">:</span> <span class="n">role_ids</span><span class="p">},</span>
+<span class="s2">            """</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">'ids'</span><span class="p">:</span> <span class="n">role_ids</span><span class="p">},</span>
             <span class="n">fetch_result</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">))</span>
 
@@ -5624,7 +5624,7 @@ docs/enterprise/
 <div class="highlight"><pre><span></span><code><span class="c1"># tests/integration/enterprise/rbac/test_permission_resolution.py</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_effective_permissions_with_caching</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Verify user permissions are cached in PostgreSQL.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Verify user permissions are cached in PostgreSQL."""</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.resolver</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionResolver</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.enterprise.rbac.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">PermissionCache</span>
 
@@ -5657,19 +5657,19 @@ docs/enterprise/
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">PermissionResolver</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves effective permissions for users with PostgreSQL caching.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Resolves effective permissions for users with PostgreSQL caching."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">repo</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">,</span>
         <span class="n">cache</span><span class="p">:</span> <span class="n">PermissionCache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize permission resolver.</span>
+<span class="w">        </span><span class="sd">"""Initialize permission resolver.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            repo: FraiseQL database repository</span>
 <span class="sd">            cache: Permission cache (optional, creates new if not provided)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">repo</span> <span class="o">=</span> <span class="n">repo</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hierarchy</span> <span class="o">=</span> <span class="n">RoleHierarchy</span><span class="p">(</span><span class="n">repo</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">cache</span> <span class="ow">or</span> <span class="n">PermissionCache</span><span class="p">(</span><span class="n">repo</span><span class="o">.</span><span class="n">pool</span><span class="p">)</span>
@@ -5680,7 +5680,7 @@ docs/enterprise/
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">use_cache</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Permission</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all effective permissions for a user.</span>
+<span class="w">        </span><span class="sd">"""Get all effective permissions for a user.</span>
 
 <span class="sd">        Flow:</span>
 <span class="sd">        1. Check cache (request-level + PostgreSQL)</span>
@@ -5695,16 +5695,16 @@ docs/enterprise/
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of effective permissions</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="c1"># Try cache first</span>
         <span class="k">if</span> <span class="n">use_cache</span><span class="p">:</span>
             <span class="n">cached</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">cached</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Returning cached permissions for user </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Returning cached permissions for user </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">cached</span>
 
         <span class="c1"># Cache miss or disabled - compute permissions</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Computing permissions for user </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">"Computing permissions for user </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
         <span class="n">permissions</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_permissions</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
         <span class="c1"># Cache result</span>
@@ -5718,7 +5718,7 @@ docs/enterprise/
         <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span>
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Permission</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute effective permissions from database.</span>
+<span class="w">        </span><span class="sd">"""Compute effective permissions from database.</span>
 
 <span class="sd">        This is the expensive operation that we cache.</span>
 
@@ -5728,8 +5728,8 @@ docs/enterprise/
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of effective permissions</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># Get user&#39;s direct roles</span>
+<span class="sd">        """</span>
+        <span class="c1"># Get user's direct roles</span>
         <span class="n">user_roles</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_user_roles</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
         <span class="c1"># Get all inherited roles</span>
@@ -5743,15 +5743,15 @@ docs/enterprise/
 
         <span class="c1"># Get permissions for all roles</span>
         <span class="n">permissions_data</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
-            <span class="n">statement</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="n">statement</span><span class="o">=</span><span class="s2">"""</span>
 <span class="s2">                SELECT DISTINCT p.*</span>
 <span class="s2">                FROM permissions p</span>
 <span class="s2">                INNER JOIN role_permissions rp ON p.id = rp.permission_id</span>
 <span class="s2">                WHERE rp.role_id = ANY(</span><span class="si">%s</span><span class="s2">::uuid[])</span>
 <span class="s2">                AND rp.granted = TRUE</span>
 <span class="s2">                ORDER BY p.resource, p.action</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;role_ids&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">all_role_ids</span><span class="p">)},</span>
+<span class="s2">            """</span><span class="p">,</span>
+            <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s1">'role_ids'</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">all_role_ids</span><span class="p">)},</span>
             <span class="n">fetch_result</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">))</span>
 
@@ -5762,19 +5762,19 @@ docs/enterprise/
         <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span>
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Role</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get roles directly assigned to user.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get roles directly assigned to user."""</span>
         <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
-            <span class="n">statement</span><span class="o">=</span><span class="s2">&quot;&quot;&quot;</span>
+            <span class="n">statement</span><span class="o">=</span><span class="s2">"""</span>
 <span class="s2">                SELECT r.*</span>
 <span class="s2">                FROM roles r</span>
 <span class="s2">                INNER JOIN user_roles ur ON r.id = ur.role_id</span>
 <span class="s2">                WHERE ur.user_id = </span><span class="si">%s</span>
 <span class="s2">                AND (ur.tenant_id = </span><span class="si">%s</span><span class="s2"> OR (ur.tenant_id IS NULL AND </span><span class="si">%s</span><span class="s2"> IS NULL))</span>
 <span class="s2">                AND (ur.expires_at IS NULL OR ur.expires_at &gt; NOW())</span>
-<span class="s2">            &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="s2">            """</span><span class="p">,</span>
             <span class="n">params</span><span class="o">=</span><span class="p">{</span>
-                <span class="s1">&#39;user_id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
-                <span class="s1">&#39;tenant_id&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">tenant_id</span> <span class="k">else</span> <span class="kc">None</span>
+                <span class="s1">'user_id'</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span>
+                <span class="s1">'tenant_id'</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">tenant_id</span> <span class="k">else</span> <span class="kc">None</span>
             <span class="p">},</span>
             <span class="n">fetch_result</span><span class="o">=</span><span class="kc">True</span>
         <span class="p">))</span>
@@ -5788,17 +5788,17 @@ docs/enterprise/
         <span class="n">action</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if user has specific permission.</span>
+<span class="w">        </span><span class="sd">"""Check if user has specific permission.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            user_id: User ID</span>
-<span class="sd">            resource: Resource name (e.g., &#39;user&#39;, &#39;product&#39;)</span>
-<span class="sd">            action: Action name (e.g., &#39;create&#39;, &#39;read&#39;)</span>
+<span class="sd">            resource: Resource name (e.g., 'user', 'product')</span>
+<span class="sd">            action: Action name (e.g., 'create', 'read')</span>
 <span class="sd">            tenant_id: Optional tenant scope</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if user has permission, False otherwise</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">permissions</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_user_permissions</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="nb">any</span><span class="p">(</span>
@@ -5817,7 +5817,7 @@ docs/enterprise/
     <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">raise_on_deny</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check permission and optionally raise error.</span>
+<span class="w">    </span><span class="sd">"""Check permission and optionally raise error.</span>
 
 <span class="sd">    Args:</span>
 <span class="sd">        user_id: User ID</span>
@@ -5831,12 +5831,12 @@ docs/enterprise/
 
 <span class="sd">    Raises:</span>
 <span class="sd">        PermissionError: If raise_on_deny=True and permission denied</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">has_perm</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_permission</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">resource</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">has_perm</span> <span class="ow">and</span> <span class="n">raise_on_deny</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Permission denied: requires </span><span class="si">{</span><span class="n">resource</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">"Permission denied: requires </span><span class="si">{</span><span class="n">resource</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">action</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">has_perm</span>
@@ -5846,7 +5846,7 @@ docs/enterprise/
     <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span>
     <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Role</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get roles assigned to user (public method).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get roles assigned to user (public method)."""</span>
     <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_user_roles</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>QA</strong>: Test permission resolution with caching</p>

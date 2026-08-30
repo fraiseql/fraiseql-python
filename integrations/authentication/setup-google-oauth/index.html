@@ -5230,12 +5230,12 @@ via environment variables (<code>FRAISEQL_</code> prefix) or directly in code.</
 
 <span class="c1"># Validate Auth0-issued JWTs (RS256 by default, JWKS fetched automatically)</span>
 <span class="n">auth</span> <span class="o">=</span> <span class="n">Auth0Provider</span><span class="p">(</span>
-    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;YOUR_TENANT.auth0.com&quot;</span><span class="p">,</span>
-    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">&quot;https://api.yourdomain.com&quot;</span><span class="p">,</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">"YOUR_TENANT.auth0.com"</span><span class="p">,</span>
+    <span class="n">api_identifier</span><span class="o">=</span><span class="s2">"https://api.yourdomain.com"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:password@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:password@localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">me</span><span class="p">],</span>
     <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
@@ -5263,16 +5263,16 @@ implement two async methods; <code>get_user_context</code> is a helper you call 
 <span class="k">class</span><span class="w"> </span><span class="nc">AuthProvider</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
     <span class="nd">@abstractmethod</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a token and return its decoded payload (or raise).&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate a token and return its decoded payload (or raise)."""</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a token and return the resolved UserContext.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Validate a token and return the resolved UserContext."""</span>
 </code></pre></div>
 <p><code>UserContext</code> (also from <code>base.py</code>) is what your resolvers read off
 <code>info.context["user"]</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">UserContext</span><span class="p">(</span>
-    <span class="n">user_id</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>          <span class="c1"># required — use Google&#39;s `sub`</span>
+    <span class="n">user_id</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>          <span class="c1"># required — use Google's `sub`</span>
     <span class="n">email</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>             <span class="c1"># str | None</span>
     <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>              <span class="c1"># str | None</span>
     <span class="n">roles</span><span class="o">=</span><span class="p">[],</span>               <span class="c1"># list[str]</span>
@@ -5293,12 +5293,12 @@ implement two async methods; <code>get_user_context</code> is a helper you call 
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span><span class="p">,</span> <span class="n">UserContext</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidTokenError</span>
 
-<span class="n">GOOGLE_JWKS_URL</span> <span class="o">=</span> <span class="s2">&quot;https://www.googleapis.com/oauth2/v3/certs&quot;</span>
-<span class="n">GOOGLE_ISSUER</span> <span class="o">=</span> <span class="s2">&quot;https://accounts.google.com&quot;</span>
+<span class="n">GOOGLE_JWKS_URL</span> <span class="o">=</span> <span class="s2">"https://www.googleapis.com/oauth2/v3/certs"</span>
+<span class="n">GOOGLE_ISSUER</span> <span class="o">=</span> <span class="s2">"https://accounts.google.com"</span>
 
 
 <span class="k">class</span><span class="w"> </span><span class="nc">GoogleIDTokenProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate Google ID tokens directly (no Auth0 broker).&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Validate Google ID tokens directly (no Auth0 broker)."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client_id</span> <span class="o">=</span> <span class="n">client_id</span>  <span class="c1"># your OAuth client ID == the token audience</span>
@@ -5310,12 +5310,12 @@ implement two async methods; <code>get_user_context</code> is a helper you call 
             <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
                 <span class="n">token</span><span class="p">,</span>
                 <span class="n">signing_key</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
-                <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>
+                <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"RS256"</span><span class="p">],</span>
                 <span class="n">audience</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_id</span><span class="p">,</span>
                 <span class="n">issuer</span><span class="o">=</span><span class="n">GOOGLE_ISSUER</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">PyJWTError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid Google ID token: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Invalid Google ID token: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span>
             <span class="k">raise</span> <span class="n">InvalidTokenError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
@@ -5324,10 +5324,10 @@ implement two async methods; <code>get_user_context</code> is a helper you call 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">get_user_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
-            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>            <span class="c1"># Google&#39;s stable subject id</span>
-            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email&quot;</span><span class="p">),</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;name&quot;</span><span class="p">),</span>
-            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;email_verified&quot;</span><span class="p">:</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;email_verified&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)},</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>            <span class="c1"># Google's stable subject id</span>
+            <span class="n">email</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">),</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"email_verified"</span><span class="p">:</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email_verified"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)},</span>
         <span class="p">)</span>
 </code></pre></div>
 <blockquote>
@@ -5339,14 +5339,14 @@ wrap it (e.g. <code>asyncio.to_thread</code>) so it doesn't block the event loop
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">auth</span> <span class="o">=</span> <span class="n">GoogleIDTokenProvider</span><span class="p">(</span>
-    <span class="n">client_id</span><span class="o">=</span><span class="s2">&quot;YOUR_CLIENT_ID.apps.googleusercontent.com&quot;</span><span class="p">,</span>
+    <span class="n">client_id</span><span class="o">=</span><span class="s2">"YOUR_CLIENT_ID.apps.googleusercontent.com"</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://user:password@localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:password@localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">me</span><span class="p">],</span>
-    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>            <span class="c1"># auth_provider=&quot;custom&quot; semantics — pass your AuthProvider</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>            <span class="c1"># auth_provider="custom" semantics — pass your AuthProvider</span>
     <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5361,7 +5361,7 @@ You can also gate operations with FraiseQL's auth decorators.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_auth</span>
 
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
@@ -5371,18 +5371,18 @@ You can also gate operations with FraiseQL's auth decorators.</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="nd">@requires_auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">me</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;user&quot;</span><span class="p">]</span>            <span class="c1"># a UserContext (Google `sub` -&gt; user_id)</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>            <span class="c1"># a UserContext (Google `sub` -&gt; user_id)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
 </code></pre></div>
 <p>Denied access surfaces as a GraphQL error with <code>extensions.code = "FORBIDDEN"</code>.</p>
 <h2 id="testing-the-flow">Testing the flow<a class="headerlink" href="#testing-the-flow" title="Permanent link">&para;</a></h2>
 <p>Send a GraphQL request with the token your chosen path issued (an Auth0 JWT for Path A,
 a Google ID token for Path B):</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;your_token&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: &quot;{ me { id email name } }&quot;}&#39;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer &lt;your_token&gt;"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ me { id email name } }"}'</span>
 </code></pre></div>
 <p>A valid token returns the current user; a missing or invalid token returns a GraphQL
 error with <code>extensions.code = "FORBIDDEN"</code> (or an authentication error).</p>

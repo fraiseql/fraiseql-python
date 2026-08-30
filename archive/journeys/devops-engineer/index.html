@@ -4953,16 +4953,16 @@
 <span class="w">              </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db-secrets</span>
 <span class="w">              </span><span class="nt">key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">url</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_POOL_SIZE</span>
-<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;20&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"20"</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_POOL_MAX_OVERFLOW</span>
-<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10&quot;</span>
+<span class="w">          </span><span class="nt">value</span><span class="p">:</span><span class="w"> </span><span class="s">"10"</span>
 <span class="w">        </span><span class="nt">resources</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">requests</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;512Mi&quot;</span>
-<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;500m&quot;</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"512Mi"</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"500m"</span>
 <span class="w">          </span><span class="nt">limits</span><span class="p">:</span>
-<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2Gi&quot;</span>
-<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2000m&quot;</span>
+<span class="w">            </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"2Gi"</span>
+<span class="w">            </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"2000m"</span>
 <span class="w">        </span><span class="nt">livenessProbe</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">httpGet</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/health</span>
@@ -5011,7 +5011,7 @@ maintenance_work_mem = 1GB
 
 # Logging for observability
 log_min_duration_statement = 1000  # Log slow queries (&gt;1s)
-log_line_prefix = &#39;%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h &#39;
+log_line_prefix = '%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h '
 </code></pre></div>
 <p><strong>3. Read Replica Configuration:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># kubernetes/postgres-replica.yaml</span>
@@ -5037,8 +5037,8 @@ log_line_prefix = &#39;%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h &#39;
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url_write</span><span class="o">=</span><span class="s2">&quot;postgresql://pgbouncer:6432/fraiseql&quot;</span><span class="p">,</span>  <span class="c1"># Primary</span>
-    <span class="n">database_url_read</span><span class="o">=</span><span class="s2">&quot;postgresql://pgbouncer-replica:6432/fraiseql&quot;</span><span class="p">,</span>  <span class="c1"># Replicas</span>
+    <span class="n">database_url_write</span><span class="o">=</span><span class="s2">"postgresql://pgbouncer:6432/fraiseql"</span><span class="p">,</span>  <span class="c1"># Primary</span>
+    <span class="n">database_url_read</span><span class="o">=</span><span class="s2">"postgresql://pgbouncer-replica:6432/fraiseql"</span><span class="p">,</span>  <span class="c1"># Replicas</span>
     <span class="n">pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">pool_max_overflow</span><span class="o">=</span><span class="mi">10</span>
 <span class="p">)</span>
@@ -5054,7 +5054,7 @@ log_line_prefix = &#39;%t [%p]: [%l-1] db=%d,user=%u,app=%a,client=%h &#39;
 pg_dump<span class="w"> </span>-h<span class="w"> </span>postgres-primary<span class="w"> </span>-U<span class="w"> </span>fraiseql<span class="w"> </span>-Fc<span class="w"> </span>fraiseql<span class="w"> </span>&gt;<span class="w"> </span>/backups/fraiseql_<span class="nv">$TIMESTAMP</span>.dump
 
 <span class="c1"># Retention: Keep 7 daily, 4 weekly, 12 monthly</span>
-find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;fraiseql_*.dump&quot;</span><span class="w"> </span>-mtime<span class="w"> </span>+7<span class="w"> </span>-delete
+find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"> </span><span class="s2">"fraiseql_*.dump"</span><span class="w"> </span>-mtime<span class="w"> </span>+7<span class="w"> </span>-delete
 </code></pre></div>
 <p><strong>Kubernetes CronJob:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">batch/v1</span>
@@ -5062,7 +5062,7 @@ find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"
 <span class="nt">metadata</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres-backup</span>
 <span class="nt">spec</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span><span class="w">  </span><span class="c1"># 2 AM daily</span>
+<span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w"> </span><span class="s">"0</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*"</span><span class="w">  </span><span class="c1"># 2 AM daily</span>
 <span class="w">  </span><span class="nt">jobTemplate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">spec</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">template</span><span class="p">:</span>
@@ -5070,7 +5070,7 @@ find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"
 <span class="w">          </span><span class="nt">containers</span><span class="p">:</span>
 <span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">backup</span>
 <span class="w">            </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:16</span>
-<span class="w">            </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;/bin/bash&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;/scripts/backup-postgres.sh&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">            </span><span class="nt">command</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"/bin/bash"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"/scripts/backup-postgres.sh"</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p><strong>Success Check:</strong> Database is configured with pooling, replicas, and backups</p>
 <h3 id="step-4-observability-stack-setup-50-minutes">Step 4: Observability Stack Setup (50 minutes)<a class="headerlink" href="#step-4-observability-stack-setup-50-minutes" title="Permanent link">&para;</a></h3>
@@ -5080,11 +5080,11 @@ find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"
 <p><strong>1. Prometheus Metrics:</strong></p>
 <p>FraiseQL exposes Prometheus metrics at <code>/metrics</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Exposed metrics</span>
-<span class="n">fraiseql_requests_total</span><span class="p">{</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;200&quot;</span><span class="p">}</span>
-<span class="n">fraiseql_request_duration_seconds</span><span class="p">{</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;POST&quot;</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;/graphql&quot;</span><span class="p">}</span>
+<span class="n">fraiseql_requests_total</span><span class="p">{</span><span class="n">method</span><span class="o">=</span><span class="s2">"POST"</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"200"</span><span class="p">}</span>
+<span class="n">fraiseql_request_duration_seconds</span><span class="p">{</span><span class="n">method</span><span class="o">=</span><span class="s2">"POST"</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="s2">"/graphql"</span><span class="p">}</span>
 <span class="n">fraiseql_db_connections_active</span>
 <span class="n">fraiseql_db_connections_idle</span>
-<span class="n">fraiseql_query_duration_seconds</span><span class="p">{</span><span class="n">query_name</span><span class="o">=</span><span class="s2">&quot;posts&quot;</span><span class="p">}</span>
+<span class="n">fraiseql_query_duration_seconds</span><span class="p">{</span><span class="n">query_name</span><span class="o">=</span><span class="s2">"posts"</span><span class="p">}</span>
 <span class="n">fraiseql_rust_pipeline_enabled</span>
 <span class="n">fraiseql_cache_hits_total</span>
 <span class="n">fraiseql_cache_misses_total</span>
@@ -5092,7 +5092,7 @@ find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"
 <p><strong>Prometheus Configuration:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># prometheus.yaml</span>
 <span class="nt">scrape_configs</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;fraiseql&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">'fraiseql'</span>
 <span class="w">    </span><span class="nt">kubernetes_sd_configs</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pod</span>
 <span class="w">    </span><span class="nt">relabel_configs</span><span class="p">:</span>
@@ -5101,8 +5101,8 @@ find<span class="w"> </span>/backups<span class="w"> </span>-name<span class="w"
 <span class="w">      </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keep</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">source_labels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">__meta_kubernetes_pod_ip</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">target_label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">__address__</span>
-<span class="w">      </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;${1}:8000&#39;</span>
-<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;/metrics&#39;</span>
+<span class="w">      </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s">'${1}:8000'</span>
+<span class="w">    </span><span class="nt">metrics_path</span><span class="p">:</span><span class="w"> </span><span class="s">'/metrics'</span>
 <span class="w">    </span><span class="nt">scrape_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15s</span>
 </code></pre></div>
 <p><strong>2. Grafana Dashboards:</strong></p>
@@ -5147,22 +5147,22 @@ kubectl<span class="w"> </span>create<span class="w"> </span>configmap<span clas
 </code></pre></div>
 <p><strong>Structured Logging in FraiseQL:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-08T14:30:00Z&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;GraphQL query executed&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;query_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;posts&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;duration_ms&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;uuid-123&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;trace_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc-def-ghi&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;span_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;123-456&quot;</span>
+<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-08T14:30:00Z"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INFO"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"GraphQL query executed"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"query_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"posts"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"uuid-123"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"abc-def-ghi"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"span_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"123-456"</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>4. Distributed Tracing (OpenTelemetry):</strong></p>
 <p>FraiseQL supports OpenTelemetry auto-instrumentation:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Enable tracing</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span><span class="s2">&quot;http://jaeger:4318&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span><span class="s2">&quot;fraiseql-api&quot;</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_TRACES_EXPORTER</span><span class="o">=</span><span class="s2">&quot;otlp&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_EXPORTER_OTLP_ENDPOINT</span><span class="o">=</span><span class="s2">"http://jaeger:4318"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_SERVICE_NAME</span><span class="o">=</span><span class="s2">"fraiseql-api"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OTEL_TRACES_EXPORTER</span><span class="o">=</span><span class="s2">"otlp"</span>
 
 python<span class="w"> </span>app.py
 </code></pre></div>
@@ -5182,9 +5182,9 @@ python<span class="w"> </span>app.py
 
 <span class="c1"># Response:</span>
 <span class="o">{</span>
-<span class="w">  </span><span class="s2">&quot;status&quot;</span>:<span class="w"> </span><span class="s2">&quot;healthy&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;version&quot;</span>:<span class="w"> </span><span class="s2">&quot;1.8.0&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;uptime_seconds&quot;</span>:<span class="w"> </span><span class="m">3600</span>
+<span class="w">  </span><span class="s2">"status"</span>:<span class="w"> </span><span class="s2">"healthy"</span>,
+<span class="w">  </span><span class="s2">"version"</span>:<span class="w"> </span><span class="s2">"1.8.0"</span>,
+<span class="w">  </span><span class="s2">"uptime_seconds"</span>:<span class="w"> </span><span class="m">3600</span>
 <span class="o">}</span>
 </code></pre></div>
 <p><strong>Purpose:</strong> Process is alive and can serve traffic</p>
@@ -5194,12 +5194,12 @@ curl<span class="w"> </span>http://localhost:8000/ready
 
 <span class="c1"># Example response (ready):</span>
 <span class="o">{</span>
-<span class="w">  </span><span class="s2">&quot;status&quot;</span>:<span class="w"> </span><span class="s2">&quot;ready&quot;</span>,
-<span class="w">  </span><span class="s2">&quot;checks&quot;</span>:<span class="w"> </span><span class="o">{</span>
-<span class="w">    </span><span class="s2">&quot;database&quot;</span>:<span class="w"> </span><span class="s2">&quot;ok&quot;</span>,
-<span class="w">    </span><span class="s2">&quot;schema&quot;</span>:<span class="w"> </span><span class="s2">&quot;ok&quot;</span>
+<span class="w">  </span><span class="s2">"status"</span>:<span class="w"> </span><span class="s2">"ready"</span>,
+<span class="w">  </span><span class="s2">"checks"</span>:<span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="s2">"database"</span>:<span class="w"> </span><span class="s2">"ok"</span>,
+<span class="w">    </span><span class="s2">"schema"</span>:<span class="w"> </span><span class="s2">"ok"</span>
 <span class="w">  </span><span class="o">}</span>,
-<span class="w">  </span><span class="s2">&quot;timestamp&quot;</span>:<span class="w"> </span><span class="m">1670500000</span>.0
+<span class="w">  </span><span class="s2">"timestamp"</span>:<span class="w"> </span><span class="m">1670500000</span>.0
 <span class="o">}</span>
 </code></pre></div>
 <p><strong>Purpose:</strong> Application is ready to serve traffic (database connected, schema loaded)</p>
@@ -5210,51 +5210,51 @@ curl<span class="w"> </span>http://localhost:8000/ready
 <span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
 <span class="w">      </span><span class="c1"># High error rate</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighErrorRate</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(fraiseql_requests_total{status=~&quot;5..&quot;}[5m]) &gt; 0.05</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(fraiseql_requests_total{status=~"5.."}[5m]) &gt; 0.05</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">detected&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">per</span><span class="nv"> </span><span class="s">second&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">detected"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">per</span><span class="nv"> </span><span class="s">second"</span>
 
 <span class="w">      </span><span class="c1"># Slow queries</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">SlowQueries</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">histogram_quantile(0.95, fraiseql_query_duration_seconds) &gt; 2</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;95th</span><span class="nv"> </span><span class="s">percentile</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">2s&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"95th</span><span class="nv"> </span><span class="s">percentile</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">2s"</span>
 
 <span class="w">      </span><span class="c1"># Database connection pool exhaustion</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DBPoolExhausted</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql_db_connections_active / fraiseql_db_connections_max &gt; 0.9</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Database</span><span class="nv"> </span><span class="s">connection</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">near</span><span class="nv"> </span><span class="s">capacity&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Database</span><span class="nv"> </span><span class="s">connection</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">near</span><span class="nv"> </span><span class="s">capacity"</span>
 
 <span class="w">      </span><span class="c1"># High memory usage</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighMemoryUsage</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container_memory_usage_bytes{pod=~&quot;fraiseql.*&quot;} / container_spec_memory_limit_bytes &gt; 0.85</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">container_memory_usage_bytes{pod=~"fraiseql.*"} / container_spec_memory_limit_bytes &gt; 0.85</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Pod</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$labels.pod</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">85%&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Pod</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$labels.pod</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">&gt;</span><span class="nv"> </span><span class="s">85%"</span>
 </code></pre></div>
 <p><strong>4. Alerting Channels:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># alertmanager.yaml</span>
 <span class="nt">receivers</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;pagerduty&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">'pagerduty'</span>
 <span class="w">    </span><span class="nt">pagerduty_configs</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">service_key</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;&lt;pagerduty-key&gt;&#39;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">service_key</span><span class="p">:</span><span class="w"> </span><span class="s">'&lt;pagerduty-key&gt;'</span>
 <span class="w">      </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;slack&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">'slack'</span>
 <span class="w">    </span><span class="nt">slack_configs</span><span class="p">:</span>
-<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">api_url</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;&lt;slack-webhook&gt;&#39;</span>
-<span class="w">      </span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;#alerts&#39;</span>
-<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;FraiseQL</span><span class="nv"> </span><span class="s">Alert&#39;</span>
-<span class="w">      </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{</span><span class="nv"> </span><span class="s">.CommonAnnotations.description</span><span class="nv"> </span><span class="s">}}&#39;</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">api_url</span><span class="p">:</span><span class="w"> </span><span class="s">'&lt;slack-webhook&gt;'</span>
+<span class="w">      </span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="s">'#alerts'</span>
+<span class="w">      </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="s">'FraiseQL</span><span class="nv"> </span><span class="s">Alert'</span>
+<span class="w">      </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">'{{</span><span class="nv"> </span><span class="s">.CommonAnnotations.description</span><span class="nv"> </span><span class="s">}}'</span>
 
 <span class="nt">route</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">receiver</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;slack&#39;</span>
-<span class="w">  </span><span class="nt">group_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;alertname&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;cluster&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="nt">receiver</span><span class="p">:</span><span class="w"> </span><span class="s">'slack'</span>
+<span class="w">  </span><span class="nt">group_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'alertname'</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'cluster'</span><span class="p p-Indicator">]</span>
 <span class="w">  </span><span class="nt">routes</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
@@ -5273,14 +5273,14 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 kubectl<span class="w"> </span><span class="nb">wait</span><span class="w"> </span>--for<span class="o">=</span><span class="nv">condition</span><span class="o">=</span>ready<span class="w"> </span>pod<span class="w"> </span>-l<span class="w"> </span><span class="nv">version</span><span class="o">=</span>green
 
 <span class="c1"># Switch traffic</span>
-kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="w"> </span>fraiseql-api<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;selector&quot;:{&quot;version&quot;:&quot;green&quot;}}}&#39;</span>
+kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="w"> </span>fraiseql-api<span class="w"> </span>-p<span class="w"> </span><span class="s1">'{"spec":{"selector":{"version":"green"}}}'</span>
 
 <span class="c1"># Monitor for 15 minutes</span>
 <span class="c1"># If stable, delete blue</span>
 kubectl<span class="w"> </span>delete<span class="w"> </span>deployment<span class="w"> </span>fraiseql-blue
 
 <span class="c1"># If issues, rollback</span>
-kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="w"> </span>fraiseql-api<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;{&quot;spec&quot;:{&quot;selector&quot;:{&quot;version&quot;:&quot;blue&quot;}}}&#39;</span>
+kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="w"> </span>fraiseql-api<span class="w"> </span>-p<span class="w"> </span><span class="s1">'{"spec":{"selector":{"version":"blue"}}}'</span>
 </code></pre></div>
 <p><strong>2. Canary Deployment:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Istio VirtualService</span>
@@ -5295,7 +5295,7 @@ kubectl<span class="w"> </span>patch<span class="w"> </span>service<span class="
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">headers</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">x-canary</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">          </span><span class="nt">exact</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">    </span><span class="nt">route</span><span class="p">:</span>
 <span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">destination</span><span class="p">:</span>
 <span class="w">        </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql-api</span>
@@ -5351,19 +5351,19 @@ kubectl<span class="w"> </span>rollout<span class="w"> </span><span class="nb">h
 kubectl<span class="w"> </span>logs<span class="w"> </span>-l<span class="w"> </span><span class="nv">app</span><span class="o">=</span>fraiseql<span class="w"> </span>--tail<span class="o">=</span><span class="m">100</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>ERROR
 
 <span class="c1"># 3. Check database connectivity</span>
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1&quot;</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1"</span>
 
 <span class="c1"># 4. If new deployment caused it, rollback</span>
 kubectl<span class="w"> </span>rollout<span class="w"> </span>undo<span class="w"> </span>deployment/fraiseql-api
 </code></pre></div>
 <p><strong>Incident 2: Slow Response Times</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># 1. Check database query performance</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT query, mean_exec_time, calls</span>
 <span class="s2">  FROM pg_stat_statements</span>
 <span class="s2">  ORDER BY mean_exec_time DESC</span>
 <span class="s2">  LIMIT 10;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># 2. Check connection pool exhaustion</span>
 curl<span class="w"> </span>http://fraiseql:8000/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>db_connections
@@ -5379,15 +5379,15 @@ kubectl<span class="w"> </span>scale<span class="w"> </span>deployment<span clas
 curl<span class="w"> </span>http://fraiseql:8000/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>db_connections
 
 <span class="c1"># 2. Review slow queries blocking connections</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
 <span class="s2">  SELECT pid, now() - query_start as duration, query</span>
 <span class="s2">  FROM pg_stat_activity</span>
-<span class="s2">  WHERE state != &#39;idle&#39;</span>
+<span class="s2">  WHERE state != 'idle'</span>
 <span class="s2">  ORDER BY duration DESC;</span>
-<span class="s2">&quot;</span>
+<span class="s2">"</span>
 
 <span class="c1"># 3. Kill long-running queries (if safe)</span>
-psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT pg_terminate_backend(&lt;pid&gt;)&quot;</span>
+psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT pg_terminate_backend(&lt;pid&gt;)"</span>
 
 <span class="c1"># 4. Increase pool size (temporary)</span>
 kubectl<span class="w"> </span><span class="nb">set</span><span class="w"> </span>env<span class="w"> </span>deployment/fraiseql-api<span class="w"> </span><span class="nv">DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">40</span>
@@ -5461,8 +5461,8 @@ kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w">
 <p><strong>Database Scaling:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Read replicas for read-heavy workloads</span>
 <span class="c1"># Route reads to replicas, writes to primary</span>
-<span class="nv">DATABASE_URL_WRITE</span><span class="o">=</span><span class="s2">&quot;postgresql://primary:5432/fraiseql&quot;</span>
-<span class="nv">DATABASE_URL_READ</span><span class="o">=</span><span class="s2">&quot;postgresql://replica:5432/fraiseql&quot;</span>
+<span class="nv">DATABASE_URL_WRITE</span><span class="o">=</span><span class="s2">"postgresql://primary:5432/fraiseql"</span>
+<span class="nv">DATABASE_URL_READ</span><span class="o">=</span><span class="s2">"postgresql://replica:5432/fraiseql"</span>
 </code></pre></div>
 <p><strong>Cost Optimization:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Use spot instances for non-critical environments</span>
@@ -5472,11 +5472,11 @@ kubectl<span class="w"> </span>delete<span class="w"> </span>pod<span class="w">
 <span class="c1"># Request fewer resources for staging</span>
 <span class="nt">resources</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">requests</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;256Mi&quot;</span>
-<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;250m&quot;</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"256Mi"</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"250m"</span>
 <span class="w">  </span><span class="nt">limits</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1Gi&quot;</span>
-<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1000m&quot;</span>
+<span class="w">    </span><span class="nt">memory</span><span class="p">:</span><span class="w"> </span><span class="s">"1Gi"</span>
+<span class="w">    </span><span class="nt">cpu</span><span class="p">:</span><span class="w"> </span><span class="s">"1000m"</span>
 </code></pre></div>
 <p><strong>Performance Tuning:</strong></p>
 <ol>
@@ -5524,7 +5524,7 @@ kubectl<span class="w"> </span>logs<span class="w"> </span>fraiseql-pod-abc123
 </code></pre></div>
 <p><strong>Database connection failures:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check database is accessible</span>
-kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;SELECT 1&quot;</span>
+kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-it<span class="w"> </span>fraiseql-pod<span class="w"> </span>--<span class="w"> </span>psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1"</span>
 
 <span class="c1"># Check secrets are mounted</span>
 kubectl<span class="w"> </span>get<span class="w"> </span>secret<span class="w"> </span>db-secrets<span class="w"> </span>-o<span class="w"> </span>yaml

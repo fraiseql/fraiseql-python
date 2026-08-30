@@ -5173,9 +5173,9 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="
 
 <span class="c1">-- Add initial data (if needed)</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user_profile</span><span class="w"> </span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Default bio&#39;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'Default bio'</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;1 day&#39;</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'1 day'</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="migration-best-practices">Migration Best Practices<a class="headerlink" href="#migration-best-practices" title="Permanent link">&para;</a></h3>
 <ol>
@@ -5213,7 +5213,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="
 <div class="highlight"><pre><span></span><code><span class="c1">-- Migration 015: Make email required</span>
 
 <span class="c1">-- First, ensure all existing users have emails</span>
-<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39;@example.com&#39;</span>
+<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'@example.com'</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
 <span class="c1">-- Now make it NOT NULL</span>
@@ -5273,13 +5273,13 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="
 <div class="highlight"><pre><span></span><code><span class="c1"># In your application startup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">your_app.sync</span><span class="w"> </span><span class="kn">import</span> <span class="n">EntitySync</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">initial_sync</span><span class="p">():</span>
     <span class="n">sync</span> <span class="o">=</span> <span class="n">EntitySync</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
 
     <span class="c1"># Sync all existing data to query side</span>
     <span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_all_comments</span><span class="p">()</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Initial comment sync complete&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Initial comment sync complete"</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="production-deployment">Production Deployment<a class="headerlink" href="#production-deployment" title="Permanent link">&para;</a></h2>
@@ -5303,10 +5303,10 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
 
 <span class="k">BEGIN</span><span class="p">;</span>
 
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;draft&#39;</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'draft'</span><span class="p">;</span>
 <span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">CASE</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">published</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;published&#39;</span>
-<span class="w">    </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;draft&#39;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">published</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'published'</span>
+<span class="w">    </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">'draft'</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">DROP</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">published</span><span class="p">;</span>
 
@@ -5318,7 +5318,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ Bad: Locks table during heavy read load</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_post_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
 
-<span class="c1">-- ✅ Better: Create index concurrently (doesn&#39;t lock)</span>
+<span class="c1">-- ✅ Better: Create index concurrently (doesn't lock)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_post_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
 </code></pre></div>
 <ol>
@@ -5339,19 +5339,19 @@ psql<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </spa
 
 <span class="nb">set</span><span class="w"> </span>-e<span class="w">  </span><span class="c1"># Exit on error</span>
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;1. Creating database backup...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"1. Creating database backup..."</span>
 pg_dump<span class="w"> </span>-U<span class="w"> </span><span class="nv">$DB_USER</span><span class="w"> </span>-d<span class="w"> </span><span class="nv">$DB_NAME</span><span class="w"> </span>&gt;<span class="w"> </span>backup_<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>.sql
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;2. Running migrations...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"2. Running migrations..."</span>
 fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;3. Verifying database state...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"3. Verifying database state..."</span>
 fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;4. Running application tests...&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"4. Running application tests..."</span>
 ./test_suite.sh
 
-<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✓ Deployment complete!&quot;</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"✓ Deployment complete!"</span>
 </code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
@@ -5375,7 +5375,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <ol>
 <li>Check what was applied:</li>
 </ol>
-<div class="highlight"><pre><span></span><code>psql<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </span>-d<span class="w"> </span>database<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;\d tb_user&quot;</span>
+<div class="highlight"><pre><span></span><code>psql<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </span>-d<span class="w"> </span>database<span class="w"> </span>-c<span class="w"> </span><span class="s2">"\d tb_user"</span>
 </code></pre></div>
 <ol>
 <li>Manually fix:</li>
@@ -5397,7 +5397,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 
 <span class="c1">-- If needed, manually mark migration as applied</span>
 <span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">fraiseql_migrations</span><span class="w"> </span><span class="p">(</span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="n">applied_at</span><span class="p">)</span>
-<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;003_add_indexes&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">());</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'003_add_indexes'</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">());</span>
 </code></pre></div>
 <hr />
 <h2 id="advanced-patterns">Advanced Patterns<a class="headerlink" href="#advanced-patterns" title="Permanent link">&para;</a></h2>
@@ -5408,7 +5408,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <span class="c1">-- Create new table</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user_preferences</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">id</span><span class="p">),</span>
-<span class="w">    </span><span class="n">preferences</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;{}&#39;</span>
+<span class="w">    </span><span class="n">preferences</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'{}'</span>
 <span class="p">);</span>
 
 <span class="c1">-- Migrate data in batches (for large datasets)</span>
@@ -5420,7 +5420,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="n">LOOP</span>
 <span class="w">        </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user_preferences</span><span class="w"> </span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">preferences</span><span class="p">)</span>
-<span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;theme&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;light&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;language&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;en&#39;</span><span class="p">)</span>
+<span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'theme'</span><span class="p">,</span><span class="w"> </span><span class="s1">'light'</span><span class="p">,</span><span class="w"> </span><span class="s1">'language'</span><span class="p">,</span><span class="w"> </span><span class="s1">'en'</span><span class="p">)</span>
 <span class="w">        </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="w">        </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">id</span>
 <span class="w">        </span><span class="k">LIMIT</span><span class="w"> </span><span class="n">batch_size</span><span class="w"> </span><span class="k">OFFSET</span><span class="w"> </span><span class="n">offset_val</span><span class="p">;</span>
@@ -5429,7 +5429,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <span class="w">        </span><span class="n">EXIT</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">rows_affected</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
 <span class="w">        </span><span class="n">offset_val</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">offset_val</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">batch_size</span><span class="p">;</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="n">NOTICE</span><span class="w"> </span><span class="s1">&#39;Migrated % users&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">offset_val</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="n">NOTICE</span><span class="w"> </span><span class="s1">'Migrated % users'</span><span class="p">,</span><span class="w"> </span><span class="n">offset_val</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="n">LOOP</span><span class="p">;</span>
 <span class="k">END</span><span class="w"> </span><span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -5467,7 +5467,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <div class="highlight"><pre><span></span><code><span class="c1"># In application startup</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.ivm</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_ivm</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup_ivm</span><span class="p">():</span>
     <span class="c1"># Analyze schema and setup IVM</span>
     <span class="n">recommendation</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_ivm</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

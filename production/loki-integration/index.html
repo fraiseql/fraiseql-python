@@ -5564,22 +5564,22 @@ open<span class="w"> </span>http://localhost:3000
 <h3 id="2-verify-log-ingestion">2. Verify Log Ingestion<a class="headerlink" href="#2-verify-log-ingestion" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Send test log to Loki</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:3100/loki/api/v1/push<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
-<span class="s1">    &quot;streams&quot;: [{</span>
-<span class="s1">      &quot;stream&quot;: {</span>
-<span class="s1">        &quot;job&quot;: &quot;test&quot;,</span>
-<span class="s1">        &quot;level&quot;: &quot;info&quot;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "streams": [{</span>
+<span class="s1">      "stream": {</span>
+<span class="s1">        "job": "test",</span>
+<span class="s1">        "level": "info"</span>
 <span class="s1">      },</span>
-<span class="s1">      &quot;values&quot;: [</span>
-<span class="s1">        [&quot;&#39;</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="m">000000000</span><span class="s1">&#39;&quot;, &quot;Test log message from FraiseQL&quot;]</span>
+<span class="s1">      "values": [</span>
+<span class="s1">        ["'</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="m">000000000</span><span class="s1">'", "Test log message from FraiseQL"]</span>
 <span class="s1">      ]</span>
 <span class="s1">    }]</span>
-<span class="s1">  }&#39;</span>
+<span class="s1">  }'</span>
 
 <span class="c1"># Query logs via LogQL</span>
 curl<span class="w"> </span>-G<span class="w"> </span>http://localhost:3100/loki/api/v1/query<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--data-urlencode<span class="w"> </span><span class="s1">&#39;query={job=&quot;test&quot;}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="w">  </span>--data-urlencode<span class="w"> </span><span class="s1">'query={job="test"}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
 </code></pre></div>
 <h3 id="3-query-logs-in-grafana">3. Query Logs in Grafana<a class="headerlink" href="#3-query-logs-in-grafana" title="Permanent link">&para;</a></h3>
 <ol>
@@ -5641,17 +5641,17 @@ curl<span class="w"> </span>-G<span class="w"> </span>http://localhost:3100/loki
 <p>FraiseQL logs should be in <strong>JSON format</strong> for efficient parsing by Promtail.</p>
 <h3 id="expected-log-format">Expected Log Format<a class="headerlink" href="#expected-log-format" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-04T10:15:30.123Z&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;level&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;error&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;message&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Database connection failed&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;trace_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;abc123def456&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;span_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;789ghi012jkl&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;exception_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DatabaseConnectionError&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;fingerprint&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;db_connection_timeout&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;context&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;user_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user_789&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;tenant_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;tenant_123&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;create_post&quot;</span>
+<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-04T10:15:30.123Z"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Database connection failed"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"abc123def456"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"span_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"789ghi012jkl"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"exception_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"DatabaseConnectionError"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"fingerprint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"db_connection_timeout"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_789"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"tenant_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"tenant_123"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"create_post"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5663,77 +5663,77 @@ curl<span class="w"> </span>-G<span class="w"> </span>http://localhost:3100/loki
 <span class="k">class</span><span class="w"> </span><span class="nc">JSONFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
         <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;Z&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;level&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
-            <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
-            <span class="s2">&quot;logger&quot;</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="o">+</span> <span class="s2">"Z"</span><span class="p">,</span>
+            <span class="s2">"level"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
+            <span class="s2">"logger"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
         <span class="p">}</span>
 
         <span class="c1"># Add trace context if available</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;trace_id&quot;</span><span class="p">):</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;trace_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">trace_id</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">&quot;span_id&quot;</span><span class="p">):</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;span_id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">span_id</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"trace_id"</span><span class="p">):</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"trace_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">trace_id</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="s2">"span_id"</span><span class="p">):</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"span_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">span_id</span>
 
         <span class="c1"># Add exception info if present</span>
         <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">:</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;exception_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="vm">__name__</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;stack_trace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"exception_type"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="vm">__name__</span>
+            <span class="n">log_data</span><span class="p">[</span><span class="s2">"stack_trace"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatException</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">exc_info</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">log_data</span><span class="p">)</span>
 
 <span class="c1"># Configure logger</span>
-<span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s2">&quot;/var/log/fraiseql/app.log&quot;</span><span class="p">)</span>
+<span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s2">"/var/log/fraiseql/app.log"</span><span class="p">)</span>
 <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">JSONFormatter</span><span class="p">())</span>
-<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;fraiseql&quot;</span><span class="p">)</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql"</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="logql-query-examples">LogQL Query Examples<a class="headerlink" href="#logql-query-examples" title="Permanent link">&para;</a></h2>
 <h3 id="1-all-errors-in-last-hour">1. All Errors in Last Hour<a class="headerlink" href="#1-all-errors-in-last-hour" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>{job=&quot;fraiseql-app&quot;} | json | level=&quot;error&quot;
+<div class="highlight"><pre><span></span><code>{job="fraiseql-app"} | json | level="error"
 </code></pre></div>
 <p><strong>Note:</strong> Time range is set in Grafana UI, not in the query. For range queries, use <code>count_over_time</code>.</p>
 <h3 id="2-logs-for-specific-trace">2. Logs for Specific Trace<a class="headerlink" href="#2-logs-for-specific-trace" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>{job=&quot;fraiseql-app&quot;} | json | trace_id=&quot;abc123def456&quot;
+<div class="highlight"><pre><span></span><code>{job="fraiseql-app"} | json | trace_id="abc123def456"
 </code></pre></div>
 <p><strong>Use Case:</strong> Jump from trace in Tempo to related logs in Loki.</p>
 <h3 id="3-rate-of-errors-per-minute">3. Rate of Errors Per Minute<a class="headerlink" href="#3-rate-of-errors-per-minute" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>rate(count_over_time({job=&quot;fraiseql-app&quot;} | json | level=&quot;error&quot; [5m]))
+<div class="highlight"><pre><span></span><code>rate(count_over_time({job="fraiseql-app"} | json | level="error" [5m]))
 </code></pre></div>
 <h3 id="4-top-10-error-types">4. Top 10 Error Types<a class="headerlink" href="#4-top-10-error-types" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>topk(10,
   sum by (exception_type) (
-    count_over_time({job=&quot;fraiseql-app&quot;} | json | level=&quot;error&quot; [1h])
+    count_over_time({job="fraiseql-app"} | json | level="error" [1h])
   )
 )
 </code></pre></div>
 <h3 id="5-filter-by-user-or-tenant">5. Filter by User or Tenant<a class="headerlink" href="#5-filter-by-user-or-tenant" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>{job=&quot;fraiseql-app&quot;} | json | context_user_id=&quot;user_789&quot;
+<div class="highlight"><pre><span></span><code>{job="fraiseql-app"} | json | context_user_id="user_789"
 </code></pre></div>
 <h3 id="6-slow-query-detection">6. Slow Query Detection<a class="headerlink" href="#6-slow-query-detection" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>{job=&quot;postgresql&quot;}
-  | regexp &quot;duration: (?P&lt;duration&gt;\\d+\\.\\d+) ms&quot;
+<div class="highlight"><pre><span></span><code>{job="postgresql"}
+  | regexp "duration: (?P&lt;duration&gt;\\d+\\.\\d+) ms"
   | unwrap duration
-  | __error__=&quot;&quot;
+  | __error__=""
   | duration &gt; 1000
 </code></pre></div>
 <h3 id="7-database-connection-errors">7. Database Connection Errors<a class="headerlink" href="#7-database-connection-errors" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>{job=&quot;fraiseql-app&quot;} | json | exception_type=&quot;DatabaseConnectionError&quot;
+<div class="highlight"><pre><span></span><code>{job="fraiseql-app"} | json | exception_type="DatabaseConnectionError"
 </code></pre></div>
 <h3 id="8-pattern-matching-in-messages">8. Pattern Matching in Messages<a class="headerlink" href="#8-pattern-matching-in-messages" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>{job=&quot;fraiseql-app&quot;} |~ &quot;authentication failed|unauthorized access&quot;
+<div class="highlight"><pre><span></span><code>{job="fraiseql-app"} |~ "authentication failed|unauthorized access"
 </code></pre></div>
 <h3 id="9-aggregate-by-tenant">9. Aggregate by Tenant<a class="headerlink" href="#9-aggregate-by-tenant" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>sum by (context_tenant_id) (
-  count_over_time({job=&quot;fraiseql-app&quot;} | json [1h])
+  count_over_time({job="fraiseql-app"} | json [1h])
 )
 </code></pre></div>
 <h3 id="10-correlation-with-metrics">10. Correlation with Metrics<a class="headerlink" href="#10-correlation-with-metrics" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code># Count errors by fingerprint
 sum by (fingerprint) (
-  count_over_time({job=&quot;fraiseql-errors&quot;} | json [5m])
+  count_over_time({job="fraiseql-errors"} | json [5m])
 )
 </code></pre></div>
 <hr />
@@ -5742,20 +5742,20 @@ sum by (fingerprint) (
 <p><strong>1. Configure Grafana Data Source</strong> (already done in <code>grafana-datasources.yaml</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="nt">derivedFields</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">datasourceUid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tempo</span>
-<span class="w">    </span><span class="nt">matcherRegex</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;trace_id=(\\w+)&quot;</span>
+<span class="w">    </span><span class="nt">matcherRegex</span><span class="p">:</span><span class="w"> </span><span class="s">"trace_id=(\\w+)"</span>
 <span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">TraceID</span>
-<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;$${__value.raw}&quot;</span>
+<span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="s">"$${__value.raw}"</span>
 </code></pre></div>
 <p><strong>2. Ensure <code>trace_id</code> in Logs:</strong></p>
 <p>FraiseQL logs must include <code>trace_id</code> field:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">opentelemetry</span><span class="w"> </span><span class="kn">import</span> <span class="n">trace</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">log_with_trace_context</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">&quot;info&quot;</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_with_trace_context</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"info"</span><span class="p">):</span>
     <span class="n">span</span> <span class="o">=</span> <span class="n">trace</span><span class="o">.</span><span class="n">get_current_span</span><span class="p">()</span>
     <span class="n">trace_id</span> <span class="o">=</span> <span class="n">span</span><span class="o">.</span><span class="n">get_span_context</span><span class="p">()</span><span class="o">.</span><span class="n">trace_id</span>
 
-    <span class="n">extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;trace_id&quot;</span><span class="p">:</span> <span class="nb">format</span><span class="p">(</span><span class="n">trace_id</span><span class="p">,</span> <span class="s2">&quot;032x&quot;</span><span class="p">)}</span>
+    <span class="n">extra</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"trace_id"</span><span class="p">:</span> <span class="nb">format</span><span class="p">(</span><span class="n">trace_id</span><span class="p">,</span> <span class="s2">"032x"</span><span class="p">)}</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">logging</span><span class="p">,</span> <span class="n">level</span><span class="o">.</span><span class="n">upper</span><span class="p">()),</span> <span class="n">message</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="n">extra</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>3. Jump from Trace to Logs:</strong></p>
@@ -5876,12 +5876,12 @@ Compressed (Loki storage):
 <div class="highlight"><pre><span></span><code><span class="nt">pipeline_stages</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">drop</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">level</span>
-<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;debug&quot;</span>
+<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">"debug"</span>
 </code></pre></div>
 <p><strong>2. Sample High-Volume Logs:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nt">pipeline_stages</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">match</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{job=&quot;fraiseql-app&quot;,level=&quot;info&quot;}&#39;</span>
+<span class="w">      </span><span class="nt">selector</span><span class="p">:</span><span class="w"> </span><span class="s">'{job="fraiseql-app",level="info"}'</span>
 <span class="w">      </span><span class="nt">stages</span><span class="p">:</span>
 <span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">sampling</span><span class="p">:</span>
 <span class="w">            </span><span class="nt">rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span><span class="w">  </span><span class="c1"># Keep 10% of info logs</span>
@@ -5895,10 +5895,10 @@ Compressed (Loki storage):
 <h3 id="query-performance">Query Performance<a class="headerlink" href="#query-performance" title="Permanent link">&para;</a></h3>
 <p><strong>1. Use Label Filters First:</strong></p>
 <div class="highlight"><pre><span></span><code># Good: Filter by labels first
-{job=&quot;fraiseql-app&quot;, level=&quot;error&quot;} | json
+{job="fraiseql-app", level="error"} | json
 
 # Bad: Filter after parsing
-{job=&quot;fraiseql-app&quot;} | json | level=&quot;error&quot;
+{job="fraiseql-app"} | json | level="error"
 </code></pre></div>
 <p><strong>2. Limit Time Range:</strong></p>
 <ul>
@@ -5935,7 +5935,7 @@ curl<span class="w"> </span>http://localhost:9080/metrics<span class="w"> </span
 <p>If logs aren't JSON, use regex instead:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">pipeline_stages</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">regex</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;^(?P&lt;timestamp&gt;\S+)</span><span class="nv"> </span><span class="s">(?P&lt;level&gt;\S+)</span><span class="nv"> </span><span class="s">(?P&lt;message&gt;.*)$&#39;</span>
+<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'^(?P&lt;timestamp&gt;\S+)</span><span class="nv"> </span><span class="s">(?P&lt;level&gt;\S+)</span><span class="nv"> </span><span class="s">(?P&lt;message&gt;.*)$'</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">level</span><span class="p">:</span>
 </code></pre></div>
@@ -6016,10 +6016,10 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 <h3 id="label-filters-vs-json-filters">Label Filters vs JSON Filters<a class="headerlink" href="#label-filters-vs-json-filters" title="Permanent link">&para;</a></h3>
 <p><strong>Rule</strong>: Always filter by labels first, then use JSON filters.</p>
 <div class="highlight"><pre><span></span><code># ❌ SLOW: JSON filter only (scans all logs)
-{job=&quot;fraiseql&quot;} | json | user_id=&quot;123&quot;
+{job="fraiseql"} | json | user_id="123"
 
 # ✅ FAST: Label filter first (uses index)
-{job=&quot;fraiseql&quot;, env=&quot;production&quot;} | json | user_id=&quot;123&quot;
+{job="fraiseql", env="production"} | json | user_id="123"
 </code></pre></div>
 <p><strong>Why</strong>: Label filters use Loki's index (instant), JSON filters require parsing (slow).</p>
 <p><strong>Performance Impact</strong>:</p>
@@ -6030,20 +6030,20 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 <h3 id="line-filters-before-json-parsing">Line Filters Before JSON Parsing<a class="headerlink" href="#line-filters-before-json-parsing" title="Permanent link">&para;</a></h3>
 <p><strong>Rule</strong>: Use simple string matching before parsing JSON.</p>
 <div class="highlight"><pre><span></span><code># ❌ SLOW: Parse all logs, then filter
-{job=&quot;fraiseql&quot;} | json | level=&quot;error&quot;
+{job="fraiseql"} | json | level="error"
 
 # ✅ FAST: Filter lines first, then parse
-{job=&quot;fraiseql&quot;} |= &quot;error&quot; | json | level=&quot;error&quot;
+{job="fraiseql"} |= "error" | json | level="error"
 </code></pre></div>
 <p><strong>Why</strong>: Line filters (<code>|=</code>, <code>!=</code>, <code>|~</code>, <code>!~</code>) don't require parsing.</p>
 <p><strong>Performance Impact</strong>: 5-10x faster for selective queries.</p>
 <h3 id="time-range-optimization">Time Range Optimization<a class="headerlink" href="#time-range-optimization" title="Permanent link">&para;</a></h3>
 <p><strong>Rule</strong>: Use the smallest time range possible.</p>
 <div class="highlight"><pre><span></span><code># ❌ SLOW: Wide time range
-{job=&quot;fraiseql&quot;}[24h]
+{job="fraiseql"}[24h]
 
 # ✅ FAST: Narrow time range
-{job=&quot;fraiseql&quot;}[5m]
+{job="fraiseql"}[5m]
 </code></pre></div>
 <p><strong>Best Practices</strong>:</p>
 <ul>
@@ -6057,7 +6057,7 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ HIGH CARDINALITY: user_id as label (millions of users)</span>
 <span class="nt">labels</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">job</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fraiseql</span>
-<span class="w">  </span><span class="nt">user_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">user_id</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w">  </span><span class="c1"># DON&#39;T DO THIS</span>
+<span class="w">  </span><span class="nt">user_id</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">user_id</span><span class="nv"> </span><span class="s">}}"</span><span class="w">  </span><span class="c1"># DON'T DO THIS</span>
 
 <span class="c1"># ✅ LOW CARDINALITY: user_id in JSON</span>
 <span class="nt">labels</span><span class="p">:</span>
@@ -6087,23 +6087,23 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 <h3 id="common-query-patterns-with-performance">Common Query Patterns with Performance<a class="headerlink" href="#common-query-patterns-with-performance" title="Permanent link">&para;</a></h3>
 <p><strong>Pattern 1: Recent Errors</strong></p>
 <div class="highlight"><pre><span></span><code># Fast: Labels + line filter + small time range
-{job=&quot;fraiseql&quot;, env=&quot;production&quot;} |= &quot;error&quot; [15m]
+{job="fraiseql", env="production"} |= "error" [15m]
 </code></pre></div>
 <p><strong>Performance</strong>: &lt;100ms for millions of logs</p>
 <p><strong>Pattern 2: Specific User Activity</strong></p>
 <div class="highlight"><pre><span></span><code># Fast: Labels + line filter + JSON filter
-{job=&quot;fraiseql&quot;} |= &quot;user_id&quot; | json | user_id=&quot;123&quot; [1h]
+{job="fraiseql"} |= "user_id" | json | user_id="123" [1h]
 </code></pre></div>
 <p><strong>Performance</strong>: &lt;500ms</p>
 <p><strong>Pattern 3: Error Rate (Metrics Query)</strong></p>
 <div class="highlight"><pre><span></span><code># Fast: Count errors per minute
-sum(rate({job=&quot;fraiseql&quot;} |= &quot;error&quot; [5m]))
+sum(rate({job="fraiseql"} |= "error" [5m]))
 </code></pre></div>
 <p><strong>Performance</strong>: &lt;200ms (aggregated)</p>
 <p><strong>Pattern 4: Top Error Messages</strong></p>
 <div class="highlight"><pre><span></span><code># Moderate: TopK with JSON parsing
 topk(10, sum by (error_message)
-  (count_over_time({job=&quot;fraiseql&quot;} |= &quot;error&quot; | json [1h]))
+  (count_over_time({job="fraiseql"} |= "error" | json [1h]))
 )
 </code></pre></div>
 <p><strong>Performance</strong>: 1-3 seconds (acceptable for dashboards)</p>
@@ -6141,7 +6141,7 @@ topk(10, sum by (error_message)
 <span class="w">    </span><span class="n">message</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">stack_trace</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
 <span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span>
-<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;new&#39;</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;new&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;investigating&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;resolved&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;ignored&#39;</span><span class="p">))</span>
+<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'new'</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">status</span><span class="w"> </span><span class="k">IN</span><span class="w"> </span><span class="p">(</span><span class="s1">'new'</span><span class="p">,</span><span class="w"> </span><span class="s1">'investigating'</span><span class="p">,</span><span class="w"> </span><span class="s1">'resolved'</span><span class="p">,</span><span class="w"> </span><span class="s1">'ignored'</span><span class="p">))</span>
 <span class="p">);</span>
 </code></pre></div>
 <p><strong>Use PostgreSQL errors for</strong>:</p>
@@ -6157,7 +6157,7 @@ topk(10, sum by (error_message)
 <div class="highlight"><pre><span></span><code><span class="c1">-- Top 10 unresolved errors</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">fingerprint</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="p">,</span><span class="w"> </span><span class="n">occurrence_count</span><span class="p">,</span><span class="w"> </span><span class="n">last_seen_at</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;new&#39;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'new'</span>
 <span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurrence_count</span><span class="w"> </span><span class="k">DESC</span>
 <span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
 </code></pre></div>
@@ -6174,10 +6174,10 @@ topk(10, sum by (error_message)
 </ul>
 <p><strong>Example Query</strong>:</p>
 <div class="highlight"><pre><span></span><code>-- All logs for a specific trace
-{job=&quot;fraiseql&quot;} | json | trace_id=&quot;abc123&quot; [15m]
+{job="fraiseql"} | json | trace_id="abc123" [15m]
 
 -- User activity logs
-{job=&quot;fraiseql&quot;} |= &quot;user_id&quot; | json | user_id=&quot;456&quot; [1h]
+{job="fraiseql"} |= "user_id" | json | user_id="456" [1h]
 </code></pre></div>
 <h3 id="decision-matrix">Decision Matrix<a class="headerlink" href="#decision-matrix" title="Permanent link">&para;</a></h3>
 <table>
@@ -6291,29 +6291,29 @@ topk(10, sum by (error_message)
         <span class="n">fingerprint</span><span class="o">=</span><span class="n">error_tracking</span><span class="o">.</span><span class="n">fingerprint</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
         <span class="n">message</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
         <span class="n">stack_trace</span><span class="o">=</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span>
-        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">}</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span> <span class="s2">"action"</span><span class="p">:</span> <span class="n">action</span><span class="p">}</span>
     <span class="p">)</span>
 
     <span class="c1"># Loki: Full context via structured logging</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-        <span class="s2">&quot;User action failed&quot;</span><span class="p">,</span>
+        <span class="s2">"User action failed"</span><span class="p">,</span>
         <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
-            <span class="s2">&quot;action&quot;</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
-            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
-            <span class="s2">&quot;trace_id&quot;</span><span class="p">:</span> <span class="n">current_trace_id</span><span class="p">()</span>  <span class="c1"># For correlation</span>
+            <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="n">action</span><span class="p">,</span>
+            <span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+            <span class="s2">"trace_id"</span><span class="p">:</span> <span class="n">current_trace_id</span><span class="p">()</span>  <span class="c1"># For correlation</span>
         <span class="p">}</span>
     <span class="p">)</span>
     <span class="k">raise</span>
 </code></pre></div>
 <p><strong>2. Investigation workflow</strong>:</p>
 <div class="highlight"><pre><span></span><code>Step 1: Check PostgreSQL errors dashboard
-  ↓ See: New error fingerprint &quot;UserNotFoundError&quot;
+  ↓ See: New error fingerprint "UserNotFoundError"
   ↓ Occurrence count: 47 times in last hour
   ↓ Metadata shows: user_id pattern
 
 Step 2: Search Loki for context
-  ↓ Query: {job=&quot;fraiseql&quot;} |= &quot;UserNotFoundError&quot; | json | user_id=&quot;123&quot; [1h]
+  ↓ Query: {job="fraiseql"} |= "UserNotFoundError" | json | user_id="123" [1h]
   ↓ See: Full request logs, what user was doing
   ↓ Find: trace_id from logs
 
@@ -6322,7 +6322,7 @@ Step 3: View trace in Jaeger/Tempo
   ↓ Identify: Which service caused the error
 
 Step 4: Mark error as resolved in PostgreSQL
-  ↓ UPDATE monitoring.errors SET status=&#39;resolved&#39; WHERE fingerprint=&#39;...&#39;
+  ↓ UPDATE monitoring.errors SET status='resolved' WHERE fingerprint='...'
 </code></pre></div>
 <p><strong>3. Retention strategy</strong>:</p>
 <div class="highlight"><pre><span></span><code>PostgreSQL Errors:
@@ -6364,42 +6364,42 @@ Loki Logs:
     <span class="n">fingerprint</span> <span class="o">=</span> <span class="n">error_tracking</span><span class="o">.</span><span class="n">fingerprint</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
     <span class="c1"># PostgreSQL: Update or insert error</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">        INSERT INTO monitoring.errors</span>
 <span class="s2">            (fingerprint, message, metadata, first_seen_at, last_seen_at)</span>
 <span class="s2">        VALUES ($1, $2, $3, NOW(), NOW())</span>
 <span class="s2">        ON CONFLICT (fingerprint) DO UPDATE</span>
 <span class="s2">        SET occurrence_count = errors.occurrence_count + 1,</span>
 <span class="s2">            last_seen_at = NOW()</span>
-<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">fingerprint</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">context</span><span class="p">))</span>
+<span class="s2">    """</span><span class="p">,</span> <span class="n">fingerprint</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">context</span><span class="p">))</span>
 
     <span class="c1"># Loki: Log with fingerprint for correlation</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
-        <span class="s2">&quot;Error occurred&quot;</span><span class="p">,</span>
+        <span class="s2">"Error occurred"</span><span class="p">,</span>
         <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
             <span class="o">**</span><span class="n">context</span><span class="p">,</span>
-            <span class="s2">&quot;error_fingerprint&quot;</span><span class="p">:</span> <span class="n">fingerprint</span><span class="p">,</span>  <span class="c1"># Links to PostgreSQL</span>
-            <span class="s2">&quot;error_message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="s2">"error_fingerprint"</span><span class="p">:</span> <span class="n">fingerprint</span><span class="p">,</span>  <span class="c1"># Links to PostgreSQL</span>
+            <span class="s2">"error_message"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
         <span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>Query both systems together</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Get error from PostgreSQL</span>
-<span class="n">error</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch_one</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="n">error</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch_one</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">    SELECT fingerprint, message, metadata</span>
 <span class="s2">    FROM monitoring.errors</span>
 <span class="s2">    WHERE id = $1</span>
-<span class="s2">&quot;&quot;&quot;</span><span class="p">,</span> <span class="n">error_id</span><span class="p">)</span>
+<span class="s2">"""</span><span class="p">,</span> <span class="n">error_id</span><span class="p">)</span>
 
 <span class="c1"># Get logs from Loki for that fingerprint</span>
 <span class="n">logs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">loki_client</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s1">&#39;</span><span class="se">{{</span><span class="s1">job=&quot;fraiseql&quot;</span><span class="se">}}</span><span class="s1"> | json | error_fingerprint=&quot;</span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">fingerprint</span><span class="si">}</span><span class="s1">&quot; [24h]&#39;</span>
+    <span class="sa">f</span><span class="s1">'</span><span class="se">{{</span><span class="s1">job="fraiseql"</span><span class="se">}}</span><span class="s1"> | json | error_fingerprint="</span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">fingerprint</span><span class="si">}</span><span class="s1">" [24h]'</span>
 <span class="p">)</span>
 
 <span class="c1"># Show: Error details + all log context</span>
 <span class="k">return</span> <span class="p">{</span>
-    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">,</span>
-    <span class="s2">&quot;recent_occurrences&quot;</span><span class="p">:</span> <span class="n">logs</span>
+    <span class="s2">"error"</span><span class="p">:</span> <span class="n">error</span><span class="p">,</span>
+    <span class="s2">"recent_occurrences"</span><span class="p">:</span> <span class="n">logs</span>
 <span class="p">}</span>
 </code></pre></div>
 <hr />
@@ -6409,7 +6409,7 @@ Loki Logs:
 <p>Loki exposes several HTTP endpoints for health monitoring:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ready check (Loki is ready to accept traffic)</span>
 curl<span class="w"> </span>http://localhost:3100/ready
-<span class="c1"># Response: &quot;ready&quot; (HTTP 200) or &quot;not ready&quot; (HTTP 503)</span>
+<span class="c1"># Response: "ready" (HTTP 200) or "not ready" (HTTP 503)</span>
 
 <span class="c1"># Metrics endpoint (Prometheus format)</span>
 curl<span class="w"> </span>http://localhost:3100/metrics
@@ -6450,7 +6450,7 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">  </span><span class="nt">loki</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">grafana/loki:2.9.0</span>
 <span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;wget</span><span class="nv"> </span><span class="s">--no-verbose</span><span class="nv"> </span><span class="s">--tries=1</span><span class="nv"> </span><span class="s">--spider</span><span class="nv"> </span><span class="s">http://localhost:3100/ready</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">exit</span><span class="nv"> </span><span class="s">1&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"CMD-SHELL"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"wget</span><span class="nv"> </span><span class="s">--no-verbose</span><span class="nv"> </span><span class="s">--tries=1</span><span class="nv"> </span><span class="s">--spider</span><span class="nv"> </span><span class="s">http://localhost:3100/ready</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">exit</span><span class="nv"> </span><span class="s">1"</span><span class="p p-Indicator">]</span>
 <span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
 <span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
 <span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
@@ -6475,18 +6475,18 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <p>Track query latency and failures:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Query latency (P99)</span>
 <span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.99</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">loki_request_duration_seconds_bucket</span><span class="p">{</span><span class="nl">route</span><span class="o">=</span><span class="p">&quot;</span><span class="s">loki_api_v1_query_range</span><span class="p">&quot;}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">loki_request_duration_seconds_bucket</span><span class="p">{</span><span class="nl">route</span><span class="o">=</span><span class="p">"</span><span class="s">loki_api_v1_query_range</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 <span class="w">  </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">le</span><span class="o">)</span>
 <span class="o">)</span>
 
 <span class="c1"># Query rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">loki_request_duration_seconds_count</span><span class="p">{</span><span class="nl">route</span><span class="o">=</span><span class="p">&quot;</span><span class="s">loki_api_v1_query_range</span><span class="p">&quot;}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">loki_request_duration_seconds_count</span><span class="p">{</span><span class="nl">route</span><span class="o">=</span><span class="p">"</span><span class="s">loki_api_v1_query_range</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
 <span class="c1"># Query errors</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">loki_request_duration_seconds_count</span><span class="p">{</span><span class="nl">status_code</span><span class="o">=~</span><span class="p">&quot;</span><span class="s">5..</span><span class="p">&quot;}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">loki_request_duration_seconds_count</span><span class="p">{</span><span class="nl">status_code</span><span class="o">=~</span><span class="p">"</span><span class="s">5..</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
 <span class="c1"># Slow queries (&gt;10s)</span>
-<span class="nv">loki_query_duration_seconds_bucket</span><span class="p">{</span><span class="nl">le</span><span class="o">=</span><span class="p">&quot;</span><span class="s">10</span><span class="p">&quot;}</span>
+<span class="nv">loki_query_duration_seconds_bucket</span><span class="p">{</span><span class="nl">le</span><span class="o">=</span><span class="p">"</span><span class="s">10</span><span class="p">"}</span>
 </code></pre></div>
 <p><strong>3. Storage Metrics</strong></p>
 <p>Monitor disk usage and chunk operations:</p>
@@ -6497,7 +6497,7 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="kr">rate</span><span class="o">(</span><span class="nv">loki_ingester_chunk_stored_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
 <span class="c1"># Storage backend errors (S3/GCS)</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">loki_store_chunk_request_duration_seconds_count</span><span class="p">{</span><span class="nl">status_code</span><span class="o">=~</span><span class="p">&quot;</span><span class="s">5..</span><span class="p">&quot;}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">loki_store_chunk_request_duration_seconds_count</span><span class="p">{</span><span class="nl">status_code</span><span class="o">=~</span><span class="p">"</span><span class="s">5..</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
 <span class="c1"># Active streams (cardinality)</span>
 <span class="nv">loki_ingester_memory_streams</span>
@@ -6516,36 +6516,36 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <p><strong>5. Resource Usage</strong></p>
 <p>Monitor Loki container resources:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># CPU usage</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">process_cpu_seconds_total</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">loki</span><span class="p">&quot;}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">process_cpu_seconds_total</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">loki</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
 <span class="c1"># Memory usage</span>
-<span class="nv">process_resident_memory_bytes</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">loki</span><span class="p">&quot;}</span>
+<span class="nv">process_resident_memory_bytes</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">loki</span><span class="p">"}</span>
 
 <span class="c1"># File descriptors</span>
-<span class="nv">process_open_fds</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">loki</span><span class="p">&quot;}</span>
+<span class="nv">process_open_fds</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">loki</span><span class="p">"}</span>
 
 <span class="c1"># Go heap allocations</span>
-<span class="nv">go_memstats_heap_alloc_bytes</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">&quot;</span><span class="s">loki</span><span class="p">&quot;}</span>
+<span class="nv">go_memstats_heap_alloc_bytes</span><span class="p">{</span><span class="nl">job</span><span class="o">=</span><span class="p">"</span><span class="s">loki</span><span class="p">"}</span>
 </code></pre></div>
 <h3 id="prometheus-scrape-configuration">Prometheus Scrape Configuration<a class="headerlink" href="#prometheus-scrape-configuration" title="Permanent link">&para;</a></h3>
 <p>Configure Prometheus to scrape Loki metrics:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># prometheus.yml</span>
 <span class="nt">scrape_configs</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;loki&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">'loki'</span>
 <span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;loki:3100&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'loki:3100'</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">relabel_configs</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">source_labels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">__address__</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">target_label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance</span>
-<span class="w">        </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;loki-server&#39;</span>
+<span class="w">        </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s">'loki-server'</span>
 
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;promtail&#39;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">job_name</span><span class="p">:</span><span class="w"> </span><span class="s">'promtail'</span>
 <span class="w">    </span><span class="nt">static_configs</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;promtail:9080&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">targets</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'promtail:9080'</span><span class="p p-Indicator">]</span>
 <span class="w">    </span><span class="nt">relabel_configs</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">source_labels</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">__address__</span><span class="p p-Indicator">]</span>
 <span class="w">        </span><span class="nt">target_label</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">instance</span>
-<span class="w">        </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;promtail-agent&#39;</span>
+<span class="w">        </span><span class="nt">replacement</span><span class="p">:</span><span class="w"> </span><span class="s">'promtail-agent'</span>
 </code></pre></div>
 <h3 id="alert-rules">Alert Rules<a class="headerlink" href="#alert-rules" title="Permanent link">&para;</a></h3>
 <p>Critical alerts for Loki operations:</p>
@@ -6562,8 +6562,8 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">receiving</span><span class="nv"> </span><span class="s">any</span><span class="nv"> </span><span class="s">logs&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">ingestion</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">0</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">minutes.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">Promtail</span><span class="nv"> </span><span class="s">connectivity.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">receiving</span><span class="nv"> </span><span class="s">any</span><span class="nv"> </span><span class="s">logs"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">ingestion</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">0</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">minutes.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">Promtail</span><span class="nv"> </span><span class="s">connectivity."</span>
 
 <span class="w">      </span><span class="c1"># High ingestion error rate</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiHighIngestionErrors</span>
@@ -6578,8 +6578,8 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">Loki</span><span class="nv"> </span><span class="s">ingestion</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">(&gt;5%)&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">log</span><span class="nv"> </span><span class="s">entries</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">failing</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">be</span><span class="nv"> </span><span class="s">ingested.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">Loki</span><span class="nv"> </span><span class="s">ingestion</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">(&gt;5%)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">log</span><span class="nv"> </span><span class="s">entries</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">failing</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">be</span><span class="nv"> </span><span class="s">ingested."</span>
 
 <span class="w">      </span><span class="c1"># Samples rejected (rate limiting)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiRateLimitExceeded</span>
@@ -6589,14 +6589,14 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">rejecting</span><span class="nv"> </span><span class="s">samples</span><span class="nv"> </span><span class="s">due</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">limits&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">samples/sec</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">being</span><span class="nv"> </span><span class="s">rejected.</span><span class="nv"> </span><span class="s">Increase</span><span class="nv"> </span><span class="s">ingestion_rate_mb</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">limits_config.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">rejecting</span><span class="nv"> </span><span class="s">samples</span><span class="nv"> </span><span class="s">due</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">limits"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">samples/sec</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">being</span><span class="nv"> </span><span class="s">rejected.</span><span class="nv"> </span><span class="s">Increase</span><span class="nv"> </span><span class="s">ingestion_rate_mb</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">limits_config."</span>
 
 <span class="w">      </span><span class="c1"># High query latency</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiHighQueryLatency</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">          </span><span class="no">histogram_quantile(0.99,</span>
-<span class="w">            </span><span class="no">sum(rate(loki_request_duration_seconds_bucket{route=&quot;loki_api_v1_query_range&quot;}[5m]))</span>
+<span class="w">            </span><span class="no">sum(rate(loki_request_duration_seconds_bucket{route="loki_api_v1_query_range"}[5m]))</span>
 <span class="w">            </span><span class="no">by (le)</span>
 <span class="w">          </span><span class="no">) &gt; 10</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
@@ -6604,14 +6604,14 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">P99</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">&gt;10s&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;99th</span><span class="nv"> </span><span class="s">percentile</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}s.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">complexity</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">time</span><span class="nv"> </span><span class="s">ranges.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">P99</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">&gt;10s"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"99th</span><span class="nv"> </span><span class="s">percentile</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">latency</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}s.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">complexity</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">time</span><span class="nv"> </span><span class="s">ranges."</span>
 
 <span class="w">      </span><span class="c1"># High query error rate</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiHighQueryErrors</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">          </span><span class="no">(</span>
-<span class="w">            </span><span class="no">rate(loki_request_duration_seconds_count{status_code=~&quot;5..&quot;}[5m])</span>
+<span class="w">            </span><span class="no">rate(loki_request_duration_seconds_count{status_code=~"5.."}[5m])</span>
 <span class="w">            </span><span class="no">/</span>
 <span class="w">            </span><span class="no">rate(loki_request_duration_seconds_count[5m])</span>
 <span class="w">          </span><span class="no">) &gt; 0.05</span>
@@ -6620,8 +6620,8 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;High</span><span class="nv"> </span><span class="s">Loki</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">(&gt;5%)&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">queries</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">failing.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">Loki</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">error</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">(&gt;5%)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">queries</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">failing."</span>
 
 <span class="w">      </span><span class="c1"># Compaction failures (production)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiCompactionFailing</span>
@@ -6631,19 +6631,19 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">compaction</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">failing&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Compaction</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">failed</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">times</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">hour.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">compactor</span><span class="nv"> </span><span class="s">logs.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">compaction</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">failing"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Compaction</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">failed</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">times</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">hour.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">compactor</span><span class="nv"> </span><span class="s">logs."</span>
 
 <span class="w">      </span><span class="c1"># Storage backend errors</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiStorageErrors</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(loki_store_chunk_request_duration_seconds_count{status_code=~&quot;5..&quot;}[5m]) &gt; 10</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rate(loki_store_chunk_request_duration_seconds_count{status_code=~"5.."}[5m]) &gt; 10</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">storage</span><span class="nv"> </span><span class="s">backend</span><span class="nv"> </span><span class="s">errors&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">storage</span><span class="nv"> </span><span class="s">errors/sec.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">S3/GCS</span><span class="nv"> </span><span class="s">connectivity</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">permissions.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">storage</span><span class="nv"> </span><span class="s">backend</span><span class="nv"> </span><span class="s">errors"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">storage</span><span class="nv"> </span><span class="s">errors/sec.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">S3/GCS</span><span class="nv"> </span><span class="s">connectivity</span><span class="nv"> </span><span class="s">and</span><span class="nv"> </span><span class="s">permissions."</span>
 
 <span class="w">      </span><span class="c1"># High cardinality warning</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiHighCardinality</span>
@@ -6653,51 +6653,51 @@ curl<span class="w"> </span>http://localhost:3100/config<span class="w"> </span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">high</span><span class="nv"> </span><span class="s">cardinality</span><span class="nv"> </span><span class="s">(&gt;100k</span><span class="nv"> </span><span class="s">streams)&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Active</span><span class="nv"> </span><span class="s">streams:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}.</span><span class="nv"> </span><span class="s">Review</span><span class="nv"> </span><span class="s">label</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">reduce</span><span class="nv"> </span><span class="s">cardinality.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">high</span><span class="nv"> </span><span class="s">cardinality</span><span class="nv"> </span><span class="s">(&gt;100k</span><span class="nv"> </span><span class="s">streams)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Active</span><span class="nv"> </span><span class="s">streams:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}.</span><span class="nv"> </span><span class="s">Review</span><span class="nv"> </span><span class="s">label</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">reduce</span><span class="nv"> </span><span class="s">cardinality."</span>
 
 <span class="w">      </span><span class="c1"># Disk space running low (filesystem storage)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiDiskSpaceLow</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">          </span><span class="no">(</span>
-<span class="w">            </span><span class="no">node_filesystem_avail_bytes{mountpoint=&quot;/loki&quot;}</span>
+<span class="w">            </span><span class="no">node_filesystem_avail_bytes{mountpoint="/loki"}</span>
 <span class="w">            </span><span class="no">/</span>
-<span class="w">            </span><span class="no">node_filesystem_size_bytes{mountpoint=&quot;/loki&quot;}</span>
+<span class="w">            </span><span class="no">node_filesystem_size_bytes{mountpoint="/loki"}</span>
 <span class="w">          </span><span class="no">) &lt; 0.15</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">disk</span><span class="nv"> </span><span class="s">space</span><span class="nv"> </span><span class="s">&lt;15%&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Only</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">disk</span><span class="nv"> </span><span class="s">space</span><span class="nv"> </span><span class="s">remaining.</span><span class="nv"> </span><span class="s">Increase</span><span class="nv"> </span><span class="s">retention</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">storage.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">disk</span><span class="nv"> </span><span class="s">space</span><span class="nv"> </span><span class="s">&lt;15%"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Only</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">disk</span><span class="nv"> </span><span class="s">space</span><span class="nv"> </span><span class="s">remaining.</span><span class="nv"> </span><span class="s">Increase</span><span class="nv"> </span><span class="s">retention</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">storage."</span>
 
 <span class="w">      </span><span class="c1"># Loki instance down</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LokiDown</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">up{job=&quot;loki&quot;} == 0</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">up{job="loki"} == 0</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">loki</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">instance</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">down&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Loki</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">been</span><span class="nv"> </span><span class="s">unavailable</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">minutes.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">container/pod</span><span class="nv"> </span><span class="s">status.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">instance</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">down"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Loki</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">been</span><span class="nv"> </span><span class="s">unavailable</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">minutes.</span><span class="nv"> </span><span class="s">Check</span><span class="nv"> </span><span class="s">container/pod</span><span class="nv"> </span><span class="s">status."</span>
 
 <span class="w">      </span><span class="c1"># Promtail down</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PromtailDown</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">up{job=&quot;promtail&quot;} == 0</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">up{job="promtail"} == 0</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">          </span><span class="nt">component</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">promtail</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Promtail</span><span class="nv"> </span><span class="s">agent</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">down&quot;</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Promtail</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">been</span><span class="nv"> </span><span class="s">unavailable</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">minutes.</span><span class="nv"> </span><span class="s">Logs</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">being</span><span class="nv"> </span><span class="s">collected.&quot;</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Promtail</span><span class="nv"> </span><span class="s">agent</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">down"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Promtail</span><span class="nv"> </span><span class="s">has</span><span class="nv"> </span><span class="s">been</span><span class="nv"> </span><span class="s">unavailable</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">2</span><span class="nv"> </span><span class="s">minutes.</span><span class="nv"> </span><span class="s">Logs</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">not</span><span class="nv"> </span><span class="s">being</span><span class="nv"> </span><span class="s">collected."</span>
 </code></pre></div>
 <p><strong>Deploy alerts to Prometheus:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Add to prometheus.yml</span>
 rule_files:
-<span class="w">  </span>-<span class="w"> </span><span class="s1">&#39;/etc/prometheus/loki_alerts.yml&#39;</span>
+<span class="w">  </span>-<span class="w"> </span><span class="s1">'/etc/prometheus/loki_alerts.yml'</span>
 
 <span class="c1"># Reload Prometheus</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:9090/-/reload
@@ -6719,34 +6719,34 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </ol>
 <p><strong>Custom Dashboard Panels:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Loki Ingestion Rate&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">    </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;rate(loki_distributor_bytes_received_total[5m])&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;{{ instance }}&quot;</span>
+<span class="w">  </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Loki Ingestion Rate"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"targets"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"rate(loki_distributor_bytes_received_total[5m])"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"{{ instance }}"</span>
 <span class="w">  </span><span class="p">}],</span>
-<span class="w">  </span><span class="nt">&quot;yaxis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Bps&quot;</span>
+<span class="w">  </span><span class="nt">"yaxis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bps"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Query Latency (P50, P95, P99)&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;targets&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Query Latency (P50, P95, P99)"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"targets"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{route=\&quot;loki_api_v1_query_range\&quot;}[5m])) by (le))&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P50&quot;</span>
+<span class="w">      </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"histogram_quantile(0.50, sum(rate(loki_request_duration_seconds_bucket{route=\"loki_api_v1_query_range\"}[5m])) by (le))"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P50"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.95, sum(rate(loki_request_duration_seconds_bucket{route=\&quot;loki_api_v1_query_range\&quot;}[5m])) by (le))&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P95&quot;</span>
+<span class="w">      </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"histogram_quantile(0.95, sum(rate(loki_request_duration_seconds_bucket{route=\"loki_api_v1_query_range\"}[5m])) by (le))"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P95"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;expr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route=\&quot;loki_api_v1_query_range\&quot;}[5m])) by (le))&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;legendFormat&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;P99&quot;</span>
+<span class="w">      </span><span class="nt">"expr"</span><span class="p">:</span><span class="w"> </span><span class="s2">"histogram_quantile(0.99, sum(rate(loki_request_duration_seconds_bucket{route=\"loki_api_v1_query_range\"}[5m])) by (le))"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"legendFormat"</span><span class="p">:</span><span class="w"> </span><span class="s2">"P99"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;yaxis&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;format&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;s&quot;</span>
+<span class="w">  </span><span class="nt">"yaxis"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"s"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -6766,8 +6766,8 @@ curl<span class="w"> </span>http://localhost:9080/targets<span class="w"> </span
 
 <span class="c1"># Test Loki API directly</span>
 curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:3100/loki/api/v1/push<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;streams&quot;:[{&quot;stream&quot;:{&quot;job&quot;:&quot;test&quot;},&quot;values&quot;:[[&quot;&#39;</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="m">000000000</span><span class="s1">&#39;&quot;,&quot;test&quot;]]}]}&#39;</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"streams":[{"stream":{"job":"test"},"values":[["'</span><span class="k">$(</span>date<span class="w"> </span>+%s<span class="k">)</span><span class="m">000000000</span><span class="s1">'","test"]]}]}'</span>
 </code></pre></div>
 <p><strong>Resolution:</strong></p>
 <ul>
@@ -6785,7 +6785,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <p><strong>Diagnosis:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Identify slow queries</span>
 <span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span>
-<span class="w">  </span><span class="nv">loki_request_duration_seconds_bucket</span><span class="p">{</span><span class="nl">le</span><span class="o">=</span><span class="p">&quot;</span><span class="s">10</span><span class="p">&quot;}</span>
+<span class="w">  </span><span class="nv">loki_request_duration_seconds_bucket</span><span class="p">{</span><span class="nl">le</span><span class="o">=</span><span class="p">"</span><span class="s">10</span><span class="p">"}</span>
 <span class="o">)</span>
 </code></pre></div>
 <p><strong>Resolution:</strong></p>
@@ -6818,7 +6818,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 </ul>
 <p><strong>Diagnosis:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check Loki logs for storage errors</span>
-docker<span class="w"> </span>logs<span class="w"> </span>fraiseql-loki<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">&quot;storage error&quot;</span>
+docker<span class="w"> </span>logs<span class="w"> </span>fraiseql-loki<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-i<span class="w"> </span><span class="s2">"storage error"</span>
 
 <span class="c1"># Verify S3/GCS credentials</span>
 aws<span class="w"> </span>s3<span class="w"> </span>ls<span class="w"> </span>s3://your-loki-bucket<span class="w">  </span><span class="c1"># AWS</span>
@@ -6840,7 +6840,7 @@ gsutil<span class="w"> </span>ls<span class="w"> </span>gs://your-loki-bucket<sp
 </ul>
 <p><strong>Diagnosis:</strong></p>
 <div class="highlight"><pre><span></span><code># Count unique label combinations
-{job=&quot;fraiseql&quot;} | json | label_format unique_labels=&quot;{{ __labels__ }}&quot;
+{job="fraiseql"} | json | label_format unique_labels="{{ __labels__ }}"
 </code></pre></div>
 <p><strong>Resolution:</strong></p>
 <ul>
@@ -6954,14 +6954,14 @@ curl<span class="w"> </span>http://localhost:3100/compactor/ring
 </code></pre></div>
 <p><strong>Query with tenant isolation:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Query as specific tenant</span>
-curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Scope-OrgID: fraiseql-prod&quot;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Scope-OrgID: fraiseql-prod"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:3100/loki/api/v1/query<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-G<span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s1">&#39;query={job=&quot;fraiseql&quot;}&#39;</span>
+<span class="w">  </span>-G<span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s1">'query={job="fraiseql"}'</span>
 
 <span class="c1"># Different tenant sees different data</span>
-curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-Scope-OrgID: fraiseql-staging&quot;</span><span class="w"> </span><span class="se">\</span>
+curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"X-Scope-OrgID: fraiseql-staging"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>http://localhost:3100/loki/api/v1/query<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-G<span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s1">&#39;query={job=&quot;fraiseql&quot;}&#39;</span>
+<span class="w">  </span>-G<span class="w"> </span>--data-urlencode<span class="w"> </span><span class="s1">'query={job="fraiseql"}'</span>
 </code></pre></div>
 <p><strong>Configure Grafana data source:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># grafana-datasources.yaml</span>
@@ -6971,9 +6971,9 @@ curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-S
 <span class="w">    </span><span class="nt">access</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">proxy</span>
 <span class="w">    </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://loki:3100</span>
 <span class="w">    </span><span class="nt">jsonData</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">httpHeaderName1</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;X-Scope-OrgID&#39;</span>
+<span class="w">      </span><span class="nt">httpHeaderName1</span><span class="p">:</span><span class="w"> </span><span class="s">'X-Scope-OrgID'</span>
 <span class="w">    </span><span class="nt">secureJsonData</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">httpHeaderValue1</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;fraiseql-prod&#39;</span>
+<span class="w">      </span><span class="nt">httpHeaderValue1</span><span class="p">:</span><span class="w"> </span><span class="s">'fraiseql-prod'</span>
 </code></pre></div>
 <p><strong>Benefits:</strong></p>
 <ul>
@@ -6989,7 +6989,7 @@ curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">&quot;X-S
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">listen 80;</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">server_name loki.example.com;</span>
 
-<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">auth_basic &quot;Loki Access&quot;;</span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">auth_basic "Loki Access";</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">auth_basic_user_file /etc/nginx/.htpasswd;</span>
 
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">location / {</span>
@@ -7032,7 +7032,7 @@ htpasswd<span class="w"> </span>/etc/nginx/.htpasswd<span class="w"> </span>deve
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--client-id=YOUR_OAUTH_CLIENT_ID</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">--client-secret=YOUR_OAUTH_CLIENT_SECRET</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;4180:4180&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"4180:4180"</span>
 </code></pre></div>
 <p><strong>Access flow:</strong></p>
 <div class="highlight"><pre><span></span><code>User → OAuth2 Proxy (Google/Okta/Azure AD) → Loki
@@ -7042,8 +7042,8 @@ htpasswd<span class="w"> </span>/etc/nginx/.htpasswd<span class="w"> </span>deve
 <div class="highlight"><pre><span></span><code><span class="c1">-- nginx with Lua</span>
 <span class="nv">location</span><span class="w"> </span><span class="o">/</span><span class="nv">loki</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nv">access_by_lua_block</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="kd">local</span><span class="w"> </span><span class="nv">api_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ngx</span><span class="p">.</span><span class="py">req</span><span class="p">.</span><span class="nf">get_headers</span><span class="p">()[</span><span class="s2">&quot;X-API-Key&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="kr">if</span><span class="w"> </span><span class="nv">api_key</span><span class="w"> </span><span class="o">~=</span><span class="w"> </span><span class="s2">&quot;expected_key_here&quot;</span><span class="w"> </span><span class="kr">then</span>
+<span class="w">        </span><span class="kd">local</span><span class="w"> </span><span class="nv">api_key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nv">ngx</span><span class="p">.</span><span class="py">req</span><span class="p">.</span><span class="nf">get_headers</span><span class="p">()[</span><span class="s2">"X-API-Key"</span><span class="p">]</span>
+<span class="w">        </span><span class="kr">if</span><span class="w"> </span><span class="nv">api_key</span><span class="w"> </span><span class="o">~=</span><span class="w"> </span><span class="s2">"expected_key_here"</span><span class="w"> </span><span class="kr">then</span>
 <span class="w">            </span><span class="nv">ngx</span><span class="p">.</span><span class="nf">exit</span><span class="p">(</span><span class="nv">ngx</span><span class="p">.</span><span class="py">HTTP_FORBIDDEN</span><span class="p">)</span>
 <span class="w">        </span><span class="kr">end</span>
 <span class="w">    </span><span class="p">}</span>
@@ -7058,9 +7058,9 @@ openssl<span class="w"> </span>req<span class="w"> </span>-x509<span class="w"> 
 <span class="w">  </span>-newkey<span class="w"> </span>rsa:2048<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-keyout<span class="w"> </span>loki-key.pem<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-out<span class="w"> </span>loki-cert.pem<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-subj<span class="w"> </span><span class="s2">&quot;/CN=loki.example.com&quot;</span>
+<span class="w">  </span>-subj<span class="w"> </span><span class="s2">"/CN=loki.example.com"</span>
 
-<span class="c1"># Production: Use Let&#39;s Encrypt</span>
+<span class="c1"># Production: Use Let's Encrypt</span>
 certbot<span class="w"> </span>certonly<span class="w"> </span>--standalone<span class="w"> </span>-d<span class="w"> </span>loki.example.com
 </code></pre></div>
 <p><strong>Configure Loki with TLS:</strong></p>
@@ -7114,7 +7114,7 @@ certbot<span class="w"> </span>certonly<span class="w"> </span>--standalone<span
 <h3 id="network-isolation_1">Network Isolation<a class="headerlink" href="#network-isolation_1" title="Permanent link">&para;</a></h3>
 <p><strong>Docker Networks (Development/Staging):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># docker-compose.yml</span>
-<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3.8'</span>
 
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">loki</span><span class="p">:</span>
@@ -7134,7 +7134,7 @@ certbot<span class="w"> </span>certonly<span class="w"> </span>--standalone<span
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">observability</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span><span class="w">  </span><span class="c1"># Only Grafana has external access</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3000:3000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"3000:3000"</span>
 
 <span class="nt">networks</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">observability</span><span class="p">:</span>
@@ -7200,23 +7200,23 @@ gcloud<span class="w"> </span>compute<span class="w"> </span>firewall-rules<span
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">SanitizingFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove sensitive data from logs before sending to Loki&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Remove sensitive data from logs before sending to Loki"""</span>
 
     <span class="n">PATTERNS</span> <span class="o">=</span> <span class="p">[</span>
         <span class="c1"># Credit cards</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b\d</span><span class="si">{4}</span><span class="s1">[\s-]?\d</span><span class="si">{4}</span><span class="s1">[\s-]?\d</span><span class="si">{4}</span><span class="s1">[\s-]?\d</span><span class="si">{4}</span><span class="s1">\b&#39;</span><span class="p">),</span> <span class="s1">&#39;[CREDIT_CARD]&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\b\d</span><span class="si">{4}</span><span class="s1">[\s-]?\d</span><span class="si">{4}</span><span class="s1">[\s-]?\d</span><span class="si">{4}</span><span class="s1">[\s-]?\d</span><span class="si">{4}</span><span class="s1">\b'</span><span class="p">),</span> <span class="s1">'[CREDIT_CARD]'</span><span class="p">),</span>
         <span class="c1"># SSN</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b\d</span><span class="si">{3}</span><span class="s1">-\d</span><span class="si">{2}</span><span class="s1">-\d</span><span class="si">{4}</span><span class="s1">\b&#39;</span><span class="p">),</span> <span class="s1">&#39;[SSN]&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\b\d</span><span class="si">{3}</span><span class="s1">-\d</span><span class="si">{2}</span><span class="s1">-\d</span><span class="si">{4}</span><span class="s1">\b'</span><span class="p">),</span> <span class="s1">'[SSN]'</span><span class="p">),</span>
         <span class="c1"># Email addresses</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b&#39;</span><span class="p">),</span> <span class="s1">&#39;[EMAIL]&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'</span><span class="p">),</span> <span class="s1">'[EMAIL]'</span><span class="p">),</span>
         <span class="c1"># API keys (common patterns)</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(api[_-]?key|apikey|api[_-]?secret)[\s:=]+[&quot;</span><span class="se">\&#39;</span><span class="s1">]?([a-zA-Z0-9_\-]{20,})[&quot;</span><span class="se">\&#39;</span><span class="s1">]?&#39;</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">),</span> <span class="sa">r</span><span class="s1">&#39;\1=[REDACTED]&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'(api[_-]?key|apikey|api[_-]?secret)[\s:=]+["</span><span class="se">\'</span><span class="s1">]?([a-zA-Z0-9_\-]{20,})["</span><span class="se">\'</span><span class="s1">]?'</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">),</span> <span class="sa">r</span><span class="s1">'\1=[REDACTED]'</span><span class="p">),</span>
         <span class="c1"># JWT tokens</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}&#39;</span><span class="p">),</span> <span class="s1">&#39;[JWT_TOKEN]&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}'</span><span class="p">),</span> <span class="s1">'[JWT_TOKEN]'</span><span class="p">),</span>
         <span class="c1"># AWS keys</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]</span><span class="si">{16}</span><span class="s1">&#39;</span><span class="p">),</span> <span class="s1">&#39;[AWS_KEY]&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]</span><span class="si">{16}</span><span class="s1">'</span><span class="p">),</span> <span class="s1">'[AWS_KEY]'</span><span class="p">),</span>
         <span class="c1"># Passwords in URLs</span>
-        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;://[^:]+:([^@]+)@&#39;</span><span class="p">),</span> <span class="sa">r</span><span class="s1">&#39;://[REDACTED]@&#39;</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">'://[^:]+:([^@]+)@'</span><span class="p">),</span> <span class="sa">r</span><span class="s1">'://[REDACTED]@'</span><span class="p">),</span>
     <span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
@@ -7226,7 +7226,7 @@ gcloud<span class="w"> </span>compute<span class="w"> </span>firewall-rules<span
         <span class="k">return</span> <span class="n">message</span>
 
 <span class="c1"># Configure logger with sanitizing formatter</span>
-<span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">&#39;/var/log/fraiseql/app.log&#39;</span><span class="p">)</span>
+<span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s1">'/var/log/fraiseql/app.log'</span><span class="p">)</span>
 <span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">SanitizingFormatter</span><span class="p">())</span>
 <span class="n">logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
 </code></pre></div>
@@ -7249,48 +7249,48 @@ gcloud<span class="w"> </span>compute<span class="w"> </span>firewall-rules<span
 
 <span class="w">      </span><span class="c1"># Redact credit cards</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">replace</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;(?P&lt;before&gt;.*)\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b(?P&lt;after&gt;.*)&#39;</span>
-<span class="w">          </span><span class="nt">replace</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{</span><span class="nv"> </span><span class="s">.before</span><span class="nv"> </span><span class="s">}}[CREDIT_CARD]{{</span><span class="nv"> </span><span class="s">.after</span><span class="nv"> </span><span class="s">}}&#39;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'(?P&lt;before&gt;.*)\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b(?P&lt;after&gt;.*)'</span>
+<span class="w">          </span><span class="nt">replace</span><span class="p">:</span><span class="w"> </span><span class="s">'{{</span><span class="nv"> </span><span class="s">.before</span><span class="nv"> </span><span class="s">}}[CREDIT_CARD]{{</span><span class="nv"> </span><span class="s">.after</span><span class="nv"> </span><span class="s">}}'</span>
 
 <span class="w">      </span><span class="c1"># Redact API keys</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">replace</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;(?P&lt;before&gt;.*)(api[_-]?key|apikey)[\s:=]+[&quot;\&#39;</span><span class="err">]</span><span class="l l-Scalar l-Scalar-Plain">?[a-zA-Z0-9_\-]{20,}[&quot;\&#39;]?(?P&lt;after&gt;.*)&#39;</span>
-<span class="w">          </span><span class="nt">replace</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{</span><span class="nv"> </span><span class="s">.before</span><span class="nv"> </span><span class="s">}}{{</span><span class="nv"> </span><span class="s">.Value</span><span class="nv"> </span><span class="s">}}=[REDACTED]{{</span><span class="nv"> </span><span class="s">.after</span><span class="nv"> </span><span class="s">}}&#39;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'(?P&lt;before&gt;.*)(api[_-]?key|apikey)[\s:=]+["\'</span><span class="err">]</span><span class="l l-Scalar l-Scalar-Plain">?[a-zA-Z0-9_\-]{20,}["\']?(?P&lt;after&gt;.*)'</span>
+<span class="w">          </span><span class="nt">replace</span><span class="p">:</span><span class="w"> </span><span class="s">'{{</span><span class="nv"> </span><span class="s">.before</span><span class="nv"> </span><span class="s">}}{{</span><span class="nv"> </span><span class="s">.Value</span><span class="nv"> </span><span class="s">}}=[REDACTED]{{</span><span class="nv"> </span><span class="s">.after</span><span class="nv"> </span><span class="s">}}'</span>
 
 <span class="w">      </span><span class="c1"># Redact email addresses</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">replace</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;(?P&lt;before&gt;.*)\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b(?P&lt;after&gt;.*)&#39;</span>
-<span class="w">          </span><span class="nt">replace</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{</span><span class="nv"> </span><span class="s">.before</span><span class="nv"> </span><span class="s">}}[EMAIL]{{</span><span class="nv"> </span><span class="s">.after</span><span class="nv"> </span><span class="s">}}&#39;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'(?P&lt;before&gt;.*)\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b(?P&lt;after&gt;.*)'</span>
+<span class="w">          </span><span class="nt">replace</span><span class="p">:</span><span class="w"> </span><span class="s">'{{</span><span class="nv"> </span><span class="s">.before</span><span class="nv"> </span><span class="s">}}[EMAIL]{{</span><span class="nv"> </span><span class="s">.after</span><span class="nv"> </span><span class="s">}}'</span>
 
-<span class="w">      </span><span class="c1"># Drop logs containing secrets (don&#39;t send to Loki)</span>
+<span class="w">      </span><span class="c1"># Drop logs containing secrets (don't send to Loki)</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">drop</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">message</span>
-<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;.*password.*|.*secret.*|.*token.*&#39;</span>
+<span class="w">          </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'.*password.*|.*secret.*|.*token.*'</span>
 <span class="w">          </span><span class="nt">drop_counter_reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">contains_secrets</span>
 </code></pre></div>
 <p><strong>Option 3: Drop Sensitive Logs Entirely</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># promtail-config.yaml</span>
 <span class="nt">pipeline_stages</span><span class="p">:</span>
-<span class="w">  </span><span class="c1"># Don&#39;t send authentication logs to Loki</span>
+<span class="w">  </span><span class="c1"># Don't send authentication logs to Loki</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">drop</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">logger</span>
-<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;auth|login|session&#39;</span>
+<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'auth|login|session'</span>
 
-<span class="w">  </span><span class="c1"># Don&#39;t send debug logs in production</span>
+<span class="w">  </span><span class="c1"># Don't send debug logs in production</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">drop</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">source</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">level</span>
-<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;debug&#39;</span>
+<span class="w">      </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="s">'debug'</span>
 <span class="w">      </span><span class="nt">drop_counter_reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">debug_logs_in_prod</span>
 </code></pre></div>
 <p><strong>Test sanitization:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Send test log with PII</span>
-<span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;{&quot;message&quot;: &quot;User email is user@example.com, CC: 4532-1234-5678-9010&quot;}&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s1">'{"message": "User email is user@example.com, CC: 4532-1234-5678-9010"}'</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span><span class="p">|</span><span class="w"> </span>promtail<span class="w"> </span>--stdin<span class="w"> </span>--client.url<span class="w"> </span>http://localhost:3100/loki/api/v1/push
 
 <span class="c1"># Query Loki to verify redaction</span>
 curl<span class="w"> </span>-G<span class="w"> </span>http://localhost:3100/loki/api/v1/query<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--data-urlencode<span class="w"> </span><span class="s1">&#39;query={job=&quot;test&quot;}&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
-<span class="c1"># Should show: &quot;User email is [EMAIL], CC: [CREDIT_CARD]&quot;</span>
+<span class="w">  </span>--data-urlencode<span class="w"> </span><span class="s1">'query={job="test"}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+<span class="c1"># Should show: "User email is [EMAIL], CC: [CREDIT_CARD]"</span>
 </code></pre></div>
 <h3 id="docker-socket-security">Docker Socket Security<a class="headerlink" href="#docker-socket-security" title="Permanent link">&para;</a></h3>
 <p><strong>Problem:</strong> Promtail typically mounts <code>/var/run/docker.sock</code> to discover containers, which grants root access to the Docker daemon.</p>
@@ -7390,7 +7390,7 @@ curl<span class="w"> </span>-G<span class="w"> </span>http://localhost:3100/loki
 </code></pre></div>
 <p><strong>Option 2: Docker Secrets (Swarm/Compose)</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># docker-compose.yml</span>
-<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">'3.8'</span>
 
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">promtail</span><span class="p">:</span>
@@ -7524,8 +7524,8 @@ promtail<span class="w"> </span>-config.file<span class="o">=</span>/etc/promtai
 <span class="nt">log_queries_longer_than</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0s</span><span class="w">  </span><span class="c1"># Log all queries</span>
 </code></pre></div>
 <p>Query audit logs:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># View Loki&#39;s own logs (includes query logs)</span>
-docker<span class="w"> </span>logs<span class="w"> </span>fraiseql-loki<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;query&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># View Loki's own logs (includes query logs)</span>
+docker<span class="w"> </span>logs<span class="w"> </span>fraiseql-loki<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">"query"</span>
 </code></pre></div>
 <p><strong>Example secure production configuration:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># loki-config.yaml (production)</span>

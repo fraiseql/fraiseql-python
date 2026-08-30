@@ -5224,7 +5224,7 @@ fn_*   - Functions (business logic, mutations)
 
 <span class="c1">-- Virtual view (simple entity, no FKs)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
 <span class="c1">-- Physical table view (entity with FK, denormalized)</span>
@@ -5298,10 +5298,10 @@ Federation:      Sync entity with UUID a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 <span class="w">    </span><span class="n">pk_user</span><span class="p">,</span><span class="w">              </span><span class="c1">-- External primary key (TEXT)</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">                   </span><span class="c1">-- UUID for GraphQL filtering</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5350,9 +5350,9 @@ Federation:      Sync entity with UUID a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 <span class="w">        </span><span class="n">input_author_id</span><span class="p">,</span><span class="w">          </span><span class="c1">-- Integer FK for lineage</span>
 <span class="w">        </span><span class="n">author_uuid</span><span class="p">,</span><span class="w">              </span><span class="c1">-- UUID FK for filtering</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">new_pk</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">input_title</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;author&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_author_id</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_pk</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">input_title</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_author_id</span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
@@ -5419,7 +5419,7 @@ Federation:      Sync entity with UUID a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 <h3 id="postgresql-function-requirements">PostgreSQL Function Requirements<a class="headerlink" href="#postgresql-function-requirements" title="Permanent link">&para;</a></h3>
 <p>All FraiseQL mutations use PostgreSQL functions returning <code>mutation_response</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TYPE</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">      </span><span class="c1">-- &quot;created&quot;, &quot;validation:&quot;, &quot;not_found:user&quot;</span>
+<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">      </span><span class="c1">-- "created", "validation:", "not_found:user"</span>
 <span class="w">    </span><span class="n">message</span><span class="w">         </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">      </span><span class="c1">-- Human-readable message</span>
 <span class="w">    </span><span class="n">entity_id</span><span class="w">       </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">      </span><span class="c1">-- Optional entity identifier</span>
 <span class="w">    </span><span class="n">entity_type</span><span class="w">     </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">      </span><span class="c1">-- GraphQL type name (for __typename)</span>
@@ -5437,26 +5437,26 @@ Federation:      Sync entity with UUID a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 <span class="w">    </span><span class="n">new_user_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Email is required&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Email is required'</span><span class="p">;</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Create user</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="n">generate_identifier</span><span class="p">(</span><span class="s1">&#39;user&#39;</span><span class="p">),</span>
-<span class="w">        </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span>
-<span class="w">        </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span>
+<span class="w">        </span><span class="n">generate_identifier</span><span class="p">(</span><span class="s1">'user'</span><span class="p">),</span>
+<span class="w">        </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_user_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Success response</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;created&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;User created successfully&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'created'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'User created successfully'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">entity_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">new_user_id</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">entity_type</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;User&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">entity_type</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'User'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_user_id</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
@@ -5474,26 +5474,26 @@ Federation:      Sync entity with UUID a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11
 <h3 id="status-string-pattern">Status String Pattern<a class="headerlink" href="#status-string-pattern" title="Permanent link">&para;</a></h3>
 <p>FraiseQL uses <strong>status strings</strong> that automatically generate structured errors:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Validation error</span>
-<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
+<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
 
 <span class="c1">-- Not found</span>
-<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;not_found:user&#39;</span><span class="p">;</span>
+<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'not_found:user'</span><span class="p">;</span>
 
 <span class="c1">-- Conflict</span>
-<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;conflict:duplicate_email&#39;</span><span class="p">;</span>
+<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'conflict:duplicate_email'</span><span class="p">;</span>
 
 <span class="c1">-- Permission denied</span>
-<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;forbidden:insufficient_role&#39;</span><span class="p">;</span>
+<span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'forbidden:insufficient_role'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Automatic transformation</strong>:</p>
-<div class="highlight"><pre><span></span><code>PostgreSQL:  status = &quot;validation:&quot;
-             message = &quot;Email format invalid&quot;
+<div class="highlight"><pre><span></span><code>PostgreSQL:  status = "validation:"
+             message = "Email format invalid"
 
 GraphQL:     errors = [{
-               &quot;code&quot;: 422,
-               &quot;identifier&quot;: &quot;validation&quot;,
-               &quot;message&quot;: &quot;Email format invalid&quot;,
-               &quot;details&quot;: null
+               "code": 422,
+               "identifier": "validation",
+               "message": "Email format invalid",
+               "details": null
              }]
 </code></pre></div>
 <p><strong>Status prefixes and HTTP codes</strong>:</p>
@@ -5522,18 +5522,18 @@ GraphQL:     errors = [{
 <span class="w">    </span><span class="k">result</span><span class="w"> </span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="w">    </span><span class="n">title</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="n">title</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="n">title</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Validation</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">length</span><span class="p">(</span><span class="k">trim</span><span class="p">(</span><span class="n">title</span><span class="p">))</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Title is required&#39;</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Title is required'</span><span class="p">;</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">length</span><span class="p">(</span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">200</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Title must be 200 characters or less&#39;</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Title must be 200 characters or less'</span><span class="p">;</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
@@ -5546,32 +5546,32 @@ GraphQL:     errors = [{
 <span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="k">result</span><span class="w"> </span><span class="n">mutation_response</span><span class="p">;</span>
-<span class="w">    </span><span class="n">validation_errors</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">JSONB</span><span class="p">;</span>
+<span class="w">    </span><span class="n">validation_errors</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">JSONB</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Collect all validation errors</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">validation_errors</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">validation_errors</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title_required&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Title is required&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;details&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;field&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'title_required'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Title is required'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'details'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'field'</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">)</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;author_id&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">validation_errors</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">validation_errors</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;author_required&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Author is required&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;details&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;field&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;author_id&#39;</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="s1">'author_required'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Author is required'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'details'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'field'</span><span class="p">,</span><span class="w"> </span><span class="s1">'author_id'</span><span class="p">)</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Return all errors at once</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">jsonb_array_length</span><span class="p">(</span><span class="n">validation_errors</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Validation failed&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">validation_errors</span><span class="p">);</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Validation failed'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">metadata</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'errors'</span><span class="p">,</span><span class="w"> </span><span class="n">validation_errors</span><span class="p">);</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
@@ -5620,12 +5620,12 @@ GraphQL:     errors = [{
 <p><strong>Set user context</strong> (from FraiseQL middleware):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Set user context before query</span>
 <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-    <span class="s2">&quot;SELECT set_config(&#39;app.user_id&#39;, $1, false)&quot;</span><span class="p">,</span>
+    <span class="s2">"SELECT set_config('app.user_id', $1, false)"</span><span class="p">,</span>
     <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Then execute query - RLS enforced automatically</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM tb_post&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_post"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Documentation</strong>:</p>
 <ul>
@@ -5658,7 +5658,7 @@ GraphQL:     errors = [{
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_metadata</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">(</span><span class="n">metadata</span><span class="p">);</span>
 
 <span class="c1">-- Specific JSONB field index</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_tags</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">((</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">&#39;tags&#39;</span><span class="p">));</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_post_tags</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">GIN</span><span class="p">((</span><span class="n">metadata</span><span class="o">-&gt;</span><span class="s1">'tags'</span><span class="p">));</span>
 </code></pre></div>
 <h3 id="materialized-views">Materialized Views<a class="headerlink" href="#materialized-views" title="Permanent link">&para;</a></h3>
 <p>For expensive aggregations, use materialized views:</p>
@@ -5682,7 +5682,7 @@ GraphQL:     errors = [{
 <span class="n">REFRESH</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">mv_user_stats</span><span class="p">;</span>
 
 <span class="c1">-- Or refresh on schedule (pg_cron)</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">&#39;refresh-user-stats&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;0 * * * *&#39;</span><span class="p">,</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">cron</span><span class="p">.</span><span class="n">schedule</span><span class="p">(</span><span class="s1">'refresh-user-stats'</span><span class="p">,</span><span class="w"> </span><span class="s1">'0 * * * *'</span><span class="p">,</span>
 <span class="w">    </span><span class="err">$$</span><span class="n">REFRESH</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">mv_user_stats$$</span>
 <span class="p">);</span>
 </code></pre></div>
@@ -5756,11 +5756,11 @@ GraphQL:     errors = [{
 <span class="c1">-- Create view</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;author_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'author_id'</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5819,28 +5819,28 @@ GraphQL:     errors = [{
 </ul>
 <p><strong>Use raw SQL + typed views instead</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ BAD: ORM query</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="s2">&quot;active&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">prefetch_related</span><span class="p">(</span><span class="s2">&quot;posts&quot;</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="s2">"active"</span><span class="p">)</span><span class="o">.</span><span class="n">prefetch_related</span><span class="p">(</span><span class="s2">"posts"</span><span class="p">)</span>
 
 <span class="c1"># ✅ GOOD: Direct SQL via view</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">&quot;SELECT data FROM v_user WHERE status = &#39;active&#39;&quot;</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"SELECT data FROM v_user WHERE status = 'active'"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="dont-store-business-logic-in-python">❌ Don't Store Business Logic in Python<a class="headerlink" href="#dont-store-business-logic-in-python" title="Permanent link">&para;</a></h3>
 <p><strong>Keep business logic in PostgreSQL functions.</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ BAD: Validation in Python</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">):</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Name required&quot;</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">email</span> <span class="ow">or</span> <span class="s2">&quot;@&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid email&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Name required"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">email</span> <span class="ow">or</span> <span class="s2">"@"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">email</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid email"</span><span class="p">)</span>
     <span class="c1"># Can be bypassed!</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ✅ GOOD: Validation in PostgreSQL</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="n">input_data</span><span class="w"> </span><span class="n">JSONB</span><span class="p">)</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Name is required&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Name is required'</span><span class="p">;</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 <span class="w">    </span><span class="c1">-- Cannot be bypassed!</span>
@@ -5864,7 +5864,7 @@ GraphQL:     errors = [{
 <span class="c1">-- JSONB view</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_</span><span class="err">{</span><span class="n">entity</span><span class="err">}</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">    </span><span class="c1">-- map fields to GraphQL shape</span>
 <span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_</span><span class="err">{</span><span class="n">entity</span><span class="err">}</span>
@@ -5877,9 +5877,9 @@ GraphQL:     errors = [{
 <span class="w">    </span><span class="k">result</span><span class="w"> </span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;field&#39;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;validation:&#39;</span><span class="p">;</span>
-<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Field is required&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">input_data</span><span class="o">-&gt;&gt;</span><span class="s1">'field'</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'validation:'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'Field is required'</span><span class="p">;</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
@@ -5887,8 +5887,8 @@ GraphQL:     errors = [{
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_</span><span class="err">{</span><span class="n">entity</span><span class="err">}</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(...);</span>
 
 <span class="w">    </span><span class="c1">-- Success</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;created&#39;</span><span class="p">;</span>
-<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;{Entity} created successfully&#39;</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'created'</span><span class="p">;</span>
+<span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'{Entity} created successfully'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">result</span><span class="p">.</span><span class="n">entity</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_</span><span class="err">{</span><span class="n">entity</span><span class="err">}</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="p">...);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">result</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>

@@ -4935,10 +4935,10 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>                    <span class="c1"># Primary key → &quot;ID&quot; scalar</span>
-    <span class="n">customer_id</span><span class="p">:</span> <span class="n">ID</span>           <span class="c1"># Foreign key → &quot;ID&quot; scalar</span>
-    <span class="n">correlation_id</span><span class="p">:</span> <span class="n">UUID</span>      <span class="c1"># Tracing ID → &quot;UUID&quot; scalar</span>
-    <span class="n">external_ref</span><span class="p">:</span> <span class="n">UUID</span>        <span class="c1"># External reference → &quot;UUID&quot; scalar</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>                    <span class="c1"># Primary key → "ID" scalar</span>
+    <span class="n">customer_id</span><span class="p">:</span> <span class="n">ID</span>           <span class="c1"># Foreign key → "ID" scalar</span>
+    <span class="n">correlation_id</span><span class="p">:</span> <span class="n">UUID</span>      <span class="c1"># Tracing ID → "UUID" scalar</span>
+    <span class="n">external_ref</span><span class="p">:</span> <span class="n">UUID</span>        <span class="c1"># External reference → "UUID" scalar</span>
 </code></pre></div>
 <h2 id="why-uuid">Why UUID?<a class="headerlink" href="#why-uuid" title="Permanent link">&para;</a></h2>
 <p>FraiseQL makes the opinionated choice to use UUIDs for all IDs because:</p>
@@ -4958,7 +4958,7 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>          <span class="c1"># External UUID identifier</span>
-    <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>   <span class="c1"># Reference to another entity&#39;s external ID</span>
+    <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>   <span class="c1"># Reference to another entity's external ID</span>
 </code></pre></div>
 <p><strong>Note</strong>: In the Trinity pattern, <code>id</code> is the external UUID for API consumption, not the internal primary key (<code>pk_*</code>). See <a href="../trinity-pattern/">Trinity Pattern</a> for details.</p>
 <h2 id="implementation-details">Implementation Details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h2>
@@ -4971,7 +4971,7 @@
 <h3 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># ID serializes UUIDs to strings</span>
 <span class="n">uuid_obj</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
-<span class="n">id_string</span> <span class="o">=</span> <span class="n">IDScalar</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">uuid_obj</span><span class="p">)</span>  <span class="c1"># &quot;550e8400-e29b-41d4-a716-446655440000&quot;</span>
+<span class="n">id_string</span> <span class="o">=</span> <span class="n">IDScalar</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">uuid_obj</span><span class="p">)</span>  <span class="c1"># "550e8400-e29b-41d4-a716-446655440000"</span>
 
 <span class="c1"># ID parses strings back to UUIDs</span>
 <span class="n">parsed_uuid</span> <span class="o">=</span> <span class="n">IDScalar</span><span class="o">.</span><span class="n">parse_value</span><span class="p">(</span><span class="n">id_string</span><span class="p">)</span>  <span class="c1"># uuid.UUID object</span>
@@ -4979,12 +4979,12 @@
 <h3 id="graphql-introspection">GraphQL Introspection<a class="headerlink" href="#graphql-introspection" title="Permanent link">&para;</a></h3>
 <p>When you query the schema, ID appears as a scalar:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">__type</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;User&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">__type</span><span class="p">(</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"User"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">fields</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">name</span>
 <span class="w">      </span><span class="n">type</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">name</span><span class="w">  </span><span class="c"># Returns &quot;ID&quot; for id field</span>
-<span class="w">        </span><span class="n">kind</span><span class="w">  </span><span class="c"># Returns &quot;SCALAR&quot;</span>
+<span class="w">        </span><span class="n">name</span><span class="w">  </span><span class="c"># Returns "ID" for id field</span>
+<span class="w">        </span><span class="n">kind</span><span class="w">  </span><span class="c"># Returns "SCALAR"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>

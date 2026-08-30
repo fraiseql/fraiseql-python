@@ -4963,16 +4963,16 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># field_name auto-inferred as &quot;user&quot; from function name</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># field_name auto-inferred as "user" from function name</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <blockquote>
 <p><strong>Note</strong>: FraiseQL has two repository classes: <code>FraiseQLRepository</code> (modern, recommended) and <code>CQRSRepository</code> (legacy). See <a href="../repositories/">Repository Classes Comparison</a> for details on when to use each.</p>
 </blockquote>
 <h2 id="accessing-the-database">Accessing the Database<a class="headerlink" href="#accessing-the-database" title="Permanent link">&para;</a></h2>
 <p><strong>In Resolvers</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>  <span class="c1"># FraiseQLRepository instance</span>
+<div class="highlight"><pre><span></span><code><span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>  <span class="c1"># FraiseQLRepository instance</span>
 </code></pre></div>
 <p><strong>Repository Instance</strong>: Automatically injected into GraphQL context by FraiseQL</p>
 <h2 id="query-methods">Query Methods<a class="headerlink" href="#query-methods" title="Permanent link">&para;</a></h2>
@@ -5022,62 +5022,62 @@
 <p><strong>Modern API (recommended)</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="c1"># field_name auto-inferred from function name &quot;users&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># field_name auto-inferred from function name "users"</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Explicit field_name (only if needed)</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Only specify field_name if it differs from the function name</span>
-<span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="s2">&quot;userList&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+<span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"userList"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Returns</strong>: The result is handled automatically by the framework. In your resolver, annotate the return type with your GraphQL type (e.g., <code>list[User]</code>).</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Simple query (field_name auto-inferred from function name)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 
 <span class="c1"># With filter</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"is_active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
 
 <span class="c1"># With pagination</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">paginated_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">page_size</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">page_size</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">page_size</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
 
 <span class="c1"># With ordering (list of tuples format)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">recent_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;created_at&quot;</span><span class="p">,</span> <span class="s2">&quot;DESC&quot;</span><span class="p">)],</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)],</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 
 <span class="c1"># Complex filter (dict-based)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;name__icontains&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;created_at__gte&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="s2">"name__icontains"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">"created_at__gte"</span><span class="p">:</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="p">}</span>
     <span class="p">)</span>
 
 <span class="c1"># Using typed WhereInput (auto-generated)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">filtered_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">UserWhereInput</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Filter Operators</strong> (dict-based):</p>
 <table>
@@ -5203,34 +5203,34 @@
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="c1"># Find by ID (field_name auto-inferred from function name &quot;user&quot;)</span>
+<span class="c1"># Find by ID (field_name auto-inferred from function name "user")</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
 <span class="c1"># Using where parameter</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_by_email</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
 
 <span class="c1"># Find with complex filter</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_user_by_email</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">"is_active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="p">)</span>
 
 <span class="c1"># Handle not found case</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;User not found&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"User not found"</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">user</span>
 </code></pre></div>
 <h3 id="count">count()<a class="headerlink" href="#count" title="Permanent link">&para;</a></h3>
@@ -5275,30 +5275,30 @@
 <p><strong>Returns</strong>: Integer count of matching records</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Count all users</span>
-<span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;v_users&quot;</span><span class="p">)</span>
+<span class="n">total</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"v_users"</span><span class="p">)</span>
 <span class="c1"># Returns: 1523</span>
 
 <span class="c1"># Count with filter</span>
 <span class="n">active_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span>
-    <span class="s2">&quot;v_users&quot;</span><span class="p">,</span>
-    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">}}</span>
+    <span class="s2">"v_users"</span><span class="p">,</span>
+    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}}</span>
 <span class="p">)</span>
 <span class="c1"># Returns: 842</span>
 
 <span class="c1"># Count with tenant_id</span>
 <span class="n">tenant_users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span>
-    <span class="s2">&quot;v_users&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">&quot;tenant-123&quot;</span>
+    <span class="s2">"v_users"</span><span class="p">,</span>
+    <span class="n">tenant_id</span><span class="o">=</span><span class="s2">"tenant-123"</span>
 <span class="p">)</span>
 <span class="c1"># Returns: 67</span>
 
 <span class="c1"># Count with complex filters</span>
 <span class="n">electronics_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span>
-    <span class="s2">&quot;v_products&quot;</span><span class="p">,</span>
+    <span class="s2">"v_products"</span><span class="p">,</span>
     <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;gt&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;lt&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">},</span>
-        <span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;electronics&quot;</span><span class="p">},</span>
-        <span class="s2">&quot;in_stock&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+        <span class="s2">"price"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gt"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"lt"</span><span class="p">:</span> <span class="mi">500</span><span class="p">},</span>
+        <span class="s2">"category"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"electronics"</span><span class="p">},</span>
+        <span class="s2">"in_stock"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
     <span class="p">}</span>
 <span class="p">)</span>
 <span class="c1"># Returns: 23</span>
@@ -5306,24 +5306,24 @@
 <span class="c1"># In GraphQL resolver</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_count</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">UserWhereInput</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Count users with optional filtering.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;v_users&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Count users with optional filtering."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"v_users"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tenant_stats</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TenantStats</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get statistics for current tenant.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Get statistics for current tenant."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="n">TenantStats</span><span class="p">(</span>
-        <span class="n">total_users</span><span class="o">=</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;v_users&quot;</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">),</span>
+        <span class="n">total_users</span><span class="o">=</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"v_users"</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">),</span>
         <span class="n">active_users</span><span class="o">=</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span>
-            <span class="s2">&quot;v_users&quot;</span><span class="p">,</span>
+            <span class="s2">"v_users"</span><span class="p">,</span>
             <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>
-            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;active&quot;</span><span class="p">}}</span>
+            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}}</span>
         <span class="p">),</span>
-        <span class="n">total_orders</span><span class="o">=</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;v_orders&quot;</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">),</span>
+        <span class="n">total_orders</span><span class="o">=</span><span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"v_orders"</span><span class="p">,</span> <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>Performance</strong>:</p>
@@ -5345,7 +5345,7 @@
     <span class="n">last</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">before</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">order_by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;id&quot;</span><span class="p">,</span>
+    <span class="n">order_by</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"id"</span><span class="p">,</span>
     <span class="n">include_total</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">jsonb_extraction</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">jsonb_column</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5427,39 +5427,39 @@
 <p><strong>Returns</strong>: Dictionary with edges, page_info, and total_count</p>
 <p><strong>Result Structure</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-    <span class="s2">&quot;edges&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">"edges"</span><span class="p">:</span> <span class="p">[</span>
         <span class="p">{</span>
-            <span class="s2">&quot;node&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
-            <span class="s2">&quot;cursor&quot;</span><span class="p">:</span> <span class="s2">&quot;cursor_string&quot;</span>
+            <span class="s2">"node"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+            <span class="s2">"cursor"</span><span class="p">:</span> <span class="s2">"cursor_string"</span>
         <span class="p">},</span>
         <span class="o">...</span>
     <span class="p">],</span>
-    <span class="s2">&quot;page_info&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;has_next_page&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="s2">&quot;has_previous_page&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="s2">&quot;start_cursor&quot;</span><span class="p">:</span> <span class="s2">&quot;first_cursor&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;end_cursor&quot;</span><span class="p">:</span> <span class="s2">&quot;last_cursor&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;total_count&quot;</span><span class="p">:</span> <span class="mi">100</span>
+    <span class="s2">"page_info"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"has_next_page"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"has_previous_page"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="s2">"start_cursor"</span><span class="p">:</span> <span class="s2">"first_cursor"</span><span class="p">,</span>
+        <span class="s2">"end_cursor"</span><span class="p">:</span> <span class="s2">"last_cursor"</span><span class="p">,</span>
+        <span class="s2">"total_count"</span><span class="p">:</span> <span class="mi">100</span>
     <span class="p">},</span>
-    <span class="s2">&quot;total_count&quot;</span><span class="p">:</span> <span class="mi">100</span>
+    <span class="s2">"total_count"</span><span class="p">:</span> <span class="mi">100</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Forward pagination</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
 
 <span class="c1"># With cursor</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="s2">&quot;cursor_xyz&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">after</span><span class="o">=</span><span class="s2">"cursor_xyz"</span><span class="p">)</span>
 
 <span class="c1"># Backward pagination</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">last</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="s2">&quot;cursor_abc&quot;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">last</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="s2">"cursor_abc"</span><span class="p">)</span>
 
 <span class="c1"># With filters</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span>
-    <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
+    <span class="s2">"v_user"</span><span class="p">,</span>
     <span class="n">first</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-    <span class="n">order_by</span><span class="o">=</span><span class="s2">&quot;created_at&quot;</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"is_active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="s2">"created_at"</span>
 <span class="p">)</span>
 
 <span class="c1"># Convert to typed Connection</span>
@@ -5476,26 +5476,26 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Execute PostgreSQL function to create record</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-        <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
     <span class="p">})</span>
 
     <span class="c1"># Fetch created record via Rust pipeline</span>
-    <span class="c1"># field_name auto-inferred from function name &quot;create_user&quot; → &quot;user&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="c1"># field_name auto-inferred from function name "create_user" → "user"</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
 </code></pre></div>
 <p><strong>PostgreSQL Function</strong>:</p>
 <p>See <a href="../../examples/canonical-examples/#create-user-function">canonical fn_create_user()</a> for a complete example with validation and error handling.</p>
 <p>Simple version:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span>
 <span class="w">        </span><span class="p">(</span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
-<span class="w">         </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">)</span>
+<span class="w">         </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">         </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
@@ -5506,28 +5506,28 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Execute PostgreSQL function to update record</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span>
         <span class="o">**</span><span class="nb">input</span><span class="o">.</span><span class="vm">__dict__</span>
     <span class="p">})</span>
 
     <span class="c1"># Fetch updated record</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="deleting-records">Deleting Records<a class="headerlink" href="#deleting-records" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Execute PostgreSQL function to delete record</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_delete_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
-    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="postgresql-function-execution">PostgreSQL Function Execution<a class="headerlink" href="#postgresql-function-execution" title="Permanent link">&para;</a></h2>
 <h3 id="execute_function">execute_function()<a class="headerlink" href="#execute_function" title="Permanent link">&para;</a></h3>
@@ -5567,14 +5567,14 @@
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Execute mutation function</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-    <span class="s2">&quot;graphql.create_user&quot;</span><span class="p">,</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;John&quot;</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;john@example.com&quot;</span><span class="p">}</span>
+    <span class="s2">"graphql.create_user"</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"John"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"john@example.com"</span><span class="p">}</span>
 <span class="p">)</span>
 
 <span class="c1"># With schema prefix</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-    <span class="s2">&quot;auth.register_user&quot;</span><span class="p">,</span>
-    <span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="s2">&quot;user@example.com&quot;</span><span class="p">,</span> <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="s2">&quot;secret&quot;</span><span class="p">}</span>
+    <span class="s2">"auth.register_user"</span><span class="p">,</span>
+    <span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="s2">"user@example.com"</span><span class="p">,</span> <span class="s2">"password"</span><span class="p">:</span> <span class="s2">"secret"</span><span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>PostgreSQL Function Format</strong>:</p>
@@ -5585,8 +5585,8 @@
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Function implementation</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'data'</span><span class="p">,</span><span class="w"> </span><span class="p">...</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -5635,9 +5635,9 @@
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># With tenant isolation</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function_with_context</span><span class="p">(</span>
-    <span class="s2">&quot;app.create_location&quot;</span><span class="p">,</span>
+    <span class="s2">"app.create_location"</span><span class="p">,</span>
     <span class="p">[</span><span class="n">tenant_id</span><span class="p">,</span> <span class="n">user_id</span><span class="p">],</span>
-    <span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;Office&quot;</span><span class="p">,</span> <span class="s2">&quot;address&quot;</span><span class="p">:</span> <span class="s2">&quot;123 Main St&quot;</span><span class="p">}</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Office"</span><span class="p">,</span> <span class="s2">"address"</span><span class="p">:</span> <span class="s2">"123 Main St"</span><span class="p">}</span>
 <span class="p">)</span>
 
 <span class="c1"># Function signature in PostgreSQL</span>
@@ -5685,23 +5685,23 @@
 <p><strong>Returns</strong>: List of dictionaries (query results)</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Simple query</span>
-<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM users&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span><span class="s2">"SELECT * FROM users"</span><span class="p">)</span>
 
 <span class="c1"># With parameters</span>
 <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-    <span class="s2">&quot;SELECT * FROM users WHERE id = $1&quot;</span><span class="p">,</span>
+    <span class="s2">"SELECT * FROM users WHERE id = $1"</span><span class="p">,</span>
     <span class="n">user_id</span>
 <span class="p">)</span>
 
 <span class="c1"># Complex aggregation</span>
 <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    SELECT</span>
 <span class="sd">        count(*) as total_users,</span>
 <span class="sd">        count(*) FILTER (WHERE is_active) as active_users</span>
 <span class="sd">    FROM users</span>
 <span class="sd">    WHERE created_at &gt; $1</span>
-<span class="sd">    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">    """</span><span class="p">,</span>
     <span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5754,14 +5754,14 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transfer_funds</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">source_id</span><span class="p">,</span> <span class="n">dest_id</span><span class="p">,</span> <span class="n">amount</span><span class="p">):</span>
     <span class="c1"># Deduct from source</span>
     <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;UPDATE accounts SET balance = balance - $1 WHERE id = $2&quot;</span><span class="p">,</span>
+        <span class="s2">"UPDATE accounts SET balance = balance - $1 WHERE id = $2"</span><span class="p">,</span>
         <span class="n">amount</span><span class="p">,</span>
         <span class="n">source_id</span>
     <span class="p">)</span>
 
     <span class="c1"># Add to destination</span>
     <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">&quot;UPDATE accounts SET balance = balance + $1 WHERE id = $2&quot;</span><span class="p">,</span>
+        <span class="s2">"UPDATE accounts SET balance = balance + $1 WHERE id = $2"</span><span class="p">,</span>
         <span class="n">amount</span><span class="p">,</span>
         <span class="n">dest_id</span>
     <span class="p">)</span>
@@ -5771,7 +5771,7 @@
 <span class="c1"># Execute in transaction</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transfer</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">TransferInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span>
         <span class="n">transfer_funds</span><span class="p">,</span>
         <span class="nb">input</span><span class="o">.</span><span class="n">source_id</span><span class="p">,</span>
@@ -5789,7 +5789,7 @@
 <p><strong>Returns</strong>: psycopg AsyncConnectionPool instance</p>
 <p><strong>Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">pool</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pool size: </span><span class="si">{</span><span class="n">pool</span><span class="o">.</span><span class="n">max_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Pool size: </span><span class="si">{</span><span class="n">pool</span><span class="o">.</span><span class="n">max_size</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="context-and-session-variables">Context and Session Variables<a class="headerlink" href="#context-and-session-variables" title="Permanent link">&para;</a></h2>
 <p><strong>Automatic Session Variable Injection</strong>:</p>
@@ -5825,8 +5825,8 @@
 </ol>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">extract_tenant_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="s2">&quot;contact_id&quot;</span><span class="p">:</span> <span class="n">extract_user_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">extract_tenant_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
+        <span class="s2">"contact_id"</span><span class="p">:</span> <span class="n">extract_user_from_jwt</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
     <span class="p">}</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
@@ -5838,14 +5838,14 @@
 <ol>
 <li>FraiseQL automatically executes before each database operation:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">SET</span><span class="w"> </span><span class="k">LOCAL</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&lt;tenant_id_from_context&gt;&#39;</span><span class="p">;</span>
-<span class="k">SET</span><span class="w"> </span><span class="k">LOCAL</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">contact_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&lt;contact_id_from_context&gt;&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">SET</span><span class="w"> </span><span class="k">LOCAL</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'&lt;tenant_id_from_context&gt;'</span><span class="p">;</span>
+<span class="k">SET</span><span class="w"> </span><span class="k">LOCAL</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">contact_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'&lt;contact_id_from_context&gt;'</span><span class="p">;</span>
 </code></pre></div>
 <ol>
 <li>Your PostgreSQL functions can access these variables:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.contact_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.contact_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="using-session-variables-in-postgresql">Using Session Variables in PostgreSQL<a class="headerlink" href="#using-session-variables-in-postgresql" title="Permanent link">&para;</a></h3>
 <p><strong>In Views (Multi-Tenant Data Filtering)</strong>:</p>
@@ -5857,16 +5857,16 @@
 <span class="w">    </span><span class="n">customer_id</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 </code></pre></div>
 <p>Now all queries to <code>v_order</code> automatically see only their tenant's data:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Automatically filtered by tenant_id from context!</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_order&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_order"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>In Functions (Audit Logging)</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">graphql</span><span class="p">.</span><span class="n">create_order</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
@@ -5879,8 +5879,8 @@
 <span class="w">    </span><span class="n">v_order_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Get session variables</span>
-<span class="w">    </span><span class="n">v_tenant_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
-<span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.contact_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_tenant_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.contact_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert with automatic tenant_id and created_by</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">)</span>
@@ -5888,15 +5888,15 @@
 <span class="w">        </span><span class="n">v_tenant_id</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_set</span><span class="p">(</span>
 <span class="w">            </span><span class="k">input</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;{created_by}&#39;</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'{created_by}'</span><span class="p">,</span>
 <span class="w">            </span><span class="n">to_jsonb</span><span class="p">(</span><span class="n">v_user_id</span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
@@ -5905,19 +5905,19 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- Enable RLS on table</span>
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_document</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
 
-<span class="c1">-- Policy: Users can only see their tenant&#39;s documents</span>
+<span class="c1">-- Policy: Users can only see their tenant's documents</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation_policy</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">ALL</span>
 <span class="w">    </span><span class="k">TO</span><span class="w"> </span><span class="k">PUBLIC</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
 
 <span class="c1">-- Policy: Users can only modify documents they created</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">user_modification_policy</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_document</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">UPDATE</span>
 <span class="w">    </span><span class="k">TO</span><span class="w"> </span><span class="k">PUBLIC</span>
 <span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span>
-<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;created_by&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.contact_id&#39;</span><span class="p">)::</span><span class="n">uuid</span>
+<span class="w">        </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'created_by'</span><span class="p">)::</span><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.contact_id'</span><span class="p">)::</span><span class="n">uuid</span>
 <span class="w">    </span><span class="p">);</span>
 </code></pre></div>
 <p><strong>In Triggers (Automatic Audit Fields)</strong>:</p>
@@ -5927,20 +5927,20 @@
 <span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Automatically set created_by on insert</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="p">(</span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INSERT&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="p">(</span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'INSERT'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">NEW</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_set</span><span class="p">(</span>
 <span class="w">            </span><span class="k">NEW</span><span class="p">.</span><span class="k">data</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;{created_by}&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="n">to_jsonb</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.contact_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'{created_by}'</span><span class="p">,</span>
+<span class="w">            </span><span class="n">to_jsonb</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.contact_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Automatically set updated_by on update</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="p">(</span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;UPDATE&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="p">(</span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'UPDATE'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">NEW</span><span class="p">.</span><span class="k">data</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">jsonb_set</span><span class="p">(</span>
 <span class="w">            </span><span class="k">NEW</span><span class="p">.</span><span class="k">data</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;{updated_by}&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="n">to_jsonb</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.contact_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'{updated_by}'</span><span class="p">,</span>
+<span class="w">            </span><span class="n">to_jsonb</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.contact_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
@@ -5959,18 +5959,18 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">jwt</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract tenant and user from JWT.&quot;&quot;&quot;</span>
-    <span class="n">auth_header</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;authorization&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Extract tenant and user from JWT."""</span>
+    <span class="n">auth_header</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authorization"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">auth_header</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">auth_header</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"Bearer "</span><span class="p">):</span>
         <span class="k">return</span> <span class="p">{}</span>  <span class="c1"># Anonymous request</span>
 
-    <span class="n">token</span> <span class="o">=</span> <span class="n">auth_header</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-    <span class="n">decoded</span> <span class="o">=</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;verify_signature&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">auth_header</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Bearer "</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="n">decoded</span> <span class="o">=</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="p">{</span><span class="s2">"verify_signature"</span><span class="p">:</span> <span class="kc">False</span><span class="p">})</span>
 
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">decoded</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;tenant_id&quot;</span><span class="p">),</span>
-        <span class="s2">&quot;contact_id&quot;</span><span class="p">:</span> <span class="n">decoded</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_id&quot;</span><span class="p">)</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">decoded</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">),</span>
+        <span class="s2">"contact_id"</span><span class="p">:</span> <span class="n">decoded</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">)</span>
     <span class="p">}</span>
 </code></pre></div>
 <p><strong>2. Database View (SQL)</strong>:</p>
@@ -5978,24 +5978,24 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">tenant_id</span><span class="p">,</span>
-<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;name&#39;</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">    </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;price&#39;</span><span class="p">)::</span><span class="nb">decimal</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'price'</span><span class="p">)::</span><span class="nb">decimal</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">price</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_product</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>3. GraphQL Query (Python)</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">products</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get products for current tenant.</span>
+<span class="w">    </span><span class="sd">"""Get products for current tenant.</span>
 
 <span class="sd">    Automatically filtered by tenant_id from JWT token.</span>
 <span class="sd">    No need to pass tenant_id explicitly!</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_product&quot;</span><span class="p">)</span>
+<span class="sd">    """</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_product"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>4. Result</strong>:</p>
 <ul>
@@ -6011,24 +6011,24 @@
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_product</span>
 <span class="k">WHERE</span>
 <span class="w">    </span><span class="k">CASE</span>
-<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
 <span class="w">        </span><span class="k">THEN</span><span class="w"> </span><span class="n">is_public</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="w">  </span><span class="c1">-- Show only public products</span>
-<span class="w">        </span><span class="k">ELSE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span>
+<span class="w">        </span><span class="k">ELSE</span><span class="w"> </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span>
 <span class="w">    </span><span class="k">END</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="custom-session-variables">Custom Session Variables<a class="headerlink" href="#custom-session-variables" title="Permanent link">&para;</a></h3>
 <p>You can add custom session variables by including them in context:</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;tenant_id&quot;</span><span class="p">:</span> <span class="n">extract_tenant</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="s2">&quot;contact_id&quot;</span><span class="p">:</span> <span class="n">extract_user</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
-        <span class="s2">&quot;user_role&quot;</span><span class="p">:</span> <span class="n">extract_role</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>  <span class="c1"># Custom variable</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">extract_tenant</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
+        <span class="s2">"contact_id"</span><span class="p">:</span> <span class="n">extract_user</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>
+        <span class="s2">"user_role"</span><span class="p">:</span> <span class="n">extract_role</span><span class="p">(</span><span class="n">request</span><span class="p">),</span>  <span class="c1"># Custom variable</span>
     <span class="p">}</span>
 </code></pre></div>
 <p>Access in PostgreSQL (note: FraiseQL only auto-sets <code>app.tenant_id</code> and <code>app.contact_id</code>, so you'll need to set others manually if needed):</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- In your function</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Auto-set by FraiseQL</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.contact_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span><span class="w"> </span><span class="c1">-- Auto-set by FraiseQL</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Auto-set by FraiseQL</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.contact_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span><span class="w"> </span><span class="c1">-- Auto-set by FraiseQL</span>
 </code></pre></div>
 <h3 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h3>
 <ol>
@@ -6058,21 +6058,21 @@
 <p><strong>Mode Selection</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Explicit mode setting</span>
 <span class="n">context</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">repository</span><span class="p">,</span>
-    <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;production&quot;</span>  <span class="c1"># or &quot;development&quot;</span>
+    <span class="s2">"db"</span><span class="p">:</span> <span class="n">repository</span><span class="p">,</span>
+    <span class="s2">"mode"</span><span class="p">:</span> <span class="s2">"production"</span>  <span class="c1"># or "development"</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="best-practices_1">Best Practices<a class="headerlink" href="#best-practices_1" title="Permanent link">&para;</a></h2>
 <p><strong>Query Optimization</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Use specific fields instead of SELECT *</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"is_active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
 <span class="c1"># Use pagination for large datasets</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
 
 <span class="c1"># Use database views for complex queries</span>
 <span class="c1"># Create view: CREATE VIEW v_user_stats AS SELECT ...</span>
-<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user_stats&quot;</span><span class="p">)</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user_stats"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Error Handling</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -6081,29 +6081,29 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to fetch user </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">&quot;Failed to fetch user&quot;</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to fetch user </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Failed to fetch user"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Security</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Always use parameterized queries</span>
 <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-    <span class="s2">&quot;SELECT * FROM users WHERE email = $1&quot;</span><span class="p">,</span>  <span class="c1"># Safe</span>
+    <span class="s2">"SELECT * FROM users WHERE email = $1"</span><span class="p">,</span>  <span class="c1"># Safe</span>
     <span class="n">email</span>
 <span class="p">)</span>
 
 <span class="c1"># NEVER do this (SQL injection risk):</span>
-<span class="c1"># results = await db.execute_raw(f&quot;SELECT * FROM users WHERE email = &#39;{email}&#39;&quot;)</span>
+<span class="c1"># results = await db.execute_raw(f"SELECT * FROM users WHERE email = '{email}'")</span>
 </code></pre></div>
 <p><strong>Transactions</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Use transactions for multi-step operations</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">complex_operation</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
     <span class="c1"># All operations succeed or all fail</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO table1 ...&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;UPDATE table2 ...&quot;</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;DELETE FROM table3 ...&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"INSERT INTO table1 ..."</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"UPDATE table2 ..."</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM table3 ..."</span><span class="p">)</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">complex_operation</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
 </code></pre></div>

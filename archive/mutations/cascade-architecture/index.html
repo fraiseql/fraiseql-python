@@ -5392,13 +5392,13 @@
 <p>Database functions return a <code>mutation_response</code> tuple with this structure:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Example PostgreSQL function return</span>
 <span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;created&#39;</span><span class="p">,</span><span class="w">                          </span><span class="c1">-- status: TEXT</span>
-<span class="w">    </span><span class="s1">&#39;Post created successfully&#39;</span><span class="p">,</span><span class="w">        </span><span class="c1">-- message: TEXT</span>
+<span class="w">    </span><span class="s1">'created'</span><span class="p">,</span><span class="w">                          </span><span class="c1">-- status: TEXT</span>
+<span class="w">    </span><span class="s1">'Post created successfully'</span><span class="p">,</span><span class="w">        </span><span class="c1">-- message: TEXT</span>
 <span class="w">    </span><span class="n">v_post_id</span><span class="p">,</span><span class="w">                          </span><span class="c1">-- entity_id: TEXT</span>
-<span class="w">    </span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w">                             </span><span class="c1">-- entity_type: TEXT (class name)</span>
+<span class="w">    </span><span class="s1">'Post'</span><span class="p">,</span><span class="w">                             </span><span class="c1">-- entity_type: TEXT (class name)</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="w">                 </span><span class="c1">-- entity: JSONB</span>
-<span class="w">        </span><span class="s1">&#39;post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(...),</span><span class="w"> </span><span class="c1">-- nested entity data</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Success&#39;</span>
+<span class="w">        </span><span class="s1">'post'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(...),</span><span class="w"> </span><span class="c1">-- nested entity data</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Success'</span>
 <span class="w">    </span><span class="p">),</span>
 <span class="w">    </span><span class="k">NULL</span><span class="p">,</span><span class="w">                               </span><span class="c1">-- updated_fields: TEXT[]</span>
 <span class="w">    </span><span class="n">v_cascade_data</span><span class="p">,</span><span class="w">                     </span><span class="c1">-- cascade: JSONB</span>
@@ -5414,12 +5414,12 @@
 <li><strong>Flattening</strong>: Converts nested entity structure to flat field structure</li>
 </ol>
 <p><strong>Before Fix</strong> (Broken):</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># entity_type = &quot;Post&quot; (from DB)</span>
-<span class="c1"># expected_fields = {&quot;post&quot;, &quot;message&quot;, &quot;cascade&quot;}</span>
-<span class="c1"># &quot;Post&quot; not in {&quot;post&quot;, ...} → False → Wrong path taken</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># entity_type = "Post" (from DB)</span>
+<span class="c1"># expected_fields = {"post", "message", "cascade"}</span>
+<span class="c1"># "Post" not in {"post", ...} → False → Wrong path taken</span>
 </code></pre></div>
 <p><strong>After Fix</strong> (Working):</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Case-insensitive check: &quot;post&quot;.lower() == &quot;Post&quot;.lower()</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Case-insensitive check: "post".lower() == "Post".lower()</span>
 <span class="c1"># Match found → Skip flattening → Pass to Rust</span>
 </code></pre></div>
 <h3 id="rust-transformation-layer">Rust Transformation Layer<a class="headerlink" href="#rust-transformation-layer" title="Permanent link">&para;</a></h3>
@@ -5441,52 +5441,52 @@
 <h2 id="cascade-data-structure">CASCADE Data Structure<a class="headerlink" href="#cascade-data-structure" title="Permanent link">&para;</a></h2>
 <h3 id="cascade-metadata-format">Cascade Metadata Format<a class="headerlink" href="#cascade-metadata-format" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"updated"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Post&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;post-123&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;CREATED&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;entity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;post-123&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Test Post&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Content&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;author_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-456&quot;</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Post"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"post-123"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CREATED"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"entity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"post-123"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Test Post"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Content"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"author_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-456"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-456&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;operation&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;UPDATED&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;entity&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;user-456&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Author&quot;</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">&quot;post_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-456"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UPDATED"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"entity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-456"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Author"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"post_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;deleted&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"deleted"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;__typename&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Comment&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;comment-789&quot;</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Comment"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"comment-789"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;invalidations&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"invalidations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;queryName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;posts&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INVALIDATE&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;PREFIX&quot;</span>
+<span class="w">      </span><span class="nt">"queryName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"posts"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"strategy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INVALIDATE"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"scope"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PREFIX"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;queryName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;userPosts&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;strategy&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;INVALIDATE&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;scope&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EXACT&quot;</span>
+<span class="w">      </span><span class="nt">"queryName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"userPosts"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"strategy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INVALIDATE"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"scope"</span><span class="p">:</span><span class="w"> </span><span class="s2">"EXACT"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-12-05T10:30:00Z&quot;</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;affectedCount&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;depth&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">&quot;transactionId&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;123456789&quot;</span>
+<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-05T10:30:00Z"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"affectedCount"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"transactionId"</span><span class="p">:</span><span class="w"> </span><span class="s2">"123456789"</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5518,8 +5518,8 @@
 <h2 id="mutation-decorator">Mutation Decorator<a class="headerlink" href="#mutation-decorator" title="Permanent link">&para;</a></h2>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
-    <span class="n">function</span><span class="o">=</span><span class="s2">&quot;create_post&quot;</span><span class="p">,</span>
-    <span class="n">schema</span><span class="o">=</span><span class="s2">&quot;app&quot;</span><span class="p">,</span>
+    <span class="n">function</span><span class="o">=</span><span class="s2">"create_post"</span><span class="p">,</span>
+    <span class="n">schema</span><span class="o">=</span><span class="s2">"app"</span><span class="p">,</span>
     <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enables CASCADE feature</span>
 <span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
@@ -5538,20 +5538,20 @@
 <p>Create views for CASCADE entity data:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;author_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;updated_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'author_id'</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'updated_at'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
 <span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">    </span><span class="s1">&#39;post_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">post_count</span>
+<span class="w">    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'post_count'</span><span class="p">,</span><span class="w"> </span><span class="n">post_count</span>
 <span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="helper-functions">Helper Functions<a class="headerlink" href="#helper-functions" title="Permanent link">&para;</a></h3>
@@ -5572,9 +5572,9 @@
 
 <span class="c1">-- Build complete cascade object</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
-<span class="w">    </span><span class="n">updated_entities</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
-<span class="w">    </span><span class="n">deleted_entities</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
-<span class="w">    </span><span class="n">invalidations</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_entities</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">    </span><span class="n">deleted_entities</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">    </span><span class="n">invalidations</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">,</span>
 <span class="w">    </span><span class="n">metadata</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span>
 <span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="p">;</span>
 </code></pre></div>
@@ -5587,29 +5587,29 @@
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Create post</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;author_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">v_author_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;author_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_author_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Update author stats</span>
 <span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">post_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">post_count</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Return with cascade</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Post created successfully&#39;</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'data'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Post created successfully'</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;_cascade&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'_cascade'</span><span class="p">,</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">build_cascade</span><span class="p">(</span>
 <span class="w">            </span><span class="n">updated</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;Post&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;CREATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_post&#39;</span><span class="p">),</span>
-<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">&#39;User&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;UPDATED&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;v_user&#39;</span><span class="p">)</span>
+<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'CREATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_post'</span><span class="p">),</span>
+<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_entity</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">,</span><span class="w"> </span><span class="s1">'UPDATED'</span><span class="p">,</span><span class="w"> </span><span class="s1">'v_user'</span><span class="p">)</span>
 <span class="w">            </span><span class="p">),</span>
 <span class="w">            </span><span class="n">invalidations</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">jsonb_build_array</span><span class="p">(</span>
-<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;PREFIX&#39;</span><span class="p">),</span>
-<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">&#39;userPosts&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALIDATE&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;EXACT&#39;</span><span class="p">)</span>
+<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'PREFIX'</span><span class="p">),</span>
+<span class="w">                </span><span class="n">app</span><span class="p">.</span><span class="n">cascade_invalidation</span><span class="p">(</span><span class="s1">'userPosts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">,</span><span class="w"> </span><span class="s1">'EXACT'</span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
@@ -5739,7 +5739,7 @@
 </ul>
 <p><strong>Debugging</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check entity flattener logs</span>
-<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entity type &#39;</span><span class="si">{</span><span class="n">entity_type</span><span class="si">}</span><span class="s2">&#39; matched field &#39;</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Entity type '</span><span class="si">{</span><span class="n">entity_type</span><span class="si">}</span><span class="s2">' matched field '</span><span class="si">{</span><span class="n">field_name</span><span class="si">}</span><span class="s2">'"</span><span class="p">)</span>
 
 <span class="c1"># Validate PostgreSQL response structure</span>
 <span class="n">SELECT</span> <span class="n">jsonb_object_keys</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span> <span class="n">FROM</span> <span class="n">graphql</span><span class="o">.</span><span class="n">function_call</span><span class="p">();</span>
@@ -5764,10 +5764,10 @@
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <h3 id="unit-tests">Unit Tests<a class="headerlink" href="#unit-tests" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">test_entity_type_case_insensitive_matching</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test case-insensitive entity type matching.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test case-insensitive entity type matching."""</span>
     <span class="n">mutation_result</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="s2">&quot;entity_type&quot;</span><span class="p">:</span> <span class="s2">&quot;Post&quot;</span><span class="p">,</span>  <span class="c1"># Uppercase from DB</span>
-        <span class="s2">&quot;entity&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;post&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">}</span>
+        <span class="s2">"entity_type"</span><span class="p">:</span> <span class="s2">"Post"</span><span class="p">,</span>  <span class="c1"># Uppercase from DB</span>
+        <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"post"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">}</span>
     <span class="p">}</span>
 
     <span class="k">class</span><span class="w"> </span><span class="nc">TestSuccess</span><span class="p">:</span>
@@ -5775,11 +5775,11 @@
         <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="n">result</span> <span class="o">=</span> <span class="n">flatten_entity_wrapper</span><span class="p">(</span><span class="n">mutation_result</span><span class="p">,</span> <span class="n">TestSuccess</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="s2">&quot;entity&quot;</span> <span class="ow">in</span> <span class="n">result</span>  <span class="c1"># Should skip flattening</span>
+    <span class="k">assert</span> <span class="s2">"entity"</span> <span class="ow">in</span> <span class="n">result</span>  <span class="c1"># Should skip flattening</span>
 </code></pre></div>
 <h3 id="integration-tests">Integration Tests<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_cascade_end_to_end</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test complete CASCADE flow.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Test complete CASCADE flow."""</span>
     <span class="c1"># Execute mutation with enable_cascade=True</span>
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">CREATE_POST_MUTATION</span><span class="p">)</span>
 
@@ -5794,19 +5794,19 @@
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>
 <h3 id="key-metrics">Key Metrics<a class="headerlink" href="#key-metrics" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">cascade_processing_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_processing_duration_seconds&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Time spent processing cascade data&#39;</span>
+    <span class="s1">'fraiseql_cascade_processing_duration_seconds'</span><span class="p">,</span>
+    <span class="s1">'Time spent processing cascade data'</span>
 <span class="p">)</span>
 
 <span class="n">cascade_payload_bytes</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_payload_bytes&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Size of cascade payloads in bytes&#39;</span>
+    <span class="s1">'fraiseql_cascade_payload_bytes'</span><span class="p">,</span>
+    <span class="s1">'Size of cascade payloads in bytes'</span>
 <span class="p">)</span>
 
 <span class="n">cascade_errors_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s1">&#39;fraiseql_cascade_errors_total&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;Total cascade processing errors&#39;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s1">&#39;error_type&#39;</span><span class="p">]</span>
+    <span class="s1">'fraiseql_cascade_errors_total'</span><span class="p">,</span>
+    <span class="s1">'Total cascade processing errors'</span><span class="p">,</span>
+    <span class="p">[</span><span class="s1">'error_type'</span><span class="p">]</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="alerting">Alerting<a class="headerlink" href="#alerting" title="Permanent link">&para;</a></h3>

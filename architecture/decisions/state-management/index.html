@@ -5247,10 +5247,10 @@ process — the schema is assembled in memory at startup, but the data is always
 <p>Within a single PostgreSQL instance, consistency is whatever transaction isolation your
 database is configured for. A query started after a mutation commits sees that mutation's
 effects:</p>
-<div class="highlight"><pre><span></span><code>T0     Query: db.find(&quot;v_user&quot;)            sees A, B, C
+<div class="highlight"><pre><span></span><code>T0     Query: db.find("v_user")            sees A, B, C
 T0+1ms Mutation: db.execute_function(
-         &quot;fn_create_user&quot;, {...})          commits user D
-T0+10ms Query: db.find(&quot;v_user&quot;)           sees A, B, C, D
+         "fn_create_user", {...})          commits user D
+T0+10ms Query: db.find("v_user")           sees A, B, C, D
 </code></pre></div>
 <p>PostgreSQL is the arbiter. FraiseQL does not add its own consistency protocol on top of it.</p>
 <h3 id="13-read-replicas">1.3 Read replicas<a class="headerlink" href="#13-read-replicas" title="Permanent link">&para;</a></h3>
@@ -5329,9 +5329,9 @@ crash/restart, which is acceptable for cache data that can be regenerated.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">CacheConfig</span>
 
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
 
-<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">&quot;fraiseql_cache&quot;</span><span class="p">)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">table_name</span><span class="o">=</span><span class="s2">"fraiseql_cache"</span><span class="p">)</span>
 <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">max_ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
 </code></pre></div>
 <p>Because the cache lives in PostgreSQL, every instance sees the same entries and the same
@@ -5341,10 +5341,10 @@ stream to coordinate.</p>
 <p><code>ResultCache.get_or_set</code> implements the cache-aside pattern: look up the key, and on a miss,
 run the function, store the result, and return it.</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_posts</span><span class="p">(</span><span class="n">cache</span><span class="p">:</span> <span class="n">ResultCache</span><span class="p">,</span> <span class="n">db</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
-    <span class="n">key</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">():</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_or_set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 </code></pre></div>
@@ -5355,9 +5355,9 @@ result. Hit/miss/error counters are tracked on <code>cache.get_stats()</code>.</
 pagination. Crucially, it folds the <code>tenant_id</code> into the key so one tenant can never read
 another tenant's cached data:</p>
 <div class="highlight"><pre><span></span><code><span class="n">key</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span>
-    <span class="n">query_name</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span>
+    <span class="n">query_name</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">,</span>
     <span class="n">tenant_id</span><span class="o">=</span><span class="n">tenant_id</span><span class="p">,</span>        <span class="c1"># prevents cross-tenant cache poisoning</span>
-    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;published&quot;</span><span class="p">},</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"published"</span><span class="p">},</span>
     <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5382,15 +5382,15 @@ the affected entries automatically — no changes to your resolvers:</p>
 <span class="n">cached_db</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">ResultCache</span><span class="p">(</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">)))</span>
 
 <span class="c1"># Reads go through the cache (tenant-isolated key, cache-aside)</span>
-<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;published&quot;</span><span class="p">)</span>
+<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"published"</span><span class="p">)</span>
 
 <span class="c1"># Per-call overrides</span>
-<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>          <span class="c1"># bypass cache</span>
-<span class="n">short</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>             <span class="c1"># custom TTL</span>
+<span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>          <span class="c1"># bypass cache</span>
+<span class="n">short</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>             <span class="c1"># custom TTL</span>
 </code></pre></div>
 <p>When a mutation runs through the cached repository, it invalidates the affected entries:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Calls fn_update_post, then invalidates cached &quot;post&quot; (and &quot;posts&quot;) entries</span>
-<span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_update_post&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">post_id</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="s2">&quot;Updated&quot;</span><span class="p">})</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Calls fn_update_post, then invalidates cached "post" (and "posts") entries</span>
+<span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_post"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">post_id</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="s2">"Updated"</span><span class="p">})</span>
 </code></pre></div>
 <p><code>execute_function</code> derives the affected view name from the function name and calls
 <code>invalidate_pattern</code> for both the singular and plural forms, so reads of those views miss on
@@ -5414,7 +5414,7 @@ cached <code>Post</code> results that embed that user's data. FraiseQL models th
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CascadeRule</span>
 
 <span class="c1"># When user data changes, invalidate post caches</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source_domain</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">target_domain</span><span class="o">=</span><span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="n">rule_type</span><span class="o">=</span><span class="s2">&quot;invalidate&quot;</span><span class="p">)</span>
+<span class="n">rule</span> <span class="o">=</span> <span class="n">CascadeRule</span><span class="p">(</span><span class="n">source_domain</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">target_domain</span><span class="o">=</span><span class="s2">"post"</span><span class="p">,</span> <span class="n">rule_type</span><span class="o">=</span><span class="s2">"invalidate"</span><span class="p">)</span>
 </code></pre></div>
 <p>Rules are registered on a <code>PostgresCache</code> via <code>register_cascade_rule</code>. Cascade invalidation
 requires the optional <code>pg_fraiseql_cache</code> PostgreSQL extension; if it is not installed,
@@ -5429,7 +5429,7 @@ analyzes the schema and registers all derived rules in one call:</p>
 <span class="c1"># Run once at application startup (e.g. from a FastAPI lifespan handler)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">configure_cache_cascades</span><span class="p">():</span>
     <span class="n">count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Registered </span><span class="si">%d</span><span class="s2"> cascade rules&quot;</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"Registered </span><span class="si">%d</span><span class="s2"> cascade rules"</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
 </code></pre></div>
 <p>The analyzer reports each rule as <code>source_domain → target_domain</code> and builds a domain
 dependency graph (for example <code>comment</code> depends on <code>{user, post}</code>), giving you zero-config
@@ -5437,7 +5437,7 @@ cache coherence that follows your real type relationships.</p>
 <h3 id="33-how-a-cascade-fires">3.3 How a cascade fires<a class="headerlink" href="#33-how-a-cascade-fires" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>Mutation: fn_update_user(user_id=456)
     1. fn_update_user commits in PostgreSQL
-    2. &quot;user&quot; domain marked changed
+    2. "user" domain marked changed
     3. Cascade rules fire:
          user → post      → invalidate cached posts that embed this user
          user → comment   → invalidate cached comments that embed this user
@@ -5470,7 +5470,7 @@ TTL, and cascade behaviour come for free regardless of backend.</p>
 
 <span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trending_posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="s2">&quot;desc&quot;</span><span class="p">)],</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"score"</span><span class="p">,</span> <span class="s2">"desc"</span><span class="p">)],</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 
 <span class="c1"># Bypass on demand</span>
 <span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">trending_posts</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>

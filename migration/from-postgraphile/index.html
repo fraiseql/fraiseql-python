@@ -5183,7 +5183,7 @@
 <h3 id="21-simple-field-resolvers">2.1 Simple Field Resolvers<a class="headerlink" href="#21-simple-field-resolvers" title="Permanent link">&para;</a></h3>
 <p><strong>Before (PostGraphile + makeExtendSchemaPlugin):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">// plugins/customResolvers.ts</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">makeExtendSchemaPlugin</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;graphile-utils&quot;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">makeExtendSchemaPlugin</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"graphile-utils"</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">CustomResolversPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">makeExtendSchemaPlugin</span><span class="p">({</span>
 <span class="w">  </span><span class="nx">typeDefs</span><span class="o">:</span><span class="w"> </span><span class="kt">gql</span><span class="sb">`</span>
@@ -5201,7 +5201,7 @@
 <span class="p">});</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5209,8 +5209,8 @@
 
     <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">full_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Computed field: full name&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">first_name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">last_name</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="w">        </span><span class="sd">"""Computed field: full name"""</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">first_name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">last_name</span><span class="si">}</span><span class="s2">"</span>
 </code></pre></div>
 <p><strong>Key Changes:</strong></p>
 <ul>
@@ -5239,9 +5239,9 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">:</span>
     <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get user by ID&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Get user by ID"""</span>
         <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
     <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span>
@@ -5250,13 +5250,13 @@
         <span class="n">where</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;List users with filtering&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""List users with filtering"""</span>
         <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>GraphQL Query:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">endswith</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;@example.com&quot;</span><span class="p">}})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">endswith</span><span class="p">:</span><span class="w"> </span><span class="s">"@example.com"</span><span class="p">}})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">email</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5290,9 +5290,9 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- Same PostgreSQL function!</span>
 <span class="c1">-- (Or rename to fn_create_user for consistency)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">&quot;create_user&quot;</span><span class="p">)</span>  <span class="c1"># or &quot;fn_create_user&quot;</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"create_user"</span><span class="p">)</span>  <span class="c1"># or "fn_create_user"</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new user&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create a new user"""</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
@@ -5300,7 +5300,7 @@
 <h3 id="42-mutations-with-cascade">4.2 Mutations with CASCADE<a class="headerlink" href="#42-mutations-with-cascade" title="Permanent link">&para;</a></h3>
 <p><strong>Before (PostGraphile):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Custom mutation with manual cache invalidation</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">makeExtendSchemaPlugin</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;graphile-utils&quot;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">makeExtendSchemaPlugin</span><span class="p">,</span><span class="w"> </span><span class="nx">gql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"graphile-utils"</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">CreatePostPlugin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">makeExtendSchemaPlugin</span><span class="p">({</span>
 <span class="w">  </span><span class="nx">typeDefs</span><span class="o">:</span><span class="w"> </span><span class="kt">gql</span><span class="sb">`</span>
@@ -5323,7 +5323,7 @@
 <span class="w">      </span><span class="k">async</span><span class="w"> </span><span class="nx">createPost</span><span class="p">(</span><span class="nx">_query</span><span class="p">,</span><span class="w"> </span><span class="nx">args</span><span class="p">,</span><span class="w"> </span><span class="nx">context</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">title</span><span class="p">,</span><span class="w"> </span><span class="nx">content</span><span class="p">,</span><span class="w"> </span><span class="nx">authorId</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">args</span><span class="p">.</span><span class="nx">input</span><span class="p">;</span>
 <span class="w">        </span><span class="kd">const</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">rows</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">context</span><span class="p">.</span><span class="nx">pgClient</span><span class="p">.</span><span class="nx">query</span><span class="p">(</span>
-<span class="w">          </span><span class="s1">&#39;INSERT INTO posts (title, content, author_id) VALUES ($1, $2, $3) RETURNING *&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="s1">'INSERT INTO posts (title, content, author_id) VALUES ($1, $2, $3) RETURNING *'</span><span class="p">,</span>
 <span class="w">          </span><span class="p">[</span><span class="nx">title</span><span class="p">,</span><span class="w"> </span><span class="nx">content</span><span class="p">,</span><span class="w"> </span><span class="nx">authorId</span><span class="p">]</span>
 <span class="w">        </span><span class="p">);</span>
 
@@ -5336,11 +5336,11 @@
 </code></pre></div>
 <p><strong>After (FraiseQL with CASCADE):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
-    <span class="n">function</span><span class="o">=</span><span class="s2">&quot;fn_create_post&quot;</span><span class="p">,</span>
+    <span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_post"</span><span class="p">,</span>
     <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Automatic cache invalidation!</span>
 <span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new post&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create a new post"""</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
@@ -5360,7 +5360,7 @@
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span>
-<span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">&#39;app.tenant_id&#39;</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+<span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">// PostGraphile JWT claims → PostgreSQL session variables</span>
 <span class="c1">// Handled by postgraphile library</span>
@@ -5371,8 +5371,8 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># FraiseQL handles session variables automatically</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">,</span>
-    <span class="n">tenant_id_header</span><span class="o">=</span><span class="s2">&quot;X-Tenant-ID&quot;</span><span class="p">,</span>  <span class="c1"># Auto-set session variable</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
+    <span class="n">tenant_id_header</span><span class="o">=</span><span class="s2">"X-Tenant-ID"</span><span class="p">,</span>  <span class="c1"># Auto-set session variable</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Key Insight:</strong> Your RLS policies work identically in FraiseQL!</p>
@@ -5381,15 +5381,15 @@
 <h3 id="application-configuration">Application Configuration<a class="headerlink" href="#application-configuration" title="Permanent link">&para;</a></h3>
 <p><strong>Before (PostGraphile):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">// server.ts</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">postgraphile</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;postgraphile&quot;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="nx">express</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;express&quot;</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">postgraphile</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"postgraphile"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="nx">express</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"express"</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">app</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">express</span><span class="p">();</span>
 
 <span class="nx">app</span><span class="p">.</span><span class="nx">use</span><span class="p">(</span>
 <span class="w">  </span><span class="nx">postgraphile</span><span class="p">(</span>
 <span class="w">    </span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">DATABASE_URL</span><span class="p">,</span>
-<span class="w">    </span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"public"</span><span class="p">,</span>
 <span class="w">    </span><span class="p">{</span>
 <span class="w">      </span><span class="nx">watchPg</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">graphiql</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="p">,</span>
@@ -5397,8 +5397,8 @@
 <span class="w">      </span><span class="nx">dynamicJson</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">setofFunctionsContainNulls</span><span class="o">:</span><span class="w"> </span><span class="kt">false</span><span class="p">,</span>
 <span class="w">      </span><span class="nx">ignoreRBAC</span><span class="o">:</span><span class="w"> </span><span class="kt">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">showErrorStack</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;json&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nx">extendedErrors</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;hint&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;detail&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;errcode&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nx">showErrorStack</span><span class="o">:</span><span class="w"> </span><span class="s2">"json"</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">extendedErrors</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"hint"</span><span class="p">,</span><span class="w"> </span><span class="s2">"detail"</span><span class="p">,</span><span class="w"> </span><span class="s2">"errcode"</span><span class="p">],</span>
 <span class="w">      </span><span class="nx">appendPlugins</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">CustomResolversPlugin</span><span class="p">,</span><span class="w"> </span><span class="nx">CreatePostPlugin</span><span class="p">],</span>
 <span class="w">      </span><span class="nx">graphileBuildOptions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nx">connectionFilterRelations</span><span class="o">:</span><span class="w"> </span><span class="kt">true</span><span class="p">,</span>
@@ -5414,7 +5414,7 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://...&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="n">enable_rust_pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># 7-10x JSON performance</span>
     <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Automatic cache invalidation</span>
     <span class="n">allow_introspection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># GraphiQL</span>
@@ -5428,19 +5428,19 @@
 <h2 id="step-7-testing-1-day">Step 7: Testing (1 day)<a class="headerlink" href="#step-7-testing-1-day" title="Permanent link">&para;</a></h2>
 <h3 id="test-migration">Test Migration<a class="headerlink" href="#test-migration" title="Permanent link">&para;</a></h3>
 <p><strong>Before (PostGraphile + Jest):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createPostGraphileSchema</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;postgraphile&quot;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">graphql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">&quot;graphql&quot;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createPostGraphileSchema</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"postgraphile"</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">graphql</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s2">"graphql"</span><span class="p">;</span>
 
-<span class="nx">describe</span><span class="p">(</span><span class="s2">&quot;User queries&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nx">it</span><span class="p">(</span><span class="s2">&quot;should fetch user by ID&quot;</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">createPostGraphileSchema</span><span class="p">(</span><span class="nx">dbUrl</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;public&quot;</span><span class="p">);</span>
+<span class="nx">describe</span><span class="p">(</span><span class="s2">"User queries"</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">it</span><span class="p">(</span><span class="s2">"should fetch user by ID"</span><span class="p">,</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">createPostGraphileSchema</span><span class="p">(</span><span class="nx">dbUrl</span><span class="p">,</span><span class="w"> </span><span class="s2">"public"</span><span class="p">);</span>
 
 <span class="w">    </span><span class="kd">const</span><span class="w"> </span><span class="nx">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">await</span><span class="w"> </span><span class="nx">graphql</span><span class="p">(</span>
 <span class="w">      </span><span class="nx">schema</span><span class="p">,</span>
-<span class="w">      </span><span class="sb">`query { userById(id: &quot;</span><span class="si">${</span><span class="nx">userId</span><span class="si">}</span><span class="sb">&quot;) { id email } }`</span>
+<span class="w">      </span><span class="sb">`query { userById(id: "</span><span class="si">${</span><span class="nx">userId</span><span class="si">}</span><span class="sb">") { id email } }`</span>
 <span class="w">    </span><span class="p">);</span>
 
-<span class="w">    </span><span class="nx">expect</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">userById</span><span class="p">.</span><span class="nx">email</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="s2">&quot;test@example.com&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="nx">expect</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">data</span><span class="p">.</span><span class="nx">userById</span><span class="p">.</span><span class="nx">email</span><span class="p">).</span><span class="nx">toBe</span><span class="p">(</span><span class="s2">"test@example.com"</span><span class="p">);</span>
 <span class="w">  </span><span class="p">});</span>
 <span class="p">});</span>
 </code></pre></div>
@@ -5450,17 +5450,17 @@
 
 <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_by_id</span><span class="p">(</span><span class="n">graphql_client</span><span class="p">:</span> <span class="n">GraphQLClient</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;&#39;&#39;</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s1">'''</span>
 <span class="s1">        query </span><span class="se">{{</span>
-<span class="s1">            user(id: &quot;</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s1">&quot;) </span><span class="se">{{</span>
+<span class="s1">            user(id: "</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s1">") </span><span class="se">{{</span>
 <span class="s1">                id</span>
 <span class="s1">                email</span>
 <span class="s1">            </span><span class="se">}}</span>
 <span class="s1">        </span><span class="se">}}</span>
-<span class="s1">    &#39;&#39;&#39;</span><span class="p">)</span>
+<span class="s1">    '''</span><span class="p">)</span>
 
     <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">is</span> <span class="kc">None</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;test@example.com&quot;</span>
+    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'user'</span><span class="p">][</span><span class="s1">'email'</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test@example.com"</span>
 </code></pre></div>
 <p><strong>Similar complexity, different language.</strong></p>
 <hr />
@@ -5470,16 +5470,16 @@
 <p><strong>Fix:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ Correct</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="2-smart-commentstags">2. Smart Comments/Tags<a class="headerlink" href="#2-smart-commentstags" title="Permanent link">&para;</a></h3>
 <p>PostGraphile uses smart comments (<code>@omit create,update</code>).
 FraiseQL uses explicit decorators.</p>
 <p><strong>Before (PostGraphile):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="n">E</span><span class="s1">&#39;@omit create,update&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="n">E</span><span class="s1">'@omit create,update'</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Just don&#39;t create the mutation classes</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Just don't create the mutation classes</span>
 <span class="c1"># Only expose what you want</span>
 </code></pre></div>
 <h3 id="3-nested-mutations">3. Nested Mutations<a class="headerlink" href="#3-nested-mutations" title="Permanent link">&para;</a></h3>

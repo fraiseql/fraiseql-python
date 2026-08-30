@@ -5086,10 +5086,10 @@ CREATE TABLE tb_comment (
 <p><strong>GraphQL Mapping</strong> (not recommended directly):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="c1"># Don&#39;t query tb_* directly in GraphQL</span>
+<span class="c1"># Don't query tb_* directly in GraphQL</span>
 <span class="c1"># Use tv_* or v_* instead</span>
 
-<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tb_user&quot;</span><span class="p">)</span>  <span class="c1"># ❌ Slow - requires JOINs</span>
+<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tb_user"</span><span class="p">)</span>  <span class="c1"># ❌ Slow - requires JOINs</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="o">...</span>
 </code></pre></div>
@@ -5109,9 +5109,9 @@ CREATE TABLE tb_comment (
 <span class="w">        </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">json_agg</span><span class="p">(</span>
 <span class="w">                </span><span class="n">json_build_object</span><span class="p">(</span>
-<span class="w">                    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">                </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
 <span class="w">            </span><span class="p">)</span>
@@ -5119,7 +5119,7 @@ CREATE TABLE tb_comment (
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span>
 <span class="w">            </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">json</span>
+<span class="w">        </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">json</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">posts_json</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
 </code></pre></div>
@@ -5152,7 +5152,7 @@ CREATE TABLE tb_comment (
 <p><strong>GraphQL Mapping</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>  <span class="c1"># ⚠️ OK for small datasets, not for production APIs</span>
+<span class="nd">@type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>  <span class="c1"># ⚠️ OK for small datasets, not for production APIs</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5183,25 +5183,25 @@ CREATE TABLE tb_comment (
 <span class="w">    </span><span class="k">SELECT</span>
 <span class="w">        </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;last_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;user_posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">((</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'last_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'user_posts'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">((</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">                        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">                        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">                        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">                    </span><span class="p">)</span>
 <span class="w">                    </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="k">DESC</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="w">                </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span>
 <span class="w">                </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span>
-<span class="w">            </span><span class="p">),</span><span class="w"> </span><span class="s1">&#39;[]&#39;</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="w">            </span><span class="p">),</span><span class="w"> </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
 <span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span>
@@ -5220,12 +5220,12 @@ CREATE TABLE tb_comment (
 <span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- On tb_user changes</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;INSERT&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'INSERT'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
 <span class="w">        </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
-<span class="w">    </span><span class="k">ELSIF</span><span class="w"> </span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;UPDATE&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">ELSIF</span><span class="w"> </span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'UPDATE'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">);</span>
-<span class="w">    </span><span class="k">ELSIF</span><span class="w"> </span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;DELETE&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">ELSIF</span><span class="w"> </span><span class="n">TG_OP</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'DELETE'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">id</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5240,7 +5240,7 @@ CREATE TABLE tb_comment (
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">trg_sync_tv_user_on_post</span><span class="p">()</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="c1">-- Update user&#39;s tv_user when their posts change</span>
+<span class="w">    </span><span class="c1">-- Update user's tv_user when their posts change</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="k">COALESCE</span><span class="p">(</span><span class="k">NEW</span><span class="p">.</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="k">OLD</span><span class="p">.</span><span class="n">user_id</span><span class="p">));</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
@@ -5286,7 +5286,7 @@ PostgreSQL materialized views require <code>REFRESH MATERIALIZED VIEW</code> whi
 <p><strong>GraphQL Mapping</strong> (optimal):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Rust transforms to firstName</span>
@@ -5299,20 +5299,20 @@ PostgreSQL materialized views require <code>REFRESH MATERIALIZED VIEW</code> whi
     <span class="c1"># 1. SELECT data FROM tv_user WHERE id = $1 (0.05ms)</span>
     <span class="c1"># 2. Rust transform (0.5ms)</span>
     <span class="c1"># Total: 0.55ms (vs 5-10ms with v_user!)</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="c1"># Update base table</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">&quot;tb_user&quot;</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="s2">"tb_user"</span><span class="p">,</span> <span class="nb">input</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 
     <span class="c1"># CRITICAL: Explicitly sync tv_user</span>
-    <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">call_function</span><span class="p">(</span><span class="s2">&quot;fn_sync_tv_user&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;p_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">call_function</span><span class="p">(</span><span class="s2">"fn_sync_tv_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"p_id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
     <span class="c1"># Return updated data</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h3 id="pattern-4-mv_-materialized-views-aggregations">Pattern 4: <code>mv_*</code> - Materialized Views (Aggregations)<a class="headerlink" href="#pattern-4-mv_-materialized-views-aggregations" title="Permanent link">&para;</a></h3>
@@ -5322,14 +5322,14 @@ PostgreSQL materialized views require <code>REFRESH MATERIALIZED VIEW</code> whi
 <span class="k">CREATE</span><span class="w"> </span><span class="n">MATERIALIZED</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">mv_dashboard</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">total_users</span><span class="p">,</span>
-<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;7 days&#39;</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">new_users</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'7 days'</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">new_users</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;top_users&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'top_users'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span>
 <span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                    </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">&#39; &#39;</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">&#39;post_count&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
+<span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">' '</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">                    </span><span class="s1">'post_count'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">)</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -5501,9 +5501,9 @@ PostgreSQL materialized views require <code>REFRESH MATERIALIZED VIEW</code> whi
 <span class="w">    </span><span class="c1">-- Generated JSONB column (embedded relations)</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;first_name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;user_posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tb_user</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'user_posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tb_user</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="n">STORED</span>
 <span class="p">);</span>
@@ -5617,7 +5617,7 @@ Query type?
 <h3 id="with-tv_-tables">With <code>tv_*</code> Tables<a class="headerlink" href="#with-tv_-tables" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5626,21 +5626,21 @@ Query type?
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="c1"># Queries tv_user (0.05ms lookup + 0.5ms Rust transform = 0.55ms)</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="without-prefixes-simpler">Without Prefixes (Simpler)<a class="headerlink" href="#without-prefixes-simpler" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">first_name</span><span class="p">:</span> <span class="nb">str</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;users&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">Repository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">],</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="migration-path">🚀 Migration Path<a class="headerlink" href="#migration-path" title="Permanent link">&para;</a></h2>
@@ -5675,7 +5675,7 @@ mv_* (optional, for analytics)
 <h2 id="key-takeaways">🎯 Key Takeaways<a class="headerlink" href="#key-takeaways" title="Permanent link">&para;</a></h2>
 <h3 id="1-tv_-are-tables-with-explicit-sync">1. <code>tv_*</code> Are Tables with Explicit Sync<a class="headerlink" href="#1-tv_-are-tables-with-explicit-sync" title="Permanent link">&para;</a></h3>
 <p><code>tv_*</code> (table views) are <strong>regular TABLES</strong> that store denormalized data matching GraphQL types and require explicit sync:</p>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="p">(</span><span class="w">  </span><span class="c1">-- ← It&#39;s a TABLE!</span>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="p">(</span><span class="w">  </span><span class="c1">-- ← It's a TABLE!</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">  </span><span class="c1">-- ← Regular column, NOT generated</span>
 <span class="p">);</span>
@@ -5795,7 +5795,7 @@ mv_* (optional, for analytics)
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">tb_event_log</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">BIGSERIAL</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
 <span class="w">    </span><span class="n">tenant_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">event_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">           </span><span class="c1">-- &#39;send_email&#39;, &#39;slack_notify&#39;, &#39;webhook&#39;</span>
+<span class="w">    </span><span class="n">event_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">           </span><span class="c1">-- 'send_email', 'slack_notify', 'webhook'</span>
 <span class="w">    </span><span class="n">payload</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">             </span><span class="c1">-- Event data</span>
 <span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
 <span class="w">    </span><span class="n">processed_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="p">,</span><span class="w">           </span><span class="c1">-- NULL until processed</span>
@@ -5816,46 +5816,46 @@ mv_* (optional, for analytics)
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">app</span><span class="p">.</span><span class="n">tb_event_log</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span><span class="w"> </span><span class="n">event_type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span>
 <span class="w">        </span><span class="n">auth_tenant_id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;order_created&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'order_created'</span><span class="p">,</span>
 <span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;order_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;customer_email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_email</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;amount&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_amount</span>
+<span class="w">            </span><span class="s1">'order_id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'customer_email'</span><span class="p">,</span><span class="w"> </span><span class="n">v_email</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'amount'</span><span class="p">,</span><span class="w"> </span><span class="n">v_amount</span>
 <span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- Sync table view</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_order</span><span class="p">(</span><span class="n">v_order_id</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;data&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">...);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'data'</span><span class="p">,</span><span class="w"> </span><span class="p">...);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="external-worker-python">External Worker (Python)<a class="headerlink" href="#external-worker-python" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_events</span><span class="p">():</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">events</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;&#39;&#39;</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">'''</span>
 <span class="s1">            SELECT id, event_type, payload</span>
 <span class="s1">            FROM app.tb_event_log</span>
 <span class="s1">            WHERE processed_at IS NULL</span>
 <span class="s1">            ORDER BY created_at LIMIT 100</span>
-<span class="s1">        &#39;&#39;&#39;</span><span class="p">)</span>
+<span class="s1">        '''</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;event_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;order_created&#39;</span><span class="p">:</span>
-                    <span class="k">await</span> <span class="n">send_confirmation_email</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
-                <span class="k">elif</span> <span class="n">event</span><span class="p">[</span><span class="s1">&#39;event_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;slack_notify&#39;</span><span class="p">:</span>
-                    <span class="k">await</span> <span class="n">post_to_slack</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">&#39;payload&#39;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s1">'event_type'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'order_created'</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">send_confirmation_email</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">'payload'</span><span class="p">])</span>
+                <span class="k">elif</span> <span class="n">event</span><span class="p">[</span><span class="s1">'event_type'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'slack_notify'</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">post_to_slack</span><span class="p">(</span><span class="n">event</span><span class="p">[</span><span class="s1">'payload'</span><span class="p">])</span>
 
                 <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                    <span class="s1">&#39;UPDATE app.tb_event_log SET processed_at = NOW() WHERE id = $1&#39;</span><span class="p">,</span>
-                    <span class="n">event</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                    <span class="s1">'UPDATE app.tb_event_log SET processed_at = NOW() WHERE id = $1'</span><span class="p">,</span>
+                    <span class="n">event</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
                 <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                    <span class="s1">&#39;UPDATE app.tb_event_log SET retry_count = retry_count + 1 WHERE id = $1&#39;</span><span class="p">,</span>
-                    <span class="n">event</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                    <span class="s1">'UPDATE app.tb_event_log SET retry_count = retry_count + 1 WHERE id = $1'</span><span class="p">,</span>
+                    <span class="n">event</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span>
                 <span class="p">)</span>
 
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>

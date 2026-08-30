@@ -4959,12 +4959,12 @@
 │ (base table)    │      │  (JSONB view)    │      │  Response       │
 │                 │      │                  │      │                 │
 │ pk_user: 1      │      │ SELECT           │      │ {               │
-│ id: uuid-123    │      │ jsonb_build_     │      │   &quot;id&quot;: &quot;uuid&quot;  │
-│ identifier:     │      │   object(        │      │   &quot;identifier&quot;: │
-│   &quot;alice&quot;       │      │    &#39;id&#39;, id,     │      │     &quot;alice&quot;     │
-│ name: &quot;Alice&quot;   │      │    &#39;identifier&#39;, │      │   &quot;name&quot;: &quot;...&quot; │
+│ id: uuid-123    │      │ jsonb_build_     │      │   "id": "uuid"  │
+│ identifier:     │      │   object(        │      │   "identifier": │
+│   "alice"       │      │    'id', id,     │      │     "alice"     │
+│ name: "Alice"   │      │    'identifier', │      │   "name": "..." │
 │ email: a@b.com  │      │     identifier,  │      │ }               │
-│                 │      │    &#39;name&#39;, name  │      │                 │
+│                 │      │    'name', name  │      │                 │
 └─────────────────┘      └──────────────────┘      └─────────────────┘
 </code></pre></div>
 <p><strong>SQL Example (with Trinity Identifiers):</strong></p>
@@ -4982,10 +4982,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Direct column for efficient WHERE filtering (WHERE id = $1)</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">                    </span><span class="c1">-- Public UUID (exposed in GraphQL)</span>
-<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w">    </span><span class="c1">-- Human-readable slug (exposed in GraphQL)</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">                    </span><span class="c1">-- Public UUID (exposed in GraphQL)</span>
+<span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w">    </span><span class="c1">-- Human-readable slug (exposed in GraphQL)</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
 <span class="w">        </span><span class="c1">-- Note: pk_user NOT in view (internal only)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
@@ -4995,9 +4995,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User with trinity identifiers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User with trinity identifiers."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>              <span class="c1"># Public API identifier (stable, secure)</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span>       <span class="c1"># Human-readable slug (SEO-friendly)</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5097,8 +5097,8 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- For WHERE id = $1 filtering</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
 
@@ -5108,10 +5108,10 @@
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">       </span><span class="c1">-- For WHERE id = $1 filtering</span>
 <span class="w">    </span><span class="n">pk_post</span><span class="p">,</span><span class="w">  </span><span class="c1">-- For parent views to JOIN</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 
@@ -5120,9 +5120,9 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- For WHERE id = $1 filtering</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="k">data</span><span class="p">)</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="n">p</span>
 <span class="w">            </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">tp</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tp</span><span class="p">.</span><span class="n">pk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span>
@@ -5141,7 +5141,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>          <span class="c1"># Public API - stable forever</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># Human-readable - can change</span>
@@ -5152,14 +5152,14 @@
 <p><strong>Querying by Different Identifiers:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c"># Query by public UUID</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">post</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">post</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 
 <span class="c"># Query by human-readable identifier</span>
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">post</span><span class="p">(</span><span class="n">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my-first-post&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">post</span><span class="p">(</span><span class="n">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">"my-first-post"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -5207,10 +5207,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
-<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
 <span class="w">            </span><span class="k">WHERE</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
 <span class="w">        </span><span class="p">)</span>
@@ -5289,18 +5289,18 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;tv_user&quot;</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">posts</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]</span>  <span class="c1"># Pre-composed!</span>
 </code></pre></div>
 <p><strong>Common misconception:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG - PostgreSQL can&#39;t do this!</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ WRONG - PostgreSQL can't do this!</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">...</span><span class="w">  </span><span class="c1">-- Can&#39;t reference other tables!</span>
+<span class="w">        </span><span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">...</span><span class="w">  </span><span class="c1">-- Can't reference other tables!</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="n">STORED</span>
 <span class="p">);</span>
 </code></pre></div>
@@ -5308,7 +5308,7 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- ✅ Same-row scalar extraction (for indexing)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span>
-<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="k">lower</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;email&#39;</span><span class="p">))</span><span class="w"> </span><span class="n">STORED</span>
+<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="k">lower</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">))</span><span class="w"> </span><span class="n">STORED</span>
 <span class="p">);</span>
 </code></pre></div>
 <p>See <a href="../../examples/hybrid_tables/">Projection Tables Example</a></p>
@@ -5327,33 +5327,33 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User account model.</span>
+<span class="w">    </span><span class="sd">"""User account model.</span>
 
 <span class="sd">    Fields:</span>
 <span class="sd">        created_at: Account creation timestamp</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>  <span class="c1"># Public API identifier (inline comment - highest priority)</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># Human-readable username</span>
-    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;User&#39;s full name&quot;</span><span class="p">]</span>  <span class="c1"># Annotated type</span>
+    <span class="n">name</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"User's full name"</span><span class="p">]</span>  <span class="c1"># Annotated type</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>  <span class="c1"># Uses docstring description</span>
 </code></pre></div>
 <p><strong>Generated GraphQL schema:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="err">&quot;</span><span class="n">Public</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">identifier</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">Public</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">identifier</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
 
-<span class="w">  </span><span class="err">&quot;</span><span class="n">Human</span><span class="err">-</span><span class="n">readable</span><span class="w"> </span><span class="n">username</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">Human</span><span class="err">-</span><span class="n">readable</span><span class="w"> </span><span class="n">username</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">identifier</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
 
-<span class="w">  </span><span class="err">&quot;</span><span class="n">User</span><span class="err">&#39;</span><span class="n">s</span><span class="w"> </span><span class="n">full</span><span class="w"> </span><span class="n">name</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">User</span><span class="err">'</span><span class="n">s</span><span class="w"> </span><span class="n">full</span><span class="w"> </span><span class="n">name</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
 
 <span class="w">  </span><span class="nl">email</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
 
-<span class="w">  </span><span class="err">&quot;</span><span class="n">Account</span><span class="w"> </span><span class="n">creation</span><span class="w"> </span><span class="n">timestamp</span><span class="err">&quot;</span>
+<span class="w">  </span><span class="err">"</span><span class="n">Account</span><span class="w"> </span><span class="n">creation</span><span class="w"> </span><span class="n">timestamp</span><span class="err">"</span>
 <span class="w">  </span><span class="nl">createdAt</span><span class="p">:</span><span class="w"> </span><span class="n">DateTime</span><span class="err">!</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5378,9 +5378,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;User type with trinity identifiers.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""User type with trinity identifiers."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>          <span class="c1"># Public API identifier (always exposed)</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># Human-readable slug (SEO-friendly)</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5391,9 +5391,9 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_note&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_note"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Note</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple note without slug.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Simple note without slug."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>           <span class="c1"># Can use simple int if no public API needed</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
@@ -5403,8 +5403,8 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all users.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Get all users."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="mutation">Mutation<a class="headerlink" href="#mutation" title="Permanent link">&para;</a></h3>
@@ -5415,14 +5415,14 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple mutation that returns the type directly.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Simple mutation that returns the type directly."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Call PostgreSQL function with business logic</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-        <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
     <span class="p">})</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
 </code></pre></div>
 <p><strong>Class-based pattern (with success/failure):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -5430,29 +5430,29 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new user with explicit success/failure handling.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Create a new user with explicit success/failure handling."""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
     <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
         <span class="c1"># Call PostgreSQL function - all business logic in database</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_user&quot;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span>
         <span class="p">})</span>
 
         <span class="c1"># PostgreSQL function returns success/error indicator with user ID</span>
-        <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;success&quot;</span><span class="p">]:</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">"success"</span><span class="p">]:</span>
+            <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span>
                 <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
-                <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="s2">&quot;User created&quot;</span><span class="p">)</span>
+                <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"User created"</span><span class="p">)</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;error&quot;</span><span class="p">],</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;code&quot;</span><span class="p">,</span> <span class="s2">&quot;VALIDATION_ERROR&quot;</span><span class="p">)</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"error"</span><span class="p">],</span>
+            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"VALIDATION_ERROR"</span><span class="p">)</span>
         <span class="p">)</span>
 </code></pre></div>
 <p><strong>Corresponding PostgreSQL function:</strong></p>
@@ -5465,11 +5465,11 @@
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation: Check email format using regex</span>
 <span class="w">    </span><span class="c1">-- Pattern: local-part@domain.tld (basic RFC 5322 compliance)</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">&#39;^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$&#39;</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;Invalid email format&#39;</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;code&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;INVALID_EMAIL&#39;</span>
+<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Invalid email format'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALID_EMAIL'</span>
 <span class="w">        </span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
@@ -5480,17 +5480,17 @@
 
 <span class="w">    </span><span class="c1">-- Audit log</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">audit_log</span><span class="w"> </span><span class="p">(</span><span class="n">action</span><span class="p">,</span><span class="w"> </span><span class="n">details</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;user_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">&#39;user_id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">));</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'user_created'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'user_id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">-- Return success with user data</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;success&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;user&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span>
+<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">p_name</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">&#39;message&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;User created successfully&#39;</span>
+<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User created successfully'</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -5523,9 +5523,9 @@
 <p><strong>Example - basic filtering:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"active"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="n">age</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="mi">18</span><span class="w"> </span><span class="p">}</span>
-<span class="w">    </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">endswith</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;@company.com&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">endswith</span><span class="p">:</span><span class="w"> </span><span class="s">"@company.com"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="n">deletedAt</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">isnull</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5554,7 +5554,7 @@
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">servers</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">ipAddress</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">inSubnet</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;192.168.1.0/24&quot;</span><span class="w">    </span><span class="c"># CIDR subnet matching</span>
+<span class="w">      </span><span class="n">inSubnet</span><span class="p">:</span><span class="w"> </span><span class="s">"192.168.1.0/24"</span><span class="w">    </span><span class="c"># CIDR subnet matching</span>
 <span class="w">      </span><span class="n">isPrivate</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w">                </span><span class="c"># RFC 1918 private addresses</span>
 <span class="w">      </span><span class="n">isIPv4</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w">                   </span><span class="c"># IPv4 vs IPv6</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5567,7 +5567,7 @@
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">publicServers</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">ipAddress</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">inRange</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">from</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.0.0.1&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;10.0.0.254&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="n">inRange</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">from</span><span class="p">:</span><span class="w"> </span><span class="s">"10.0.0.1"</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">"10.0.0.254"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="n">isPublic</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span>
 <span class="w">      </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">isLoopback</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5597,7 +5597,7 @@
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">ancestor_of</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Electronics.Computers.Laptops&quot;</span><span class="w">  </span><span class="c"># All ancestor categories</span>
+<span class="w">      </span><span class="n">ancestor_of</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics.Computers.Laptops"</span><span class="w">  </span><span class="c"># All ancestor categories</span>
 <span class="w">      </span><span class="n">nlevel_gte</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w">                                  </span><span class="c"># At least 2 levels deep</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
@@ -5609,8 +5609,8 @@
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">subcategories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">descendant_of</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Electronics&quot;</span><span class="w">       </span><span class="c"># All subcategories</span>
-<span class="w">      </span><span class="n">matches_lquery</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Electronics.*&quot;</span><span class="w">    </span><span class="c"># Pattern matching</span>
+<span class="w">      </span><span class="n">descendant_of</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics"</span><span class="w">       </span><span class="c"># All subcategories</span>
+<span class="w">      </span><span class="n">matches_lquery</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics.*"</span><span class="w">    </span><span class="c"># Pattern matching</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5630,11 +5630,11 @@
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;active&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"active"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="p">{</span><span class="w"> </span><span class="n">OR</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;admin&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"admin"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">          </span><span class="p">{</span><span class="w"> </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">              </span><span class="p">{</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;editor&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">              </span><span class="p">{</span><span class="w"> </span><span class="n">role</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"editor"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">              </span><span class="p">{</span><span class="w"> </span><span class="n">verified</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">            </span><span class="p">]</span>
 <span class="w">          </span><span class="p">}</span>
@@ -5652,7 +5652,7 @@
 <span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">posts</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">  </span><span class="c"># Filter parent by nested array properties</span>
 <span class="w">      </span><span class="n">AND</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;published&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"published"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">        </span><span class="p">{</span><span class="w"> </span><span class="n">views</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="mi">1000</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5678,7 +5678,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="c1"># Your type definition</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_server&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_server"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Server</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span>
@@ -5718,7 +5718,7 @@
     <span class="n">max_page_size</span><span class="o">=</span><span class="mi">100</span>
 <span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">first</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">after</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get paginated users - pagination handled automatically.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get paginated users - pagination handled automatically."""</span>
     <span class="c1"># Framework calls db.paginate() automatically</span>
     <span class="c1"># Returns Connection with nodes, pageInfo, totalCount</span>
 </code></pre></div>
@@ -5745,10 +5745,10 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_note</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5758,11 +5758,11 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">  </span><span class="c1">-- For WHERE id = $1 filtering</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">                    </span><span class="c1">-- Public UUID</span>
-<span class="w">        </span><span class="s1">&#39;identifier&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w">    </span><span class="c1">-- Human-readable slug</span>
-<span class="w">        </span><span class="s1">&#39;name&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;created_at&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w">                    </span><span class="c1">-- Public UUID</span>
+<span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w">    </span><span class="c1">-- Human-readable slug</span>
+<span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5773,9 +5773,9 @@
 <span class="w">    </span><span class="n">id</span><span class="p">,</span><span class="w">       </span><span class="c1">-- For WHERE id = $1 filtering</span>
 <span class="w">    </span><span class="n">pk_post</span><span class="p">,</span><span class="w">  </span><span class="c1">-- For parent views to JOIN</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;content&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">content</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 </code></pre></div>
@@ -5836,14 +5836,14 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;memory&quot;</span><span class="p">,</span>  <span class="c1"># Default - LRU cache</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># Default - LRU cache</span>
     <span class="n">apq_cache_size</span><span class="o">=</span><span class="mi">1000</span>             <span class="c1"># Max cached queries</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>PostgreSQL backend (multi-instance):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">&quot;postgresql&quot;</span><span class="p">,</span>
-    <span class="n">apq_storage_schema</span><span class="o">=</span><span class="s2">&quot;apq_cache&quot;</span><span class="p">,</span>     <span class="c1"># Schema for cache table</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
+    <span class="n">apq_storage_schema</span><span class="o">=</span><span class="s2">"apq_cache"</span><span class="p">,</span>     <span class="c1"># Schema for cache table</span>
     <span class="n">apq_cache_ttl</span><span class="o">=</span><span class="mi">3600</span>                   <span class="c1"># TTL in seconds (optional)</span>
 <span class="p">)</span>
 
@@ -5856,12 +5856,12 @@
 <span class="c1"># );</span>
 </code></pre></div>
 <p><strong>Client usage (Apollo Client):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">,</span><span class="w"> </span><span class="nx">HttpLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createPersistedQueryLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;@apollo/client/link/persisted-queries&#39;</span><span class="p">;</span>
-<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sha256</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">&#39;crypto-hash&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">,</span><span class="w"> </span><span class="nx">HttpLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@apollo/client'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createPersistedQueryLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@apollo/client/link/persisted-queries'</span><span class="p">;</span>
+<span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sha256</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'crypto-hash'</span><span class="p">;</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">link</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">createPersistedQueryLink</span><span class="p">({</span><span class="w"> </span><span class="nx">sha256</span><span class="w"> </span><span class="p">}).</span><span class="nx">concat</span><span class="p">(</span>
-<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="nx">HttpLink</span><span class="p">({</span><span class="w"> </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;http://localhost:8000/graphql&#39;</span><span class="w"> </span><span class="p">})</span>
+<span class="w">  </span><span class="ow">new</span><span class="w"> </span><span class="nx">HttpLink</span><span class="p">({</span><span class="w"> </span><span class="nx">uri</span><span class="o">:</span><span class="w"> </span><span class="s1">'http://localhost:8000/graphql'</span><span class="w"> </span><span class="p">})</span>
 <span class="p">);</span>
 
 <span class="kd">const</span><span class="w"> </span><span class="nx">client</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ow">new</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">({</span>
@@ -5929,10 +5929,10 @@
 
 <span class="c1"># Check APQ cache statistics</span>
 <span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">apq_metrics</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cache misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cached queries: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_queries</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cached queries: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_queries</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>See also:</strong></p>
 <ul>
@@ -5981,8 +5981,8 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">pk_user</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;email&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span>
 <span class="w">        </span><span class="c1">-- password_hash CANNOT be queried</span>
 <span class="w">        </span><span class="c1">-- api_key CANNOT be queried</span>
 <span class="w">        </span><span class="c1">-- Impossible to accidentally expose!</span>
@@ -6004,12 +6004,12 @@
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">pk_user</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">&#39;posts&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">                </span><span class="s1">&#39;id&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
-<span class="w">                </span><span class="c1">-- NO &#39;author&#39; field here</span>
+<span class="w">                </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">                </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span>
+<span class="w">                </span><span class="c1">-- NO 'author' field here</span>
 <span class="w">                </span><span class="c1">-- Recursion IMPOSSIBLE</span>
 <span class="w">            </span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
@@ -6032,9 +6032,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">field</span><span class="p">,</span> <span class="n">authorized</span>
 
 <span class="nd">@field</span>
-<span class="nd">@authorized</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;admin&quot;</span><span class="p">])</span>
+<span class="nd">@authorized</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s2">"admin"</span><span class="p">])</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">sensitive_field</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Only admins can access this field.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Only admins can access this field."""</span>
     <span class="k">return</span> <span class="n">user</span><span class="o">.</span><span class="n">sensitive_data</span>
 </code></pre></div>
 <h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>

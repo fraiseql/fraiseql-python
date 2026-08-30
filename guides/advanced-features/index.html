@@ -4981,9 +4981,9 @@
 <div class="highlight"><pre><span></span><code><span class="c1"># ❌ N+1 Problem</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># This runs for EVERY post! (1 + N queries)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Query</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -5005,9 +5005,9 @@
 <span class="c1"># Step 1: Create DataLoader</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserDataLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">):</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load multiple users in a single query.&quot;&quot;&quot;</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;in&quot;</span><span class="p">:</span> <span class="n">user_ids</span><span class="p">}})</span>
+<span class="w">        </span><span class="sd">"""Load multiple users in a single query."""</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"in"</span><span class="p">:</span> <span class="n">user_ids</span><span class="p">}})</span>
 
         <span class="c1"># Return users in same order as user_ids</span>
         <span class="n">user_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">user</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">}</span>
@@ -5015,22 +5015,22 @@
 
 <span class="c1"># Step 2: Register DataLoader in context</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
     <span class="n">context_factories</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;UserDataLoader&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">UserDataLoader</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
+        <span class="s2">"UserDataLoader"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">UserDataLoader</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">)</span>
     <span class="p">}</span>
 <span class="p">)</span>
 
 <span class="c1"># Step 3: Use @dataloader_field</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
 
-    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">&quot;author_id&quot;</span><span class="p">)</span>
+    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">"author_id"</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Batches all author lookups into a single query!&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Batches all author lookups into a single query!"""</span>
         <span class="k">pass</span>  <span class="c1"># Decorator handles the loading</span>
 </code></pre></div>
 <h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
@@ -5048,16 +5048,16 @@
 <span class="c1"># DataLoader for users</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserDataLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">):</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;in&quot;</span><span class="p">:</span> <span class="n">user_ids</span><span class="p">}})</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"in"</span><span class="p">:</span> <span class="n">user_ids</span><span class="p">}})</span>
         <span class="n">user_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">user</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">}</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">user_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span> <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">user_ids</span><span class="p">]</span>
 
 <span class="c1"># DataLoader for comments (batch load comments by post_id)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CommentDataLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">):</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">post_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]]:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-        <span class="n">comments</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;v_comment&quot;</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;post_id&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;in&quot;</span><span class="p">:</span> <span class="n">post_ids</span><span class="p">}})</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="n">comments</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_comment"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"post_id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"in"</span><span class="p">:</span> <span class="n">post_ids</span><span class="p">}})</span>
 
         <span class="c1"># Group comments by post_id</span>
         <span class="n">comments_by_post</span> <span class="o">=</span> <span class="p">{</span><span class="n">pid</span><span class="p">:</span> <span class="p">[]</span> <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">}</span>
@@ -5067,44 +5067,44 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">comments_by_post</span><span class="p">[</span><span class="n">pid</span><span class="p">]</span> <span class="k">for</span> <span class="n">pid</span> <span class="ow">in</span> <span class="n">post_ids</span><span class="p">]</span>
 
 <span class="c1"># Types</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_user&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_comment&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_comment"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Comment</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">&quot;author_id&quot;</span><span class="p">)</span>
+    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">"author_id"</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
         <span class="k">pass</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">&quot;v_post&quot;</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
 
-    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">&quot;author_id&quot;</span><span class="p">)</span>
+    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">"author_id"</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
         <span class="k">pass</span>
 
-    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">CommentDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+    <span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">CommentDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">"id"</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">comments</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]:</span>
         <span class="k">pass</span>
 
 <span class="c1"># App</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
     <span class="n">context_factories</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">&quot;UserDataLoader&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">UserDataLoader</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">),</span>
-        <span class="s2">&quot;CommentDataLoader&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">CommentDataLoader</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">),</span>
+        <span class="s2">"UserDataLoader"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">UserDataLoader</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">),</span>
+        <span class="s2">"CommentDataLoader"</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">CommentDataLoader</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">ctx</span><span class="p">),</span>
     <span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5131,9 +5131,9 @@
 
 <span class="nd">@subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_created</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Subscribe to new posts.&quot;&quot;&quot;</span>
-    <span class="c1"># Yield new posts as they&#39;re created</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">post</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;post_stream&quot;</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Subscribe to new posts."""</span>
+    <span class="c1"># Yield new posts as they're created</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">post</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"post_stream"</span><span class="p">]:</span>
         <span class="k">yield</span> <span class="n">post</span>
 </code></pre></div>
 <p><strong>GraphQL</strong>:</p>
@@ -5150,15 +5150,15 @@
 
 <span class="nd">@subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_created</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Subscribe to new posts, optionally filtered by author.&quot;&quot;&quot;</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">post</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;post_stream&quot;</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Subscribe to new posts, optionally filtered by author."""</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">post</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"post_stream"</span><span class="p">]:</span>
         <span class="c1"># Filter by author if specified</span>
         <span class="k">if</span> <span class="n">author_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">post</span><span class="o">.</span><span class="n">author_id</span> <span class="o">==</span> <span class="n">author_id</span><span class="p">:</span>
             <span class="k">yield</span> <span class="n">post</span>
 </code></pre></div>
 <p><strong>GraphQL</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">subscription</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">postCreated</span><span class="p">(</span><span class="n">authorId</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;550e8400-e29b-41d4-a716-446655440000&quot;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">postCreated</span><span class="p">(</span><span class="n">authorId</span><span class="p">:</span><span class="w"> </span><span class="s">"550e8400-e29b-41d4-a716-446655440000"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">  </span><span class="p">}</span>
@@ -5171,7 +5171,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">subscription</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">pg_listen_stream</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Listen to PostgreSQL notifications.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Listen to PostgreSQL notifications."""</span>
     <span class="k">await</span> <span class="n">connection</span><span class="o">.</span><span class="n">add_listener</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="n">chan</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">payload</span><span class="p">)</span>
 
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -5180,13 +5180,13 @@
 
 <span class="nd">@subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_created</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Subscribe to new posts via PostgreSQL NOTIFY.&quot;&quot;&quot;</span>
-    <span class="n">conn</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db_connection&quot;</span><span class="p">]</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Subscribe to new posts via PostgreSQL NOTIFY."""</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db_connection"</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="c1"># Listen to &#39;post_created&#39; channel</span>
+    <span class="c1"># Listen to 'post_created' channel</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;LISTEN post_created&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"LISTEN post_created"</span><span class="p">)</span>
 
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="c1"># Wait for notification</span>
@@ -5194,7 +5194,7 @@
             <span class="n">post_id</span> <span class="o">=</span> <span class="n">notification</span><span class="o">.</span><span class="n">payload</span>
 
             <span class="c1"># Fetch the new post</span>
-            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
             <span class="k">yield</span> <span class="n">post</span>
 </code></pre></div>
 <p><strong>PostgreSQL Trigger</strong>:</p>
@@ -5202,7 +5202,7 @@
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">notify_post_created</span><span class="p">()</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">&#39;post_created&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">'post_created'</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -5219,21 +5219,21 @@
 
 <span class="c1"># Context setup</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_context</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create context with database connection.&quot;&quot;&quot;</span>
-    <span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncpg</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="sd">"""Create context with database connection."""</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncpg</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">),</span>
-        <span class="s2">&quot;db_connection&quot;</span><span class="p">:</span> <span class="n">conn</span><span class="p">,</span>
+        <span class="s2">"db"</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">),</span>
+        <span class="s2">"db_connection"</span><span class="p">:</span> <span class="n">conn</span><span class="p">,</span>
     <span class="p">}</span>
 
 <span class="c1"># Subscription</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_created</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Real-time post creation updates.&quot;&quot;&quot;</span>
-    <span class="n">conn</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db_connection&quot;</span><span class="p">]</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Real-time post creation updates."""</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db_connection"</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;LISTEN post_created&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"LISTEN post_created"</span><span class="p">)</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -5243,17 +5243,17 @@
                 <span class="k">continue</span>
 
             <span class="n">post_id</span> <span class="o">=</span> <span class="n">UUID</span><span class="p">(</span><span class="n">notification</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
-            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
 
             <span class="c1"># Filter by author if specified</span>
             <span class="k">if</span> <span class="n">author_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">post</span><span class="o">.</span><span class="n">author_id</span> <span class="o">==</span> <span class="n">author_id</span><span class="p">:</span>
                 <span class="k">yield</span> <span class="n">post</span>
     <span class="k">finally</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;UNLISTEN post_created&quot;</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"UNLISTEN post_created"</span><span class="p">)</span>
 
 <span class="c1"># App</span>
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">&quot;postgresql://localhost/mydb&quot;</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">subscriptions</span><span class="o">=</span><span class="p">[</span><span class="n">post_created</span><span class="p">],</span>
     <span class="n">context_factory</span><span class="o">=</span><span class="n">create_context</span><span class="p">,</span>
     <span class="n">enable_subscriptions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable WebSocket support</span>
@@ -5278,19 +5278,19 @@
 
     <span class="c1"># Declare cascade effects</span>
     <span class="n">cascade_effects</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;posts&quot;</span><span class="p">,</span>           <span class="c1"># Invalidate posts query</span>
-        <span class="s2">&quot;user.posts&quot;</span><span class="p">,</span>      <span class="c1"># Invalidate user&#39;s posts field</span>
+        <span class="s2">"posts"</span><span class="p">,</span>           <span class="c1"># Invalidate posts query</span>
+        <span class="s2">"user.posts"</span><span class="p">,</span>      <span class="c1"># Invalidate user's posts field</span>
     <span class="p">]</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostCreated</span> <span class="o">|</span> <span class="n">ValidationError</span><span class="p">:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">&quot;fn_create_post&quot;</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
-            <span class="s2">&quot;author_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">,</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_post"</span><span class="p">,</span> <span class="p">{</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s2">"author_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">,</span>
         <span class="p">})</span>
 
-        <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_post&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
+        <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
 
         <span class="c1"># Cascade automatically invalidates affected queries!</span>
         <span class="k">return</span> <span class="n">PostCreated</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">post</span><span class="p">)</span>
@@ -5305,9 +5305,9 @@
 
     <span class="c1"># Cascade with parameters</span>
     <span class="n">cascade_effects</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">&quot;user&quot;</span><span class="p">,</span>                          <span class="c1"># Invalidate user query</span>
-        <span class="s2">&quot;users&quot;</span><span class="p">,</span>                         <span class="c1"># Invalidate users list</span>
-        <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;user:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>  <span class="c1"># Dynamic cascade</span>
+        <span class="s2">"user"</span><span class="p">,</span>                          <span class="c1"># Invalidate user query</span>
+        <span class="s2">"users"</span><span class="p">,</span>                         <span class="c1"># Invalidate users list</span>
+        <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># Dynamic cascade</span>
     <span class="p">]</span>
 </code></pre></div>
 <hr />
@@ -5332,16 +5332,16 @@
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Semantic search for posts.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Semantic search for posts."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Get query embedding (e.g., from OpenAI)</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="c1"># Vector similarity search</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_post&quot;</span><span class="p">,</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;embedding &lt;-&gt; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;ASC&quot;</span><span class="p">)],</span>  <span class="c1"># Cosine distance</span>
+        <span class="s2">"v_post"</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"embedding &lt;-&gt; </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"ASC"</span><span class="p">)],</span>  <span class="c1"># Cosine distance</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
         <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="n">query_embedding</span><span class="p">],</span>
     <span class="p">)</span>
@@ -5380,9 +5380,9 @@
 <span class="n">openai_client</span> <span class="o">=</span> <span class="n">AsyncOpenAI</span><span class="p">()</span>
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_embedding</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get OpenAI embedding for text.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Get OpenAI embedding for text."""</span>
     <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">openai_client</span><span class="o">.</span><span class="n">embeddings</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;text-embedding-ada-002&quot;</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="s2">"text-embedding-ada-002"</span><span class="p">,</span>
         <span class="nb">input</span><span class="o">=</span><span class="n">text</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">embedding</span>
@@ -5393,22 +5393,22 @@
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Semantic search with vector similarity.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Semantic search with vector similarity."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Get query embedding</span>
     <span class="n">embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
     <span class="c1"># Find similar posts</span>
     <span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        SELECT id, title, content,</span>
 <span class="sd">               embedding &lt;=&gt; $1::vector AS similarity</span>
 <span class="sd">        FROM v_post</span>
 <span class="sd">        WHERE embedding IS NOT NULL</span>
 <span class="sd">        ORDER BY embedding &lt;=&gt; $1::vector</span>
 <span class="sd">        LIMIT $2</span>
-<span class="sd">        &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="sd">        """</span><span class="p">,</span>
         <span class="n">embedding</span><span class="p">,</span>
         <span class="n">limit</span>
     <span class="p">)</span>
@@ -5424,15 +5424,15 @@
     <span class="n">search</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Full-text search in posts.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Full-text search in posts."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_post&quot;</span><span class="p">,</span>
+        <span class="s2">"v_post"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;tsv&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;@@&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;to_tsquery&quot;</span><span class="p">:</span> <span class="n">search</span><span class="p">}}</span>
+            <span class="s2">"tsv"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"@@"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"to_tsquery"</span><span class="p">:</span> <span class="n">search</span><span class="p">}}</span>
         <span class="p">},</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">&quot;ts_rank(tsv, to_tsquery($1))&quot;</span><span class="p">,</span> <span class="s2">&quot;DESC&quot;</span><span class="p">)],</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"ts_rank(tsv, to_tsquery($1))"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)],</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -5446,7 +5446,7 @@
 <span class="k">BEFORE</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span>
 <span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
 <span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span>
-<span class="w">    </span><span class="n">tsvector_update_trigger</span><span class="p">(</span><span class="n">tsv</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;pg_catalog.english&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">);</span>
+<span class="w">    </span><span class="n">tsvector_update_trigger</span><span class="p">(</span><span class="n">tsv</span><span class="p">,</span><span class="w"> </span><span class="s1">'pg_catalog.english'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">);</span>
 
 <span class="c1">-- Index for fast full-text search</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">tsv</span><span class="p">);</span>
@@ -5457,13 +5457,13 @@
     <span class="n">info</span><span class="p">,</span>
     <span class="n">theme</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find users with specific theme preference.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Find users with specific theme preference."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;preferences&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;-&gt;&quot;</span><span class="p">:</span> <span class="s2">&quot;theme&quot;</span><span class="p">,</span> <span class="s2">&quot;=&quot;</span><span class="p">:</span> <span class="n">theme</span><span class="p">}</span>
+            <span class="s2">"preferences"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"-&gt;"</span><span class="p">:</span> <span class="s2">"theme"</span><span class="p">,</span> <span class="s2">"="</span><span class="p">:</span> <span class="n">theme</span><span class="p">}</span>
         <span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -5473,13 +5473,13 @@
     <span class="n">info</span><span class="p">,</span>
     <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find posts containing any of the given tags.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Find posts containing any of the given tags."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_post&quot;</span><span class="p">,</span>
+        <span class="s2">"v_post"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;tags&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;&amp;&amp;&quot;</span><span class="p">:</span> <span class="n">tags</span><span class="p">}</span>  <span class="c1"># Overlap operator</span>
+            <span class="s2">"tags"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"&amp;&amp;"</span><span class="p">:</span> <span class="n">tags</span><span class="p">}</span>  <span class="c1"># Overlap operator</span>
         <span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -5489,13 +5489,13 @@
     <span class="n">info</span><span class="p">,</span>
     <span class="n">pattern</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find users matching email regex.&quot;&quot;&quot;</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="sd">"""Find users matching email regex."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">&quot;v_user&quot;</span><span class="p">,</span>
+        <span class="s2">"v_user"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;~&quot;</span><span class="p">:</span> <span class="n">pattern</span><span class="p">}</span>  <span class="c1"># Regex match</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"~"</span><span class="p">:</span> <span class="n">pattern</span><span class="p">}</span>  <span class="c1"># Regex match</span>
         <span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
@@ -5503,15 +5503,15 @@
 <h2 id="performance-best-practices">Performance Best Practices<a class="headerlink" href="#performance-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="1-use-dataloader-for-related-data">1. Use Dataloader for Related Data<a class="headerlink" href="#1-use-dataloader-for-related-data" title="Permanent link">&para;</a></h3>
 <p>✅ <strong>DO:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">&quot;author_id&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataloader_field</span><span class="p">(</span><span class="n">UserDataLoader</span><span class="p">,</span> <span class="n">key_field</span><span class="o">=</span><span class="s2">"author_id"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="k">pass</span>  <span class="c1"># Batched and cached</span>
 </code></pre></div>
 <p>❌ <strong>DON'T:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">&quot;db&quot;</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">&quot;v_user&quot;</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>  <span class="c1"># N+1 queries!</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>  <span class="c1"># N+1 queries!</span>
 </code></pre></div>
 <h3 id="2-index-vector-columns">2. Index Vector Columns<a class="headerlink" href="#2-index-vector-columns" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1">-- IVFFlat index (faster queries, good for most cases)</span>
@@ -5527,9 +5527,9 @@
 </ul>
 <h3 id="4-batch-cascade-invalidations">4. Batch Cascade Invalidations<a class="headerlink" href="#4-batch-cascade-invalidations" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">cascade_effects</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">&quot;posts&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;users&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;comments&quot;</span><span class="p">,</span>
+    <span class="s2">"posts"</span><span class="p">,</span>
+    <span class="s2">"users"</span><span class="p">,</span>
+    <span class="s2">"comments"</span><span class="p">,</span>
 <span class="p">]</span>  <span class="c1"># All invalidated in single operation</span>
 </code></pre></div>
 <hr />
