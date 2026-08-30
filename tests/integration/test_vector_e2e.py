@@ -274,7 +274,9 @@ async def test_vector_l1_distance_filter(class_db_pool, test_schema, vector_test
 async def test_vector_l1_distance_order_by(class_db_pool, test_schema, vector_test_setup) -> None:
     """Test ordering documents by L1/Manhattan distance."""
     repo = FraiseQLRepository(class_db_pool)
-    query_embedding = [0.1, 0.2, 0.3] + [0.0] * 381
+    # Nearest the last-inserted row, so the expected order is the reverse of the
+    # physical one and cannot be satisfied by an unordered scan (#483).
+    query_embedding = [0.3, 0.4, 0.5] + [0.0] * 381
 
     # Use proper GraphQL input object (not plain dict)
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
@@ -286,15 +288,18 @@ async def test_vector_l1_distance_order_by(class_db_pool, test_schema, vector_te
     )
 
     results = extract_graphql_data(result, "test_documents")
-    assert len(results) == 3
-    # Results should be ordered by L1 distance
+    assert [row["title"] for row in results] == [
+        "Data Science",
+        "Machine Learning",
+        "Python Programming",
+    ]
 
 
 @pytest.mark.asyncio
 async def test_vector_l1_distance_combined(class_db_pool, test_schema, vector_test_setup) -> None:
     """Test L1 distance for both WHERE and ORDER BY combined."""
     repo = FraiseQLRepository(class_db_pool)
-    query_embedding = [0.1, 0.2, 0.3] + [0.0] * 381
+    query_embedding = [0.3, 0.4, 0.5] + [0.0] * 381
 
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
 
@@ -306,8 +311,11 @@ async def test_vector_l1_distance_combined(class_db_pool, test_schema, vector_te
     )
 
     results = extract_graphql_data(result, "test_documents")
-    assert len(results) == 3
-    # Results should be filtered and ordered by L1 distance
+    assert [row["title"] for row in results] == [
+        "Data Science",
+        "Machine Learning",
+        "Python Programming",
+    ]
 
 
 @pytest.mark.asyncio
@@ -356,7 +364,9 @@ async def test_binary_vector_hamming_distance_order_by(
 ) -> None:
     """Test ordering binary vectors by Hamming distance."""
     repo = FraiseQLRepository(class_db_pool)
-    query_fingerprint = "1111000011110000111100001111000011110000111100001111000011110000"
+    # Distances 25 / 31 / 33 to items C / A / B -- distinct, and in an order the
+    # physical A, B, C cannot produce, so an omitted ORDER BY fails here (#483).
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
 
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
 
@@ -367,8 +377,7 @@ async def test_binary_vector_hamming_distance_order_by(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) == 3
-    # Results should be ordered by Hamming distance
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
 
 
 @pytest.mark.asyncio
@@ -377,7 +386,9 @@ async def test_binary_vector_jaccard_distance_order_by(
 ) -> None:
     """Test ordering binary vectors by Jaccard distance."""
     repo = FraiseQLRepository(class_db_pool)
-    query_fingerprint = "1111000011110000111100001111000011110000111100001111000011110000"
+    # Distances 0.595 / 0.689 / 0.717 to items C / A / B -- see the Hamming test
+    # above for why the expected order has to differ from the physical one.
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
 
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
 
@@ -388,8 +399,7 @@ async def test_binary_vector_jaccard_distance_order_by(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) == 3
-    # Results should be ordered by Jaccard distance
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
 
 
 @pytest.mark.asyncio
