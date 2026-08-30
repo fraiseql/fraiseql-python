@@ -310,6 +310,15 @@ Before submitting a PR, ensure:
 Your change merges into `dev` and ships to `main` on the next `dev → main`
 sync, included in the next release.
 
+### Credit
+
+Contributions that shape what ships are recorded in
+[CONTRIBUTORS.md](CONTRIBUTORS.md). That includes work folded into another pull
+request rather than merged on its own: a diagnosis that was correct first still
+counts, and the CHANGELOG entry names you alongside the fix. If your work
+shaped a change and you are not listed, say so on the pull request — the
+omission is an oversight, not a judgement.
+
 ---
 
 ## Release Process

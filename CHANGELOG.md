@@ -5,6 +5,49 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+Entries below cover the vector operator series and the Rust benchmark targets.
+Other changes landed since 1.24.0 are not yet logged here.
+
+### Fixed
+
+- **Vector distance filters are now boolean WHERE predicates.** All six
+  operators rendered a bare distance expression -- a `double precision` -- so
+  PostgreSQL rejected any WHERE clause containing one with `argument of WHERE
+  must be type boolean`. The distance is now wrapped in the requested
+  comparison, and every accepted input shape is normalised through one
+  function. The root cause was diagnosed first by
+  [@mikemikimike](https://github.com/mikemikimike) in #509, whose approach this
+  builds on. (#505, #511)
+- **`custom_distance`, `vector_norm`, `quantized_distance` and `reconstruct`
+  are refused in a WHERE clause** instead of rendering an expression that is
+  not a predicate. None of the four ever executed: `vector_norm` emitted a
+  two-argument call to a pgvector function that takes one, and the quantized
+  pair name functions FraiseQL does not define. `custom_distance` and
+  `quantized_distance` also concatenated caller-supplied strings into the
+  statement through `psycopg.sql.SQL()`, which does not escape; neither was
+  reachable from a GraphQL request, since `VectorFilter` declares no such
+  field. They stay registered so the rejection raises `WhereClauseError` rather
+  than being swallowed as an unsupported operator, which would drop the filter
+  and widen the result set. (#510, #512)
+- **Jaccard distance renders as a function call rather than the `<%>`
+  operator**, which psycopg rejects as a placeholder whenever the statement
+  carries parameters. (#495, #507)
+- **Both operands of a bit distance carry the literal's width.** A bare
+  `::bit` is `bit(1)`, so the distance was computed over a single bit and every
+  row reported 0. (#494, #504)
+- **The Rust benchmark targets compile, and CI keeps them compiling.** The
+  benches had drifted past the API they call and no job built them.
+  [@Joemon24](https://github.com/Joemon24) identified the same drift and posted
+  equivalent source fixes in #491 two hours before this landed. (#471, #500)
+
+### Removed
+
+- **`VectorOrderBy.custom_distance` and `.vector_norm`** -- declared GraphQL
+  input fields that nothing read, so a client could send either and get no
+  `ORDER BY` term and no error. (#512)
+
 ## [1.24.0] - 2026-08-30
 
 ### Fixed
