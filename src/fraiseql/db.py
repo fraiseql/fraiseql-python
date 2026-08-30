@@ -892,20 +892,41 @@ def _normalize_mapping_keys(mapping: dict[str, str]) -> dict[str, str]:
     }
 
 
+# The aggregation entries keyed by dotted field paths. Every one of them is
+# matched against paths built with ``transform_path=to_snake_case``, so every one
+# of them needs its keys normalized or the entry silently never fires.
+_PATH_KEYED_AGGREGATION_ENTRIES = ("native_dimension_mapping", "measures", "native_measures")
+
+
 def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str, Any]:
-    """Return ``aggregation`` with ``native_dimension_mapping`` keys in one spelling.
+    """Return ``aggregation`` with its path-keyed entries in one spelling.
+
+    ``native_dimension_mapping`` maps dimension paths to columns (#467),
+    ``measures`` maps measure paths to aggregate functions, and
+    ``native_measures`` maps those same measure paths to columns.
+
+    The two measure dicts have to move together (#477). A camelCase ``measures``
+    key derives no aggregation at all in :func:`_derive_auto_aggregation`, so
+    normalizing ``native_measures`` alone would leave a correct mapping with
+    nothing to attach to — the same invisible no-op, minus the obvious
+    explanation.
 
     The caller's dict is never mutated: a new dict is returned when anything
     changed, and the original is returned untouched otherwise.
     """
-    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
-    if not mapping:
-        return aggregation
+    normalized_entries: dict[str, dict[str, str]] = {}
 
-    normalized = _normalize_mapping_keys(mapping)
-    if normalized == mapping:
+    for entry in _PATH_KEYED_AGGREGATION_ENTRIES:
+        mapping: dict[str, str] = aggregation.get(entry) or {}
+        if not mapping:
+            continue
+        normalized = _normalize_mapping_keys(mapping)
+        if normalized != mapping:
+            normalized_entries[entry] = normalized
+
+    if not normalized_entries:
         return aggregation
-    return {**aggregation, "native_dimension_mapping": normalized}
+    return {**aggregation, **normalized_entries}
 
 
 def _aggregation_mapping_error(
