@@ -8,7 +8,7 @@ from datetime import UTC
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin
 
 from psycopg.rows import dict_row
-from psycopg.sql import SQL, Composed
+from psycopg.sql import SQL, Composed, Identifier
 from psycopg_pool import AsyncConnectionPool
 
 from fraiseql.audit import get_security_logger
@@ -83,6 +83,23 @@ def _make_mandatory_conditions(
         parts.append(Composed([Identifier(col), SQL(" = "), SQL("%s")]))
         params.append(val)
     return parts, params
+
+
+def _view_identifier(view_name: str) -> Identifier:
+    """Render a registered view name as the identifier PostgreSQL resolves.
+
+    A schema-qualified name has to become two identifiers — ``"myschema"."v_stats"``.
+    Passed whole to a single-argument ``Identifier`` it renders as
+    ``"myschema.v_stats"``, one quoted relation name containing a dot, and the
+    statement fails with ``relation "myschema.v_stats" does not exist`` (#472).
+
+    Every path that names a view goes through here, so the two renderings cannot
+    drift apart again.
+    """
+    if "." in view_name:
+        schema_name, table_name = view_name.split(".", 1)
+        return Identifier(schema_name, table_name)
+    return Identifier(view_name)
 
 
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
@@ -446,7 +463,7 @@ def _build_fine_grain_branch(
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
-    table_id = Identifier(fine_grain_view)
+    table_id = _view_identifier(fine_grain_view)
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
@@ -540,7 +557,7 @@ def _build_coarse_branch(
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
-    table_id = Identifier(coarse_view)
+    table_id = _view_identifier(coarse_view)
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
@@ -2126,7 +2143,7 @@ class FraiseQLRepository:
             total = await db.count("v_products")
             tenant_count = await db.count("v_orders", mandatory_filters={"tenant_id": "tenant-123"})
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         # Extract mandatory_filters before _build_where_clause (#344)
         mandatory_filters = self._consume_mandatory_filters(kwargs)
@@ -2138,12 +2155,7 @@ class FraiseQLRepository:
         # Build WHERE clause (extracted to helper method for reuse)
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build COUNT(*) query
         query_parts = [SQL("SELECT COUNT(*) FROM "), table_identifier]
@@ -2198,7 +2210,7 @@ class FraiseQLRepository:
                 where={"email": {"eq": "test@example.com"}, "status": {"eq": "active"}}
             )
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         # Extract mandatory_filters before _build_where_clause (#344)
         mandatory_filters = self._consume_mandatory_filters(kwargs)
@@ -2210,12 +2222,7 @@ class FraiseQLRepository:
         # Build WHERE clause using existing helper
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build EXISTS query
         query_parts = [SQL("SELECT EXISTS(SELECT 1 FROM "), table_identifier]
@@ -2279,11 +2286,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build SUM query
         query_parts = [
@@ -2342,11 +2345,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build AVG query
         query_parts = [
@@ -2401,12 +2400,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build MIN query
         query_parts = [SQL("SELECT MIN("), Identifier(field), SQL(") FROM "), table_identifier]
@@ -2456,12 +2450,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build MAX query
         query_parts = [SQL("SELECT MAX("), Identifier(field), SQL(") FROM "), table_identifier]
@@ -2515,12 +2504,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build DISTINCT query
         query_parts = [SQL("SELECT DISTINCT "), Identifier(field), SQL(" FROM "), table_identifier]
@@ -2586,11 +2570,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
 
@@ -2649,7 +2629,7 @@ class FraiseQLRepository:
             #     "order_count": 500
             # }
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         if not aggregations:
             return {}
@@ -2662,12 +2642,7 @@ class FraiseQLRepository:
 
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build SELECT clause with all aggregations
         agg_clauses = [SQL(f"{expr} AS {name}") for name, expr in aggregations.items()]
@@ -2736,12 +2711,7 @@ class FraiseQLRepository:
 
         where_parts, where_params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build query to select existing IDs
         query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
@@ -3111,12 +3081,7 @@ class FraiseQLRepository:
             column_mapping=native_dimension_mapping,
         )
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = _view_identifier(view_name)
 
         # Build SELECT clause — different when GROUP BY + aggregations are used
         if group_by:
