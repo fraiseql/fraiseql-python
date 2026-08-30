@@ -6,6 +6,7 @@ These tests focus on SQL generation for pgvector's three native distance operato
 - <#> : negative inner product
 """
 
+import pytest
 from psycopg.sql import SQL, Composed
 
 from fraiseql.sql.where.core.field_detection import FieldType
@@ -398,3 +399,47 @@ class TestCustomVectorDistanceOperators:
         result = build_custom_distance_sql(path_sql, config)
         sql_str = result.as_string(None)
         assert "my_distance_func(" in sql_str
+
+
+class TestBinaryVectorBitWidth:
+    """Both operands of a bit distance must carry the literal's width (#494).
+
+    A bare ``::bit`` is ``bit(1)``. Casting *both* sides that way keeps the
+    lengths in agreement, so PostgreSQL raises nothing and computes the distance
+    over a single bit -- every row comes back 0. The existing assertions in
+    ``TestBinaryVectorDistanceOperators`` only check ``"::bit" in sql_str``,
+    which a ``bit(1)`` rendering satisfies, so they cannot see this.
+    """
+
+    QUERY_BITS = "1111000011110000111100001111000011110000111100001111000011110000"
+
+    def test_hamming_casts_both_operands_to_the_literal_width(self) -> None:
+        result = build_hamming_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        assert result.as_string(None) == (
+            "((data ->> 'fingerprint'))::bit(64) <~> "
+            f"'{self.QUERY_BITS}'::bit(64)"
+        )
+
+    def test_jaccard_casts_both_operands_to_the_literal_width(self) -> None:
+        result = build_jaccard_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        assert result.as_string(None) == (
+            "((data ->> 'fingerprint'))::bit(64) <%> "
+            f"'{self.QUERY_BITS}'::bit(64)"
+        )
+
+    @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
+    @pytest.mark.parametrize("width", [1, 6, 8, 64, 128])
+    def test_width_tracks_the_literal_not_a_fixed_size(self, builder, width) -> None:
+        bits = "10" * (width // 2) + "1" * (width % 2)
+        assert len(bits) == width
+        sql_str = builder(SQL("fingerprint"), bits).as_string(None)
+        assert sql_str.count(f"::bit({width})") == 2
+        # A bare ``::bit`` anywhere means an operand was left at bit(1).
+        assert "::bit " not in sql_str
+        assert not sql_str.endswith("::bit")
+
+    @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
+    def test_column_side_is_cast_too(self, builder) -> None:
+        """The path is a JSONB text extraction, so it needs the cast as well."""
+        sql_str = builder(SQL('(data ->> \'fp\')'), "101010").as_string(None)
+        assert sql_str.startswith("((data ->> 'fp'))::bit(6)")

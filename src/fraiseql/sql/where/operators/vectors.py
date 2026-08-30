@@ -14,6 +14,22 @@ from typing import Any
 from psycopg.sql import SQL, Composed, Literal
 
 
+def _bit_cast(bit_string: str) -> Composed:
+    """Cast a bit-string operand to a bit type of its own width.
+
+    A bare ``::bit`` is ``bit(1)``, so ``'1010...'::bit`` keeps only the first
+    bit. Applied to *both* operands -- as it was here until #494 -- the lengths
+    still agree, no error is raised, and the distance is computed over a single
+    bit: every row reports 0 and a threshold filter matches everything.
+
+    The width has to come from the literal. The column side needs the cast too,
+    because this path renders a JSONB extraction (``data ->> 'field'``) that
+    arrives as text, not as a ``bit(n)`` column. Mirrors ``_bit_cast`` in
+    :mod:`fraiseql.sql.order_by_generator`, which fixed the ORDER BY half (#483).
+    """
+    return SQL("::bit({})").format(Literal(len(bit_string)))
+
+
 def build_cosine_distance_sql(path_sql: SQL, value: list[float]) -> Composed:
     """Build SQL for cosine distance using PostgreSQL <=> operator.
 
@@ -65,25 +81,31 @@ def build_l1_distance_sql(path_sql: SQL, value: list[float]) -> Composed:
 def build_hamming_distance_sql(path_sql: SQL, value: str) -> Composed:
     """Build SQL for Hamming distance using PostgreSQL <~> operator.
 
-    Generates: column <~> '101010'::bit
+    Generates: (column)::bit(6) <~> '101010'::bit(6)
     Returns distance: number of differing bits
 
     Note: Hamming distance works on bit type vectors, not float vectors.
     Use for categorical features, fingerprints, or binary similarity.
     """
-    return Composed([SQL("("), path_sql, SQL(")::bit <~> "), Literal(value), SQL("::bit")])
+    bit_cast = _bit_cast(value)
+    return Composed(
+        [SQL("("), path_sql, SQL(")"), bit_cast, SQL(" <~> "), Literal(value), bit_cast]
+    )
 
 
 def build_jaccard_distance_sql(path_sql: SQL, value: str) -> Composed:
     """Build SQL for Jaccard distance using PostgreSQL <%> operator.
 
-    Generates: column <%> '111000'::bit
+    Generates: (column)::bit(6) <%> '111000'::bit(6)
     Returns distance: 1 - (intersection / union) for bit sets
 
     Note: Jaccard distance works on bit type vectors for set similarity.
     Useful for recommendation systems, tag similarity, feature matching.
     """
-    return Composed([SQL("("), path_sql, SQL(")::bit <%> "), Literal(value), SQL("::bit")])
+    bit_cast = _bit_cast(value)
+    return Composed(
+        [SQL("("), path_sql, SQL(")"), bit_cast, SQL(" <%> "), Literal(value), bit_cast]
+    )
 
 
 def build_sparse_cosine_distance_sql(path_sql: SQL, value: dict[str, Any]) -> Composed:

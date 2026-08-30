@@ -333,8 +333,10 @@ async def test_binary_vector_hamming_distance_filter(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) > 0
-    # Results should be filtered by Hamming distance
+    # Item A *is* the query fingerprint (distance 0); B and C each differ in 32
+    # of the 64 bits, so a threshold of 10 must exclude both. Asserting only
+    # len(results) > 0 held just as well when the filter matched everything (#494).
+    assert [row["name"] for row in results] == ["Item A"]
 
 
 @pytest.mark.asyncio
@@ -354,8 +356,51 @@ async def test_binary_vector_jaccard_distance_filter(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) > 0
-    # Results should be filtered by Jaccard distance
+    # Distances are 0.0 / 0.667 / 0.667 to Items A / B / C, so 0.3 keeps only A.
+    # See the Hamming test above for why counting rows was not enough (#494).
+    assert [row["name"] for row in results] == ["Item A"]
+
+
+@pytest.mark.asyncio
+async def test_binary_vector_where_builders_compute_over_every_bit(
+    class_db_pool, test_schema, binary_vector_test_setup
+) -> None:
+    """The WHERE-side bit builders must span the whole literal, not one bit (#494).
+
+    Drives the real operator-registry builders -- the path a filter with no
+    resolved type hint takes -- and checks the distances PostgreSQL actually
+    computes. Under the old bare ``::bit`` both operands were truncated to
+    ``bit(1)`` and every row came back 0.0.
+    """
+    from psycopg.sql import SQL, Composed
+
+    from fraiseql.sql.where.operators.vectors import (
+        build_hamming_distance_sql,
+        build_jaccard_distance_sql,
+    )
+
+    query_fingerprint = "1111000011110000111100001111000011110000111100001111000011110000"
+    expected = [
+        (build_hamming_distance_sql, [("Item A", 0.0), ("Item B", 32.0), ("Item C", 32.0)]),
+        (build_jaccard_distance_sql, [("Item A", 0.0), ("Item B", 0.667), ("Item C", 0.667)]),
+    ]
+
+    async with class_db_pool.connection() as conn:
+        await conn.execute(f"SET search_path TO {test_schema}, public")
+        for builder, want in expected:
+            # The registry renders a JSONB text extraction, so feed the builder a
+            # text-typed path rather than the bit(64) column itself.
+            distance = builder(SQL("fingerprint::text"), query_fingerprint)
+            cur = await conn.execute(
+                Composed(
+                    [
+                        SQL("SELECT name, round(("),
+                        distance,
+                        SQL(")::numeric, 3) FROM test_fingerprints ORDER BY name"),
+                    ]
+                )
+            )
+            assert [(name, float(d)) for name, d in await cur.fetchall()] == want
 
 
 @pytest.mark.asyncio
