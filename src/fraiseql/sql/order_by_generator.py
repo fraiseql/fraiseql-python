@@ -29,6 +29,33 @@ from psycopg import sql
 
 from fraiseql import fraise_enum
 
+# The distance operators :meth:`OrderBy._build_vector_distance_sql` can render,
+# in the order ``VectorOrderBy`` declares them so that the first operand set on
+# one wins identically on every ``order_by`` shape. Both shapes read this tuple:
+# they emitted different subsets of it until #483, and the three the gate below
+# did not route -- ``l1_distance``, ``hamming_distance``, ``jaccard_distance`` --
+# degraded into a JSONB path sort against a vector column.
+VECTOR_DISTANCE_OPERATORS = (
+    "cosine_distance",
+    "l2_distance",
+    "l1_distance",
+    "inner_product",
+    "hamming_distance",
+    "jaccard_distance",
+)
+
+
+def _bit_cast(bit_string: str) -> sql.Composed:
+    """Cast a bit-string literal to a bit type of its own width.
+
+    A bare ``::bit`` is ``bit(1)``, so ``'1010...'::bit`` keeps the first bit and
+    pgvector's bit operators then reject the comparison with *different bit
+    lengths 64 and 1*. The width has to come from the literal (#483). A caller
+    whose string does not match the column width still gets the server's
+    length mismatch, which is the right error to surface.
+    """
+    return sql.SQL("::bit({})").format(sql.Literal(len(bit_string)))
+
 
 @fraise_enum
 class OrderDirection(Enum):
@@ -169,7 +196,7 @@ class OrderBy:
             parts = self.field.split(".")
             if len(parts) == 2:  # field.operator format
                 field_name, operator = parts
-                if operator in ("cosine_distance", "l2_distance", "inner_product"):
+                if operator in VECTOR_DISTANCE_OPERATORS:
                     return self._build_vector_distance_sql(
                         field_name, operator, self.value, table_ref
                     )
@@ -217,7 +244,7 @@ class OrderBy:
 
         Args:
             field_name: The vector field name (e.g., 'embedding')
-            operator: The distance operator ('cosine_distance', 'l2_distance', 'inner_product')
+            operator: One of :data:`VECTOR_DISTANCE_OPERATORS`
             value: The vector to compare against
             table_ref: Table alias or column name to use for field access
 
@@ -238,9 +265,13 @@ class OrderBy:
                 pg_operator_sql = sql.SQL("<=>")
             elif operator == "l2_distance":
                 pg_operator_sql = sql.SQL("<->")
+            elif operator == "l1_distance":
+                pg_operator_sql = sql.SQL("<+>")
             elif operator == "inner_product":
                 pg_operator_sql = sql.SQL("<#>")
             else:
+                # hamming_distance and jaccard_distance are bit-string operators;
+                # pgvector has no sparsevec form of either.
                 raise ValueError(f"Unsupported sparse vector operator: {operator}")
         else:
             # Dense vector handling
@@ -259,12 +290,12 @@ class OrderBy:
                 type_cast = sql.SQL("::vector")
             elif operator == "hamming_distance":
                 pg_operator_sql = sql.SQL("<~>")
-                type_cast = sql.SQL("::bit")
                 literal_value = str(value)  # value is already a string for binary operators
+                type_cast = _bit_cast(literal_value)
             elif operator == "jaccard_distance":
                 pg_operator_sql = sql.SQL("<%>")
-                type_cast = sql.SQL("::bit")
                 literal_value = str(value)  # value is already a string for binary operators
+                type_cast = _bit_cast(literal_value)
             else:
                 raise ValueError(f"Unknown vector distance operator: {operator}")
 

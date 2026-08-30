@@ -10,7 +10,12 @@ from dataclasses import make_dataclass
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from fraiseql import fraise_input
-from fraiseql.sql.order_by_generator import OrderBy, OrderBySet, OrderDirection
+from fraiseql.sql.order_by_generator import (
+    VECTOR_DISTANCE_OPERATORS,
+    OrderBy,
+    OrderBySet,
+    OrderDirection,
+)
 from fraiseql.types.scalars.vector import HalfVectorField, QuantizedVectorField, SparseVectorField
 
 # Type variable for generic types
@@ -176,12 +181,30 @@ def _apply_collation_default(
     return None
 
 
-# Only the operators OrderBy.to_sql can actually render. jaccard_distance is
-# deliberately absent: it exists on VectorOrderBy and the __gql_fields__ branch
-# emits it, but to_sql has no case for it, so the instruction degrades into a
-# plain JSONB path sort and the query fails. Adding it here has to wait for
-# to_sql to support it -- see #483.
-_VECTOR_OPERATORS = ("cosine_distance", "l2_distance", "inner_product")
+def _is_vector_order_by(value: Any) -> bool:
+    """Recognise a ``VectorOrderBy`` without importing it into the check."""
+    return hasattr(value, "__gql_fields__") and hasattr(value, "cosine_distance")
+
+
+def _append_vector_order_by(value: Any, field_path: str, instructions: list[OrderBy]) -> None:
+    """Append the one distance instruction a ``VectorOrderBy`` asks for.
+
+    Both ``order_by`` shapes route through here. They had a copy each until
+    #483 and emitted different subsets of ``VECTOR_DISTANCE_OPERATORS``, so the
+    same request sorted differently -- or not at all -- depending on which shape
+    it arrived in.
+    """
+    for operator in VECTOR_DISTANCE_OPERATORS:
+        operand = getattr(value, operator, None)
+        if operand is not None:
+            instructions.append(
+                OrderBy(
+                    field=f"{field_path}.{operator}",
+                    direction=OrderDirection.ASC,  # ASC = nearest first
+                    value=operand,
+                )
+            )
+            return
 
 
 def _collect_dict_order_by(
@@ -213,18 +236,8 @@ def _collect_dict_order_by(
         if isinstance(value, dict):
             _collect_dict_order_by(value, instructions, field_path)
         # A VectorOrderBy names the distance operator it wants.
-        elif hasattr(value, "__gql_fields__") and hasattr(value, "cosine_distance"):
-            for operator in _VECTOR_OPERATORS:
-                operand = getattr(value, operator, None)
-                if operand is not None:
-                    instructions.append(
-                        OrderBy(
-                            field=f"{field_path}.{operator}",
-                            direction=OrderDirection.ASC,  # ASC for vectors
-                            value=operand,
-                        )
-                    )
-                    break
+        elif _is_vector_order_by(value):
+            _append_vector_order_by(value, field_path, instructions)
         # A direction: a string, an OrderDirection, or any enum-like carrying one.
         elif isinstance(value, (OrderDirection, str)) or hasattr(value, "value"):
             instructions.append(
@@ -305,59 +318,19 @@ def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> O
                 value = getattr(obj, field_name)
                 if value is not None:
                     field_path = f"{prefix}.{field_name}" if prefix else field_name
-                    # Check if this is a VectorOrderBy input
-                    if hasattr(value, "__gql_fields__") and hasattr(value, "cosine_distance"):
-                        # This is a VectorOrderBy - check which distance operator is set
-                        if value.cosine_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.cosine_distance",
-                                    direction=OrderDirection.ASC,  # ASC for vectors
-                                    value=value.cosine_distance,
-                                )
-                            )
-                        elif value.l2_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.l2_distance",
-                                    direction=OrderDirection.ASC,
-                                    value=value.l2_distance,
-                                )
-                            )
-                        elif value.l1_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.l1_distance",
-                                    direction=OrderDirection.ASC,
-                                    value=value.l1_distance,
-                                )
-                            )
-                        elif value.inner_product is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.inner_product",
-                                    direction=OrderDirection.ASC,
-                                    value=value.inner_product,
-                                )
-                            )
-                        elif value.hamming_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.hamming_distance",
-                                    direction=OrderDirection.ASC,
-                                    value=value.hamming_distance,
-                                )
-                            )
-                        elif value.jaccard_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.jaccard_distance",
-                                    direction=OrderDirection.ASC,
-                                    value=value.jaccard_distance,
-                                )
-                            )
+                    # A VectorOrderBy names the distance operator it wants.
+                    #
+                    # This has to be chained with the direction/recursion cases
+                    # below rather than standing alone: a VectorOrderBy carries
+                    # __gql_fields__, so an unchained check fell through to the
+                    # nested-input recursion as well, which read the bit string
+                    # of hamming_distance / jaccard_distance as a direction --
+                    # any string that is not "ASC" normalises to DESC -- and
+                    # appended a contradictory second instruction (#483).
+                    if _is_vector_order_by(value):
+                        _append_vector_order_by(value, field_path, instructions)
                     # If it's an OrderDirection enum or string, use it
-                    if isinstance(value, (OrderDirection, str)):
+                    elif isinstance(value, (OrderDirection, str)):
                         direction = _normalize_order_direction(value)
 
                         # No per-field override in this format, so this
