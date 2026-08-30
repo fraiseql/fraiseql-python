@@ -17,8 +17,11 @@ cannot tell an applied collation from one attached to the wrong operand; see
 half of this that only a live database can answer.
 """
 
+from types import SimpleNamespace
+
 import pytest
 
+from fraiseql.sql.graphql_order_by_generator import _convert_order_by_input_to_sql
 from fraiseql.sql.order_by_generator import OrderBy, OrderBySet, OrderDirection
 
 COLLATION = "fr_FR.utf8"
@@ -108,3 +111,59 @@ class TestJsonbCollation:
         result = ob.to_sql().as_string(None)
         assert "COLLATE" not in result
         assert "<=>" in result
+
+
+@pytest.mark.unit
+class TestGlobalDefaultCollationStaysInert:
+    """``default_string_collation`` must not reach the SQL until it knows types.
+
+    The setting is documented as applying to "all text fields", but nothing in
+    the order_by pipeline tracks which fields are text -- it is applied to every
+    field. That was harmless only while a collation was inert. Now that one
+    reaches the sort, honouring a blanket default would silently make a numeric
+    JSONB sort lexicographic (1, 10, 2) and would make a numeric flat column
+    fail outright with "collations are not supported by type integer".
+
+    So a collation is honoured when a caller asked for it on a field, and a
+    global default is dropped -- which is exactly its effect today, making this
+    a no-op for every existing deployment.
+    """
+
+    @staticmethod
+    def _config() -> SimpleNamespace:
+        return SimpleNamespace(default_string_collation="fr_FR.utf8")
+
+    def test_list_of_dicts_ignores_the_global_default(self) -> None:
+        order_set = _convert_order_by_input_to_sql([{"amount": "asc"}], config=self._config())
+        assert order_set is not None
+        assert order_set.to_sql().as_string(None) == "ORDER BY t -> 'amount' ASC"
+
+    def test_global_default_does_not_collate_a_flat_column(self) -> None:
+        """A numeric native column would raise, not merely sort oddly."""
+        order_set = _convert_order_by_input_to_sql([{"amount": "asc"}], config=self._config())
+        assert order_set is not None
+        result = order_set.to_sql(native_columns={"amount"}).as_string(None)
+        assert result == 'ORDER BY "t"."amount" ASC'
+        assert "COLLATE" not in result
+
+    def test_order_by_item_without_a_collation_attribute_ignores_the_default(self) -> None:
+        item = SimpleNamespace(field="name", direction="asc")
+        order_set = _convert_order_by_input_to_sql([item], config=self._config())
+        assert order_set is not None
+        assert "COLLATE" not in order_set.to_sql().as_string(None)
+
+    def test_an_explicit_field_collation_is_still_honoured(self) -> None:
+        """The point of #476: a deliberate per-field collation reaches the sort."""
+        item = SimpleNamespace(field="name", direction="asc", collation="fr_FR.utf8")
+        order_set = _convert_order_by_input_to_sql([item], config=self._config())
+        assert order_set is not None
+        assert (
+            order_set.to_sql().as_string(None)
+            == 'ORDER BY (t ->> \'name\') COLLATE "fr_FR.utf8" ASC'
+        )
+
+    def test_explicit_none_still_beats_the_default(self) -> None:
+        item = SimpleNamespace(field="name", direction="asc", collation=None)
+        order_set = _convert_order_by_input_to_sql([item], config=self._config())
+        assert order_set is not None
+        assert "COLLATE" not in order_set.to_sql().as_string(None)

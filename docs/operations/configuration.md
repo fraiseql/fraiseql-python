@@ -533,6 +533,13 @@ extensions; `"postgis"` is the most accurate but requires the PostGIS extension.
 PostgreSQL collation applied to text `ORDER BY` clauses, e.g. `"fr_FR.utf8"` or
 `"C"`.
 
+!!! warning "Not currently applied"
+    This setting has no effect yet. Applying it safely needs field *types* in the
+    ORDER BY builder, which does not distinguish a text field from a numeric one --
+    and collating a numeric field either sorts it lexicographically or fails
+    outright. Only a per-field collation reaches the SQL today. This has always
+    been its effective behaviour.
+
 ### `session_variables`
 
 **Type**: `dict[str, str]`
