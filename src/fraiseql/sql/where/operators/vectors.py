@@ -9,7 +9,7 @@ FraiseQL exposes these operators transparently without abstraction.
 Distance values are returned raw from PostgreSQL (no conversion to similarity).
 """
 
-from typing import Any
+from typing import Any, NoReturn
 
 from psycopg.sql import SQL, Composed, Literal
 
@@ -27,6 +27,38 @@ VECTOR_DISTANCE_OPERATORS = frozenset(
         "jaccard_distance",
     }
 )
+
+#: Vector operators that render an expression rather than a boolean and can
+#: therefore never serve as a WHERE predicate (#510), mapped to the two halves
+#: of the error each one raises: what it used to render, and what to do instead.
+#:
+#: These stay registered in ``OPERATOR_MAP`` deliberately. Deleting the entries
+#: would make ``get_operator_function`` raise ``ValueError``, which
+#: ``_make_filter_field_composed`` swallows with ``except ValueError: continue``
+#: -- the filter would vanish while its sibling scoping filters survived, and
+#: the query would succeed against a wider set of rows than was asked for.
+#: A registered builder that raises ``WhereClauseError`` fails loudly instead.
+NON_PREDICATE_OPERATORS: dict[str, tuple[str, str]] = {
+    "custom_distance": (
+        "a call to a caller-supplied function",
+        "FraiseQL cannot validate an arbitrary function name or its parameters. "
+        "Expose the distance as a column in your view and filter on that column, "
+        "or use one of the supported distance operators.",
+    ),
+    "vector_norm": (
+        "a bare norm expression",
+        "A norm is a number. Expose it as a column in your view and filter on that column.",
+    ),
+    "quantized_distance": (
+        "a call to a quantized_<type>_distance function that FraiseQL does not define",
+        "Reconstruct the vector in your view and filter with one of the "
+        "supported distance operators.",
+    ),
+    "reconstruct": (
+        "a call to a reconstruct_quantized_vector function that FraiseQL does not define",
+        "Reconstruct the vector in your view and filter on the reconstructed column.",
+    ),
+}
 
 #: Comparison keyword -> SQL operator, mirroring ``where_clause.py``.
 VECTOR_COMPARISON_SQL = {
@@ -53,6 +85,20 @@ def _reject(message: str, operator: str, value: object) -> WhereClauseError:
     """
     return WhereClauseError(
         f"{message} (operator {operator!r}, got {value!r})",
+        operator=operator,
+        supported_operators=sorted(VECTOR_DISTANCE_OPERATORS),
+    )
+
+
+def _reject_non_predicate(operator: str) -> WhereClauseError:
+    """Build the error raised for a vector operator that is not a predicate.
+
+    Like :func:`_reject`, deliberately not a :class:`ValueError`: the caller
+    swallows those and drops the filter rather than failing the query.
+    """
+    renders, remedy = NON_PREDICATE_OPERATORS[operator]
+    return WhereClauseError(
+        f"{operator!r} is not a WHERE predicate: it renders {renders}, not a boolean. {remedy}",
         operator=operator,
         supported_operators=sorted(VECTOR_DISTANCE_OPERATORS),
     )
@@ -373,88 +419,65 @@ def build_half_vector_avg_aggregation(path_sql: SQL) -> Composed:
     return Composed([SQL("AVG("), path_sql, SQL(")::halfvec")])
 
 
-def build_custom_distance_sql(path_sql: SQL, value: dict[str, Any]) -> Composed:
-    """Build SQL for custom distance function.
+def build_custom_distance_sql(path_sql: SQL, value: dict[str, Any]) -> NoReturn:
+    """Reject ``custom_distance`` in a WHERE clause (#510).
 
-    Allows calling user-defined distance functions with custom parameters.
+    The operator rendered ``<function>(<column>, <param>, ...)`` -- a bare
+    function call whose type is whatever the function returns, never a boolean.
 
-    Args:
-        path_sql: SQL for the vector column path
-        value: Dict with 'function' key and optional 'parameters' key
+    It also concatenated two caller-supplied strings straight into the
+    statement. ``psycopg.sql.SQL()`` is the raw-fragment constructor and
+    performs no escaping, so both the ``function`` name and every entry of
+    ``parameters`` were interpolated verbatim::
 
-    Generates: custom_distance_function(column, param1, param2, ...)
+        {"function": "true OR 1=1 --"}                    -> WHERE true OR 1=1 --(...)
+        {"function": "strpos", "parameters": ["'x') > -1 OR true --"]}
+
+    Both forms parse and return every row. FraiseQL has no registry of
+    user-defined distance functions to validate a name against, so there is
+    nothing to allow-list and no safe way to build the call from a filter dict.
     """
-    if not isinstance(value, dict) or "function" not in value:
-        raise ValueError("Custom distance requires 'function' key")
-
-    function_name = value["function"]
-    parameters = value.get("parameters", [])
-
-    # Build function call: function_name(column, param1, param2, ...)
-    sql_parts = [SQL(function_name), SQL("("), path_sql]
-
-    for param in parameters:
-        sql_parts.extend([SQL(", "), SQL(str(param))])
-
-    sql_parts.append(SQL(")"))
-
-    return Composed(sql_parts)
+    raise _reject_non_predicate("custom_distance")
 
 
-def build_vector_norm_sql(path_sql: SQL, value: Any) -> Composed:
-    """Build SQL for vector norm calculation.
+def build_vector_norm_sql(path_sql: SQL, value: Any) -> NoReturn:
+    """Reject ``vector_norm`` in a WHERE clause (#510).
 
-    Generates: vector_norm(column, 'p_norm') or similar
-    Useful for L1, L2, etc. norms
+    The operator rendered ``vector_norm(<column>, 'l2')``, ignoring ``value``
+    entirely. pgvector declares ``vector_norm(vector)`` -- one argument -- so
+    that call does not exist at any arity and PostgreSQL rejected it with
+    ``function vector_norm(text, unknown) does not exist`` on every execution.
+    The column side was never cast to ``vector`` either, and the sparse
+    registration was wrong twice over: pgvector names that one ``l2_norm``.
+
+    A norm is a number, so even spelled correctly it is not a predicate.
     """
-    # For now, implement as a simple wrapper around vector_norm function
-    # This could be extended to support different norm types
-    return Composed([SQL("vector_norm("), path_sql, SQL(", 'l2')")])
+    raise _reject_non_predicate("vector_norm")
 
 
-def build_quantized_distance_sql(path_sql: SQL, value: dict[str, Any]) -> Composed:
-    """Build SQL for quantized vector distance calculation.
+def build_quantized_distance_sql(path_sql: SQL, value: dict[str, Any]) -> NoReturn:
+    """Reject ``quantized_distance`` in a WHERE clause (#510).
 
-    This requires reconstructing the vector from the quantized representation
-    and then performing distance calculation.
+    The operator rendered ``quantized_<distance_type>_distance(<column>,
+    <vector>::vector)``. FraiseQL defines no such function, the vector literal
+    was emitted unquoted so the fragment did not even parse, and the result
+    would have been a number rather than a boolean.
 
-    Args:
-        path_sql: SQL for the quantized vector column path
-        value: Dict with quantization parameters and target vector
+    It carried the same two raw-interpolation channels as ``custom_distance``:
+    ``distance_type`` was substituted into the function name, and every element
+    of ``target_vector`` was rendered with ``SQL(str(v))``.
 
-    Generates: custom function call for quantized distance
+    Unlike ``FieldType.VECTOR``, this one is reachable from a plain type hint:
+    ``QuantizedVectorField`` is mapped in ``FieldType.from_python_type``.
     """
-    if not isinstance(value, dict) or "target_vector" not in value:
-        raise ValueError("Quantized distance requires 'target_vector' key")
-
-    target_vector = value["target_vector"]
-    distance_type = value.get("distance_type", "cosine")
-
-    # This would require custom PostgreSQL functions for quantization
-    # For now, implement as a placeholder that calls a custom function
-    function_name = f"quantized_{distance_type}_distance"
-
-    if isinstance(target_vector, list):
-        # Dense target vector
-        vector_literal = "[" + ",".join(str(v) for v in target_vector) + "]"
-        return Composed(
-            [
-                SQL(function_name),
-                SQL("("),
-                path_sql,
-                SQL(", "),
-                SQL(vector_literal),
-                SQL("::vector)"),
-            ]
-        )
-    # Could support sparse target vectors too
-    raise ValueError("Quantized distance currently only supports dense target vectors")
+    raise _reject_non_predicate("quantized_distance")
 
 
-def build_quantization_reconstruct_sql(path_sql: SQL, value: Any) -> Composed:
-    """Build SQL for reconstructing a vector from quantized representation.
+def build_quantization_reconstruct_sql(path_sql: SQL, value: Any) -> NoReturn:
+    """Reject ``reconstruct`` in a WHERE clause (#510).
 
-    Generates: reconstruct_quantized_vector(column)
-    Returns the reconstructed full vector
+    The operator rendered ``reconstruct_quantized_vector(<column>)``, a
+    function FraiseQL does not define, which would return a vector rather than
+    a boolean even if it existed.
     """
-    return Composed([SQL("reconstruct_quantized_vector("), path_sql, SQL(")")])
+    raise _reject_non_predicate("reconstruct")

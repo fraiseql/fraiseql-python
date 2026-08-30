@@ -126,3 +126,25 @@ def test_no_rendered_operator_contains_a_percent_sign(operator: str) -> None:
 
     assert order_by_set is not None
     assert "%" not in order_by_set.to_sql().as_string(None)
+
+
+class TestVectorOrderByDeclaresOnlyWhatItReads:
+    """A GraphQL input field nothing reads advertises sorting that never happens (#510).
+
+    ``VectorOrderBy`` declared ``custom_distance`` and ``vector_norm`` as
+    ``@fraise_input`` fields, so both reached the published schema. Nothing
+    consumed them: ``_append_vector_order_by`` iterates
+    ``VECTOR_DISTANCE_OPERATORS``, which names the six real operators. A client
+    sending either got no ``ORDER BY`` term and no error.
+    """
+
+    def test_declared_fields_match_the_operators_that_are_read(self) -> None:
+        """Pins both directions of drift, not just the two fields removed."""
+        from fraiseql.sql.order_by_generator import VECTOR_DISTANCE_OPERATORS
+
+        assert set(VectorOrderBy.__gql_fields__) == set(VECTOR_DISTANCE_OPERATORS)
+
+    @pytest.mark.parametrize("dead_field", ["custom_distance", "vector_norm"])
+    def test_dead_field_is_no_longer_declared(self, dead_field) -> None:
+        """Removed rather than wired up: neither is a usable ORDER BY operand."""
+        assert dead_field not in VectorOrderBy.__gql_fields__

@@ -173,3 +173,131 @@ class TestVectorFilterRejectsBadInput:
                 {"tenant": {"eq": "acme"}, "embedding": {"cosine_distance": {"bad": 1}}},
             ]
             where.to_sql()
+
+
+@pytest_asyncio.fixture(scope="class", loop_scope="class")
+async def scoped_docs(class_db_pool, test_schema, pgvector_available) -> None:
+    """Rows carrying a scoping key, to show what a dropped vector filter leaves."""
+    if not pgvector_available:
+        pytest.skip("pgvector extension not available")
+
+    async with class_db_pool.connection() as conn:
+        await conn.execute(f"SET search_path TO {test_schema}, public")
+        await conn.execute("CREATE TABLE vec_docs (id int PRIMARY KEY, data jsonb NOT NULL)")
+        await conn.execute(
+            """INSERT INTO vec_docs (id, data) VALUES
+                (1, '{"kind": "doc", "embedding": "[1,0]"}'),
+                (2, '{"kind": "doc", "embedding": "[0,1]"}')"""
+        )
+        await conn.commit()
+
+
+@pytest.mark.usefixtures("scoped_docs")
+class TestNonPredicateOperatorsNeverReachTheDatabase:
+    """Four registry entries rendered an expression, not a predicate (#510).
+
+    ``custom_distance``, ``vector_norm``, ``quantized_distance`` and
+    ``reconstruct`` are refused in a WHERE clause. Each test here first
+    *executes* the outcome being prevented, so the assertion that the fix
+    raises is anchored to a demonstrated result set rather than to a string.
+    """
+
+    @staticmethod
+    async def run_sql(pool, schema, statement: str) -> list[int]:
+        """Execute a raw statement and return the matching ids, sorted."""
+        async with pool.connection() as conn:
+            await conn.execute(f"SET search_path TO {schema}, public")
+            cur = await conn.execute(statement)
+            return sorted([row[0] async for row in cur])
+
+    @staticmethod
+    async def run(pool, schema, condition: Composed) -> list[int]:
+        """Execute a rendered condition and return the matching ids."""
+        stmt = Composed([SQL("SELECT id FROM vec_docs WHERE "), condition, SQL(" ORDER BY id")])
+        async with pool.connection() as conn:
+            await conn.execute(f"SET search_path TO {schema}, public")
+            cur = await conn.execute(stmt)
+            return [row[0] async for row in cur]
+
+    async def test_injected_function_name_executes_and_returns_every_row(
+        self, class_db_pool, test_schema
+    ) -> None:
+        """The statement ``{"function": "true OR 1=1 --"}`` used to build, run.
+
+        ``build_custom_distance_sql`` concatenated the function name with
+        ``psycopg.sql.SQL()``, the raw-fragment constructor, so this parsed as
+        written. Establishes that the channel was live before asserting it is
+        closed.
+        """
+        injected = "SELECT id FROM vec_docs WHERE true OR 1=1 --((data ->> 'embedding'))"
+        assert await self.run_sql(class_db_pool, test_schema, injected) == [1, 2]
+
+        with pytest.raises(WhereClauseError):
+            render("embedding", "custom_distance", {"function": "true OR 1=1 --"})
+
+    async def test_injected_parameter_executes_and_returns_every_row(
+        self, class_db_pool, test_schema
+    ) -> None:
+        """``parameters`` was a second raw channel: ``SQL(str(param))`` per entry."""
+        injected = (
+            "SELECT id FROM vec_docs WHERE strpos((data ->> 'embedding'), 'x') > -1 OR true --)"
+        )
+        assert await self.run_sql(class_db_pool, test_schema, injected) == [1, 2]
+
+        with pytest.raises(WhereClauseError):
+            render(
+                "embedding",
+                "custom_distance",
+                {"function": "strpos", "parameters": ["'x') > -1 OR true --"]},
+            )
+
+    async def test_vector_norm_rendering_never_existed_in_pgvector(
+        self, class_db_pool, test_schema
+    ) -> None:
+        """``vector_norm(col, 'l2')`` is not a function at any arity.
+
+        pgvector declares ``vector_norm(vector)``. The two-argument form the
+        operator emitted -- against an uncast ``text`` column, and registered
+        for sparse fields where pgvector names the function ``l2_norm`` --
+        failed on every execution, so no caller can be relying on it.
+        """
+        import psycopg
+
+        with pytest.raises(psycopg.errors.UndefinedFunction):
+            await self.run_sql(
+                class_db_pool,
+                test_schema,
+                "SELECT id FROM vec_docs WHERE vector_norm((data ->> 'embedding'), 'l2')",
+            )
+
+        with pytest.raises(WhereClauseError):
+            render("embedding", "vector_norm", "l2")
+
+    async def test_a_dropped_vector_filter_would_widen_the_result_set(
+        self, class_db_pool, test_schema
+    ) -> None:
+        """Unregistering the operators instead is the worse fix.
+
+        ``get_operator_function`` raises ``ValueError`` for an unknown
+        operator and ``_make_filter_field_composed`` swallows it, so the scope
+        filter would render and execute alone -- the query succeeding over
+        every row rather than the similar ones. The first half of this test is
+        that surviving filter, rendered by the real renderer and executed.
+        """
+        scope_only = render("kind", "eq", "doc")
+        assert scope_only is not None
+        assert await self.run(class_db_pool, test_schema, scope_only) == [1, 2]
+
+        where = WhereType()
+        where.OR = [
+            {"kind": {"eq": "doc"}, "embedding": {"custom_distance": {"function": "my_dist"}}}
+        ]
+        with pytest.raises(WhereClauseError):
+            where.to_sql()
+
+    async def test_supported_operators_are_unaffected(self, class_db_pool, test_schema) -> None:
+        """The six real distance operators must still narrow the result set."""
+        value = {"vector": [1.0, 0.0], "threshold": 0.75}
+        condition = render("embedding", "cosine_distance", value)
+        assert condition is not None
+        assert await self.run(class_db_pool, test_schema, condition) == [1]
