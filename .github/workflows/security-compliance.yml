@@ -144,6 +144,13 @@ jobs:
          scan-ref: ${{ matrix.dockerfile.tag }}
          format: 'sarif'
          output: 'trivy-${{ matrix.dockerfile.label }}-results.sarif'
+         # INERT, and deliberately left in place as documentation of intent.
+         # trivy-action runs `unset TRIVY_SEVERITY` whenever the format is sarif
+         # and limit-severities-for-sarif is not 'true', logging "Building SARIF
+         # report with all severities". So the Security tab receives EVERY
+         # severity regardless of this line -- 43 medium + 38 low + 7 unknown.
+         # Tightening it changes nothing; setting limit-severities-for-sarif
+         # would, and would close the 38 low and 7 unknown alerts. See #479.
          severity: 'CRITICAL,HIGH,MEDIUM'  # Government standard: include MEDIUM
          exit-code: 0  # Report only, don't fail
          trivyignores: '.trivyignore'
@@ -172,7 +179,11 @@ jobs:
          scan-ref: ${{ matrix.dockerfile.tag }}
          format: 'json'
          output: 'trivy-${{ matrix.dockerfile.label }}-detailed.json'
-         severity: 'CRITICAL,HIGH,MEDIUM,LOW'
+         # UNKNOWN is included so this scan covers exactly what the SARIF upload
+         # puts in the Security tab, which is unfiltered (see the step above).
+         # Without it the two disagree by the CVEs Trivy rates UNKNOWN -- the
+         # whole of the 88-vs-81 gap investigated in #479.
+         severity: 'CRITICAL,HIGH,MEDIUM,LOW,UNKNOWN'
          trivyignores: '.trivyignore'
 
      - name: Generate compliance report
@@ -189,12 +200,19 @@ jobs:
          HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
          MEDIUM=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="MEDIUM")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
          LOW=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="LOW")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
+         # Trivy rates a CVE UNKNOWN when no vendor has scored it. Counted and
+         # shown because it is not zero, and because leaving it out is what made
+         # this summary disagree with the Security tab (#479).
+         UNKNOWN=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="UNKNOWN")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
+         TOTAL=$((CRITICAL + HIGH + MEDIUM + LOW + UNKNOWN))
 
          echo "## Vulnerability Summary" >> security-report.md
          echo "- 🔴 Critical: $CRITICAL" >> security-report.md
          echo "- 🟠 High: $HIGH" >> security-report.md
          echo "- 🟡 Medium: $MEDIUM" >> security-report.md
          echo "- 🔵 Low: $LOW" >> security-report.md
+         echo "- ⚪ Unknown (unscored by any vendor): $UNKNOWN" >> security-report.md
+         echo "- **Total: $TOTAL** (should equal the open alert count for \`container-${{ matrix.dockerfile.label }}\`)" >> security-report.md
          echo "" >> security-report.md
 
          # Patch availability.
