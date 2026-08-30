@@ -122,12 +122,13 @@ config = FraiseQLConfig(
 
 Applied to all text fields in ORDER BY unless overridden per-field in queries.
 
-!!! warning "Not currently applied"
-    This setting has no effect yet. Applying it safely needs field *types* in the
-    ORDER BY builder, which does not distinguish a text field from a numeric one --
-    and collating a numeric field either sorts it lexicographically or fails
-    outright. Only a per-field collation reaches the SQL today. This has always
-    been its effective behaviour.
+!!! note "Text fields only"
+    Each sort key is resolved against the type registered for the view, and the
+    default is applied only to fields that resolve to a string. A field that
+    resolves to anything else -- or that cannot be resolved at all, because the
+    view is unregistered or the field is not declared on its type -- is left
+    alone. Collating a numeric field would either sort it lexicographically
+    (1, 10, 2) or fail with *collations are not supported by type integer*.
 
 **Common Values**:
 

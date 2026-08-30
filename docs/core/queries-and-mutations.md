@@ -302,9 +302,12 @@ query {
 
 1. Per-field explicit value (highest priority)
 2. Explicit `null`
-3. PostgreSQL database default (lowest priority)
+3. `default_string_collation` from config, on text fields only
+4. PostgreSQL database default (lowest priority)
 
-`default_string_collation` is not part of this chain today -- see the warning above.
+Step 3 applies only where the sort key resolves to a string on the type
+registered for the view; anything else, including a field that cannot be
+resolved, falls straight through to step 4.
 
 **Common Collations**:
 
