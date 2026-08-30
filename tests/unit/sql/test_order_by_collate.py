@@ -10,10 +10,17 @@ class TestOrderByCollate:
     """Test COLLATE clause generation."""
 
     def test_simple_field_with_collation(self):
-        """Test basic collation on simple field."""
+        """Test basic collation on simple field.
+
+        This asserted ``t -> 'name' COLLATE "en_US.utf8"`` until #476. That form
+        parses as ``t -> ('name' COLLATE "en_US.utf8")`` -- the collation lands
+        on the key literal, the comparison is still ``jsonb``, and the collation
+        has no effect. PostgreSQL accepts it without complaint, which is why the
+        assertion passed while the feature did nothing.
+        """
         ob = OrderBy(field="name", collation="en_US.utf8")
         result = ob.to_sql().as_string(None)
-        assert 't -> \'name\' COLLATE "en_US.utf8" ASC' in result
+        assert '(t ->> \'name\') COLLATE "en_US.utf8" ASC' in result
 
     def test_nested_field_with_collation(self):
         """Test collation on nested field."""
