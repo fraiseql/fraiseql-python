@@ -48,7 +48,10 @@ OPERATORS = {
     # ``::bit`` alone is ``bit(1)``: the literal has to carry its own width or
     # pgvector rejects the comparison with "different bit lengths 64 and 1".
     "hamming_distance": (BITS, "(t.\"embedding\") <~> '111000'::bit(6) ASC"),
-    "jaccard_distance": (BITS, "(t.\"embedding\") <%> '111000'::bit(6) ASC"),
+    # Jaccard renders as a function call, not the ``<%>`` operator: psycopg
+    # rejects ``%>`` as a placeholder whenever the statement carries parameters,
+    # and ``<%%>`` fails on the statements that carry none (#495).
+    "jaccard_distance": (BITS, "jaccard_distance(t.\"embedding\", '111000'::bit(6)) ASC"),
 }
 
 
@@ -107,3 +110,19 @@ def test_both_shapes_render_identically(operator: str) -> None:
     assert from_dict is not None
     assert from_gql_fields is not None
     assert from_dict.to_sql().as_string(None) == from_gql_fields.to_sql().as_string(None)
+
+
+@pytest.mark.parametrize("operator", list(OPERATORS))
+def test_no_rendered_operator_contains_a_percent_sign(operator: str) -> None:
+    """No ORDER BY term may contain ``%``, in any spelling (#495).
+
+    psycopg scans a statement for placeholders whenever parameters accompany it,
+    so a bare ``<%>`` breaks every parameterised query. Escaping to ``<%%>``
+    only relocates the failure onto the statements sent without parameters,
+    which are passed through verbatim -- this assertion rejects both.
+    """
+    operand, _expected = OPERATORS[operator]
+    order_by_set = _convert_order_by_input_to_sql(_dict_shape(operator, operand))
+
+    assert order_by_set is not None
+    assert "%" not in order_by_set.to_sql().as_string(None)

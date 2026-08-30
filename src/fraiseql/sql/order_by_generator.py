@@ -252,6 +252,10 @@ class OrderBy:
             SQL fragment for vector distance ordering
         """
         # Map operator names to PostgreSQL operators and data types
+        # Set to a function name by any operator that must render as a call rather
+        # than an infix operator; pg_operator_sql is None in exactly those cases.
+        pg_function_sql = None
+
         if isinstance(value, dict):
             # Sparse vector handling
             indices = value["indices"]
@@ -293,13 +297,22 @@ class OrderBy:
                 literal_value = str(value)  # value is already a string for binary operators
                 type_cast = _bit_cast(literal_value)
             elif operator == "jaccard_distance":
-                pg_operator_sql = sql.SQL("<%>")
+                # Rendered as jaccard_distance(col, lit), not as the <%> operator.
+                # psycopg scans a statement for placeholders whenever parameters
+                # accompany it, and rejects `%>` as one; escaping to `<%%>` only
+                # moves the failure to the no-parameter statements, which are sent
+                # verbatim and then have no such operator. The function form is the
+                # one spelling correct under both, at the cost of the
+                # bit_jaccard_ops index, which cannot match a function call (#495).
+                pg_operator_sql = None
+                pg_function_sql = sql.SQL("jaccard_distance")
                 literal_value = str(value)  # value is already a string for binary operators
                 type_cast = _bit_cast(literal_value)
             else:
                 raise ValueError(f"Unknown vector distance operator: {operator}")
 
         # Build SQL: ({table_ref}."field") <operator> 'literal'::type ASC
+        # or, where pg_operator_sql is None: func({table_ref}."field", 'literal'::type) ASC
 
         # Handle both OrderDirection enum and string directions
         if isinstance(self.direction, OrderDirection):
@@ -307,11 +320,26 @@ class OrderBy:
         else:
             direction_str = str(self.direction).upper()
         direction_sql = sql.SQL(direction_str)
+        column_sql = sql.Composed(
+            [sql.SQL(table_ref + "."), sql.Identifier(field_name)],
+        )
+        if pg_operator_sql is None:
+            return sql.Composed(
+                [
+                    pg_function_sql,
+                    sql.SQL("("),
+                    column_sql,
+                    sql.SQL(", "),
+                    sql.Literal(literal_value),
+                    type_cast,
+                    sql.SQL(") "),
+                    direction_sql,
+                ]
+            )
         return sql.Composed(
             [
                 sql.SQL("("),
-                sql.SQL(table_ref + "."),
-                sql.Identifier(field_name),
+                column_sql,
                 sql.SQL(")"),
                 sql.SQL(" "),
                 pg_operator_sql,

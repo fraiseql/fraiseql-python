@@ -113,17 +113,17 @@ class TestVectorOperators:
         assert "::bit" in sql_str
 
     def test_jaccard_distance_sql(self) -> None:
-        """Should generate Jaccard distance SQL using <%> operator for bit vectors."""
+        """Should generate Jaccard distance SQL via the function form (#495)."""
         # Red cycle - this will fail initially
         path_sql = SQL("features")
         value = "111000"  # 6-bit binary string
 
         result = build_jaccard_distance_sql(path_sql, value)
 
-        # Should generate: (features)::bit <%> '111000'::bit
+        # Should generate: jaccard_distance((features)::bit(6), '111000'::bit(6))
         assert isinstance(result, Composed)
         sql_str = str(result)
-        assert "<%>" in sql_str
+        assert "jaccard_distance(" in sql_str
         assert "'111000'" in sql_str
         assert "::bit" in sql_str
 
@@ -259,7 +259,7 @@ class TestBinaryVectorDistanceOperators:
         bit_string = "111000"
         result = build_jaccard_distance_sql(path_sql, bit_string)
         sql_str = result.as_string(None)
-        assert "<%>" in sql_str
+        assert "jaccard_distance(" in sql_str
         assert "::bit" in sql_str
         assert "111000" in sql_str
 
@@ -423,8 +423,8 @@ class TestBinaryVectorBitWidth:
     def test_jaccard_casts_both_operands_to_the_literal_width(self) -> None:
         result = build_jaccard_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
         assert result.as_string(None) == (
-            "((data ->> 'fingerprint'))::bit(64) <%> "
-            f"'{self.QUERY_BITS}'::bit(64)"
+            "jaccard_distance(((data ->> 'fingerprint'))::bit(64), "
+            f"'{self.QUERY_BITS}'::bit(64))"
         )
 
     @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
@@ -438,8 +438,45 @@ class TestBinaryVectorBitWidth:
         assert "::bit " not in sql_str
         assert not sql_str.endswith("::bit")
 
-    @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
-    def test_column_side_is_cast_too(self, builder) -> None:
+    @pytest.mark.parametrize(
+        ("builder", "prefix"),
+        [
+            (build_hamming_distance_sql, "((data ->> 'fp'))::bit(6)"),
+            # Jaccard renders as a function call rather than an operator (#495).
+            (build_jaccard_distance_sql, "jaccard_distance(((data ->> 'fp'))::bit(6)"),
+        ],
+    )
+    def test_column_side_is_cast_too(self, builder, prefix) -> None:
         """The path is a JSONB text extraction, so it needs the cast as well."""
         sql_str = builder(SQL('(data ->> \'fp\')'), "101010").as_string(None)
-        assert sql_str.startswith("((data ->> 'fp'))::bit(6)")
+        assert sql_str.startswith(prefix)
+
+
+class TestJaccardRendersWithoutAPercentSign:
+    """The Jaccard term must never contain ``%``, in any spelling (#495).
+
+    psycopg scans a statement for placeholders whenever parameters accompany it
+    and rejects ``%>`` as one, so an ``<%>`` term breaks the moment anything
+    else in the statement parameterises. Escaping to ``<%%>`` only relocates the
+    failure onto statements sent without parameters, which go through verbatim
+    and leave PostgreSQL with no such operator. Only the function form is
+    correct under both.
+    """
+
+    BITS = "111000"
+
+    def test_jaccard_uses_the_function_form(self) -> None:
+        result = build_jaccard_distance_sql(SQL('(data ->> \'fp\')'), self.BITS)
+        assert result.as_string(None) == (
+            "jaccard_distance(((data ->> 'fp'))::bit(6), '111000'::bit(6))"
+        )
+
+    def test_jaccard_rendering_has_no_percent_sign(self) -> None:
+        """Rejects both `<%>` and the `<%%>` escape that merely moves the bug."""
+        assert "%" not in build_jaccard_distance_sql(SQL("fp"), self.BITS).as_string(None)
+
+    def test_hamming_keeps_the_operator_form(self) -> None:
+        """`<~>` carries no `%`, so it is unaffected and keeps index compatibility."""
+        sql_str = build_hamming_distance_sql(SQL("fp"), "101010").as_string(None)
+        assert "<~>" in sql_str
+        assert "%" not in sql_str
