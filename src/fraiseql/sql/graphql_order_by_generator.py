@@ -119,18 +119,36 @@ def _normalize_order_direction(direction: Any) -> OrderDirection:
 
 
 def _apply_collation_default(
-    field_collation: str | None, global_collation: str | None, was_explicitly_set: bool = False
+    field_collation: str | None,
+    global_collation: str | None,
+    was_explicitly_set: bool = False,
 ) -> str | None:
-    """Apply collation precedence rules.
+    """Resolve the collation for one sort key. The single place that decides.
 
-    Precedence (highest to lowest):
-    1. Per-field explicit value (including explicit None)
-    2. Global default collation
-    3. Database default (None)
+    Precedence:
+    1. Per-field explicit value, including an explicit None
+    2. Nothing -- the database default
+
+    Why the global default is dropped
+    ---------------------------------
+    ``default_string_collation`` is documented as applying to "all *text* fields",
+    but nothing here tracks which fields are text: it was applied to every field,
+    numeric ones included. That was harmless only for as long as a collation
+    never reached the sort. Since #476 one does, and honouring a blanket default
+    would now
+
+    * make a numeric JSONB sort lexicographic -- 1, 10, 2 -- silently, and
+    * make a numeric flat column fail outright with
+      "collations are not supported by type integer".
+
+    Dropping it leaves the setting exactly as effective as it has always been,
+    which is not at all, so this is a no-op for every existing deployment. The
+    parameter stays because making the setting work needs field *types* plumbed
+    down to here, and that is the change that will use it.
 
     Args:
         field_collation: Collation from field/input
-        global_collation: Global default from config
+        global_collation: Global default from config; deliberately not applied
         was_explicitly_set: True if field_collation was explicitly set
                            (even if set to None)
 
@@ -138,24 +156,23 @@ def _apply_collation_default(
         Collation to use, or None for database default
 
     Examples:
-        # Explicit per-field value (highest priority)
+        # Explicit per-field value
         _apply_collation_default("en_US.utf8", "fr_FR.utf8", True) -> "en_US.utf8"
 
-        # Explicit None skips global default
+        # Explicit None
         _apply_collation_default(None, "fr_FR.utf8", True) -> None
 
-        # No field value, use global default
-        _apply_collation_default(None, "fr_FR.utf8", False) -> "fr_FR.utf8"
+        # No field value: the global default is not applied
+        _apply_collation_default(None, "fr_FR.utf8", False) -> None
 
         # No field value, no global default
         _apply_collation_default(None, None, False) -> None
     """
-    # If field collation was explicitly set (even to None), use it
+    # Only a collation the caller asked for on this field reaches the SQL.
     if was_explicitly_set:
         return field_collation
 
-    # Otherwise, fall back to global default
-    return global_collation or None
+    return None
 
 
 def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> OrderBySet | None:
@@ -218,14 +235,16 @@ def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> O
                         # Handle OrderDirection enum or string
                         direction = _normalize_order_direction(value)
 
-                        # Dict format doesn't support explicit collation, only global default
+                        # A dict carries no per-field collation, so this
+                        # resolves to None -- see _apply_collation_default.
                         global_collation = config.default_string_collation if config else None
+                        collation = _apply_collation_default(None, global_collation, False)
 
                         instructions.append(
                             OrderBy(
                                 field=snake_field_name,
                                 direction=direction,
-                                collation=global_collation,
+                                collation=collation,
                             )
                         )
         return OrderBySet(instructions=instructions) if instructions else None
@@ -294,13 +313,13 @@ def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> O
                     if isinstance(value, (OrderDirection, str)):
                         direction = _normalize_order_direction(value)
 
-                        # Apply global collation default (no per-field override in this format)
+                        # No per-field override in this format, so this
+                        # resolves to None -- see _apply_collation_default.
                         global_collation = config.default_string_collation if config else None
+                        collation = _apply_collation_default(None, global_collation, False)
 
                         instructions.append(
-                            OrderBy(
-                                field=field_path, direction=direction, collation=global_collation
-                            )
+                            OrderBy(field=field_path, direction=direction, collation=collation)
                         )
                     # If it's a nested order by input, process recursively
                     elif hasattr(value, "__gql_fields__"):

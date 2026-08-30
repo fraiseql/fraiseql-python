@@ -56,6 +56,13 @@ class OrderBy:
     - fr_FR.utf8: French locale-aware sorting (accents, case)
     - C: Byte-order sorting (fastest)
 
+    A collation is honoured on every path: a flat column collates directly, and
+    a JSONB field is extracted as text (``->>``) so the collation has something
+    to apply to. Requesting one therefore selects a *text* ordering -- which is
+    what a collation means -- so do not set one on a numeric field. It also
+    makes an explicit JSON ``null`` sort with an absent key (both become SQL
+    NULL) rather than ahead of every string, as ``->`` does.
+
     Attributes:
         field: The field name or nested path (e.g., 'amount' or 'profile.age')
                For vector distance: 'embedding.cosine_distance'
@@ -65,7 +72,7 @@ class OrderBy:
 
     Examples:
         OrderBy('amount') -> "data -> 'amount' ASC"
-        OrderBy('name', collation='fr_FR.utf8') -> "data -> 'name' COLLATE "fr_FR.utf8" ASC"
+        OrderBy('name', collation='fr_FR.utf8') -> "(data ->> 'name') COLLATE "fr_FR.utf8" ASC"
         OrderBy('profile.age', 'desc') -> "data -> 'profile' -> 'age' DESC"
         OrderBy('embedding.cosine_distance', 'asc', [0.1, 0.2, 0.3]) ->
             "(data -> 'embedding') <=> '[0.1,0.2,0.3]'::vector ASC"
@@ -75,6 +82,21 @@ class OrderBy:
     direction: OrderDirection = OrderDirection.ASC
     value: list[float] | None = None
     collation: str | None = None
+
+    def _collated(self, expr: sql.Composed | sql.SQL) -> sql.Composed | sql.SQL:
+        """Append ``COLLATE "name"`` to *expr*, or return it untouched.
+
+        The collation name is rendered with :class:`~psycopg.sql.Identifier`, not
+        :class:`~psycopg.sql.Literal`: PostgreSQL's syntax is ``COLLATE "name"``,
+        and the name reaches here from configuration.
+
+        Every branch of :meth:`to_sql` that can carry a collation routes through
+        this, because the two flat-column branches used to return before the
+        collation was applied at all (#476).
+        """
+        if self.collation is None:
+            return expr
+        return expr + sql.SQL(" COLLATE ") + sql.Identifier(self.collation)
 
     def _direction_sql(self) -> sql.SQL:
         """Render the sort direction, accepting either the enum or a bare string."""
@@ -135,11 +157,12 @@ class OrderBy:
         For vector distance operations like 'embedding.cosine_distance', uses:
         ({table_ref} -> 'embedding') <=> '[0.1,0.2,...]'::vector
         """
-        # Flat column short-circuit: use t."col" instead of JSONB extraction
+        # Flat column short-circuit: use t."col" instead of JSONB extraction.
+        # A collation applies here exactly as it would to any text column.
         flat_column = self._flat_column(native_columns, column_mapping)
         if flat_column is not None:
             col_expr = sql.SQL("{}.{}").format(sql.Identifier("t"), sql.Identifier(flat_column))
-            return col_expr + sql.SQL(" ") + self._direction_sql()
+            return self._collated(col_expr) + sql.SQL(" ") + self._direction_sql()
 
         # Check if this is a vector distance operation
         if "." in self.field and self.value is not None:
@@ -151,25 +174,35 @@ class OrderBy:
                         field_name, operator, self.value, table_ref
                     )
 
-        # Standard JSONB extraction for regular fields
+        # Standard JSONB extraction for regular fields.
+        #
+        # The leaf is extracted with -> (jsonb) so numbers sort numerically
+        # rather than lexicographically -- except when a collation is asked
+        # for. jsonb has no collation, so the leaf must come out as text for
+        # the request to mean anything, and the whole extraction has to be
+        # parenthesised: COLLATE binds tighter than ->, so the unparenthesised
+        # `data -> 'name' COLLATE "x"` parses as `data -> ('name' COLLATE "x")`,
+        # attaching the collation to the *key literal*. PostgreSQL accepts that
+        # and silently ignores it, which is how it went unnoticed (#476).
+        #
+        # Asking for a collation is asking for a text ordering, so -> is only
+        # traded for ->> on the branch that requested one; an uncollated sort
+        # keeps its previous SQL byte for byte.
         path = self.field.split(".")
         json_path = sql.SQL(" -> ").join(sql.Literal(p) for p in path[:-1])
         last_key = sql.Literal(path[-1])
+        leaf_op = sql.SQL(" ->> ") if self.collation is not None else sql.SQL(" -> ")
         if path[:-1]:
-            # For nested fields: {table_ref} -> 'profile' -> 'age' (all JSONB)
-            data_expr = sql.SQL(table_ref + " -> ") + json_path + sql.SQL(" -> ") + last_key
+            # For nested fields: {table_ref} -> 'profile' -> 'age'
+            data_expr = sql.SQL(table_ref + " -> ") + json_path + leaf_op + last_key
         else:
-            # For simple fields: {table_ref} -> 'field' (JSONB)
-            data_expr = sql.SQL(table_ref + " -> ") + last_key
+            # For simple fields: {table_ref} -> 'field'
+            data_expr = sql.SQL(table_ref) + leaf_op + last_key
 
-        # Apply COLLATE clause if specified
-        # IMPORTANT: Use sql.Identifier() for collation name (NOT sql.Literal())
-        # PostgreSQL syntax: COLLATE "name" (identifier), not COLLATE 'name' (string)
         if self.collation is not None:
-            collation_clause = sql.SQL(" COLLATE ") + sql.Identifier(self.collation)
-            data_expr = data_expr + collation_clause
+            data_expr = sql.SQL("({})").format(data_expr)
 
-        return data_expr + sql.SQL(" ") + self._direction_sql()
+        return self._collated(data_expr) + sql.SQL(" ") + self._direction_sql()
 
     def _build_vector_distance_sql(
         self,
