@@ -143,11 +143,10 @@ unsafe fn find_underscores_avx2(input: &[u8]) -> UnderscoreMask {
     let underscore_vec = _mm256_set1_epi8(b'_' as i8);
     let mut mask = UnderscoreMask::new();
 
-    let chunks = input.chunks_exact(32);
+    let (chunks, remainder) = input.as_chunks::<32>();
     let chunks_len = chunks.len();
-    let remainder = chunks.remainder();
 
-    for (chunk_idx, chunk) in chunks.enumerate() {
+    for (chunk_idx, chunk) in chunks.iter().enumerate() {
         let data = _mm256_loadu_si256(chunk.as_ptr() as *const __m256i);
         let cmp = _mm256_cmpeq_epi8(data, underscore_vec);
         let bitmask = _mm256_movemask_epi8(cmp);
