@@ -4986,6 +4986,14 @@
 <h3 id="collation-support">Collation Support<a class="headerlink" href="#collation-support" title="Permanent link">&para;</a></h3>
 <p>FraiseQL supports PostgreSQL collation for locale-aware text sorting in <code>orderBy</code> clauses.</p>
 <p><strong>Global Default Collation</strong>:</p>
+<div class="admonition warning">
+<p class="admonition-title">Not currently applied</p>
+<p>This setting has no effect yet. Applying it safely needs field <em>types</em> in the
+ORDER BY builder, which does not distinguish a text field from a numeric one --
+and collating a numeric field either sorts it lexicographically or fails
+outright. Only a per-field collation reaches the SQL today. This has always
+been its effective behaviour.</p>
+</div>
 <p>Configure a default collation for all text sorting:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
@@ -5018,10 +5026,13 @@
 <p><strong>Collation Precedence</strong>:</p>
 <ol>
 <li>Per-field explicit value (highest priority)</li>
-<li>Explicit <code>null</code> (skips global default)</li>
-<li>Global <code>default_string_collation</code></li>
+<li>Explicit <code>null</code></li>
+<li><code>default_string_collation</code> from config, on text fields only</li>
 <li>PostgreSQL database default (lowest priority)</li>
 </ol>
+<p>Step 3 applies only where the sort key resolves to a string on the type
+registered for the view; anything else, including a field that cannot be
+resolved, falls straight through to step 4.</p>
 <p><strong>Common Collations</strong>:</p>
 <ul>
 <li><code>"C"</code> - Byte-order sorting (fastest, case-sensitive)</li>
