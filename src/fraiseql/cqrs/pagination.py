@@ -8,7 +8,9 @@ import base64
 from typing import Any, TypeVar
 
 from psycopg import AsyncConnection
-from psycopg.sql import SQL, Identifier, Literal
+from psycopg.sql import SQL, Literal
+
+from fraiseql.db import _view_identifier
 
 from .repository import CQRSRepository
 
@@ -102,7 +104,7 @@ class CursorPaginator:
             Dictionary with edges, page_info, and optional total_count
         """
         # Build the main query
-        query_parts = [SQL("SELECT id, data FROM {}").format(Identifier(view_name))]
+        query_parts = [SQL("SELECT id, data FROM {}").format(_view_identifier(view_name))]
         query_params = []
         where_clauses = []
 
@@ -222,7 +224,7 @@ class CursorPaginator:
         Returns:
             Total count of matching items
         """
-        query_parts = [SQL("SELECT COUNT(*) FROM {}").format(Identifier(view_name))]
+        query_parts = [SQL("SELECT COUNT(*) FROM {}").format(_view_identifier(view_name))]
         query_params = []
 
         if filters:
