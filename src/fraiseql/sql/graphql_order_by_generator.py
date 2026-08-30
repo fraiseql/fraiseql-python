@@ -5,6 +5,7 @@ for ordering. These types can be used directly in GraphQL resolvers and are
 automatically converted to SQL ORDER BY clauses.
 """
 
+import warnings
 from dataclasses import make_dataclass
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
@@ -175,6 +176,71 @@ def _apply_collation_default(
     return None
 
 
+# Only the operators OrderBy.to_sql can actually render. jaccard_distance is
+# deliberately absent: it exists on VectorOrderBy and the __gql_fields__ branch
+# emits it, but to_sql has no case for it, so the instruction degrades into a
+# plain JSONB path sort and the query fails. Adding it here has to wait for
+# to_sql to support it -- see #483.
+_VECTOR_OPERATORS = ("cosine_distance", "l2_distance", "inner_product")
+
+
+def _collect_dict_order_by(
+    obj_dict: dict[str, Any],
+    instructions: list[OrderBy],
+    prefix: str = "",
+) -> None:
+    """Walk a dict-shaped ``order_by``, appending one ``OrderBy`` per leaf.
+
+    The recursion is the point. ``{"measures": {"cost": "desc"}}`` has to reach
+    ``measures.cost DESC``; the list-of-dicts branch used to parse dicts with its
+    own shallower loop, which handed a nested dict to
+    :func:`_normalize_order_direction`, got the ASC default back, and sorted by
+    the wrong field in the wrong direction without a word (#475).
+
+    One parser now serves both dict shapes, so ``{...}`` and ``[{...}]`` cannot
+    drift apart again.
+    """
+    from fraiseql.utils.casing import to_snake_case
+
+    for field_name, value in obj_dict.items():
+        if value is None:
+            continue
+
+        snake_field_name = to_snake_case(field_name)
+        field_path = f"{prefix}.{snake_field_name}" if prefix else snake_field_name
+
+        # Nested object: recurse so the leaf carries the full dotted path.
+        if isinstance(value, dict):
+            _collect_dict_order_by(value, instructions, field_path)
+        # A VectorOrderBy names the distance operator it wants.
+        elif hasattr(value, "__gql_fields__") and hasattr(value, "cosine_distance"):
+            for operator in _VECTOR_OPERATORS:
+                operand = getattr(value, operator, None)
+                if operand is not None:
+                    instructions.append(
+                        OrderBy(
+                            field=f"{field_path}.{operator}",
+                            direction=OrderDirection.ASC,  # ASC for vectors
+                            value=operand,
+                        )
+                    )
+                    break
+        # A direction: a string, an OrderDirection, or any enum-like carrying one.
+        elif isinstance(value, (OrderDirection, str)) or hasattr(value, "value"):
+            instructions.append(
+                OrderBy(field=field_path, direction=_normalize_order_direction(value))
+            )
+        else:
+            # Defaulting to ASC here would mean "sorted by something else
+            # entirely", silently. Say so and drop the key instead.
+            warnings.warn(
+                f"order_by: ignoring {field_path!r} - cannot read a sort direction from "
+                f"{type(value).__name__}. Expected a direction, a nested dict, or None.",
+                UserWarning,
+                stacklevel=3,
+            )
+
+
 def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> OrderBySet | None:
     """Convert GraphQL order by input to SQL OrderBySet with optional collation.
 
@@ -223,30 +289,11 @@ def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> O
                 instructions.append(
                     OrderBy(field=item.field, direction=direction, collation=collation)
                 )
-            # Handle dictionary items like {'ipAddress': 'asc'}
+            # Handle dictionary items like {'ipAddress': 'asc'}, which may nest.
+            # A dict carries no per-field collation, so none is set -- see
+            # _apply_collation_default.
             elif isinstance(item, dict):
-                for field_name, value in item.items():
-                    if value is not None:
-                        # Convert camelCase field names to snake_case for database fields
-                        from fraiseql.utils.casing import to_snake_case
-
-                        snake_field_name = to_snake_case(field_name)
-
-                        # Handle OrderDirection enum or string
-                        direction = _normalize_order_direction(value)
-
-                        # A dict carries no per-field collation, so this
-                        # resolves to None -- see _apply_collation_default.
-                        global_collation = config.default_string_collation if config else None
-                        collation = _apply_collation_default(None, global_collation, False)
-
-                        instructions.append(
-                            OrderBy(
-                                field=snake_field_name,
-                                direction=direction,
-                                collation=collation,
-                            )
-                        )
+                _collect_dict_order_by(item, instructions)
         return OrderBySet(instructions=instructions) if instructions else None
 
     # Handle object with field-specific order directions
@@ -329,53 +376,7 @@ def _convert_order_by_input_to_sql(order_by_input: Any, config: Any = None) -> O
 
     # Handle plain dict (common from GraphQL frameworks)
     elif isinstance(order_by_input, dict):
-
-        def process_dict_order_by(obj_dict: dict[str, Any], prefix: str = "") -> None:
-            """Process dictionary-style order by input."""
-            for field_name, value in obj_dict.items():
-                if value is not None:
-                    # Convert camelCase field names to snake_case for database fields
-                    from fraiseql.utils.casing import to_snake_case
-
-                    snake_field_name = to_snake_case(field_name)
-                    field_path = f"{prefix}.{snake_field_name}" if prefix else snake_field_name
-
-                    # Handle OrderDirection enum or string
-                    if isinstance(value, (OrderDirection, str)):
-                        direction = _normalize_order_direction(value)
-                        instructions.append(OrderBy(field=field_path, direction=direction))
-                    # Check if this is a VectorOrderBy input
-                    elif hasattr(value, "__gql_fields__") and hasattr(value, "cosine_distance"):
-                        # This is a VectorOrderBy - check which distance operator is set
-                        if value.cosine_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.cosine_distance",
-                                    direction=OrderDirection.ASC,  # ASC for vectors
-                                    value=value.cosine_distance,
-                                )
-                            )
-                        elif value.l2_distance is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.l2_distance",
-                                    direction=OrderDirection.ASC,
-                                    value=value.l2_distance,
-                                )
-                            )
-                        elif value.inner_product is not None:
-                            instructions.append(
-                                OrderBy(
-                                    field=f"{field_path}.inner_product",
-                                    direction=OrderDirection.ASC,
-                                    value=value.inner_product,
-                                )
-                            )
-                    # Handle nested dict
-                    elif isinstance(value, dict):
-                        process_dict_order_by(value, field_path)
-
-        process_dict_order_by(order_by_input)
+        _collect_dict_order_by(order_by_input, instructions)
 
     return OrderBySet(instructions=instructions) if instructions else None
 
