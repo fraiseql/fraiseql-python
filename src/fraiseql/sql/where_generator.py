@@ -30,6 +30,11 @@ from psycopg.sql import SQL, Composed, Literal
 
 from .where.core.field_detection import FieldType, detect_field_type
 from .where.operators import get_operator_function
+from .where.operators.vectors import (
+    VECTOR_COMPARISON_SQL,
+    VECTOR_DISTANCE_OPERATORS,
+    unpack_distance_filter,
+)
 
 # Define a type variable for the generic value to coerce
 TValue = TypeVar("TValue", bound=object)
@@ -56,6 +61,7 @@ def build_operator_composed(
     val: object,
     field_type: type | None = None,
     detected_field_type: FieldType | None = None,
+    distance_within: float | None = None,
 ) -> Composed:
     """Build parameterized SQL for a specific operator using psycopg Composed.
 
@@ -67,6 +73,7 @@ def build_operator_composed(
         val: The value to compare against.
         field_type: Optional type hint for proper casting.
         detected_field_type: Optional pre-detected field type (overrides detection).
+        distance_within: Optional sibling threshold from the GraphQL ``VectorFilter``.
 
     Returns:
         A psycopg Composed object with properly parameterized SQL.
@@ -74,6 +81,25 @@ def build_operator_composed(
     # Use pre-detected field type if provided, otherwise detect it
     if detected_field_type is None:
         detected_field_type = detect_field_type("", val, field_type)
+
+    # A distance operator renders a number, not a predicate. Wrap it in the
+    # requested comparison so PostgreSQL accepts it in a WHERE clause (#505).
+    if op in VECTOR_DISTANCE_OPERATORS and detected_field_type in (
+        FieldType.VECTOR,
+        FieldType.SPARSE_VECTOR,
+    ):
+        query_vector, threshold, comparison = unpack_distance_filter(
+            val, operator=op, distance_within=distance_within
+        )
+        distance_sql = get_operator_function(detected_field_type, op)(path_sql, query_vector)
+        return Composed(
+            [
+                SQL("("),
+                distance_sql,
+                SQL(f") {VECTOR_COMPARISON_SQL[comparison]} "),
+                Literal(threshold),
+            ]
+        )
 
     # Get the operator function
     operator_func = get_operator_function(detected_field_type, op)
@@ -116,8 +142,12 @@ def _make_filter_field_composed(
     """
     conditions = []
 
+    # 'distance_within' is the GraphQL VectorFilter's threshold for a sibling
+    # distance operator, not an operator of its own.
+    distance_within = valdict.get("distance_within")
+
     for op, val in valdict.items():
-        if val is None:
+        if val is None or op == "distance_within":
             continue
         try:
             # Build the JSONB path expression
@@ -148,7 +178,9 @@ def _make_filter_field_composed(
                     [SQL("("), SQL(json_path), SQL(" ->> "), Literal(name), SQL(")")]
                 )
 
-            condition = build_operator_composed(path_sql, op, val, field_type, detected_field_type)
+            condition = build_operator_composed(
+                path_sql, op, val, field_type, detected_field_type, distance_within
+            )
             conditions.append(condition)
         except ValueError:
             # Skip unsupported operators

@@ -13,6 +13,128 @@ from typing import Any
 
 from psycopg.sql import SQL, Composed, Literal
 
+from fraiseql.errors.exceptions import WhereClauseError
+
+#: Distance operators whose expression is a number and therefore needs an
+#: explicit comparison before it can serve as a WHERE predicate (#505).
+VECTOR_DISTANCE_OPERATORS = frozenset(
+    {
+        "cosine_distance",
+        "l2_distance",
+        "l1_distance",
+        "inner_product",
+        "hamming_distance",
+        "jaccard_distance",
+    }
+)
+
+#: Comparison keyword -> SQL operator, mirroring ``where_clause.py``.
+VECTOR_COMPARISON_SQL = {
+    "lt": "<",
+    "lte": "<=",
+    "gt": ">",
+    "gte": ">=",
+    "eq": "=",
+    "neq": "<>",
+}
+
+#: Applied when a filter names no threshold at all, as ``where_clause.py`` does.
+DEFAULT_DISTANCE_THRESHOLD = 0.5
+
+
+def _reject(message: str, operator: str, value: object) -> WhereClauseError:
+    """Build the error raised for an unusable vector filter payload.
+
+    Deliberately *not* a :class:`ValueError`. ``_make_filter_field_composed``
+    wraps operator construction in ``except ValueError: continue``, so a
+    ``ValueError`` here would drop the predicate from the WHERE clause while
+    every sibling filter survived -- the query would then succeed and return
+    rows the similarity threshold was meant to exclude.
+    """
+    return WhereClauseError(
+        f"{message} (operator {operator!r}, got {value!r})",
+        operator=operator,
+        supported_operators=sorted(VECTOR_DISTANCE_OPERATORS),
+    )
+
+
+def unpack_distance_filter(
+    value: object,
+    *,
+    operator: str,
+    distance_within: float | None = None,
+) -> tuple[Any, float, str]:
+    """Normalise a vector distance filter into ``(query_vector, threshold, comparison)``.
+
+    Two input shapes reach this code and both are supported:
+
+    * the normalised form used by :mod:`fraiseql.where_clause` --
+      ``{"vector": ..., "threshold": 0.5, "comparison": "lt"}``;
+    * the GraphQL form declared by ``VectorFilter`` -- ``{"dense": [...]}`` or
+      ``{"sparse": {"indices": ..., "values": ...}}``, with the threshold
+      supplied by the sibling ``distance_within`` field.
+
+    A bare list or tuple is always the query vector itself; a bare string is a
+    bit vector for the Hamming and Jaccard operators. There is deliberately no
+    ``(vector, threshold)`` 2-tuple form: it cannot be told apart from a
+    two-dimensional query vector, so ``[0.1, 0.2]`` would silently filter on a
+    0.1-dimensional vector with a 0.2 threshold.
+
+    Raises:
+        WhereClauseError: If the payload, threshold or comparison is unusable.
+    """
+    threshold: object | None = None
+    comparison: object | None = None
+
+    if isinstance(value, dict):
+        for key in ("vector", "dense", "sparse"):
+            if key in value:
+                query_vector = value[key]
+                break
+        else:
+            if "indices" in value and "values" in value:
+                # A sparse payload handed straight to the sparse operator.
+                query_vector = value
+            else:
+                raise _reject(
+                    "Vector filter needs one of 'vector', 'dense', 'sparse', "
+                    "or an {'indices', 'values'} sparse payload",
+                    operator,
+                    value,
+                )
+        threshold = value.get("threshold")
+        comparison = value.get("comparison")
+    elif isinstance(value, (list, tuple)):
+        query_vector = list(value)
+    elif isinstance(value, str):
+        query_vector = value
+    else:
+        raise _reject("Vector filter must be a mapping, sequence or bit string", operator, value)
+
+    if query_vector is None:
+        raise _reject("Vector filter carries no query vector", operator, value)
+
+    if threshold is None and distance_within is not None:
+        threshold = distance_within
+        if comparison is None:
+            # 'distance_within' reads as "maximum distance to include".
+            comparison = "lte"
+    if threshold is None:
+        threshold = DEFAULT_DISTANCE_THRESHOLD
+    if comparison is None:
+        comparison = "lt"
+
+    if isinstance(threshold, bool) or not isinstance(threshold, (int, float)):
+        raise _reject("Vector distance threshold must be a number", operator, threshold)
+    if comparison not in VECTOR_COMPARISON_SQL:
+        raise _reject(
+            f"Unsupported vector comparison; expected one of {sorted(VECTOR_COMPARISON_SQL)}",
+            operator,
+            comparison,
+        )
+
+    return query_vector, float(threshold), comparison
+
 
 def _bit_cast(bit_string: str) -> Composed:
     """Cast a bit-string operand to a bit type of its own width.
