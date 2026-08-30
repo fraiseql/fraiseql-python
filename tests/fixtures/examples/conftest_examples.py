@@ -221,7 +221,7 @@ async def blog_simple_context(blog_simple_repository) -> dict[str, Any]:
 
 
 @pytest_asyncio.fixture(scope="function", loop_scope="function")
-async def blog_simple_app(smart_dependencies, blog_simple_db_url) -> AsyncGenerator[Any, None]:
+async def blog_simple_app(smart_dependencies, blog_simple_db_url, monkeypatch) -> AsyncGenerator[Any, None]:
     """Create blog_simple app for testing with guaranteed dependencies."""
     import sys
     import importlib.util
@@ -235,13 +235,18 @@ async def blog_simple_app(smart_dependencies, blog_simple_db_url) -> AsyncGenera
 
     # Parse the test database URL and set individual env vars
     # The example uses DB_NAME, DB_USER, etc. not DATABASE_URL
+    # monkeypatch, not a bare assignment: these restore when the fixture ends.
+    # A bare os.environ[...] leaked DATABASE_URL into every later test in a full
+    # run, and `fraiseql query-stats` reads it as its --database-url default, so
+    # a unit test written to prove nothing was configured reached a real server
+    # instead (#470).
     parsed = urlparse(blog_simple_db_url)
-    os.environ["DATABASE_URL"] = blog_simple_db_url
-    os.environ["DB_NAME"] = parsed.path.lstrip("/")
-    os.environ["DB_USER"] = parsed.username or "fraiseql"
-    os.environ["DB_PASSWORD"] = parsed.password or "fraiseql"
-    os.environ["DB_HOST"] = parsed.hostname or "localhost"
-    os.environ["DB_PORT"] = str(parsed.port or 5432)
+    monkeypatch.setenv("DATABASE_URL", blog_simple_db_url)
+    monkeypatch.setenv("DB_NAME", parsed.path.lstrip("/"))
+    monkeypatch.setenv("DB_USER", parsed.username or "fraiseql")
+    monkeypatch.setenv("DB_PASSWORD", parsed.password or "fraiseql")
+    monkeypatch.setenv("DB_HOST", parsed.hostname or "localhost")
+    monkeypatch.setenv("DB_PORT", str(parsed.port or 5432))
 
     try:
         # Force fresh module load using importlib (bypass Python cache)
@@ -345,7 +350,7 @@ async def blog_enterprise_db_url(smart_dependencies) -> AsyncGenerator[str, None
 
 @pytest_asyncio.fixture(scope="function", loop_scope="function")
 async def blog_enterprise_app(
-    smart_dependencies, blog_enterprise_db_url
+    smart_dependencies, blog_enterprise_db_url, monkeypatch
 ) -> AsyncGenerator[Any, None]:
     """Create blog_enterprise app for testing with guaranteed dependencies."""
     import sys
@@ -360,13 +365,18 @@ async def blog_enterprise_app(
 
     # Parse the test database URL and set individual env vars
     # The example uses DB_NAME, DB_USER, etc. not DATABASE_URL
+    # monkeypatch, not a bare assignment: these restore when the fixture ends.
+    # A bare os.environ[...] leaked DATABASE_URL into every later test in a full
+    # run, and `fraiseql query-stats` reads it as its --database-url default, so
+    # a unit test written to prove nothing was configured reached a real server
+    # instead (#470).
     parsed = urlparse(blog_enterprise_db_url)
-    os.environ["DATABASE_URL"] = blog_enterprise_db_url
-    os.environ["DB_NAME"] = parsed.path.lstrip("/")
-    os.environ["DB_USER"] = parsed.username or "fraiseql"
-    os.environ["DB_PASSWORD"] = parsed.password or "fraiseql"
-    os.environ["DB_HOST"] = parsed.hostname or "localhost"
-    os.environ["DB_PORT"] = str(parsed.port or 5432)
+    monkeypatch.setenv("DATABASE_URL", blog_enterprise_db_url)
+    monkeypatch.setenv("DB_NAME", parsed.path.lstrip("/"))
+    monkeypatch.setenv("DB_USER", parsed.username or "fraiseql")
+    monkeypatch.setenv("DB_PASSWORD", parsed.password or "fraiseql")
+    monkeypatch.setenv("DB_HOST", parsed.hostname or "localhost")
+    monkeypatch.setenv("DB_PORT", str(parsed.port or 5432))
 
     try:
         # Force fresh module load using importlib (bypass Python cache)
