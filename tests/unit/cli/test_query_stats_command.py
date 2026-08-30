@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import pytest
 from click.testing import CliRunner
 
 from fraiseql.cli.commands.query_stats import query_stats
@@ -222,7 +223,13 @@ class TestQueryStatsReset:
 class TestQueryStatsRequiresUrl:
     """Test that --database-url is required."""
 
-    def test_fails_without_database_url(self) -> None:
+    def test_fails_without_database_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The option declares envvar="DATABASE_URL", so with one set in the
+        # environment the CLI connects instead of reporting the missing
+        # argument. Stated here as well as in tests/unit/conftest.py so the
+        # precondition travels with the test (#470).
+        monkeypatch.delenv("DATABASE_URL", raising=False)
+
         runner = CliRunner()
         result = runner.invoke(query_stats, [])
         assert result.exit_code != 0
