@@ -274,11 +274,22 @@ jobs:
     # in pip-audit's schema (it emits `.dependencies[].vulns[]` and carries no
     # severity at all), so the filter matched nothing and the job stayed green
     # through ten open HIGH advisories.
+    #
+    # The third fault, visible only once the exit code stopped being swallowed:
+    # `uv run pip-audit` failed to spawn, because pip-audit is declared nowhere in
+    # pyproject.toml. The job had never audited anything.
+    #
+    # It now audits the *locked* surface rather than whatever `uv pip install`
+    # happens to resolve on the runner, and runs the auditor with `uvx` so that
+    # pip-audit's own dependency tree does not become part of the surface it is
+    # auditing.
     - name: Audit Python dependencies
       run: |
-        uv venv
-        uv pip install ".[dev,all]"
-        uv run pip-audit --format json --output audit-results.json
+        uv export --all-extras --no-emit-project \
+          --format requirements-txt -o audit-requirements.txt
+        uvx --from 'pip-audit>=2.10.1' pip-audit \
+          --requirement audit-requirements.txt \
+          --format json --output audit-results.json
 
     # Only reached when pip-audit exits 0. Re-reads the report so a schema change
     # upstream shows up as a disagreement between the two rather than as silence.
