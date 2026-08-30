@@ -16,9 +16,14 @@ from fraiseql.core.rust_pipeline import (
     RustResponseBytes,
     execute_via_rust_pipeline,
 )
+from fraiseql.sql.native_columns import resolve_native_column
 from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
-from fraiseql.where_normalization import normalize_dict_where, normalize_whereinput
+from fraiseql.where_normalization import (
+    _apply_column_mapping,
+    normalize_dict_where,
+    normalize_whereinput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +396,31 @@ def _build_trunc_expr(trunc: str, col_id: Any) -> Any:
     raise ValueError(msg)
 
 
+def _branch_sort_exprs(
+    entries: list[tuple[str, Any]],
+    order_keys: list[str] | None,
+) -> list[Any]:
+    """Return the branch expressions the outer ORDER BY sorts on, in order.
+
+    A UNION branch projects exactly one column — the ``json_build_object(...)::text``
+    the Rust pipeline reads — so ``ORDER BY`` on a dimension has nothing to
+    reference. Each requested key is therefore projected alongside it, using the
+    branch's *own* expression for that entry: the fine-grain branch truncates its
+    date where the coarse branch reads the column, and sorting has to follow the
+    same expression the branch grouped by.
+
+    *order_keys* is always a subset of the entry names — ``_union_order_terms``
+    resolves it against the same ``group_by`` and ``aggregations`` the entries are
+    built from, and drops anything an aggregated query cannot sort on. A missing
+    key would silently misalign the wrapper's column list, so it raises here
+    instead.
+    """
+    if not order_keys:
+        return []
+    by_key = dict(entries)
+    return [by_key[key] for key in order_keys]
+
+
 def _build_fine_grain_branch(
     *,
     fine_grain_view: str,
@@ -405,12 +435,14 @@ def _build_fine_grain_branch(
     native_dimension_mapping: dict[str, str] | None,
     jsonb_col: str,
     extra_where_sql: Any | None,
+    order_keys: list[str] | None = None,
 ) -> tuple[Any, list[Any]]:
     """Build one fine-grain branch of the UNION ALL query.
 
     Returns (branch_sql, branch_params).  Date bounds are embedded as Literals.
     ``extra_where_sql`` is a Composed fragment produced by WhereClause.to_sql()
-    (may be None when no extra conditions).
+    (may be None when no extra conditions).  ``order_keys`` names the projected
+    entries the caller wants to sort on — see ``_branch_sort_exprs`` (#468).
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
@@ -420,12 +452,14 @@ def _build_fine_grain_branch(
     def build_field(fp: str) -> SQL | Composed:
         if fp == time_grain_column:
             return _build_trunc_expr(time_grain_trunc, col_id)
-        if fp in native_dimensions:
-            return _build_non_jsonb_field_expr(fp, "t")
-        if native_dimension_mapping and fp in native_dimension_mapping:
-            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
-        if native_measures and fp in native_measures:
-            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        column = resolve_native_column(
+            fp,
+            native_columns=native_dimensions,
+            column_mapping=native_dimension_mapping,
+            native_measures=native_measures,
+        )
+        if column is not None:
+            return _build_non_jsonb_field_expr(column, "t")
         return _build_jsonb_field_expr(fp, jsonb_col)
 
     # Build entries for json_build_object
@@ -442,9 +476,13 @@ def _build_fine_grain_branch(
             func, field = _parse_aggregation_expr(agg_expr_str)
             field_expr = build_field(field) if field != "*" else SQL("*")
             is_native = (
-                field in native_dimensions
-                or (native_measures and field in native_measures)
-                or (native_dimension_mapping and field in native_dimension_mapping)
+                resolve_native_column(
+                    field,
+                    native_columns=native_dimensions,
+                    column_mapping=native_dimension_mapping,
+                    native_measures=native_measures,
+                )
+                is not None
             )
             if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
                 agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
@@ -462,14 +500,17 @@ def _build_fine_grain_branch(
     if extra_where_sql is not None:
         where_parts.append(extra_where_sql)
 
-    branch_parts: list[SQL | Composed] = [
-        SQL("SELECT "),
-        nested_obj,
-        SQL("::text FROM "),
-        table_id,
-        SQL(" AS t WHERE "),
-        SQL(" AND ").join(where_parts),
-    ]
+    branch_parts: list[SQL | Composed] = [SQL("SELECT "), nested_obj, SQL("::text")]
+    for sort_expr in _branch_sort_exprs(entries, order_keys):
+        branch_parts.extend([SQL(", "), sort_expr])
+    branch_parts.extend(
+        [
+            SQL(" FROM "),
+            table_id,
+            SQL(" AS t WHERE "),
+            SQL(" AND ").join(where_parts),
+        ]
+    )
 
     if group_by_exprs:
         branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
@@ -490,10 +531,12 @@ def _build_coarse_branch(
     native_dimension_mapping: dict[str, str] | None,
     jsonb_col: str,
     extra_where_sql: Any | None,
+    order_keys: list[str] | None = None,
 ) -> tuple[Any, list[Any]]:
     """Build the coarse-grain branch of the UNION ALL query.
 
-    Returns (branch_sql, branch_params).
+    Returns (branch_sql, branch_params).  ``order_keys`` names the projected
+    entries the caller wants to sort on — see ``_branch_sort_exprs`` (#468).
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
@@ -501,12 +544,14 @@ def _build_coarse_branch(
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
-        if fp in native_dimensions:
-            return _build_non_jsonb_field_expr(fp, "t")
-        if native_dimension_mapping and fp in native_dimension_mapping:
-            return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
-        if native_measures and fp in native_measures:
-            return _build_non_jsonb_field_expr(native_measures[fp], "t")
+        column = resolve_native_column(
+            fp,
+            native_columns=native_dimensions,
+            column_mapping=native_dimension_mapping,
+            native_measures=native_measures,
+        )
+        if column is not None:
+            return _build_non_jsonb_field_expr(column, "t")
         return _build_jsonb_field_expr(fp, jsonb_col)
 
     entries: list[tuple[str, SQL | Composed]] = []
@@ -521,9 +566,13 @@ def _build_coarse_branch(
             func, field = _parse_aggregation_expr(agg_expr_str)
             field_expr = build_field(field) if field != "*" else SQL("*")
             is_native = (
-                field in native_dimensions
-                or (native_measures and field in native_measures)
-                or (native_dimension_mapping and field in native_dimension_mapping)
+                resolve_native_column(
+                    field,
+                    native_columns=native_dimensions,
+                    column_mapping=native_dimension_mapping,
+                    native_measures=native_measures,
+                )
+                is not None
             )
             if func in _NUMERIC_AGGREGATION_FUNCS and not is_native:
                 agg_sql = SQL("{}(({})::{})").format(SQL(func), field_expr, SQL("numeric"))
@@ -540,19 +589,61 @@ def _build_coarse_branch(
     if extra_where_sql is not None:
         where_parts.append(extra_where_sql)
 
-    branch_parts: list[SQL | Composed] = [
-        SQL("SELECT "),
-        nested_obj,
-        SQL("::text FROM "),
-        table_id,
-        SQL(" AS t WHERE "),
-        SQL(" AND ").join(where_parts),
-    ]
+    branch_parts: list[SQL | Composed] = [SQL("SELECT "), nested_obj, SQL("::text")]
+    for sort_expr in _branch_sort_exprs(entries, order_keys):
+        branch_parts.extend([SQL(", "), sort_expr])
+    branch_parts.extend(
+        [
+            SQL(" FROM "),
+            table_id,
+            SQL(" AS t WHERE "),
+            SQL(" AND ").join(where_parts),
+        ]
+    )
 
     if group_by_exprs:
         branch_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
     return Composed(branch_parts), []
+
+
+def _union_order_terms(
+    order_by: Any | None,
+    group_by: list[str],
+    aggregations: dict[str, str],
+) -> tuple[list[str], list[Any]]:
+    """Resolve an ``OrderBySet`` into projected sort keys and outer ORDER BY terms.
+
+    Returns ``(order_keys, order_terms)``.  ``order_keys`` are the entry names every
+    branch has to project, in projection order; ``order_terms`` are the matching
+    ``"u"."sN" [COLLATE …] ASC|DESC`` fragments for the wrapper's ORDER BY.
+
+    An aggregated query can only sort on a grouped key or a measure, so an
+    instruction naming anything else is dropped and the statement falls back to its
+    positional sort. Both lists are empty when nothing is sortable, which is what
+    keeps a query with no usable ``order_by`` byte-identical to the unwrapped form.
+    """
+    from psycopg.sql import SQL, Identifier
+
+    instructions = getattr(order_by, "instructions", None) or ()
+    if not instructions:
+        return [], []
+
+    projectable = set(group_by) | set(aggregations or {})
+    order_keys: list[str] = []
+    order_terms: list[Any] = []
+
+    for instr in instructions:
+        if instr.field not in projectable:
+            continue
+        if instr.field not in order_keys:
+            order_keys.append(instr.field)
+        term = Identifier("u", f"s{order_keys.index(instr.field)}")
+        if instr.collation is not None:
+            term = term + SQL(" COLLATE ") + Identifier(instr.collation)
+        order_terms.append(term + SQL(" ") + instr._direction_sql())
+
+    return order_keys, order_terms
 
 
 def _build_partial_period_union_query(
@@ -571,6 +662,7 @@ def _build_partial_period_union_query(
     extra_where: Any | None,  # WhereClause | None
     upper_bound_exclusive: Any | None = None,  # date | None (exclusive)
     today: Any | None = None,  # date | None
+    order_by: Any | None = None,  # OrderBySet | None
 ) -> "DatabaseQuery":
     """Build a UNION ALL query for partial-period awareness.
 
@@ -616,13 +708,15 @@ def _build_partial_period_union_query(
                                  run through today.
         today:                   Override today's date (for deterministic testing).
                                  Defaults to ``date.today()``.
+        order_by:                Resolved ``OrderBySet``, or None to keep the
+                                 default positional sort on the projected column.
 
     Returns:
         DatabaseQuery with a UNION ALL Composed statement and params list.
     """
     from datetime import datetime, timedelta
 
-    from psycopg.sql import SQL, Composed
+    from psycopg.sql import SQL, Composed, Identifier
 
     from fraiseql.partial_period import (
         _is_period_aligned,
@@ -685,8 +779,13 @@ def _build_partial_period_union_query(
             extra_where_sql = ew_sql
             extra_where_params = list(ew_params)
 
+    # Sort keys have to be projected per branch before the branches are built:
+    # ORDER BY over a UNION can only reference an output column (#468).
+    order_keys, order_terms = _union_order_terms(order_by, group_by, aggregations)
+
     common = {
         "time_grain_column": time_grain_column,
+        "order_keys": order_keys,
         "group_by": group_by,
         "aggregations": aggregations,
         "native_dimensions": native_dimensions,
@@ -737,19 +836,266 @@ def _build_partial_period_union_query(
     if not branches:
         _add_fine(lo, lo)
 
-    # Join branches with UNION ALL and add ORDER BY 1
+    # Join branches with UNION ALL
     if len(branches) == 1:
-        statement = Composed([branches[0], SQL(" ORDER BY 1")])
+        union_sql: Any = branches[0]
     else:
         union_parts: list[Any] = []
         for i, branch in enumerate(branches):
             if i > 0:
                 union_parts.append(SQL(" UNION ALL "))
             union_parts.append(branch)
-        union_parts.append(SQL(" ORDER BY 1"))
-        statement = Composed(union_parts)
+        union_sql = Composed(union_parts)
+
+    if not order_terms:
+        # No sort requested: order on the single projected column, positionally.
+        statement = Composed([union_sql, SQL(" ORDER BY 1")])
+    else:
+        # Wrap so the statement still yields exactly one column: the sort keys are
+        # projected by every branch but must not reach the Rust pipeline, which
+        # reads ``row[0]``. Naming the subquery's columns means the branches
+        # themselves need no aliases.
+        column_aliases = SQL(", ").join(
+            [Identifier("d"), *(Identifier(f"s{i}") for i in range(len(order_keys)))]
+        )
+        statement = Composed(
+            [
+                SQL("SELECT "),
+                Identifier("u", "d"),
+                SQL(" FROM ("),
+                union_sql,
+                SQL(") AS "),
+                Identifier("u"),
+                SQL("("),
+                column_aliases,
+                SQL(") ORDER BY "),
+                SQL(", ").join(order_terms),
+            ]
+        )
 
     return DatabaseQuery(statement=statement, params=all_params, fetch_result=True)
+
+
+def _normalize_mapping_keys(mapping: dict[str, str]) -> dict[str, str]:
+    """Return *mapping* with every key's segments in database (snake_case) spelling.
+
+    Mapping keys are matched against dotted field paths built with
+    ``transform_path=to_snake_case``, so a key in GraphQL spelling
+    (``dimensions.dateInfo.date``) could never match one and the entry would
+    silently never fire. Normalizing each segment at registration accepts both
+    spellings and leaves every consumer looking at the same dict.
+    """
+    return {
+        ".".join(to_snake_case(segment) for segment in path.split(".")): column
+        for path, column in mapping.items()
+    }
+
+
+def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str, Any]:
+    """Return ``aggregation`` with ``native_dimension_mapping`` keys in one spelling.
+
+    The caller's dict is never mutated: a new dict is returned when anything
+    changed, and the original is returned untouched otherwise.
+    """
+    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
+    if not mapping:
+        return aggregation
+
+    normalized = _normalize_mapping_keys(mapping)
+    if normalized == mapping:
+        return aggregation
+    return {**aggregation, "native_dimension_mapping": normalized}
+
+
+def _aggregation_mapping_error(
+    view_name: str,
+    meta_key: str,
+    declared: str,
+    column: str,
+    table_columns: set[str],
+) -> str:
+    """Build the message for an aggregation entry naming a non-existent column.
+
+    Mirrors the wording of the ``fk_relationships`` guard so the two read as one
+    voice: what was declared, what is missing, and the two ways to fix it.
+    """
+    subject = (
+        f"Entry '{column}'"
+        if declared == column
+        else f"Path '{declared}' mapped to column '{column}'"
+    )
+    return (
+        f"Invalid {meta_key} for {view_name}: "
+        f"{subject}, but '{column}' not in table_columns: {sorted(table_columns)}. "
+        f"Either add '{column}' to table_columns or fix {meta_key}. "
+        f"To allow this (not recommended), set validate_fk_strict=False."
+    )
+
+
+def _validate_aggregation_mapping(
+    view_name: str,
+    aggregation: dict[str, Any],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> None:
+    """Validate that aggregation metadata only names columns that exist.
+
+    ``native_dimension_mapping`` and ``native_measures`` map JSONB paths to flat
+    columns; ``native_dimensions`` names columns directly. A value that is not a
+    real column makes the entry silently dead — the query falls back to JSONB
+    extraction and nothing says why. Same class of declaration as
+    ``fk_relationships``, so the same treatment.
+
+    With no columns registered there is nothing to validate against: warn once
+    naming the view, never raise.
+
+    Args:
+        view_name: The database view the metadata was registered against
+        aggregation: The ``aggregation`` dict from ``register_type_for_view``
+        table_columns: Actual database columns for the view, if known
+        strict: Raise ``ValueError`` when True, log a warning when False
+    """
+    declarations: list[tuple[str, str, str]] = []
+
+    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
+    declarations += [("native_dimension_mapping", path, col) for path, col in mapping.items()]
+
+    measures: dict[str, str] = aggregation.get("native_measures") or {}
+    declarations += [("native_measures", path, col) for path, col in measures.items()]
+
+    dimensions: list[str] = list(aggregation.get("native_dimensions") or [])
+    declarations += [("native_dimensions", col, col) for col in dimensions]
+
+    _validate_mapping_declarations(view_name, declarations, table_columns, strict=strict)
+    _warn_unreachable_mapping_keys(view_name, aggregation)
+
+
+def _validate_mapping_declarations(
+    view_name: str,
+    declarations: list[tuple[str, str, str]],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> None:
+    """Check that every ``(meta_key, declared, column)`` triple names a real column.
+
+    With no columns registered there is nothing to validate against: warn once
+    naming the view, never raise.
+    """
+    if not declarations:
+        return
+
+    if not table_columns:
+        logger.warning(
+            f"No table_columns registered for {view_name} - "
+            f"aggregation mapping validation disabled. Call register_type_for_view()."
+        )
+        return
+
+    for meta_key, declared, column in declarations:
+        if column in table_columns:
+            continue
+        error_msg = _aggregation_mapping_error(view_name, meta_key, declared, column, table_columns)
+        if strict:
+            raise ValueError(error_msg)
+        logger.warning("%s", error_msg)
+
+
+def _validate_column_mapping(
+    view_name: str,
+    column_mapping: dict[str, str],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> None:
+    """Validate a top-level ``column_mapping`` against the view's real columns.
+
+    Same class of declaration as ``fk_relationships``, so the same treatment. The
+    unreachable-key warning is deliberately *not* applied: it is specific to
+    aggregation dimension paths, and a peer of ``fk_relationships`` may
+    legitimately name any path in the type.
+    """
+    declarations = [("column_mapping", path, col) for path, col in column_mapping.items()]
+    _validate_mapping_declarations(view_name, declarations, table_columns, strict=strict)
+
+
+def _warn_unreachable_mapping_keys(view_name: str, aggregation: dict[str, Any]) -> None:
+    """Warn about ``native_dimension_mapping`` keys no dimension path can produce.
+
+    GROUP BY entries are dotted field paths rooted at the configured dimensions
+    prefix, so a key rooted anywhere else can never match one. This is a warning
+    rather than an error: a mapping may legitimately anticipate a field that is
+    not selected by any query yet.
+    """
+    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
+    if not mapping:
+        return
+
+    prefix: str = aggregation.get("dimensions", "dimensions")
+    accepted_roots = {prefix, to_snake_case(prefix)}
+    for path in mapping:
+        if path.split(".", 1)[0] in accepted_roots:
+            continue
+        logger.warning(
+            f"Unreachable native_dimension_mapping key for {view_name}: "
+            f"'{path}' is not rooted at the configured dimensions prefix '{prefix}', "
+            f"so it can never match a dimension path and will never fire. "
+            f"Either re-root the key at '{prefix}' or fix the 'dimensions' prefix."
+        )
+
+
+def _view_column_mapping(view_name: str) -> dict[str, str]:
+    """Return the declared field path → column mapping for *view_name*.
+
+    Two declarations feed one resolver: the top-level ``column_mapping``, which
+    is the peer of ``fk_relationships``, and the older
+    ``aggregation["native_dimension_mapping"]``, which it supersedes. Both are
+    normalized to snake_case keys at registration, so they merge directly; the
+    explicit peer wins where they name the same path.
+    """
+    metadata = _table_metadata.get(view_name)
+    if not metadata:
+        return {}
+    aggregation = metadata.get("aggregation") or {}
+    return {
+        **(aggregation.get("native_dimension_mapping") or {}),
+        **(metadata.get("column_mapping") or {}),
+    }
+
+
+def _apply_view_column_mapping(
+    clause: WhereClause,
+    view_name: str,
+    table_columns: set[str] | None,
+) -> WhereClause:
+    """Re-resolve a view's declared field paths onto flat columns (issue #467).
+
+    The single site where the mapping is applied. Both query paths funnel
+    through :meth:`FraiseQLRepository._normalize_where` — the standard builder
+    via ``_build_where_clause``, and the partial-period UNION dispatch via its
+    own bound probe — so one call here covers both.
+
+    It runs on the finished clause rather than inside the recursive walk: that
+    walk is prefix-unaware and only the completed ``field_path`` carries the
+    dotted path a mapping key is written against.
+    """
+    mapping = _view_column_mapping(view_name)
+    if not mapping:
+        return clause
+
+    metadata = _table_metadata.get(view_name) or {}
+    if table_columns is None:
+        # Mirror normalize_dict_where: fall back to the registered columns so the
+        # resolution-time guard checks against what the walk itself used.
+        table_columns = metadata.get("columns")
+
+    return _apply_column_mapping(
+        clause,
+        mapping,
+        table_columns,
+        strict=metadata.get("validate_fk_strict", True),
+    )
 
 
 def register_type_for_view(
@@ -761,6 +1107,7 @@ def register_type_for_view(
     fk_relationships: dict[str, str] | None = None,
     validate_fk_strict: bool = True,
     aggregation: dict[str, Any] | None = None,
+    column_mapping: dict[str, str] | None = None,
 ) -> None:
     """Register a type class for a specific view name with optional metadata.
 
@@ -778,6 +1125,23 @@ def register_type_for_view(
             If not specified, uses convention: field + "_id"
         validate_fk_strict: If True, raise error on FK validation failures.
             If False, only warn (useful for legacy code migration).
+        column_mapping: Map a dotted field path → flat SQL column name.
+            Example: {"dimensions.item.model.category": "model_category"}
+            A peer of ``fk_relationships``: it declares that a field the JSONB
+            snapshot also carries lives in a real column, so GROUP BY, WHERE and
+            ORDER BY all read the column instead of extracting from JSONB. All
+            three go through one resolver
+            (``fraiseql.sql.native_columns.resolve_native_column``) so they cannot
+            disagree — two expressions for one logical field is a query that
+            fails to plan. Unlike
+            ``fk_relationships`` and the ``<parent>_id`` convention — which reach
+            only a leaf literally named ``id`` — it reaches any depth and any
+            leaf name. Applied unconditionally, aggregated query or not. Keys
+            accept either spelling (GraphQL or database) and are normalized
+            segment-wise to snake_case at registration, and may name any path in
+            the type. Supersedes ``aggregation["native_dimension_mapping"]``,
+            which keeps working and feeds the same resolver; where both declare
+            the same path, ``column_mapping`` wins.
         aggregation: Optional aggregation metadata for auto-aggregation.
             Example: {"measures": {"measures.cost": "SUM", "measures.volume": "SUM"},
                       "dimensions": "dimensions",
@@ -794,7 +1158,16 @@ def register_type_for_view(
             JSONB-extracted values, avoiding ::numeric casts and improving performance.
             The ``native_dimension_mapping`` key maps deep JSONB dimension paths
             to flat SQL column names, enabling GROUP BY on native columns for
-            complex nested dimension paths.
+            complex nested dimension paths. Its keys accept either spelling —
+            GraphQL (``dimensions.dateInfo.date``) or database
+            (``dimensions.date_info.date``) — and are normalized segment-wise to
+            snake_case at registration, which is the spelling field paths use.
+
+    Raises:
+        ValueError: If ``fk_relationships``, ``column_mapping`` or the
+            aggregation metadata names a column absent from ``table_columns``,
+            unless ``validate_fk_strict`` is False (which downgrades all of them
+            to warnings).
     """
     _type_registry[view_name] = type_class
     logger.debug(f"Registered type {type_class.__name__} for view {view_name}")
@@ -820,6 +1193,20 @@ def register_type_for_view(
                     f"To allow this (not recommended), set validate_fk_strict=False."
                 )
 
+    # Validate aggregation metadata against real columns (same class as FK)
+    if aggregation:
+        aggregation = _normalize_aggregation_mapping_keys(aggregation)
+        _validate_aggregation_mapping(
+            view_name, aggregation, table_columns, strict=validate_fk_strict
+        )
+
+    # Same for the top-level column mapping, the peer of fk_relationships (#467)
+    if column_mapping:
+        column_mapping = _normalize_mapping_keys(column_mapping)
+        _validate_column_mapping(
+            view_name, column_mapping, table_columns, strict=validate_fk_strict
+        )
+
     # Store metadata if provided
     if (
         table_columns is not None
@@ -827,6 +1214,7 @@ def register_type_for_view(
         or jsonb_column is not None
         or fk_relationships
         or aggregation
+        or column_mapping
     ):
         metadata = {
             "columns": table_columns or set(),
@@ -835,6 +1223,7 @@ def register_type_for_view(
             "fk_relationships": fk_relationships,
             "validate_fk_strict": validate_fk_strict,
             "aggregation": aggregation,
+            "column_mapping": column_mapping or {},
         }
         _table_metadata[view_name] = metadata
         logger.debug(
@@ -1415,10 +1804,15 @@ class FraiseQLRepository:
                         kwargs["group_by"],
                         kwargs["aggregations"],
                         native_dims,
-                        native_dim_mapping,
+                        _agg_mapping,
                     ) = result
                     if native_dims:
                         kwargs["native_dimensions"] = native_dims
+                    # Both declarations feed one resolver (#467), so GROUP BY
+                    # reads the same merged mapping the WHERE rewrite does —
+                    # otherwise column_mapping= would work in WHERE and silently
+                    # no-op in the one place the mechanism already worked.
+                    native_dim_mapping = _view_column_mapping(view_name)
                     if native_dim_mapping:
                         kwargs["native_dimension_mapping"] = native_dim_mapping
                     native_meas = agg_meta.get("native_measures")
@@ -1460,8 +1854,17 @@ class FraiseQLRepository:
                             _extract_upper_date_bound,
                         )
 
-                        lower_bound = _extract_lower_date_bound(
-                            where_clause_for_pp, time_grain_column
+                        # The builder re-encodes the bounds as per-branch AND
+                        # literals, so it may only rewrite a bound that is itself a
+                        # top-level conjunct. `_extract_lower_date_bound` already
+                        # ignores nested clauses; OR-joined top-level conditions
+                        # have to be excluded here, or `date >= X OR status = 'a'`
+                        # would become `date in [branch] AND status = 'a'` and drop
+                        # every row that matched on the date alone (#468).
+                        lower_bound = (
+                            _extract_lower_date_bound(where_clause_for_pp, time_grain_column)
+                            if where_clause_for_pp.logical_op == "AND"
+                            else None
                         )
                         if lower_bound is not None:
                             use_union_all = True
@@ -1474,38 +1877,24 @@ class FraiseQLRepository:
                         pass
 
         if use_union_all:
-            # Strip the date condition from the where clause for extra_where
-            # (date bounds are encoded per-branch in the UNION builder)
+            # Everything but the time-grain bounds (those are encoded per-branch in
+            # the UNION builder), plus mandatory_filters as FieldConditions (#344).
+            # One construction site: rebuilding the clause from its conditions alone
+            # is what dropped every OR/NOT group (#468).
+            from fraiseql.partial_period import _build_extra_where
+            from fraiseql.where_clause import FieldCondition
 
-            remaining_conditions = [
-                c for c in where_clause_for_pp.conditions if c.target_column != time_grain_column
+            mandatory_fc = [
+                FieldCondition(
+                    field_path=[col],
+                    operator="eq",
+                    value=val,
+                    lookup_strategy="sql_column",
+                    target_column=col,
+                )
+                for col, val in (mandatory_filters or {}).items()
             ]
-            extra_where = (
-                WhereClause(conditions=remaining_conditions) if remaining_conditions else None
-            )
-
-            # Inject mandatory_filters into extra_where as FieldConditions (#344)
-            if mandatory_filters:
-                from fraiseql.where_clause import FieldCondition
-
-                mandatory_fc = [
-                    FieldCondition(
-                        field_path=[col],
-                        operator="eq",
-                        value=val,
-                        lookup_strategy="sql_column",
-                        target_column=col,
-                    )
-                    for col, val in mandatory_filters.items()
-                ]
-                if extra_where:
-                    extra_where = WhereClause(
-                        conditions=[*mandatory_fc, *extra_where.conditions],
-                        nested_clauses=extra_where.nested_clauses,
-                        not_clause=extra_where.not_clause,
-                    )
-                else:
-                    extra_where = WhereClause(conditions=mandatory_fc)
+            extra_where = _build_extra_where(where_clause_for_pp, time_grain_column, mandatory_fc)
 
             # Collect kwargs that affect the query structure
             union_group_by = kwargs.get("group_by") or []
@@ -1514,6 +1903,7 @@ class FraiseQLRepository:
             union_native_measures = kwargs.get("native_measures")
             union_native_dim_mapping = kwargs.get("native_dimension_mapping")
             union_jsonb_col = jsonb_column or "data"
+            union_order_by = self._resolve_order_by_set(kwargs.get("order_by"))
 
             query = _build_partial_period_union_query(
                 coarse_view=view_name,
@@ -1529,6 +1919,7 @@ class FraiseQLRepository:
                 jsonb_col=union_jsonb_col,
                 extra_where=extra_where,
                 upper_bound_exclusive=upper_bound_exclusive,
+                order_by=union_order_by,
             )
         else:
             # Inject mandatory conditions for _build_where_clause consumption (#344)
@@ -2423,61 +2814,54 @@ class FraiseQLRepository:
         if isinstance(where, WhereClause):
             return where
 
+        jsonb_column = "data"
+        if view_name in _table_metadata:
+            metadata = _table_metadata[view_name]
+            if metadata.get("has_jsonb_data", False):
+                jsonb_column = metadata.get("jsonb_column") or "data"
+
+        result: WhereClause | None = None
+
         # Dict-based WHERE
         if isinstance(where, dict):
-            jsonb_column = "data"
-            if view_name in _table_metadata:
-                metadata = _table_metadata[view_name]
-                if metadata.get("has_jsonb_data", False):
-                    jsonb_column = metadata.get("jsonb_column") or "data"
-
             result = normalize_dict_where(where, view_name, table_columns, jsonb_column)
             if result is None:
                 raise ValueError(f"normalize_dict_where returned None for {where!r}")
-            return result
 
         # WhereInput-based WHERE
-        if hasattr(where, "_to_whereinput_dict"):
-            jsonb_column = "data"
-            if view_name in _table_metadata:
-                metadata = _table_metadata[view_name]
-                if metadata.get("has_jsonb_data", False):
-                    jsonb_column = metadata.get("jsonb_column") or "data"
-
+        elif hasattr(where, "_to_whereinput_dict"):
             result = normalize_whereinput(where, view_name, table_columns, jsonb_column)
             if result is None:
                 raise ValueError(f"normalize_whereinput returned None for {where!r}")
-            return result
 
-        # Try to convert dataclass WhereInput objects to dict
-        # (for dynamically created WhereInput types without _to_whereinput_dict method)
-        from dataclasses import asdict, is_dataclass
+        else:
+            # Try to convert dataclass WhereInput objects to dict
+            # (for dynamically created WhereInput types without _to_whereinput_dict method)
+            from dataclasses import asdict, is_dataclass
 
-        if is_dataclass(where):
-            # Convert dataclass to dict, filtering out None values
-            where_dict = {
-                field_name: field_value
-                for field_name, field_value in asdict(where).items()
-                if field_value is not None and field_value != {}
-            }
+            if is_dataclass(where):
+                # Convert dataclass to dict, filtering out None values
+                where_dict = {
+                    field_name: field_value
+                    for field_name, field_value in asdict(where).items()
+                    if field_value is not None and field_value != {}
+                }
 
-            if where_dict:  # Only process if there are non-empty values
-                jsonb_column = "data"
-                if view_name in _table_metadata:
-                    metadata = _table_metadata[view_name]
-                    if metadata.get("has_jsonb_data", False):
-                        jsonb_column = metadata.get("jsonb_column") or "data"
+                if where_dict:  # Only process if there are non-empty values
+                    result = normalize_dict_where(
+                        where_dict, view_name, table_columns, jsonb_column
+                    )
+                    if result is None:
+                        raise ValueError(f"normalize_dict_where returned None for {where_dict!r}")
 
-                result = normalize_dict_where(where_dict, view_name, table_columns, jsonb_column)
-                if result is None:
-                    raise ValueError(f"normalize_dict_where returned None for {where_dict!r}")
-                return result
+        if result is None:
+            # FIX: Always raise error for unsupported types, never return None
+            raise TypeError(
+                f"WHERE clause must be dict, WhereClause, or WhereInput object. "
+                f"Got: {type(where).__name__}"
+            )
 
-        # FIX: Always raise error for unsupported types, never return None
-        raise TypeError(
-            f"WHERE clause must be dict, WhereClause, or WhereInput object. "
-            f"Got: {type(where).__name__}"
-        )
+        return _apply_view_column_mapping(result, view_name, table_columns)
 
     def _build_where_clause(self, view_name: str, **kwargs: Any) -> tuple[list[Any], list[Any]]:
         """Build WHERE clause parts from kwargs.
@@ -2587,6 +2971,77 @@ class FraiseQLRepository:
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
         )
 
+    def _resolve_order_by_set(self, order_by: Any) -> Any | None:
+        """Normalise any accepted ``order_by`` shape to an ``OrderBySet``.
+
+        Three shapes reach the repository — an ``OrderBySet``, a GraphQL
+        ``OrderByInput`` and dict/list input — and both the single-statement
+        ORDER BY and the partial-period UNION need the resolved instructions.
+
+        Returns:
+            The ``OrderBySet``, or None for a falsy value or a shape with no
+            instructions to read (a raw SQL string, which callers pass through
+            untouched).
+        """
+        if not order_by:
+            return None
+
+        order_set = order_by
+        if not hasattr(order_set, "to_sql"):
+            if hasattr(order_set, "_to_sql_order_by"):
+                order_set = order_set._to_sql_order_by(config=self.context.get("config"))
+            elif isinstance(order_set, (dict, list)):
+                # List format: [{"age": "ASC"}, {"name": "DESC"}] - from GraphQL
+                # Dict format: {"age": "ASC"} - single field, nested paths allowed
+                from fraiseql.sql.graphql_order_by_generator import (
+                    _convert_order_by_input_to_sql,
+                )
+
+                order_set = _convert_order_by_input_to_sql(
+                    order_set, config=self.context.get("config")
+                )
+            else:
+                # Raw SQL string, or something unrecognised — the caller handles it
+                return None
+
+        if not order_set or not hasattr(order_set, "to_sql"):
+            return None
+        return order_set
+
+    def _build_order_by_sql(
+        self,
+        order_by: Any,
+        table_ref: str,
+        native_columns: set[str] | None = None,
+        column_mapping: dict[str, str] | None = None,
+    ) -> tuple[Any | None, bool]:
+        """Resolve any accepted ``order_by`` shape to SQL, once, for every shape.
+
+        Three call sites used to render this — an ``OrderBySet``, a GraphQL
+        ``OrderByInput``, and dict/list input — and each had to be kept in step
+        by hand. One helper means a new resolution rule cannot reach two of the
+        three (#467).
+
+        Returns:
+            ``(order_sql, needs_t_alias)``. A flat column renders ``t."col"``, so
+            the caller must ensure the FROM clause carries that alias; raw string
+            ``order_by`` is passed through untouched and reports ``(None, False)``.
+        """
+        order_set = self._resolve_order_by_set(order_by)
+        if order_set is None:
+            return None, False
+
+        order_sql = order_set.to_sql(
+            table_ref, native_columns=native_columns, column_mapping=column_mapping
+        )
+        if not order_sql:
+            return None, False
+
+        needs_alias = hasattr(order_set, "uses_flat_columns") and order_set.uses_flat_columns(
+            native_columns=native_columns, column_mapping=column_mapping
+        )
+        return order_sql, needs_alias
+
     def _build_find_query(
         self,
         view_name: str,
@@ -2627,6 +3082,14 @@ class FraiseQLRepository:
         native_dimension_mapping: dict[str, str] | None = kwargs.pop(
             "native_dimension_mapping", None
         )
+        # Resolve the declaration once (#467). SELECT/GROUP BY and ORDER BY must
+        # render a mapped path identically — PostgreSQL rejects a sort key that is
+        # neither grouped nor functionally determined by the grouping, and two
+        # expressions for one logical field is exactly how that happens. Falling
+        # back to the registration also makes column_mapping= apply to a plain
+        # find(), like fk_relationships does.
+        if native_dimension_mapping is None:
+            native_dimension_mapping = _view_column_mapping(view_name) or None
 
         if aggregations and not group_by:
             msg = "aggregations requires group_by"
@@ -2635,6 +3098,18 @@ class FraiseQLRepository:
         # Use unified WHERE clause building (includes Issue #124 fix for hybrid tables)
         # This ensures WhereInput nested filters work correctly in all code paths
         where_parts, where_params = self._build_where_clause(view_name, **kwargs)
+
+        # Determine table reference for ORDER BY
+        # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
+        table_ref = jsonb_column if jsonb_column is not None else "t"
+        # Pass native_dimensions to ORDER BY so native columns use t."col" (#337),
+        # and the declared mapping so mapped paths do too (#467).
+        order_sql, order_needs_alias = self._build_order_by_sql(
+            order_by,
+            table_ref,
+            native_columns=native_dimensions or None,
+            column_mapping=native_dimension_mapping,
+        )
 
         # Handle schema-qualified table names
         if "." in view_name:
@@ -2654,12 +3129,14 @@ class FraiseQLRepository:
 
             def build_field(fp: str) -> SQL | Composed:
                 """Build field expression, dispatching native vs JSONB."""
-                if fp in native_dimensions:
-                    return _build_non_jsonb_field_expr(fp, "t")
-                if native_dimension_mapping and fp in native_dimension_mapping:
-                    return _build_non_jsonb_field_expr(native_dimension_mapping[fp], "t")
-                if native_measures and fp in native_measures:
-                    return _build_non_jsonb_field_expr(native_measures[fp], "t")
+                column = resolve_native_column(
+                    fp,
+                    native_columns=native_dimensions,
+                    column_mapping=native_dimension_mapping,
+                    native_measures=native_measures,
+                )
+                if column is not None:
+                    return _build_non_jsonb_field_expr(column, "t")
                 if is_jsonb:
                     return _build_jsonb_field_expr(fp, jsonb_col)
                 return _build_non_jsonb_field_expr(fp, "t")
@@ -2680,9 +3157,13 @@ class FraiseQLRepository:
                     else:
                         field_expr = build_field(field)
                         is_native_field = (
-                            field in native_dimensions
-                            or (native_measures and field in native_measures)
-                            or (native_dimension_mapping and field in native_dimension_mapping)
+                            resolve_native_column(
+                                field,
+                                native_columns=native_dimensions,
+                                column_mapping=native_dimension_mapping,
+                                native_measures=native_measures,
+                            )
+                            is not None
                         )
                         if is_jsonb and func in _NUMERIC_AGGREGATION_FUNCS and not is_native_field:
                             agg_expr = SQL("{}(({})::{})").format(
@@ -2719,6 +3200,10 @@ class FraiseQLRepository:
                 SQL("::text FROM "),
                 table_identifier,
             ]
+            # A flat sort key renders t."col", which needs the alias to exist.
+            # Only a declared mapping can reach here — this branch has no GROUP BY.
+            if order_needs_alias:
+                query_parts.append(SQL(" AS t"))
 
         # Add WHERE clause
         if where_parts:
@@ -2735,46 +3220,13 @@ class FraiseQLRepository:
         if group_by:
             query_parts.extend([SQL(" GROUP BY "), SQL(", ").join(group_by_exprs)])
 
-        # Determine table reference for ORDER BY
-        # For JSONB tables, use the column name; for non-JSONB tables, use table alias "t"
-        table_ref = jsonb_column if jsonb_column is not None else "t"
-        # Pass native_dimensions to ORDER BY so native columns use t."col" (#337)
-        order_native = native_dimensions or None
-
-        # Add ORDER BY
-        if order_by:
-            if hasattr(order_by, "to_sql"):
-                order_sql = order_by.to_sql(table_ref, native_columns=order_native)
-                if order_sql:
-                    # OrderBySet.to_sql() already includes "ORDER BY " prefix
-                    query_parts.append(SQL(" "))
-                    query_parts.append(order_sql)
-            elif hasattr(order_by, "_to_sql_order_by"):
-                # Convert GraphQL OrderByInput to SQL OrderBySet, then get SQL
-                config = self.context.get("config")
-                sql_order_by_obj = order_by._to_sql_order_by(config=config)
-                if sql_order_by_obj and hasattr(sql_order_by_obj, "to_sql"):
-                    order_sql = sql_order_by_obj.to_sql(table_ref, native_columns=order_native)
-                    if order_sql:
-                        # OrderBySet.to_sql() already includes "ORDER BY " prefix
-                        query_parts.append(SQL(" "))
-                        query_parts.append(order_sql)
-            elif isinstance(order_by, (dict, list)):
-                # Convert dict or list-style order by input to SQL OrderBySet
-                # List format: [{"age": "ASC"}, {"name": "DESC"}] - from GraphQL
-                # Dict format: {"age": "ASC"} - single field
-                from fraiseql.sql.graphql_order_by_generator import _convert_order_by_input_to_sql
-
-                config = self.context.get("config")
-                sql_order_by_obj = _convert_order_by_input_to_sql(order_by, config=config)
-                if sql_order_by_obj and hasattr(sql_order_by_obj, "to_sql"):
-                    order_sql = sql_order_by_obj.to_sql(table_ref, native_columns=order_native)
-                    if order_sql:
-                        # OrderBySet.to_sql() already includes "ORDER BY " prefix
-                        query_parts.append(SQL(" "))
-                        query_parts.append(order_sql)
-            elif isinstance(order_by, str):
-                query_parts.extend([SQL(" ORDER BY "), SQL(order_by)])
+        # Add ORDER BY (resolved above, before the FROM clause needed its alias)
+        if order_sql is not None:
+            # OrderBySet.to_sql() already includes the "ORDER BY " prefix
+            query_parts.append(SQL(" "))
+            query_parts.append(order_sql)
+        elif isinstance(order_by, str):
+            query_parts.extend([SQL(" ORDER BY "), SQL(order_by)])
 
         # Add LIMIT
         if limit is not None:

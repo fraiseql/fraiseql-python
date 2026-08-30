@@ -193,19 +193,36 @@ jobs:
          echo "- Unpatched vulnerabilities: $UNPATCHED" >> security-report.md
          echo "" >> security-report.md
 
-         # Government compliance gate
+         # Government compliance gate.
+         #
+         # Policy, stated rather than implied:
+         #   CRITICAL, any package        -> fail
+         #   HIGH in a *language* package -> fail. These are ours: they come from
+         #                                   the wheel we build, so there is
+         #                                   always something to bump.
+         #   HIGH in an *OS* package      -> report, do not fail. Debian trixie
+         #                                   routinely carries HIGHs with
+         #                                   FixedVersion=none; failing on them
+         #                                   would make this job permanently red
+         #                                   and therefore ignored. Each accepted
+         #                                   one is justified in .trivyignore.
+         #
+         # Anything already suppressed by .trivyignore never reaches these counts.
+         LANG_HIGH=$(jq '[.Results[]? | select(.Class=="lang-pkgs") | .Vulnerabilities[]? | select(.Severity=="HIGH")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
+         OS_HIGH=$((HIGH - LANG_HIGH))
+
          if [ "$CRITICAL" -gt 0 ]; then
            echo "❌ CRITICAL vulnerabilities found - Government compliance FAILED"
            echo "**Status**: ❌ Non-compliant (Critical vulnerabilities present)" >> security-report.md
            exit 1
-         elif [ "$HIGH" -gt 0 ]; then
-           echo "⚠️  HIGH severity vulnerabilities found - Review required"
-           echo "**Status**: ⚠️  Review Required (High severity vulnerabilities)" >> security-report.md
-           # Don't fail for HIGH in base OS packages if documented in .trivyignore
-           if [ "${{ matrix.dockerfile.label }}" == "Distroless (Production)" ]; then
-             echo "Distroless image - HIGH vulnerabilities acceptable if in .trivyignore"
-             exit 0
-           fi
+         elif [ "$LANG_HIGH" -gt 0 ]; then
+           echo "❌ $LANG_HIGH HIGH-severity vulnerabilities in language packages - these are fixable"
+           jq '.Results[]? | select(.Class=="lang-pkgs") | .Vulnerabilities[]? | select(.Severity=="HIGH") | {PkgName, VulnerabilityID, InstalledVersion, FixedVersion}' trivy-${{ matrix.dockerfile.label }}-detailed.json
+           echo "**Status**: ❌ Non-compliant ($LANG_HIGH high-severity findings in language packages)" >> security-report.md
+           exit 1
+         elif [ "$OS_HIGH" -gt 0 ]; then
+           echo "⚠️  $OS_HIGH HIGH-severity vulnerabilities in base-OS packages - review required, not a gate"
+           echo "**Status**: ⚠️  Review Required ($OS_HIGH high-severity base-OS findings)" >> security-report.md
          else
            echo "✅ Container meets government security standards"
            echo "**Status**: ✅ Compliant" >> security-report.md
@@ -251,26 +268,45 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v7
 
+    # pip-audit exits non-zero when it finds anything, and that exit code is what
+    # makes this job authoritative. It used to be swallowed by `|| true`, and the
+    # step below then filtered on `.vulnerabilities[].severity` — neither key exists
+    # in pip-audit's schema (it emits `.dependencies[].vulns[]` and carries no
+    # severity at all), so the filter matched nothing and the job stayed green
+    # through ten open HIGH advisories.
+    #
+    # The third fault, visible only once the exit code stopped being swallowed:
+    # `uv run pip-audit` failed to spawn, because pip-audit is declared nowhere in
+    # pyproject.toml. The job had never audited anything.
+    #
+    # It now audits the *locked* surface rather than whatever `uv pip install`
+    # happens to resolve on the runner, and runs the auditor with `uvx` so that
+    # pip-audit's own dependency tree does not become part of the surface it is
+    # auditing.
     - name: Audit Python dependencies
       run: |
-        uv venv
-        uv pip install ".[dev,all]"
-        uv run pip-audit --format json --output audit-results.json || true
+        uv export --all-extras --no-emit-project \
+          --format requirements-txt -o audit-requirements.txt
+        uvx --from 'pip-audit>=2.10.1' pip-audit \
+          --requirement audit-requirements.txt \
+          --format json --output audit-results.json
 
-    - name: Check for critical vulnerabilities
+    # Only reached when pip-audit exits 0. Re-reads the report so a schema change
+    # upstream shows up as a disagreement between the two rather than as silence.
+    - name: Confirm the audit report is clean
+      if: success()
       run: |
-        if [ -f audit-results.json ]; then
-          # Check for CRITICAL or HIGH severity vulnerabilities
-          if jq -e '.vulnerabilities[] | select(.severity == "CRITICAL" or .severity == "HIGH")' audit-results.json > /dev/null; then
-            echo "🚨 Critical or high-severity vulnerabilities found!"
-            jq '.vulnerabilities[] | select(.severity == "CRITICAL" or .severity == "HIGH")' audit-results.json
-            exit 1
-          else
-            echo "✅ No critical or high-severity vulnerabilities found"
-          fi
-        else
-          echo "⚠️  pip-audit did not generate results file"
+        if [ ! -f audit-results.json ]; then
+          echo "❌ pip-audit did not generate a results file"
+          exit 1
         fi
+        vulnerable=$(jq '[.dependencies[] | select(.vulns | length > 0)] | length' audit-results.json)
+        if [ "$vulnerable" -gt 0 ]; then
+          echo "🚨 $vulnerable package(s) with known advisories, but pip-audit exited 0:"
+          jq '.dependencies[] | select(.vulns | length > 0) | {name, version, vulns: [.vulns[] | {id, aliases, fix_versions}]}' audit-results.json
+          exit 1
+        fi
+        echo "✅ No known advisories in the declared dependency surface"
 
     - name: Upload audit results
       uses: actions/upload-artifact@v7

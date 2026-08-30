@@ -7,6 +7,7 @@ WhereClause representation.
 from __future__ import annotations
 
 import logging
+from dataclasses import replace
 from typing import Any
 
 from fraiseql.where_clause import ALL_OPERATORS, VECTOR_OPERATORS, FieldCondition, WhereClause
@@ -480,3 +481,117 @@ def normalize_whereinput(
 
     # Use dict normalization logic
     return normalize_dict_where(where_dict, view_name, table_columns, jsonb_column)
+
+
+def _mapped_lookup_strategy(column: str, value: Any) -> str:
+    """Pick the lookup strategy for a condition re-resolved onto *column*.
+
+    ``fk_column`` is what the ltree ``*_of_id`` operators and the UUID coercion
+    path key on, and the ``<parent>_id`` convention already emits it for paths a
+    mapping may also declare.  Downgrading those to ``sql_column`` would silently
+    break the hierarchy operators, so a target that reads like a foreign key —
+    named ``*_id``, or compared against UUIDs — keeps ``fk_column``.
+    """
+    from uuid import UUID
+
+    if column.endswith("_id"):
+        return "fk_column"
+    if isinstance(value, UUID):
+        return "fk_column"
+    if isinstance(value, (list, tuple)) and value and all(isinstance(v, UUID) for v in value):
+        return "fk_column"
+    return "sql_column"
+
+
+def _map_condition(
+    condition: FieldCondition,
+    mapping: dict[str, str],
+    table_columns: set[str] | None,
+    *,
+    strict: bool,
+) -> FieldCondition:
+    """Re-resolve one condition onto a flat column when its path is mapped.
+
+    Returns the condition unchanged when the path is not declared, or when the
+    declared column does not exist and lenient mode asked for a JSONB fallback.
+    """
+    column = mapping.get(".".join(condition.field_path))
+    if column is None:
+        return condition
+
+    # Second guard, mirroring the fk_relationships check in
+    # _is_nested_object_filter: registration validation is bypassable
+    # (validate_fk_strict=False, or a view registered before its columns were
+    # known), so a declared column is re-checked here. With no columns known
+    # there is nothing to check against — trust the declaration rather than
+    # refuse to serve the query.
+    if table_columns and column not in table_columns:
+        error_msg = (
+            f"Column mapping declared ({'.'.join(condition.field_path)} → {column}) "
+            f"but column '{column}' not in table_columns. "
+        )
+        if strict:
+            raise RuntimeError(error_msg + "This should have been caught during registration.")
+        logger.warning("%s Using JSONB fallback.", error_msg)
+        return condition
+
+    return replace(
+        condition,
+        lookup_strategy=_mapped_lookup_strategy(column, condition.value),
+        target_column=column,
+        jsonb_path=None,
+    )
+
+
+def _apply_column_mapping(
+    clause: WhereClause,
+    mapping: dict[str, str],
+    table_columns: set[str] | None = None,
+    *,
+    strict: bool = True,
+) -> WhereClause:
+    """Re-resolve conditions on declared paths onto flat columns.
+
+    A declared column mapping is a peer of ``fk_relationships``: both say "this
+    field lives in a real column, not in the JSONB snapshot". The convention
+    mechanisms reach only a leaf literally named ``id`` under a ``<parent>_id``
+    column, so a path like ``dimensions.item.model.category`` is reachable by
+    nothing else — hence this pass.
+
+    It runs on the finished clause rather than inside ``normalize_dict_where``:
+    the recursion is prefix-unaware (the parent segment is prepended *after* the
+    inner call returns), so only the completed ``field_path`` carries the dotted
+    path a mapping key is written against. Running outside the recursion also
+    stops a partial path from matching a key by accident.
+
+    The input tree is never mutated — the same normalized clause is re-read by
+    the partial-period bound extractors — so a new tree is returned.
+
+    Args:
+        clause: Normalized WHERE clause to rewrite
+        mapping: Dotted field path → flat column name
+        table_columns: Actual database columns, for the resolution-time guard
+        strict: Raise ``RuntimeError`` on a mapping naming a missing column;
+            when False, warn once and leave the condition on JSONB
+
+    Returns:
+        A rewritten clause, or *clause* itself when the mapping is empty
+    """
+    if not mapping:
+        return clause
+
+    return WhereClause(
+        conditions=[
+            _map_condition(c, mapping, table_columns, strict=strict) for c in clause.conditions
+        ],
+        logical_op=clause.logical_op,
+        nested_clauses=[
+            _apply_column_mapping(nested, mapping, table_columns, strict=strict)
+            for nested in clause.nested_clauses
+        ],
+        not_clause=(
+            _apply_column_mapping(clause.not_clause, mapping, table_columns, strict=strict)
+            if clause.not_clause
+            else None
+        ),
+    )

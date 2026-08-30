@@ -5,6 +5,118 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.24.0] - 2026-08-30
+
+### Fixed
+
+- **Partial-period aggregate queries silently dropped `OR` and `NOT` filter
+  groups, returning too many rows.** On the `UNION ALL` path a coarse view takes
+  when it has `fine_grain_view` metadata and the query carries a date lower
+  bound, the WHERE clause was rebuilt from its top-level conditions alone —
+  discarding every nested group. When the date bound was the *only* top-level
+  condition it failed open completely: both branches ran with no filter beyond
+  the date range. `mandatory_filters` (#344) was never affected, being injected
+  as flat conditions; a deployment that expresses a tenant or authorization
+  scope through an `OR` group rather than `mandatory_filters` was. (#468)
+- **A date bound that is not a top-level conjunct no longer triggers the
+  partial-period rewrite.** `date >= X OR status = 'a'` was rewritten into
+  `date in [branch] AND status = 'a'`, dropping every row that matched on the
+  date alone. Such queries now take the correct single-statement path. (#468)
+- **`order_by` is no longer discarded on the partial-period path.** It was never
+  passed to the UNION builder, so the statement always ended in `ORDER BY 1` —
+  a positional sort on the serialized JSON — whatever the caller asked for.
+  (#468)
+- **A declared column mapping is now applied to `WHERE` predicates, not only to
+  `GROUP BY`.** A query could group on the flat column while filtering on the
+  JSONB snapshot. (#467)
+- **A mapping key that matches no field now fails at registration** instead of
+  silently doing nothing. Keys accept either the GraphQL or the database
+  spelling and are normalised segment-wise to `snake_case`, so a mapping written
+  for the Rust engine (`dimensions.dateInfo.date`) works here unchanged — it
+  previously matched nothing, with no error, because the key was a valid path
+  and the value a real column. (#467)
+
+### Added
+
+- **`column_mapping=` on `register_type_for_view`** — a top-level peer of
+  `fk_relationships` that maps a dotted field path to a flat SQL column, applied
+  unconditionally to `GROUP BY`, `WHERE` and `ORDER BY` alike.
+  `aggregation["native_dimension_mapping"]` is superseded: it keeps working and
+  feeds the same resolver, and `column_mapping=` wins where both declare the
+  same path. (#467)
+
+### Changed
+
+- **Ordering on a mapped dimension path now sorts on the flat column.** The
+  visible effect is **NULL placement**: a jsonb `null` is the lowest jsonb value
+  and sorts first, while a SQL `NULL` sorts last in `ASC`, so any row with a
+  missing or null mapped dimension moves from one end of the result to the
+  other. Non-null values keep their order for the shapes this library produces —
+  ISO dates sort lexicographically in chronological order by construction, and
+  the generator uses `->` rather than `->>` so a JSON number keeps its type.
+  Values do reorder where the snapshot is untyped: a number written as a string,
+  or an ISO timestamp whose rows do not share one UTC offset. (#467)
+- **Filtering on a mapped path reads the flat column.** Where the column and the
+  frozen JSONB snapshot disagree, results change. This is a correction, and it
+  is observable — which is why this is a minor release, not a patch. (#467)
+
+### Security
+
+Fifteen Dependabot advisories across five packages, with the exposure stated
+rather than implied:
+
+| Package | Advisories | Where it sits |
+|---|---|---|
+| `sqlparse` 0.5.5 → 0.6.0 | 4 (ReDoS ×2, quadratic grouping, backslash breakout) | Was declared as a runtime dependency but **imported nowhere in `src/`** — only by a script that already degrades without it. Moved to the `dev` group. |
+| `nltk` 3.9.4 → 3.10.3 | 5 (path traversal ×3, DNS-rebinding SSRF, ReDoS) | Optional: transitive through the `llamaindex` extra. Not in a default install. |
+| `pypdf` 6.14.2 → 6.16.2 | 2 (memory, runtime) | Optional: declared by the `llamaindex` extra. |
+| `cryptography` 49.0.0 → 50.0.1 | 1 (Bleichenbacher oracle, PKCS#7 `EnvelopedData`) | Not code FraiseQL calls — the only cryptography API it uses is AES-GCM in the KMS key manager. But `pyjwt[crypto]` puts the package in **every** install, so the floor is now declared on `project.dependencies` and not just on the `kms` extras. |
+| `aiohttp` 3.14.1 → 3.14.3 | 3 (OOB heap read, request smuggling, unnegotiated WS frames) | Optional: `dev` extra, transitive via `llama-index-core`. |
+
+- `click` 8.3.1 → 8.5.0 for PYSEC-2026-2132 / CVE-2026-7246, command injection
+  in `click.edit()`. FraiseQL's CLI never calls it; the floor moved because the
+  package is core. This was **not** a Dependabot alert — it is what the
+  dependency-audit job found on its first honest run, see below.
+- **The `dependency-audit` CI job was vacuously green.** `pip-audit ... || true`
+  swallowed its exit code, and the follow-up check filtered on
+  `.vulnerabilities[].severity` — pip-audit emits `.dependencies[].vulns[]` and
+  carries no severity field, so the filter matched nothing and printed
+  "✅ No critical or high-severity vulnerabilities found" through ten open HIGH
+  advisories. pip-audit's exit code is now authoritative.
+
+Container attack surface, measured on the image built from
+`Dockerfile --target runtime` with the same Trivy invocation CI uses:
+
+|        | findings | CRITICAL | HIGH | MEDIUM | LOW |
+|--------|----------|----------|------|--------|-----|
+| before | 139      | 0        | 13   | 76     | 50  |
+| after  | 81       | 0        | 0    | 43     | 38  |
+
+- **`curl` removed from the runtime image.** It existed only to answer the
+  `HEALTHCHECK`, which now probes with the interpreter already in the image.
+  libcurl, libssh2, libnghttp2, libp11-kit and libgnutls go with it.
+- **`pip` and `setuptools` removed from the runtime image**, in the same layer
+  that installs the wheel. That also removes the only msgpack in the image,
+  which was `pip/_vendor/msgpack` rather than a resolved dependency.
+- The krb5 and openldap findings **remain**: they are `libpq5`'s dependencies,
+  not curl's, and a test now pins that so a future reduction cannot trade
+  PostgreSQL connectivity for a lower alert count.
+- `.trivyignore` re-baselined; `security-alerts.yml` no longer scans a
+  distroless image that was dropped from the build matrix months ago; the
+  compliance gate now states its policy and fails on HIGH findings in language
+  packages, which are the ones we can actually fix.
+
+### Internal
+
+- One resolver, `fraiseql.sql.native_columns.resolve_native_column`, now answers
+  "does this field path have a flat SQL column?" for `GROUP BY`, `WHERE` and
+  `ORDER BY`. It had been spelled six different ways across three `build_field`
+  closures, three `is_native` checks and the ORDER BY generator, which is how a
+  new rule reached some of them and not others.
+- `.dockerignore`: `target/` → `**/target/`. The bare pattern matches only a
+  top-level directory, so `fraiseql_rs/target/` was being copied into the build
+  context and `docker build` ran out of disk before reaching the runtime stage.
+
 ## [1.23.12] - 2026-07-28
 
 ### Fixed

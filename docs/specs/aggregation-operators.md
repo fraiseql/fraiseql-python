@@ -92,10 +92,34 @@ register_type_for_view(
         "dimensions": "dimensions",
         "native_dimensions": ["period_date", "category_id"],
         "native_measures": {"measures.quantity": "quantity"},
-        "native_dimension_mapping": {"dimensions.category.id": "category_id"},
+    },
+    column_mapping={
+        "dimensions.dateInfo.date": "period_date",
+        "dimensions.productCategory.id": "category_id",
     },
 )
 ```
+
+### Mapping key spelling
+
+Mapping keys are matched against **database** field paths, and each segment is
+normalised to `snake_case` at registration — so the two spellings below declare the
+same thing and both work:
+
+```python
+column_mapping={"dimensions.dateInfo.date": "period_date"}    # GraphQL spelling
+column_mapping={"dimensions.date_info.date": "period_date"}   # database spelling
+```
+
+This matters because the example above used to read
+`{"dimensions.category.id": "category_id"}` — every segment a single word, so the
+question never came up. A key like `dimensions.dateInfo.date` written against an engine
+that matches the raw GraphQL name would previously have matched nothing here, silently:
+the value is a real column and the key is a valid path, so no validation caught it and
+the mapping simply never fired. That is issue #467.
+
+A key that names a column which does not exist on the view now raises at registration
+under `validate_fk_strict=True`, and warns otherwise.
 
 Metadata keys:
 
@@ -108,12 +132,40 @@ Metadata keys:
   correct for dimension columns.
 - `native_measures` — maps JSONB measure paths to flat SQL column names so `SUM`/`AVG`
   run on native numeric columns and skip the `::numeric` cast.
-- `native_dimension_mapping` — maps deep JSONB dimension paths to flat SQL columns so
-  `GROUP BY` can use native columns even for nested dimension paths.
+- `native_dimension_mapping` — **superseded by the top-level `column_mapping=` below.**
+  Still read, still merged, still works; `column_mapping=` wins where both declare the
+  same path. Prefer the top-level parameter in new code.
+
+The top-level `column_mapping=` parameter on `register_type_for_view` is a peer of
+`fk_relationships`: it maps a deep JSONB path to a flat SQL column, and it is applied
+unconditionally to **`GROUP BY`, `WHERE` and `ORDER BY` alike**. Before 1.24.0 the
+mapping reached `GROUP BY` only, so a query could group on the flat column while
+filtering and sorting on the JSONB snapshot — three expressions for one logical field.
 
 Use `native_dimensions` whenever your view exposes a real SQL column for a grouping key:
 it is the difference between a sequential scan over extracted JSONB text and an
 index-backed `GROUP BY`.
+
+### Migrating an existing `native_dimension_mapping` (1.24.0)
+
+Nothing to change: the key is still read and still merged. What changes is that the
+mapping you already declared now also applies to `WHERE` and `ORDER BY`, so two things
+become visible:
+
+- **Filtering results can change.** Where the flat column and the frozen JSONB snapshot
+  disagree — a column updated after the snapshot was written, say — the filter now
+  follows the column. That is the correction, and it is the reason 1.24.0 is a minor
+  release rather than a patch.
+- **NULLs move in a sort.** A jsonb `null` is the lowest jsonb value and sorts first; a
+  SQL `NULL` sorts last in `ASC`. Any row with a missing or null mapped dimension moves
+  from one end of the result to the other. The non-null *values* keep their order for
+  the shapes this library produces — ISO dates sort lexicographically in chronological
+  order by construction, and the generator uses `->` rather than `->>` so a JSON number
+  keeps its type. Values do reorder where the snapshot is untyped: a number written as
+  a string, or an ISO timestamp whose rows do not share one UTC offset.
+
+If a mapping key you declared never took effect because of the casing rule above, it
+will start working — check the key names before upgrading if you are unsure.
 
 ---
 

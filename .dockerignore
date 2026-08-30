@@ -16,9 +16,16 @@
 .DS_Store
 
 # Build artifacts
-target/
+# `target/` alone matches only a top-level directory — the Rust crate's own
+# fraiseql_rs/target/ (21 GB of local dev artifacts) was being copied into the
+# build context, which is what made `docker build` run out of disk.
+**/target/
 dist/
 build/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
 *.o
 *.a
 *.so
@@ -27,6 +34,8 @@ build/
 # Dependencies
 node_modules/
 vendor/
+.venv/
+venv/
 
 # Documentation
 docs/

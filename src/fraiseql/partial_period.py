@@ -16,7 +16,9 @@ from datetime import date, timedelta
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from fraiseql.where_clause import WhereClause
+    from collections.abc import Sequence
+
+    from fraiseql.where_clause import FieldCondition, WhereClause
 
 _VALID_GRAIN_TRUNCS = frozenset(
     {"day", "week", "half_month", "month", "quarter", "semester", "year"}
@@ -249,3 +251,48 @@ def _extract_upper_date_bound(
         return value
 
     return None
+
+
+def _build_extra_where(
+    where_clause: "WhereClause",
+    time_grain_column: str,
+    mandatory_conditions: "Sequence[FieldCondition]" = (),
+) -> "WhereClause | None":
+    """Build the WHERE the UNION branches carry, from the caller's normalised clause.
+
+    The time-grain bounds are re-encoded per branch as SQL Literals by the union
+    builder, so the top-level conditions on *time_grain_column* are removed here.
+    Everything else the clause carries has to survive: a ``WhereClause`` holds
+    ``conditions``, ``logical_op``, ``nested_clauses`` (every ``OR``/``AND`` group)
+    and ``not_clause``, and rebuilding it from ``conditions`` alone discards every
+    ``OR`` and ``NOT`` group in the filter (#468).
+
+    *mandatory_conditions* (#344) are ANDed in front of what is left. That is only
+    sound because the caller routes through the UNION exclusively for a clause whose
+    top-level ``logical_op`` is ``"AND"``; a date bound that is not a top-level
+    conjunct does not trigger the rewrite in the first place.
+
+    Args:
+        where_clause:         The normalised clause the query was built from.
+        time_grain_column:    SQL column holding the period date (e.g. ``"date"``).
+        mandatory_conditions: Resolver-injected conditions that must apply to every
+                              branch regardless of the caller's filter.
+
+    Returns:
+        The clause every branch should apply, or None when nothing is left to
+        filter on.
+    """
+    from fraiseql.where_clause import WhereClause
+
+    remaining = [c for c in where_clause.conditions if c.target_column != time_grain_column]
+    mandatory = list(mandatory_conditions)
+
+    if not (mandatory or remaining or where_clause.nested_clauses or where_clause.not_clause):
+        return None
+
+    return WhereClause(
+        conditions=[*mandatory, *remaining],
+        logical_op=where_clause.logical_op,
+        nested_clauses=list(where_clause.nested_clauses),
+        not_clause=where_clause.not_clause,
+    )
