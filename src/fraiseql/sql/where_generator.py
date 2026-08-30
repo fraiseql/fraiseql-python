@@ -75,6 +75,51 @@ def build_operator_composed(
     if detected_field_type is None:
         detected_field_type = detect_field_type("", val, field_type)
 
+    vector_distance_operators = {
+        "cosine_distance",
+        "l2_distance",
+        "l1_distance",
+        "inner_product",
+        "hamming_distance",
+        "jaccard_distance",
+    }
+
+    # Vector distance filters carry both the query vector and its threshold.
+    # The operator builders render the distance expression, so add the boolean
+    # comparison here before the expression is used as a WHERE condition.
+    if (
+        detected_field_type in (FieldType.VECTOR, FieldType.SPARSE_VECTOR)
+        and op in vector_distance_operators
+    ):
+        if isinstance(val, dict):
+            vector = val.get("vector")
+            threshold = val.get("threshold", 0.5)
+            comparison = val.get("comparison", "lt")
+        elif isinstance(val, (list, tuple)) and len(val) == 2:
+            vector, threshold = val
+            comparison = "lt"
+        else:
+            raise ValueError(
+                f"Vector operator requires dict or (vector, threshold) tuple, got {val!r}"
+            )
+
+        comparison_operator = {
+            "lt": "<",
+            "lte": "<=",
+            "gt": ">",
+            "gte": ">=",
+            "eq": "=",
+            "neq": "<>",
+        }.get(comparison)
+        if comparison_operator is None:
+            raise ValueError(f"Unsupported vector comparison '{comparison}'")
+
+        operator_func = get_operator_function(detected_field_type, op)
+        distance_sql = operator_func(path_sql, vector)
+        return Composed(
+            [SQL("("), distance_sql, SQL(f") {comparison_operator} "), Literal(threshold)]
+        )
+
     # Get the operator function
     operator_func = get_operator_function(detected_field_type, op)
 

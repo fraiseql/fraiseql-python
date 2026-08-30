@@ -9,6 +9,7 @@ from typing import Any, Optional
 import pytest
 from psycopg.sql import SQL, Composed
 
+from fraiseql.sql.where.core.field_detection import FieldType
 from fraiseql.sql.where_generator import (
     DynamicType,
     build_operator_composed,
@@ -681,6 +682,31 @@ class TestBuildOperatorComposedExtended:
 
         with pytest.raises(ValueError, match="Unsupported operator"):
             build_operator_composed(path_sql, "unsupported_op", "value")
+
+    @pytest.mark.parametrize(
+        ("operator", "value", "distance_operator"),
+        [
+            ("cosine_distance", {"vector": [0.1, 0.2], "threshold": 0.5}, "<=>"),
+            ("l2_distance", ([0.1, 0.2], 1.0), "<->"),
+            ("l1_distance", {"vector": [0.1, 0.2], "threshold": 2.0}, "<+>"),
+            ("inner_product", {"vector": [0.1, 0.2], "threshold": -0.1}, "<#>"),
+            ("hamming_distance", {"vector": "1010", "threshold": 1}, "<~>"),
+            ("jaccard_distance", {"vector": "1010", "threshold": 0.5}, "<%>"),
+        ],
+    )
+    def test_vector_distance_operators_render_boolean_predicates(
+        self, operator: str, value: object, distance_operator: str
+    ) -> None:
+        """Distance operators must be valid WHERE predicates, not bare numbers."""
+        path_sql = SQL("data ->> 'embedding'")
+
+        result = build_operator_composed(
+            path_sql, operator, value, detected_field_type=FieldType.VECTOR
+        )
+        sql = result.as_string(None)
+
+        assert distance_operator in sql
+        assert ") < " in sql
 
 
 class TestSafeCreateWhereTypeExtended:
