@@ -1,5 +1,5 @@
 # Trivy Vulnerability Exceptions for International Compliance
-# Last Updated: 2026-07-23  (re-baselined for python:3.13-slim -> Debian 13 trixie)
+# Last Updated: 2026-08-30  (re-baselined after removing curl and pip from the runtime stage)
 # Review Schedule: Monthly
 # Approval: Security Team
 # Compliance: US (NIST/FedRAMP), EU (NIS2/GDPR), UK (NCSC), ISO 27001, SOC 2
@@ -233,13 +233,47 @@ CVE-2025-69720 # ncurses (HIGH)
 # gzip - not used to decompress untrusted input at runtime
 CVE-2026-41992 # gzip (HIGH)
 
-# util-linux / mount / login / lib{blkid,mount,uuid,smartcols}1 / bsdutils / liblastlog2-2
-CVE-2026-53615 # util-linux (HIGH) - mount/login utilities not exposed by the API server
-
 # libacl1 - POSIX ACL library not driven by untrusted input
 CVE-2026-54369 # libacl1 (HIGH)
 
+# -----------------------------------------------------------------------------
+# CATEGORY 8: Added 2026-08-30, verified against the current runtime image
+# Scan: `trivy image --scanners vuln --severity CRITICAL,HIGH,MEDIUM,LOW` on the
+#   image built from `Dockerfile --target runtime` at 1.23.12. Each entry below
+#   was confirmed present, with FixedVersion=none, in that scan.
+# Review: Monthly. Remove the moment Debian trixie publishes a fixed version.
+# -----------------------------------------------------------------------------
 
+# libsqlite3-0 (HIGH, no fix) - both are in SQLite's FTS5 full-text extension.
+# FraiseQL v1 queries PostgreSQL exclusively: nothing under src/fraiseql imports
+# aiosqlite or sqlite3 outside an unwired startup check, and no code path creates
+# or queries an FTS5 virtual table. libsqlite3-0 is present only because the
+# python:3.13-slim base compiles the stdlib sqlite3 module against it.
+CVE-2026-11822 # libsqlite3-0 (HIGH) - FTS5 full-text search; no FTS5 table is ever created
+CVE-2026-11824 # libsqlite3-0 (HIGH) - FTS5 heap overflow; same precondition
+
+# libsystemd0 / libudev1 - the container runs no init system. systemd-homed is
+# not installed, and the process-kill path needs a local session on the host.
+CVE-2026-16742 # libsystemd0 (MEDIUM) - systemd-homed not present in the image
+CVE-2026-15059 # libsystemd0 (MEDIUM) - requires a local session; container runs one non-root process
+
+# linux-pam - pam_userdb is not configured; the image authenticates nobody.
+CVE-2026-54411 # libpam-modules (MEDIUM) - pam_userdb unused
+
+
+# -----------------------------------------------------------------------------
+# NOT suppressed, deliberately — checked 2026-08-30
+# -----------------------------------------------------------------------------
+#
+# CVE-2026-14456 (OpenSSL, QUIC server unbounded memory) is NOT listed here.
+# It does not appear in a scan of the current runtime image at all, so a
+# suppression for it would be a stale entry from the day it was written.
+#
+# Everything still reported after this file is applied has FixedVersion=none —
+# there is no un-suppressed finding that we could fix and have not. The list is
+# left visible on purpose: a base-OS CVE with no upstream patch is a thing to
+# watch, not a thing to hide.
+#
 # =============================================================================
 # DISTROLESS IMAGE CVEs (Reference Only - Not Currently Used)
 # =============================================================================

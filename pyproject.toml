@@ -18,11 +18,12 @@ dev = [
   "testcontainers>=4.14.2",
   "twine>=6.2.0",
   "ty>=0.0.35",
-  "moto[kms]>=5.1.21"
+  "moto[kms]>=5.1.21",
+  "sqlparse>=0.6.0"
 ]
 docs = [
   "mkdocs>=1.6.1",
-  "mkdocs-material>=9.7.6",
+  "mkdocs-material>=9.7.7",
   "mkdocs-mermaid2-plugin>=1.2.3",
   "mkdocs-minify-plugin>=0.8.0",
   "mkdocs-redirects>=1.2.2",
@@ -56,13 +57,14 @@ dependencies = [
   "graphql-core>=3.2.11",
   "psycopg[pool]>=3.3.3",
   "psycopg-pool>=3.3.0",
-  "uvicorn>=0.49.0",
+  "uvicorn>=0.52.0",
   "pydantic>=2.12.0",
   "pydantic-settings>=2.14.2",
   "httpx>=0.28.0",
   "pyjwt[crypto]>=2.13.0",
+  "cryptography>=50.0.0",
   "python-dateutil>=2.9.0",
-  "click>=8.3.0",
+  "click>=8.3.3",
   "python-dotenv>=1.2.2",
   "structlog>=25.5.0",
   "passlib[argon2]>=1.7.4",
@@ -70,7 +72,6 @@ dependencies = [
   "typer>=0.24.0",
   "rich>=14.0.0",
   "pyyaml>=6.0.2",
-  "sqlparse>=0.5.5",
   "fraiseql-confiture>=0.5.2",
   "jinja2>=3.1.6",
   "urllib3>=2.7.0"
@@ -89,7 +90,7 @@ keywords = [
 name = "fraiseql"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
-version = "1.23.12"
+version = "1.24.0"
 
 [project.optional-dependencies]
 all = [
@@ -101,12 +102,12 @@ all = [
   "opentelemetry-exporter-otlp>=1.41.1",
   "pyjwt[crypto]>=2.13.0",
   "httpx>=0.28.0",
-  "cyclonedx-python-lib>=11.10.0,<12.0",
+  "cyclonedx-python-lib>=11.11.0,<12.0",
   "packageurl-python>=0.17.0",
   "boto3>=1.38.0",
-  "cryptography>=48.0.1",
+  "cryptography>=50.0.0",
   "aioboto3>=15.5.0",
-  "google-cloud-kms>=3.11.0",
+  "google-cloud-kms>=3.16.0",
   "fraiseql[langchain]",
   "fraiseql[llamaindex]"
 ]
@@ -127,7 +128,7 @@ dev = [
   "pytest-cov>=7.1.0",
   "pytest-mock>=3.15.0",
   "pytest-benchmark>=5.2.3",
-  "tox>=4.55.1",
+  "tox>=4.58.0",
   "ruff>=0.15.12",
   "ty>=0.0.35",
   "build>=1.4.0",
@@ -137,25 +138,25 @@ dev = [
   "email-validator>=2.3.0",
   "hvac>=2.4.0",
   "moto[kms]>=5.1.21",
-  "aiohttp>=3.14.1",
+  "aiohttp>=3.14.3",
   "filelock>=3.24.0",
   "werkzeug>=3.1.6"
 ]
 docs = [
   "mkdocs>=1.6.1",
-  "mkdocs-material>=9.7.6",
+  "mkdocs-material>=9.7.7",
   "mkdocs-redirects>=1.2.2",
   "pymdown-extensions>=11.0.1"
 ]
-kms = ["cryptography>=48.0.1"]
+kms = ["cryptography>=50.0.0"]
 kms-all = [
-  "cryptography>=48.0.1",
+  "cryptography>=50.0.0",
   "httpx>=0.28.0",
   "aioboto3>=15.5.0",
-  "google-cloud-kms>=3.11.0"
+  "google-cloud-kms>=3.16.0"
 ]
 kms-aws = ["aioboto3>=15.5.0"]
-kms-gcp = ["google-cloud-kms>=3.11.0"]
+kms-gcp = ["google-cloud-kms>=3.16.0"]
 kms-vault = ["httpx>=0.28.0"]
 langchain = [
   "langchain>=1.3.9",
@@ -169,10 +170,11 @@ llamaindex = [
   "llama-index-core>=0.14.21",
   "banks>=2.4.2",
   "pillow>=12.3.0",
-  "pypdf>=6.13.3"
+  "pypdf>=6.15.0",
+  "nltk>=3.10.0"
 ]
 llm = ["fraiseql[langchain]", "fraiseql[llamaindex]"]
-sbom = ["cyclonedx-python-lib>=11.10.0,<12.0", "packageurl-python>=0.17.0"]
+sbom = ["cyclonedx-python-lib>=11.11.0,<12.0", "packageurl-python>=0.17.0"]
 tracing = [
   "protobuf>=5.29.0,<8.0",
   "wrapt>=1.16.0",
@@ -216,7 +218,11 @@ addopts = [
   "--strict-markers",
   "--strict-config",
   "--disable-warnings",
-  "-ra"
+  "-ra",
+  # Container tests build the runtime image; opt in with `pytest -m container`,
+  # which overrides this default.
+  "-m",
+  "not container"
 ]
 asyncio_mode = "auto"
 # Console output
@@ -268,7 +274,8 @@ markers = [
   "chaos_resources: Chaos tests for resource exhaustion (memory, CPU, disk)",
   "chaos_concurrency: Chaos tests for concurrent execution (deadlocks, race conditions)",
   "chaos_validation: Chaos test validation and success criteria checks",
-  "chaos_verification: Chaos infrastructure verification tests"
+  "chaos_verification: Chaos infrastructure verification tests",
+  "container: Tests that build and run the runtime Docker image (slow, needs Docker)"
 ]
 # Minimum version
 minversion = "9.0"

@@ -17,10 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - name: Pull latest base images
+      # Only the base image we actually ship. gcr.io/distroless/python3-debian12
+      # used to be pulled and scanned here after it had already been dropped from
+      # the container-security matrix in security-compliance.yml — so its findings
+      # raised alerts for an image nothing builds from. See
+      # security-assessment-2025-12-09-distroless.md for that decision.
+      - name: Pull latest base image
         run: |
           docker pull python:3.13-slim
-          docker pull gcr.io/distroless/python3-debian12:nonroot
 
       - name: Scan python:3.13-slim
         run: |
@@ -32,16 +36,6 @@ jobs:
             python:3.13-slim
         continue-on-error: true
 
-      - name: Scan gcr.io/distroless/python3-debian12:nonroot
-        run: |
-          docker run --rm aquasec/trivy:latest image \
-            --severity HIGH,CRITICAL \
-            --format json \
-            --output /tmp/distroless-scan.json \
-            --exit-code 0 \
-            gcr.io/distroless/python3-debian12:nonroot
-        continue-on-error: true
-
       - name: Check for new HIGH/CRITICAL vulnerabilities
         id: check-vulns
         run: |
@@ -49,17 +43,12 @@ jobs:
           SLIM_CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' /tmp/slim-scan.json || echo 0)
           SLIM_HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' /tmp/slim-scan.json || echo 0)
 
-          DISTROLESS_CRITICAL=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="CRITICAL")] | length' /tmp/distroless-scan.json || echo 0)
-          DISTROLESS_HIGH=$(jq '[.Results[]?.Vulnerabilities[]? | select(.Severity=="HIGH")] | length' /tmp/distroless-scan.json || echo 0)
-
           echo "slim_critical=$SLIM_CRITICAL" >> $GITHUB_OUTPUT
           echo "slim_high=$SLIM_HIGH" >> $GITHUB_OUTPUT
-          echo "distroless_critical=$DISTROLESS_CRITICAL" >> $GITHUB_OUTPUT
-          echo "distroless_high=$DISTROLESS_HIGH" >> $GITHUB_OUTPUT
 
           # Determine alert level
-          TOTAL_CRITICAL=$((SLIM_CRITICAL + DISTROLESS_CRITICAL))
-          TOTAL_HIGH=$((SLIM_HIGH + DISTROLESS_HIGH))
+          TOTAL_CRITICAL=$SLIM_CRITICAL
+          TOTAL_HIGH=$SLIM_HIGH
 
           if [ "$TOTAL_CRITICAL" -gt 0 ]; then
             echo "alert_level=CRITICAL" >> $GITHUB_OUTPUT
@@ -82,10 +71,6 @@ jobs:
           ## python:3.13-slim
           - 🔴 Critical: $SLIM_CRITICAL
           - 🟠 High: $SLIM_HIGH
-
-          ## gcr.io/distroless/python3-debian12:nonroot
-          - 🔴 Critical: $DISTROLESS_CRITICAL
-          - 🟠 High: $DISTROLESS_HIGH
 
           ## Action Required
           EOF
@@ -274,14 +259,17 @@ jobs:
           ## Current Security Posture
 
           ### Container Security
-          - Base images scanned for HIGH/CRITICAL vulnerabilities
-          - Distroless migration: In progress (Phase 1)
+          - Base image scanned for HIGH/CRITICAL vulnerabilities: python:3.13-slim
+          - Base image: python:3.13-slim. Distroless was evaluated and rejected —
+            see security-assessment-2025-12-09-distroless.md
+          - Runtime image carries no curl, no pip and no setuptools
           - Security hardening: Enabled (non-root, read-only filesystem compatible)
 
           ### Vulnerability Management
-          - Active monitoring: 4 MEDIUM CVEs (awaiting vendor patches)
-          - Accepted risks: Documented in .trivyignore with justifications
+          - Accepted risks: Documented in .trivyignore with a justification each
           - Patching SLA: < 7 days for HIGH/CRITICAL
+          - Remaining findings are base-OS packages with no upstream fix; the
+            per-run counts are in the scan-base-images job, not restated here
 
           ### Compliance Status
           - ✅ NIS2 Article 21 (Risk Management): Documented risk analysis
@@ -291,7 +279,7 @@ jobs:
 
           ## Next Steps
           1. Continue weekly CVE monitoring
-          2. Complete distroless migration (Phase 2-3)
+          2. Re-evaluate distroless when a Python 3.13 image exists
           3. Implement runtime security monitoring (Falco)
           4. Quarterly penetration testing
 

@@ -76,10 +76,42 @@ class OrderBy:
     value: list[float] | None = None
     collation: str | None = None
 
+    def _direction_sql(self) -> sql.SQL:
+        """Render the sort direction, accepting either the enum or a bare string."""
+        direction_str = (
+            self.direction.value.upper()
+            if isinstance(self.direction, OrderDirection)
+            else str(self.direction).upper()
+        )
+        return sql.SQL(direction_str)
+
+    def _flat_column(
+        self,
+        native_columns: set[str] | None,
+        column_mapping: dict[str, str] | None,
+    ) -> str | None:
+        """Return the flat column this instruction sorts on, or None for JSONB.
+
+        Shares :func:`resolve_native_column` with the GROUP BY builders, because
+        the two must agree: PostgreSQL requires a sort key to be grouped or
+        functionally determined by the grouping, and two different expressions
+        for one logical field is how that constraint gets violated.
+
+        ``native_measures`` is deliberately not passed. A measure is aggregated
+        in the SELECT list, so resolving a sort key to its raw column would
+        produce an ungrouped reference.
+        """
+        from fraiseql.sql.native_columns import resolve_native_column
+
+        return resolve_native_column(
+            self.field, native_columns=native_columns, column_mapping=column_mapping
+        )
+
     def to_sql(
         self,
         table_ref: str = "t",
         native_columns: set[str] | None = None,
+        column_mapping: dict[str, str] | None = None,
     ) -> sql.Composed:
         """Generate ORDER BY clause using JSONB numeric extraction or vector distance.
 
@@ -88,6 +120,9 @@ class OrderBy:
             native_columns: Set of column names that are native SQL columns on the
                 view (not inside JSONB). These use ``t."col"`` instead of JSONB
                 extraction for correct index usage (#337).
+            column_mapping: Map of dotted field path → flat SQL column name, as
+                declared by ``column_mapping=`` / ``native_dimension_mapping``.
+                Reaches deep paths ``native_columns`` cannot express (#467).
 
         Uses data -> 'field' instead of data ->> 'field' to preserve proper
         numeric ordering. JSONB extraction (data->'field') maintains the
@@ -100,15 +135,11 @@ class OrderBy:
         For vector distance operations like 'embedding.cosine_distance', uses:
         ({table_ref} -> 'embedding') <=> '[0.1,0.2,...]'::vector
         """
-        # Native column short-circuit: use t."col" instead of JSONB extraction (#337)
-        if native_columns and self.field in native_columns:
-            direction_str = (
-                self.direction.value.upper()
-                if isinstance(self.direction, OrderDirection)
-                else str(self.direction).upper()
-            )
-            col_expr = sql.SQL("{}.{}").format(sql.Identifier("t"), sql.Identifier(self.field))
-            return col_expr + sql.SQL(" ") + sql.SQL(direction_str)
+        # Flat column short-circuit: use t."col" instead of JSONB extraction
+        flat_column = self._flat_column(native_columns, column_mapping)
+        if flat_column is not None:
+            col_expr = sql.SQL("{}.{}").format(sql.Identifier("t"), sql.Identifier(flat_column))
+            return col_expr + sql.SQL(" ") + self._direction_sql()
 
         # Check if this is a vector distance operation
         if "." in self.field and self.value is not None:
@@ -138,13 +169,7 @@ class OrderBy:
             collation_clause = sql.SQL(" COLLATE ") + sql.Identifier(self.collation)
             data_expr = data_expr + collation_clause
 
-        # Handle both OrderDirection enum and string directions
-        if isinstance(self.direction, OrderDirection):
-            direction_str = self.direction.value.upper()
-        else:
-            direction_str = str(self.direction).upper()
-        direction_sql = sql.SQL(direction_str)
-        return data_expr + sql.SQL(" ") + direction_sql
+        return data_expr + sql.SQL(" ") + self._direction_sql()
 
     def _build_vector_distance_sql(
         self,
@@ -250,6 +275,7 @@ class OrderBySet:
         self,
         table_ref: str = "t",
         native_columns: set[str] | None = None,
+        column_mapping: dict[str, str] | None = None,
     ) -> sql.Composed:
         """Compile the ORDER BY instructions into a psycopg SQL Composed object.
 
@@ -257,6 +283,8 @@ class OrderBySet:
             table_ref: Table alias or column name to use for field access (default: "t")
             native_columns: Set of native SQL column names to use column refs
                 instead of JSONB extraction (#337).
+            column_mapping: Map of dotted field path → flat SQL column name, for
+                deep paths ``native_columns`` cannot express (#467).
 
         Returns:
             A `psycopg.sql.Composed` instance representing the full ORDER BY
@@ -265,6 +293,24 @@ class OrderBySet:
         if not self.instructions:
             return sql.Composed([])  # Return empty Composed to satisfy Pyright
         clauses = sql.SQL(", ").join(
-            instr.to_sql(table_ref, native_columns=native_columns) for instr in self.instructions
+            instr.to_sql(table_ref, native_columns=native_columns, column_mapping=column_mapping)
+            for instr in self.instructions
         )
         return sql.SQL("ORDER BY ") + clauses
+
+    def uses_flat_columns(
+        self,
+        native_columns: set[str] | None = None,
+        column_mapping: dict[str, str] | None = None,
+    ) -> bool:
+        """True when any instruction sorts on a flat column rather than JSONB.
+
+        A flat column renders as ``t."col"``, so the caller must make sure the
+        FROM clause actually carries the ``t`` alias. Aggregated queries always
+        do; a plain ``SELECT data::text FROM view`` does not until a mapping
+        makes one of its sort keys native.
+        """
+        return any(
+            instr._flat_column(native_columns, column_mapping) is not None
+            for instr in self.instructions
+        )
