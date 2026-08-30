@@ -187,10 +187,22 @@ jobs:
          echo "- 🔵 Low: $LOW" >> security-report.md
          echo "" >> security-report.md
 
-         # Check for unpatched vulnerabilities
-         UNPATCHED=$(jq '[.Results[]?.Vulnerabilities[]? | select(.FixedVersion=="")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
+         # Patch availability.
+         #
+         # Trivy OMITS FixedVersion entirely when upstream has no fix - it does
+         # not emit an empty string - so the key reads as null and any `== ""`
+         # test matches nothing. Both counts below default the missing key
+         # through `// ""` for that reason.
+         #
+         # FIXABLE is the number the gate cares about: a finding that carries a
+         # FixedVersion is one we can act on, so it should stay at 0. UNPATCHED
+         # is context - base-OS CVEs with no upstream patch, each accepted one
+         # justified in .trivyignore.
+         UNPATCHED=$(jq '[.Results[]?.Vulnerabilities[]? | select((.FixedVersion // "") == "")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
+         FIXABLE=$(jq '[.Results[]?.Vulnerabilities[]? | select((.FixedVersion // "") != "")] | length' trivy-${{ matrix.dockerfile.label }}-detailed.json)
          echo "## Patch Availability" >> security-report.md
-         echo "- Unpatched vulnerabilities: $UNPATCHED" >> security-report.md
+         echo "- Findings with a fix available (actionable): $FIXABLE" >> security-report.md
+         echo "- Findings with no upstream fix: $UNPATCHED" >> security-report.md
          echo "" >> security-report.md
 
          # Government compliance gate.
