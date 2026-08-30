@@ -4,6 +4,7 @@
 //! Real streaming benchmarks will be added in Phase 3.
 
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
+use std::time::Duration;
 
 /// Benchmark JSON field name transformation
 fn bench_field_transformation(c: &mut Criterion) {
@@ -16,8 +17,8 @@ fn bench_field_transformation(c: &mut Criterion) {
             |b, &field_count| {
                 b.iter(|| {
                     // Simulate transforming N field names from snake_case to camelCase
-                    let mut transformed = Vec::with_capacity(*field_count);
-                    for i in 0..*field_count {
+                    let mut transformed = Vec::with_capacity(field_count);
+                    for i in 0..field_count {
                         let snake = format!("field_name_{}", i);
                         // Simple simulation of transformation
                         let camel = snake.replace("_", "");
@@ -43,8 +44,8 @@ fn bench_response_serialization(c: &mut Criterion) {
             |b, &object_count| {
                 b.iter(|| {
                     // Simulate serializing N objects to JSON
-                    let mut json_strings = Vec::with_capacity(*object_count);
-                    for i in 0..*object_count {
+                    let mut json_strings = Vec::with_capacity(object_count);
+                    for i in 0..object_count {
                         let json = format!(r#"{{"id": {}, "name": "Item {}"}}"#, i, i);
                         json_strings.push(json);
                     }
@@ -68,7 +69,7 @@ fn bench_chunked_processing(c: &mut Criterion) {
             |b, &chunk_size| {
                 b.iter(|| {
                     // Simulate processing data in chunks
-                    let data = vec![42u8; *chunk_size];
+                    let data = vec![42u8; chunk_size];
                     let mut checksum = 0u64;
                     for &byte in &data {
                         checksum = checksum.wrapping_add(byte as u64);
