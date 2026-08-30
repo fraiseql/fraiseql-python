@@ -32,6 +32,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import psycopg_pool
 from psycopg.sql import SQL, Identifier
 
+from fraiseql.sql.identifiers import qualified_identifier
+
 # Optional imports for LangChain
 try:
     from langchain_core.documents import Document  # type: ignore[import]
@@ -171,7 +173,7 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
                 INSERT INTO {} ({})
                 VALUES ({})
                 """).format(
-                    Identifier(self.table_name),
+                    qualified_identifier(self.table_name),
                     SQL(", ").join(Identifier(col) for col in columns),
                     SQL(", ").join(SQL("%s") for _ in values),
                 )
@@ -287,7 +289,7 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
         async with self.db_pool.connection() as conn:
             for doc_id in ids:
                 query = SQL("DELETE FROM {} WHERE {} = %s").format(
-                    Identifier(self.table_name),
+                    qualified_identifier(self.table_name),
                     Identifier(self.id_column),
                 )
                 await conn.execute(query, [doc_id])

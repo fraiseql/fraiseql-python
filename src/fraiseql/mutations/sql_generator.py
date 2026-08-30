@@ -20,6 +20,7 @@ from psycopg import sql
 from psycopg.types.json import Jsonb
 
 from fraiseql.db import DatabaseQuery
+from fraiseql.sql.identifiers import qualified_identifier
 from fraiseql.types.definitions import UNSET
 from fraiseql.utils.casing import to_snake_case
 
@@ -114,7 +115,7 @@ def generate_insert_json_call(
     placeholders.append(sql.Placeholder("input_json"))
 
     statement = sql.SQL("SELECT * FROM {}({})").format(
-        sql.Identifier(sql_function_name),
+        qualified_identifier(sql_function_name),
         sql.SQL(", ").join(placeholders),
     )
 
