@@ -448,6 +448,45 @@ async def test_binary_vector_jaccard_distance_order_by(
 
 
 @pytest.mark.asyncio
+async def test_jaccard_order_by_survives_a_parameterised_where(
+    class_db_pool, test_schema, binary_vector_test_setup
+) -> None:
+    """A Jaccard ordering must work alongside a filter that carries params (#495).
+
+    psycopg scans a statement for placeholders whenever parameters accompany it
+    and rejects ``%>`` as one, so the ``<%>`` operator this used to render made
+    every such query fail with ``only '%s', '%b', '%t' are allowed as
+    placeholders``. Escaping to ``<%%>`` would only move the failure to the
+    no-parameter case below, which is why both halves are asserted here.
+    """
+    repo = FraiseQLRepository(class_db_pool)
+    from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
+
+    # Distances 0.595 / 0.689 / 0.717 to Items C / A / B.
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
+
+    # With parameters: the WHERE renders %s placeholders alongside the ordering.
+    result = await repo.find(
+        "test_fingerprints",
+        where={"category": {"in": ["books", "clothing"]}},
+        order_by={"fingerprint": VectorOrderBy(jaccard_distance=query_fingerprint)},
+        limit=5,
+    )
+    results = extract_graphql_data(result, "test_fingerprints")
+    assert [row["name"] for row in results] == ["Item C", "Item B"]
+
+    # Without parameters: the statement is sent verbatim, so a `%%` escape would
+    # reach PostgreSQL as a literal `%%` and there is no such operator.
+    result = await repo.find(
+        "test_fingerprints",
+        order_by={"fingerprint": VectorOrderBy(jaccard_distance=query_fingerprint)},
+        limit=3,
+    )
+    results = extract_graphql_data(result, "test_fingerprints")
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
+
+
+@pytest.mark.asyncio
 async def test_vector_limit_results(class_db_pool, test_schema, vector_test_setup) -> None:
     """Test pagination with vector similarity search."""
     # This test will fail until vector filtering is implemented

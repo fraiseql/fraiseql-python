@@ -94,17 +94,35 @@ def build_hamming_distance_sql(path_sql: SQL, value: str) -> Composed:
 
 
 def build_jaccard_distance_sql(path_sql: SQL, value: str) -> Composed:
-    """Build SQL for Jaccard distance using PostgreSQL <%> operator.
+    """Build SQL for Jaccard distance using pgvector's jaccard_distance function.
 
-    Generates: (column)::bit(6) <%> '111000'::bit(6)
+    Generates: jaccard_distance((column)::bit(6), '111000'::bit(6))
     Returns distance: 1 - (intersection / union) for bit sets
+
+    Rendered as a function call rather than with the ``<%>`` operator. psycopg
+    scans a statement for placeholders whenever parameters accompany it and
+    rejects ``%>`` as one, so an ``<%>`` term fails as soon as anything else in
+    the statement parameterises. Escaping to ``<%%>`` only moves the failure:
+    a statement sent without parameters is passed verbatim and PostgreSQL then
+    has no such operator. The function form is the one spelling correct under
+    both, at the cost of the bit_jaccard_ops index, which cannot match a
+    function call (#495).
 
     Note: Jaccard distance works on bit type vectors for set similarity.
     Useful for recommendation systems, tag similarity, feature matching.
     """
     bit_cast = _bit_cast(value)
     return Composed(
-        [SQL("("), path_sql, SQL(")"), bit_cast, SQL(" <%> "), Literal(value), bit_cast]
+        [
+            SQL("jaccard_distance(("),
+            path_sql,
+            SQL(")"),
+            bit_cast,
+            SQL(", "),
+            Literal(value),
+            bit_cast,
+            SQL(")"),
+        ]
     )
 
 
