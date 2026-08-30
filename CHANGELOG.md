@@ -5,6 +5,152 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.25.0] - 2026-08-30
+
+### Added
+
+- **`default_string_collation` now reaches the query.** The setting is
+  documented as applying to "all text fields in ORDER BY unless overridden
+  per-field" and had never affected a sort. #481 deliberately left it inert,
+  because nothing in the `order_by` pipeline knew which fields were text and a
+  blanket default would have produced a silently lexicographic sort for a
+  numeric JSONB field (1, 10, 2) and `collations are not supported by type
+  integer` for a numeric flat column. Sort paths are now resolved against the
+  source type's annotations, and the default applies only to `str` leaves.
+  Anything unresolved -- an unregistered view, an aggregation prefix, an
+  undeclared field -- keeps the behaviour it had. (#482, #502)
+
+### Fixed
+
+- **`OrderBy.collation` was applied by none of the three paths that render a
+  sort key.** Both flat-column branches returned before the `COLLATE` block ran
+  and dropped the clause outright. The JSONB branch emitted
+  `data -> 'name' COLLATE "x"`, which parses as `data -> ('name' COLLATE "x")`
+  -- `COLLATE` binds tighter than `->`, so the collation attached to the key
+  literal, the comparison stayed `jsonb`, and PostgreSQL accepted it in
+  silence. Every collatable branch now routes through one helper. Note that a
+  collated sort is a text sort, so an explicit JSON null now sorts with an
+  absent key rather than ahead of every string. (#476, #481)
+- **`order_by` given as a list of dicts did not recurse into nested fields.**
+  `{"measures": {"cost": "desc"}}` sorted correctly; the same value wrapped in
+  a list sorted by `measures ASC` -- wrong field and wrong direction, with no
+  error. The list branch had its own shallower parser that handed the nested
+  dict to the direction normaliser, which does not recognise a dict and
+  returned the ASC default. Both shapes now walk the same collector, and a
+  value neither shape can read warns and is dropped instead of silently
+  defaulting to ASC. (#475, #484)
+- **Schema-qualified view names rendered as one quoted identifier containing a
+  dot.** A view registered as `myschema.v_stats` has to become
+  `"myschema"."v_stats"`; passing the whole string to a single-argument
+  `Identifier` produced `"myschema.v_stats"` and the statement failed with
+  `relation "myschema.v_stats" does not exist`. Fixed across every site in
+  three passes: the partial-period UNION branch builders plus eleven repeated
+  copies in `db.py` (#472, #485), cursor pagination, reachable from any
+  `@connection` query (#486, #487), and the SQL, mutation and langchain
+  generators (#488, #489). The splitting helper now lives in
+  `sql/identifiers.py` as `qualified_identifier`, so there is one spelling of
+  it.
+- **The langchain vector store's read path interpolated five
+  constructor-supplied names as bare text.** `asimilarity_search` built its
+  statement as an f-string while the two write paths rendered the same names
+  through `psycopg.sql`, so the same constructor arguments were accepted on
+  write and rejected on read: an unquoted name is folded to lower case, so any
+  name needing quotes -- mixed case, a reserved word, a hyphen -- resolved one
+  way and failed the other. Request-controlled values were already
+  parameterised. (#490, #492)
+- **Three of the six `VectorOrderBy` distance operators were unusable, and the
+  two `order_by` shapes disagreed about which.** The dict shape emitted no
+  instruction at all for `l1_distance`, `hamming_distance` and
+  `jaccard_distance`, so the query ran unsorted and returned rows in scan
+  order; the `__gql_fields__` shape emitted a JSONB path sort against a vector
+  column, which the server rejects. The bit-string operators also emitted a
+  second, contradictory `DESC` term, because a `VectorOrderBy` was handled and
+  then recursed into as a nested input. Both shapes now read one operator tuple
+  and append through one helper. (#483, #493)
+- **Aggregation `measures` and `native_measures` keys are normalised at
+  registration.** Both are matched against dotted field paths built with
+  `to_snake_case`, so a key written in GraphQL spelling -- `measures.totalCost`
+  -- matched nothing, with no error and no warning. This is the casing trap
+  #467 fixed for `native_dimension_mapping` and deliberately left here. (#477,
+  #496)
+- **Vector distance filters are now boolean WHERE predicates.** All six
+  operators rendered a bare distance expression -- a `double precision` -- so
+  PostgreSQL rejected any WHERE clause containing one with `argument of WHERE
+  must be type boolean`. The distance is now wrapped in the requested
+  comparison, and every accepted input shape is normalised through one
+  function. The root cause was diagnosed first by
+  [@mikemikimike](https://github.com/mikemikimike) in #509, whose approach this
+  builds on. (#505, #511)
+- **`custom_distance`, `vector_norm`, `quantized_distance` and `reconstruct`
+  are refused in a WHERE clause** instead of rendering an expression that is
+  not a predicate. None of the four ever executed: `vector_norm` emitted a
+  two-argument call to a pgvector function that takes one, and the quantized
+  pair name functions FraiseQL does not define. `custom_distance` and
+  `quantized_distance` also concatenated caller-supplied strings into the
+  statement through `psycopg.sql.SQL()`, which does not escape; neither was
+  reachable from a GraphQL request, since `VectorFilter` declares no such
+  field. They stay registered so the rejection raises `WhereClauseError` rather
+  than being swallowed as an unsupported operator, which would drop the filter
+  and widen the result set. (#510, #512)
+- **Jaccard distance renders as a function call rather than the `<%>`
+  operator**, which psycopg rejects as a placeholder whenever the statement
+  carries parameters. (#495, #507)
+- **Both operands of a bit distance carry the literal's width.** A bare
+  `::bit` is `bit(1)`, so the distance was computed over a single bit and every
+  row reported 0. (#494, #504)
+- **The Rust benchmark targets compile, and CI keeps them compiling.** The
+  benches had drifted past the API they call and no job built them.
+  [@Joemon24](https://github.com/Joemon24) identified the same drift and posted
+  equivalent source fixes in #491 two hours before this landed. (#471, #500)
+- **`DATABASE_URL` no longer leaks out of the example fixtures into later
+  tests.** Two fixtures set six environment variables with bare
+  `os.environ[...]` and never restored them, so a CLI test that should fail on
+  a missing argument instead connected to whatever server the inherited URL
+  named. (#470, #497)
+
+### Removed
+
+- **`VectorOrderBy.custom_distance` and `.vector_norm`** -- declared GraphQL
+  input fields that nothing read, so a client could send either and get no
+  `ORDER BY` term and no error. (#512)
+- **`fraiseql.security.startup_checks`**, a security module nothing imported.
+  It could not have been wired in as written: `disable_sqlite_fts5()` was a
+  no-op calling a `Connection` method as though it were module-level,
+  `run_all_security_checks()` called `sys.exit(1)` from library code, and two
+  further checks raised when running as root. A security control nobody calls
+  reads as a control during an audit and enforces nothing. (#473, #499)
+- **`aiosqlite` from `[project.dependencies]`** -- installed by every
+  `pip install fraiseql` and imported by nothing in the repository. Vestigial
+  from the multi-database ambition v1 dropped; v1 is PostgreSQL-only. The
+  package remains in the lock as a `llama-index-core` dependency, so the
+  `llamaindex` extra still resolves. (#474, #498)
+- **Four `fraiseql_rs/tests/` directories**, 423 lines that no cargo target
+  reaches in runnable form. `tests/common/` was type-checked through an
+  `include!` in `src/lib.rs` but could never execute, because the lib test
+  binary cannot link under pyo3's `extension-module`; the other three were not
+  cargo targets at all. (#501, #506)
+
+### Security
+
+- **The compliance report's "Unpatched vulnerabilities" counter could only ever
+  report 0.** It tested `FixedVersion == ""`, but Trivy omits the key entirely
+  when upstream has no fix, so the key read as null and matched nothing -- in
+  an artifact stamped "Compliance Level: Government Agency Ready", stating the
+  inverse of the truth. A FIXABLE complement was added alongside. (#478, #480)
+- **The scan summary now counts UNKNOWN-severity CVEs**, closing a 7-finding
+  gap against the Security tab (88 vs 81). The SARIF upload always contained
+  them: `severity:` on that step is inert, because trivy-action unsets
+  `TRIVY_SEVERITY` for SARIF format. (#508)
+
+### Internal
+
+- Recorded why the Trivy SARIF `category:` must never change: GitHub closes an
+  alert only when a later analysis for the same category omits it, so a rename
+  strands every alert uploaded under the old one. (#503)
+- Added `CONTRIBUTORS.md`, recording external contributions that shaped what
+  shipped including work folded into another pull request, and pointed
+  `CONTRIBUTING.md` at it. (#513)
+
 ## [1.24.0] - 2026-08-30
 
 ### Fixed

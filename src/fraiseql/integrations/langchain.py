@@ -30,7 +30,9 @@ import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 import psycopg_pool
-from psycopg.sql import SQL, Identifier
+from psycopg.sql import SQL, Composable, Identifier
+
+from fraiseql.sql.identifiers import qualified_identifier
 
 # Optional imports for LangChain
 try:
@@ -171,7 +173,7 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
                 INSERT INTO {} ({})
                 VALUES ({})
                 """).format(
-                    Identifier(self.table_name),
+                    qualified_identifier(self.table_name),
                     SQL(", ").join(Identifier(col) for col in columns),
                     SQL(", ").join(SQL("%s") for _ in values),
                 )
@@ -186,8 +188,14 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
         metadatas = [doc.metadata for doc in documents]
         return await self.aadd_texts(texts, metadatas, **kwargs)
 
-    def _build_metadata_where_clause(self, filter_dict: Dict[str, Any]) -> Tuple[str, List[Any]]:
+    def _build_metadata_where_clause(
+        self, filter_dict: Dict[str, Any]
+    ) -> Tuple[Composable, List[Any]]:
         """Build WHERE clause for metadata filtering.
+
+        The filter keys and values are parameters, never text; the metadata
+        column is a constructor-supplied name, so it is rendered as an
+        identifier the same way the rest of the statement renders its names.
 
         Args:
             filter_dict: Dictionary of metadata filters
@@ -197,7 +205,7 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
             Tuple of (where_clause_sql, parameters)
         """
         if not filter_dict:
-            return "", []
+            return SQL(""), []
 
         conditions = []
         params = []
@@ -205,15 +213,10 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
         for key, value in filter_dict.items():
             # For now, support simple equality filtering
             # v1.8: Add support for complex operators (gt, lt, in, etc.)
-            conditions.append(f"{self.metadata_column} ->> %s = %s")
+            conditions.append(SQL("{} ->> %s = %s").format(Identifier(self.metadata_column)))
             params.extend([key, value])
 
-        if conditions:
-            where_sql = " AND " + " AND ".join(conditions)
-        else:
-            where_sql = ""
-
-        return where_sql, params
+        return SQL(" AND ") + SQL(" AND ").join(conditions), params
 
     async def asimilarity_search(
         self,
@@ -234,27 +237,35 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
             # Build the query for vector similarity search
             # Use different operators based on distance metric
             if self.distance_metric == "cosine":
-                distance_op = "<=>"
+                distance_op = SQL("<=>")
             elif self.distance_metric == "l2":
-                distance_op = "<->"
+                distance_op = SQL("<->")
             elif self.distance_metric == "inner_product":
-                distance_op = "<#>"
+                distance_op = SQL("<#>")
             else:
-                distance_op = "<=>"
+                distance_op = SQL("<=>")
 
-            query_str = f"""
-            SELECT {self.id_column}, {self.content_column}, {self.metadata_column}
-            FROM {self.table_name}
+            query = SQL("""
+            SELECT {id_column}, {content_column}, {metadata_column}
+            FROM {table}
             WHERE 1=1{metadata_where}
-            ORDER BY {self.embedding_column} {distance_op} %s::vector
+            ORDER BY {embedding_column} {distance_op} %s::vector
             LIMIT %s
-            """
+            """).format(
+                id_column=Identifier(self.id_column),
+                content_column=Identifier(self.content_column),
+                metadata_column=Identifier(self.metadata_column),
+                table=qualified_identifier(self.table_name),
+                metadata_where=metadata_where,
+                embedding_column=Identifier(self.embedding_column),
+                distance_op=distance_op,
+            )
 
             # Combine metadata params with vector params
             all_params = [*metadata_params, query_embedding, k]
 
             async with conn.cursor() as cursor:
-                await cursor.execute(query_str, all_params)  # type: ignore[arg-type]
+                await cursor.execute(query, all_params)  # type: ignore[arg-type]
                 rows = await cursor.fetchall()
 
         # Convert results to LangChain Documents
@@ -287,7 +298,7 @@ class FraiseQLVectorStore(VectorStore if LANGCHAIN_AVAILABLE else object):  # ty
         async with self.db_pool.connection() as conn:
             for doc_id in ids:
                 query = SQL("DELETE FROM {} WHERE {} = %s").format(
-                    Identifier(self.table_name),
+                    qualified_identifier(self.table_name),
                     Identifier(self.id_column),
                 )
                 await conn.execute(query, [doc_id])

@@ -122,6 +122,14 @@ config = FraiseQLConfig(
 
 Applied to all text fields in ORDER BY unless overridden per-field in queries.
 
+!!! note "Text fields only"
+    Each sort key is resolved against the type registered for the view, and the
+    default is applied only to fields that resolve to a string. A field that
+    resolves to anything else -- or that cannot be resolved at all, because the
+    view is unregistered or the field is not declared on its type -- is left
+    alone. Collating a numeric field would either sort it lexicographically
+    (1, 10, 2) or fail with *collations are not supported by type integer*.
+
 **Common Values**:
 
 - `"C"` - Byte-order sorting (fastest, case-sensitive)

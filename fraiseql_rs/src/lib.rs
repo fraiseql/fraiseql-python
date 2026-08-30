@@ -745,9 +745,3 @@ fn fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     Ok(())
 }
-
-// Integration test modules (only compiled when running tests)
-#[cfg(test)]
-mod tests {
-    include!("../tests/common/mod.rs");
-}

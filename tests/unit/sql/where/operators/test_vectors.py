@@ -6,8 +6,10 @@ These tests focus on SQL generation for pgvector's three native distance operato
 - <#> : negative inner product
 """
 
+import pytest
 from psycopg.sql import SQL, Composed
 
+from fraiseql.errors.exceptions import WhereClauseError
 from fraiseql.sql.where.core.field_detection import FieldType
 from fraiseql.sql.where.operators import get_operator_function
 from fraiseql.sql.where.operators.vectors import (
@@ -112,17 +114,17 @@ class TestVectorOperators:
         assert "::bit" in sql_str
 
     def test_jaccard_distance_sql(self) -> None:
-        """Should generate Jaccard distance SQL using <%> operator for bit vectors."""
+        """Should generate Jaccard distance SQL via the function form (#495)."""
         # Red cycle - this will fail initially
         path_sql = SQL("features")
         value = "111000"  # 6-bit binary string
 
         result = build_jaccard_distance_sql(path_sql, value)
 
-        # Should generate: (features)::bit <%> '111000'::bit
+        # Should generate: jaccard_distance((features)::bit(6), '111000'::bit(6))
         assert isinstance(result, Composed)
         sql_str = str(result)
-        assert "<%>" in sql_str
+        assert "jaccard_distance(" in sql_str
         assert "'111000'" in sql_str
         assert "::bit" in sql_str
 
@@ -258,7 +260,7 @@ class TestBinaryVectorDistanceOperators:
         bit_string = "111000"
         result = build_jaccard_distance_sql(path_sql, bit_string)
         sql_str = result.as_string(None)
-        assert "<%>" in sql_str
+        assert "jaccard_distance(" in sql_str
         assert "::bit" in sql_str
         assert "111000" in sql_str
 
@@ -324,12 +326,15 @@ class TestVectorAggregationOperators:
         sql_str = result.as_string(None)
         assert "AVG(" in sql_str
 
-    def test_vector_norm_sql(self):
-        """Test vector norm calculation."""
-        path_sql = SQL("embedding")
-        result = build_vector_norm_sql(path_sql, None)
-        sql_str = result.as_string(None)
-        assert "vector_norm(" in sql_str or "l2_norm(" in sql_str
+    def test_vector_norm_is_rejected(self):
+        """A norm is a number, so it is refused in a WHERE clause (#510).
+
+        This previously asserted that ``vector_norm(col, 'l2')`` rendered.
+        pgvector declares ``vector_norm(vector)`` -- one argument -- so that
+        call never existed and PostgreSQL rejected every execution of it.
+        """
+        with pytest.raises(WhereClauseError):
+            build_vector_norm_sql(SQL("embedding"), None)
 
 
 class TestSparseVectorAggregationOperators:
@@ -369,32 +374,113 @@ class TestHalfVectorAggregationOperators:
 
 
 class TestVectorQuantizationOperators:
-    """Test vector quantization and reconstruction operators."""
+    """Quantization operators are not WHERE predicates and are refused (#510).
 
-    def test_quantized_distance_sql(self):
-        """Test quantized vector distance."""
-        path_sql = SQL("quantized_embedding")
+    Both named functions -- ``quantized_<type>_distance`` and
+    ``reconstruct_quantized_vector`` -- are undefined, and neither returns a
+    boolean. The assertions here previously pinned that broken rendering.
+    Reachability and the injection channels are covered in
+    ``test_vector_non_predicate_operators.py``.
+    """
+
+    def test_quantized_distance_is_rejected(self):
+        """``quantized_cosine_distance`` is not a function FraiseQL defines."""
         config = {"target_vector": [0.1, 0.2, 0.3], "distance_type": "cosine"}
-        result = build_quantized_distance_sql(path_sql, config)
-        sql_str = result.as_string(None)
-        assert "quantized_cosine_distance(" in sql_str
-        assert "::vector" in sql_str
+        with pytest.raises(WhereClauseError):
+            build_quantized_distance_sql(SQL("quantized_embedding"), config)
 
-    def test_quantization_reconstruct_sql(self):
-        """Test quantization reconstruction."""
-        path_sql = SQL("quantized_vector")
-        result = build_quantization_reconstruct_sql(path_sql, None)
-        sql_str = result.as_string(None)
-        assert "reconstruct_quantized_vector(" in sql_str
+    def test_quantization_reconstruct_is_rejected(self):
+        """Reconstruction returns a vector, never a predicate."""
+        with pytest.raises(WhereClauseError):
+            build_quantization_reconstruct_sql(SQL("quantized_vector"), None)
 
 
 class TestCustomVectorDistanceOperators:
-    """Test custom vector distance operators."""
+    """``custom_distance`` is not a WHERE predicate and is refused (#510)."""
 
-    def test_custom_distance_sql(self):
-        """Test custom distance calculation."""
-        path_sql = SQL("custom_vector")
+    def test_custom_distance_is_rejected(self):
+        """A bare call to a caller-supplied function, with no way to validate it."""
         config = {"function": "my_distance_func", "parameters": [1.0, 2.0, 3.0]}
-        result = build_custom_distance_sql(path_sql, config)
-        sql_str = result.as_string(None)
-        assert "my_distance_func(" in sql_str
+        with pytest.raises(WhereClauseError):
+            build_custom_distance_sql(SQL("custom_vector"), config)
+
+
+class TestBinaryVectorBitWidth:
+    """Both operands of a bit distance must carry the literal's width (#494).
+
+    A bare ``::bit`` is ``bit(1)``. Casting *both* sides that way keeps the
+    lengths in agreement, so PostgreSQL raises nothing and computes the distance
+    over a single bit -- every row comes back 0. The existing assertions in
+    ``TestBinaryVectorDistanceOperators`` only check ``"::bit" in sql_str``,
+    which a ``bit(1)`` rendering satisfies, so they cannot see this.
+    """
+
+    QUERY_BITS = "1111000011110000111100001111000011110000111100001111000011110000"
+
+    def test_hamming_casts_both_operands_to_the_literal_width(self) -> None:
+        result = build_hamming_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        assert result.as_string(None) == (
+            "((data ->> 'fingerprint'))::bit(64) <~> "
+            f"'{self.QUERY_BITS}'::bit(64)"
+        )
+
+    def test_jaccard_casts_both_operands_to_the_literal_width(self) -> None:
+        result = build_jaccard_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        assert result.as_string(None) == (
+            "jaccard_distance(((data ->> 'fingerprint'))::bit(64), "
+            f"'{self.QUERY_BITS}'::bit(64))"
+        )
+
+    @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
+    @pytest.mark.parametrize("width", [1, 6, 8, 64, 128])
+    def test_width_tracks_the_literal_not_a_fixed_size(self, builder, width) -> None:
+        bits = "10" * (width // 2) + "1" * (width % 2)
+        assert len(bits) == width
+        sql_str = builder(SQL("fingerprint"), bits).as_string(None)
+        assert sql_str.count(f"::bit({width})") == 2
+        # A bare ``::bit`` anywhere means an operand was left at bit(1).
+        assert "::bit " not in sql_str
+        assert not sql_str.endswith("::bit")
+
+    @pytest.mark.parametrize(
+        ("builder", "prefix"),
+        [
+            (build_hamming_distance_sql, "((data ->> 'fp'))::bit(6)"),
+            # Jaccard renders as a function call rather than an operator (#495).
+            (build_jaccard_distance_sql, "jaccard_distance(((data ->> 'fp'))::bit(6)"),
+        ],
+    )
+    def test_column_side_is_cast_too(self, builder, prefix) -> None:
+        """The path is a JSONB text extraction, so it needs the cast as well."""
+        sql_str = builder(SQL('(data ->> \'fp\')'), "101010").as_string(None)
+        assert sql_str.startswith(prefix)
+
+
+class TestJaccardRendersWithoutAPercentSign:
+    """The Jaccard term must never contain ``%``, in any spelling (#495).
+
+    psycopg scans a statement for placeholders whenever parameters accompany it
+    and rejects ``%>`` as one, so an ``<%>`` term breaks the moment anything
+    else in the statement parameterises. Escaping to ``<%%>`` only relocates the
+    failure onto statements sent without parameters, which go through verbatim
+    and leave PostgreSQL with no such operator. Only the function form is
+    correct under both.
+    """
+
+    BITS = "111000"
+
+    def test_jaccard_uses_the_function_form(self) -> None:
+        result = build_jaccard_distance_sql(SQL('(data ->> \'fp\')'), self.BITS)
+        assert result.as_string(None) == (
+            "jaccard_distance(((data ->> 'fp'))::bit(6), '111000'::bit(6))"
+        )
+
+    def test_jaccard_rendering_has_no_percent_sign(self) -> None:
+        """Rejects both `<%>` and the `<%%>` escape that merely moves the bug."""
+        assert "%" not in build_jaccard_distance_sql(SQL("fp"), self.BITS).as_string(None)
+
+    def test_hamming_keeps_the_operator_form(self) -> None:
+        """`<~>` carries no `%`, so it is unaffected and keeps index compatibility."""
+        sql_str = build_hamming_distance_sql(SQL("fp"), "101010").as_string(None)
+        assert "<~>" in sql_str
+        assert "%" not in sql_str

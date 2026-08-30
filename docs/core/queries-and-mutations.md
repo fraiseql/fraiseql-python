@@ -251,6 +251,13 @@ FraiseQL supports PostgreSQL collation for locale-aware text sorting in `orderBy
 
 **Global Default Collation**:
 
+!!! warning "Not currently applied"
+    This setting has no effect yet. Applying it safely needs field *types* in the
+    ORDER BY builder, which does not distinguish a text field from a numeric one --
+    and collating a numeric field either sorts it lexicographically or fails
+    outright. Only a per-field collation reaches the SQL today. This has always
+    been its effective behaviour.
+
 Configure a default collation for all text sorting:
 
 ```python
@@ -294,9 +301,13 @@ query {
 **Collation Precedence**:
 
 1. Per-field explicit value (highest priority)
-2. Explicit `null` (skips global default)
-3. Global `default_string_collation`
+2. Explicit `null`
+3. `default_string_collation` from config, on text fields only
 4. PostgreSQL database default (lowest priority)
+
+Step 3 applies only where the sort key resolves to a string on the type
+registered for the view; anything else, including a field that cannot be
+resolved, falls straight through to step 4.
 
 **Common Collations**:
 

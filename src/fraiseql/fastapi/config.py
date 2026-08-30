@@ -323,7 +323,12 @@ class FraiseQLConfig(BaseSettings):
     default_string_collation: str | None = None
     """Default PostgreSQL collation for string ORDER BY clauses.
 
-    Applied to all text fields in ORDER BY unless overridden per-field.
+    Applied to text fields only. Each sort key is resolved against the type
+    registered for the view, and anything that does not resolve to ``str`` is
+    left alone -- collating a numeric field either sorts it lexicographically
+    (1, 10, 2) or fails with "collations are not supported by type integer".
+    A per-field collation always wins over this default; see
+    ``_apply_collation_default``.
 
     Examples:
     - "en_US.utf8" - US English locale-aware sorting

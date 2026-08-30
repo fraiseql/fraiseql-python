@@ -533,6 +533,12 @@ extensions; `"postgis"` is the most accurate but requires the PostGIS extension.
 PostgreSQL collation applied to text `ORDER BY` clauses, e.g. `"fr_FR.utf8"` or
 `"C"`.
 
+Applied to text fields only. The ORDER BY builder resolves each sort key
+against the type registered for the view, and a field it cannot resolve to a
+string is left alone -- collating a numeric field would either sort it
+lexicographically (1, 10, 2) or fail outright. A per-field collation always
+wins over this default.
+
 ### `session_variables`
 
 **Type**: `dict[str, str]`

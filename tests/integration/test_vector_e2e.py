@@ -274,7 +274,9 @@ async def test_vector_l1_distance_filter(class_db_pool, test_schema, vector_test
 async def test_vector_l1_distance_order_by(class_db_pool, test_schema, vector_test_setup) -> None:
     """Test ordering documents by L1/Manhattan distance."""
     repo = FraiseQLRepository(class_db_pool)
-    query_embedding = [0.1, 0.2, 0.3] + [0.0] * 381
+    # Nearest the last-inserted row, so the expected order is the reverse of the
+    # physical one and cannot be satisfied by an unordered scan (#483).
+    query_embedding = [0.3, 0.4, 0.5] + [0.0] * 381
 
     # Use proper GraphQL input object (not plain dict)
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
@@ -286,15 +288,18 @@ async def test_vector_l1_distance_order_by(class_db_pool, test_schema, vector_te
     )
 
     results = extract_graphql_data(result, "test_documents")
-    assert len(results) == 3
-    # Results should be ordered by L1 distance
+    assert [row["title"] for row in results] == [
+        "Data Science",
+        "Machine Learning",
+        "Python Programming",
+    ]
 
 
 @pytest.mark.asyncio
 async def test_vector_l1_distance_combined(class_db_pool, test_schema, vector_test_setup) -> None:
     """Test L1 distance for both WHERE and ORDER BY combined."""
     repo = FraiseQLRepository(class_db_pool)
-    query_embedding = [0.1, 0.2, 0.3] + [0.0] * 381
+    query_embedding = [0.3, 0.4, 0.5] + [0.0] * 381
 
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
 
@@ -306,8 +311,11 @@ async def test_vector_l1_distance_combined(class_db_pool, test_schema, vector_te
     )
 
     results = extract_graphql_data(result, "test_documents")
-    assert len(results) == 3
-    # Results should be filtered and ordered by L1 distance
+    assert [row["title"] for row in results] == [
+        "Data Science",
+        "Machine Learning",
+        "Python Programming",
+    ]
 
 
 @pytest.mark.asyncio
@@ -325,8 +333,10 @@ async def test_binary_vector_hamming_distance_filter(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) > 0
-    # Results should be filtered by Hamming distance
+    # Item A *is* the query fingerprint (distance 0); B and C each differ in 32
+    # of the 64 bits, so a threshold of 10 must exclude both. Asserting only
+    # len(results) > 0 held just as well when the filter matched everything (#494).
+    assert [row["name"] for row in results] == ["Item A"]
 
 
 @pytest.mark.asyncio
@@ -346,8 +356,51 @@ async def test_binary_vector_jaccard_distance_filter(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) > 0
-    # Results should be filtered by Jaccard distance
+    # Distances are 0.0 / 0.667 / 0.667 to Items A / B / C, so 0.3 keeps only A.
+    # See the Hamming test above for why counting rows was not enough (#494).
+    assert [row["name"] for row in results] == ["Item A"]
+
+
+@pytest.mark.asyncio
+async def test_binary_vector_where_builders_compute_over_every_bit(
+    class_db_pool, test_schema, binary_vector_test_setup
+) -> None:
+    """The WHERE-side bit builders must span the whole literal, not one bit (#494).
+
+    Drives the real operator-registry builders -- the path a filter with no
+    resolved type hint takes -- and checks the distances PostgreSQL actually
+    computes. Under the old bare ``::bit`` both operands were truncated to
+    ``bit(1)`` and every row came back 0.0.
+    """
+    from psycopg.sql import SQL, Composed
+
+    from fraiseql.sql.where.operators.vectors import (
+        build_hamming_distance_sql,
+        build_jaccard_distance_sql,
+    )
+
+    query_fingerprint = "1111000011110000111100001111000011110000111100001111000011110000"
+    expected = [
+        (build_hamming_distance_sql, [("Item A", 0.0), ("Item B", 32.0), ("Item C", 32.0)]),
+        (build_jaccard_distance_sql, [("Item A", 0.0), ("Item B", 0.667), ("Item C", 0.667)]),
+    ]
+
+    async with class_db_pool.connection() as conn:
+        await conn.execute(f"SET search_path TO {test_schema}, public")
+        for builder, want in expected:
+            # The registry renders a JSONB text extraction, so feed the builder a
+            # text-typed path rather than the bit(64) column itself.
+            distance = builder(SQL("fingerprint::text"), query_fingerprint)
+            cur = await conn.execute(
+                Composed(
+                    [
+                        SQL("SELECT name, round(("),
+                        distance,
+                        SQL(")::numeric, 3) FROM test_fingerprints ORDER BY name"),
+                    ]
+                )
+            )
+            assert [(name, float(d)) for name, d in await cur.fetchall()] == want
 
 
 @pytest.mark.asyncio
@@ -356,7 +409,9 @@ async def test_binary_vector_hamming_distance_order_by(
 ) -> None:
     """Test ordering binary vectors by Hamming distance."""
     repo = FraiseQLRepository(class_db_pool)
-    query_fingerprint = "1111000011110000111100001111000011110000111100001111000011110000"
+    # Distances 25 / 31 / 33 to items C / A / B -- distinct, and in an order the
+    # physical A, B, C cannot produce, so an omitted ORDER BY fails here (#483).
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
 
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
 
@@ -367,8 +422,7 @@ async def test_binary_vector_hamming_distance_order_by(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) == 3
-    # Results should be ordered by Hamming distance
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
 
 
 @pytest.mark.asyncio
@@ -377,7 +431,9 @@ async def test_binary_vector_jaccard_distance_order_by(
 ) -> None:
     """Test ordering binary vectors by Jaccard distance."""
     repo = FraiseQLRepository(class_db_pool)
-    query_fingerprint = "1111000011110000111100001111000011110000111100001111000011110000"
+    # Distances 0.595 / 0.689 / 0.717 to items C / A / B -- see the Hamming test
+    # above for why the expected order has to differ from the physical one.
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
 
     from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
 
@@ -388,8 +444,46 @@ async def test_binary_vector_jaccard_distance_order_by(
     )
 
     results = extract_graphql_data(result, "test_fingerprints")
-    assert len(results) == 3
-    # Results should be ordered by Jaccard distance
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
+
+
+@pytest.mark.asyncio
+async def test_jaccard_order_by_survives_a_parameterised_where(
+    class_db_pool, test_schema, binary_vector_test_setup
+) -> None:
+    """A Jaccard ordering must work alongside a filter that carries params (#495).
+
+    psycopg scans a statement for placeholders whenever parameters accompany it
+    and rejects ``%>`` as one, so the ``<%>`` operator this used to render made
+    every such query fail with ``only '%s', '%b', '%t' are allowed as
+    placeholders``. Escaping to ``<%%>`` would only move the failure to the
+    no-parameter case below, which is why both halves are asserted here.
+    """
+    repo = FraiseQLRepository(class_db_pool)
+    from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
+
+    # Distances 0.595 / 0.689 / 0.717 to Items C / A / B.
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
+
+    # With parameters: the WHERE renders %s placeholders alongside the ordering.
+    result = await repo.find(
+        "test_fingerprints",
+        where={"category": {"in": ["books", "clothing"]}},
+        order_by={"fingerprint": VectorOrderBy(jaccard_distance=query_fingerprint)},
+        limit=5,
+    )
+    results = extract_graphql_data(result, "test_fingerprints")
+    assert [row["name"] for row in results] == ["Item C", "Item B"]
+
+    # Without parameters: the statement is sent verbatim, so a `%%` escape would
+    # reach PostgreSQL as a literal `%%` and there is no such operator.
+    result = await repo.find(
+        "test_fingerprints",
+        order_by={"fingerprint": VectorOrderBy(jaccard_distance=query_fingerprint)},
+        limit=3,
+    )
+    results = extract_graphql_data(result, "test_fingerprints")
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
 
 
 @pytest.mark.asyncio

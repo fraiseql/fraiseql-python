@@ -16,6 +16,7 @@ from fraiseql.core.rust_pipeline import (
     RustResponseBytes,
     execute_via_rust_pipeline,
 )
+from fraiseql.sql.identifiers import qualified_identifier
 from fraiseql.sql.native_columns import resolve_native_column
 from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
@@ -446,7 +447,7 @@ def _build_fine_grain_branch(
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
-    table_id = Identifier(fine_grain_view)
+    table_id = qualified_identifier(fine_grain_view)
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
@@ -540,7 +541,7 @@ def _build_coarse_branch(
     """
     from psycopg.sql import SQL, Composed, Identifier, Literal
 
-    table_id = Identifier(coarse_view)
+    table_id = qualified_identifier(coarse_view)
     col_id = Identifier(time_grain_column)
 
     def build_field(fp: str) -> SQL | Composed:
@@ -891,20 +892,41 @@ def _normalize_mapping_keys(mapping: dict[str, str]) -> dict[str, str]:
     }
 
 
+# The aggregation entries keyed by dotted field paths. Every one of them is
+# matched against paths built with ``transform_path=to_snake_case``, so every one
+# of them needs its keys normalized or the entry silently never fires.
+_PATH_KEYED_AGGREGATION_ENTRIES = ("native_dimension_mapping", "measures", "native_measures")
+
+
 def _normalize_aggregation_mapping_keys(aggregation: dict[str, Any]) -> dict[str, Any]:
-    """Return ``aggregation`` with ``native_dimension_mapping`` keys in one spelling.
+    """Return ``aggregation`` with its path-keyed entries in one spelling.
+
+    ``native_dimension_mapping`` maps dimension paths to columns (#467),
+    ``measures`` maps measure paths to aggregate functions, and
+    ``native_measures`` maps those same measure paths to columns.
+
+    The two measure dicts have to move together (#477). A camelCase ``measures``
+    key derives no aggregation at all in :func:`_derive_auto_aggregation`, so
+    normalizing ``native_measures`` alone would leave a correct mapping with
+    nothing to attach to — the same invisible no-op, minus the obvious
+    explanation.
 
     The caller's dict is never mutated: a new dict is returned when anything
     changed, and the original is returned untouched otherwise.
     """
-    mapping: dict[str, str] = aggregation.get("native_dimension_mapping") or {}
-    if not mapping:
-        return aggregation
+    normalized_entries: dict[str, dict[str, str]] = {}
 
-    normalized = _normalize_mapping_keys(mapping)
-    if normalized == mapping:
+    for entry in _PATH_KEYED_AGGREGATION_ENTRIES:
+        mapping: dict[str, str] = aggregation.get(entry) or {}
+        if not mapping:
+            continue
+        normalized = _normalize_mapping_keys(mapping)
+        if normalized != mapping:
+            normalized_entries[entry] = normalized
+
+    if not normalized_entries:
         return aggregation
-    return {**aggregation, "native_dimension_mapping": normalized}
+    return {**aggregation, **normalized_entries}
 
 
 def _aggregation_mapping_error(
@@ -1903,7 +1925,7 @@ class FraiseQLRepository:
             union_native_measures = kwargs.get("native_measures")
             union_native_dim_mapping = kwargs.get("native_dimension_mapping")
             union_jsonb_col = jsonb_column or "data"
-            union_order_by = self._resolve_order_by_set(kwargs.get("order_by"))
+            union_order_by = self._resolve_order_by_set(kwargs.get("order_by"), view_name)
 
             query = _build_partial_period_union_query(
                 coarse_view=view_name,
@@ -2126,7 +2148,7 @@ class FraiseQLRepository:
             total = await db.count("v_products")
             tenant_count = await db.count("v_orders", mandatory_filters={"tenant_id": "tenant-123"})
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         # Extract mandatory_filters before _build_where_clause (#344)
         mandatory_filters = self._consume_mandatory_filters(kwargs)
@@ -2138,12 +2160,7 @@ class FraiseQLRepository:
         # Build WHERE clause (extracted to helper method for reuse)
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build COUNT(*) query
         query_parts = [SQL("SELECT COUNT(*) FROM "), table_identifier]
@@ -2198,7 +2215,7 @@ class FraiseQLRepository:
                 where={"email": {"eq": "test@example.com"}, "status": {"eq": "active"}}
             )
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         # Extract mandatory_filters before _build_where_clause (#344)
         mandatory_filters = self._consume_mandatory_filters(kwargs)
@@ -2210,12 +2227,7 @@ class FraiseQLRepository:
         # Build WHERE clause using existing helper
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build EXISTS query
         query_parts = [SQL("SELECT EXISTS(SELECT 1 FROM "), table_identifier]
@@ -2279,11 +2291,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build SUM query
         query_parts = [
@@ -2342,11 +2350,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build AVG query
         query_parts = [
@@ -2401,12 +2405,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build MIN query
         query_parts = [SQL("SELECT MIN("), Identifier(field), SQL(") FROM "), table_identifier]
@@ -2456,12 +2455,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build MAX query
         query_parts = [SQL("SELECT MAX("), Identifier(field), SQL(") FROM "), table_identifier]
@@ -2515,12 +2509,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build DISTINCT query
         query_parts = [SQL("SELECT DISTINCT "), Identifier(field), SQL(" FROM "), table_identifier]
@@ -2586,11 +2575,7 @@ class FraiseQLRepository:
 
         where_parts, _params = self._build_where_clause(view_name, **kwargs)
 
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
 
@@ -2649,7 +2634,7 @@ class FraiseQLRepository:
             #     "order_count": 500
             # }
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         if not aggregations:
             return {}
@@ -2662,12 +2647,7 @@ class FraiseQLRepository:
 
         where_parts, params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build SELECT clause with all aggregations
         agg_clauses = [SQL(f"{expr} AS {name}") for name, expr in aggregations.items()]
@@ -2736,12 +2716,7 @@ class FraiseQLRepository:
 
         where_parts, where_params = self._build_where_clause(view_name, **kwargs)
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build query to select existing IDs
         query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
@@ -2971,7 +2946,7 @@ class FraiseQLRepository:
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
         )
 
-    def _resolve_order_by_set(self, order_by: Any) -> Any | None:
+    def _resolve_order_by_set(self, order_by: Any, view_name: str | None = None) -> Any | None:
         """Normalise any accepted ``order_by`` shape to an ``OrderBySet``.
 
         Three shapes reach the repository — an ``OrderBySet``, a GraphQL
@@ -2997,8 +2972,14 @@ class FraiseQLRepository:
                     _convert_order_by_input_to_sql,
                 )
 
+                # The dict and list shapes carry field names and nothing else,
+                # so the view's registered type is what tells the collation
+                # resolver which of them are text (#482). An unregistered view
+                # resolves to None, which leaves every collation alone.
                 order_set = _convert_order_by_input_to_sql(
-                    order_set, config=self.context.get("config")
+                    order_set,
+                    config=self.context.get("config"),
+                    source_type=_type_registry.get(view_name) if view_name else None,
                 )
             else:
                 # Raw SQL string, or something unrecognised — the caller handles it
@@ -3014,6 +2995,7 @@ class FraiseQLRepository:
         table_ref: str,
         native_columns: set[str] | None = None,
         column_mapping: dict[str, str] | None = None,
+        view_name: str | None = None,
     ) -> tuple[Any | None, bool]:
         """Resolve any accepted ``order_by`` shape to SQL, once, for every shape.
 
@@ -3027,7 +3009,7 @@ class FraiseQLRepository:
             the caller must ensure the FROM clause carries that alias; raw string
             ``order_by`` is passed through untouched and reports ``(None, False)``.
         """
-        order_set = self._resolve_order_by_set(order_by)
+        order_set = self._resolve_order_by_set(order_by, view_name)
         if order_set is None:
             return None, False
 
@@ -3109,14 +3091,10 @@ class FraiseQLRepository:
             table_ref,
             native_columns=native_dimensions or None,
             column_mapping=native_dimension_mapping,
+            view_name=view_name,
         )
 
-        # Handle schema-qualified table names
-        if "." in view_name:
-            schema_name, table_name = view_name.split(".", 1)
-            table_identifier = Identifier(schema_name, table_name)
-        else:
-            table_identifier = Identifier(view_name)
+        table_identifier = qualified_identifier(view_name)
 
         # Build SELECT clause — different when GROUP BY + aggregations are used
         if group_by:

@@ -12,6 +12,7 @@ from psycopg import sql
 from psycopg.sql import SQL, Composed, Identifier
 
 from fraiseql.core.ast_parser import FieldPath
+from fraiseql.sql.identifiers import qualified_identifier
 
 
 def _get_graphql_field_type(typename: str | None, field_alias: str) -> type | None:
@@ -520,7 +521,7 @@ def build_sql_query(
         else:
             select_clause = SQL("data")
 
-        base = SQL("SELECT {} FROM {}").format(select_clause, Identifier(table))
+        base = SQL("SELECT {} FROM {}").format(select_clause, qualified_identifier(table))
 
         # Build query with clauses in correct SQL order
         query_parts = [base]
@@ -575,7 +576,7 @@ def build_sql_query(
         ]
         select_clause = SQL(", ").join(select_items)
 
-    base = SQL("SELECT {} FROM {}").format(select_clause, Identifier(table))
+    base = SQL("SELECT {} FROM {}").format(select_clause, qualified_identifier(table))
 
     # Build query with clauses in correct SQL order
     query_parts = [base]
