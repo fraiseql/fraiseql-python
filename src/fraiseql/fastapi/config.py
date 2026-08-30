@@ -323,13 +323,12 @@ class FraiseQLConfig(BaseSettings):
     default_string_collation: str | None = None
     """Default PostgreSQL collation for string ORDER BY clauses.
 
-    .. warning::
-       Not currently applied. Honouring it needs field *types* plumbed into the
-       ORDER BY builder, because nothing there distinguishes a text field from a
-       numeric one -- and collating a numeric field either sorts it
-       lexicographically or fails outright. Until then only a per-field
-       collation reaches the SQL; see ``_apply_collation_default``. This has
-       always been its effective behaviour, so nothing changed in #476.
+    Applied to text fields only. Each sort key is resolved against the type
+    registered for the view, and anything that does not resolve to ``str`` is
+    left alone -- collating a numeric field either sorts it lexicographically
+    (1, 10, 2) or fails with "collations are not supported by type integer".
+    A per-field collation always wins over this default; see
+    ``_apply_collation_default``.
 
     Examples:
     - "en_US.utf8" - US English locale-aware sorting

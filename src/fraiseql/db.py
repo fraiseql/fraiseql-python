@@ -1925,7 +1925,7 @@ class FraiseQLRepository:
             union_native_measures = kwargs.get("native_measures")
             union_native_dim_mapping = kwargs.get("native_dimension_mapping")
             union_jsonb_col = jsonb_column or "data"
-            union_order_by = self._resolve_order_by_set(kwargs.get("order_by"))
+            union_order_by = self._resolve_order_by_set(kwargs.get("order_by"), view_name)
 
             query = _build_partial_period_union_query(
                 coarse_view=view_name,
@@ -2946,7 +2946,7 @@ class FraiseQLRepository:
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
         )
 
-    def _resolve_order_by_set(self, order_by: Any) -> Any | None:
+    def _resolve_order_by_set(self, order_by: Any, view_name: str | None = None) -> Any | None:
         """Normalise any accepted ``order_by`` shape to an ``OrderBySet``.
 
         Three shapes reach the repository — an ``OrderBySet``, a GraphQL
@@ -2972,8 +2972,14 @@ class FraiseQLRepository:
                     _convert_order_by_input_to_sql,
                 )
 
+                # The dict and list shapes carry field names and nothing else,
+                # so the view's registered type is what tells the collation
+                # resolver which of them are text (#482). An unregistered view
+                # resolves to None, which leaves every collation alone.
                 order_set = _convert_order_by_input_to_sql(
-                    order_set, config=self.context.get("config")
+                    order_set,
+                    config=self.context.get("config"),
+                    source_type=_type_registry.get(view_name) if view_name else None,
                 )
             else:
                 # Raw SQL string, or something unrecognised — the caller handles it
@@ -2989,6 +2995,7 @@ class FraiseQLRepository:
         table_ref: str,
         native_columns: set[str] | None = None,
         column_mapping: dict[str, str] | None = None,
+        view_name: str | None = None,
     ) -> tuple[Any | None, bool]:
         """Resolve any accepted ``order_by`` shape to SQL, once, for every shape.
 
@@ -3002,7 +3009,7 @@ class FraiseQLRepository:
             the caller must ensure the FROM clause carries that alias; raw string
             ``order_by`` is passed through untouched and reports ``(None, False)``.
         """
-        order_set = self._resolve_order_by_set(order_by)
+        order_set = self._resolve_order_by_set(order_by, view_name)
         if order_set is None:
             return None, False
 
@@ -3084,6 +3091,7 @@ class FraiseQLRepository:
             table_ref,
             native_columns=native_dimensions or None,
             column_mapping=native_dimension_mapping,
+            view_name=view_name,
         )
 
         table_identifier = qualified_identifier(view_name)
