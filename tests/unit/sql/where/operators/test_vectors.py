@@ -9,6 +9,7 @@ These tests focus on SQL generation for pgvector's three native distance operato
 import pytest
 from psycopg.sql import SQL, Composed
 
+from fraiseql.errors.exceptions import WhereClauseError
 from fraiseql.sql.where.core.field_detection import FieldType
 from fraiseql.sql.where.operators import get_operator_function
 from fraiseql.sql.where.operators.vectors import (
@@ -325,12 +326,15 @@ class TestVectorAggregationOperators:
         sql_str = result.as_string(None)
         assert "AVG(" in sql_str
 
-    def test_vector_norm_sql(self):
-        """Test vector norm calculation."""
-        path_sql = SQL("embedding")
-        result = build_vector_norm_sql(path_sql, None)
-        sql_str = result.as_string(None)
-        assert "vector_norm(" in sql_str or "l2_norm(" in sql_str
+    def test_vector_norm_is_rejected(self):
+        """A norm is a number, so it is refused in a WHERE clause (#510).
+
+        This previously asserted that ``vector_norm(col, 'l2')`` rendered.
+        pgvector declares ``vector_norm(vector)`` -- one argument -- so that
+        call never existed and PostgreSQL rejected every execution of it.
+        """
+        with pytest.raises(WhereClauseError):
+            build_vector_norm_sql(SQL("embedding"), None)
 
 
 class TestSparseVectorAggregationOperators:
@@ -370,35 +374,35 @@ class TestHalfVectorAggregationOperators:
 
 
 class TestVectorQuantizationOperators:
-    """Test vector quantization and reconstruction operators."""
+    """Quantization operators are not WHERE predicates and are refused (#510).
 
-    def test_quantized_distance_sql(self):
-        """Test quantized vector distance."""
-        path_sql = SQL("quantized_embedding")
+    Both named functions -- ``quantized_<type>_distance`` and
+    ``reconstruct_quantized_vector`` -- are undefined, and neither returns a
+    boolean. The assertions here previously pinned that broken rendering.
+    Reachability and the injection channels are covered in
+    ``test_vector_non_predicate_operators.py``.
+    """
+
+    def test_quantized_distance_is_rejected(self):
+        """``quantized_cosine_distance`` is not a function FraiseQL defines."""
         config = {"target_vector": [0.1, 0.2, 0.3], "distance_type": "cosine"}
-        result = build_quantized_distance_sql(path_sql, config)
-        sql_str = result.as_string(None)
-        assert "quantized_cosine_distance(" in sql_str
-        assert "::vector" in sql_str
+        with pytest.raises(WhereClauseError):
+            build_quantized_distance_sql(SQL("quantized_embedding"), config)
 
-    def test_quantization_reconstruct_sql(self):
-        """Test quantization reconstruction."""
-        path_sql = SQL("quantized_vector")
-        result = build_quantization_reconstruct_sql(path_sql, None)
-        sql_str = result.as_string(None)
-        assert "reconstruct_quantized_vector(" in sql_str
+    def test_quantization_reconstruct_is_rejected(self):
+        """Reconstruction returns a vector, never a predicate."""
+        with pytest.raises(WhereClauseError):
+            build_quantization_reconstruct_sql(SQL("quantized_vector"), None)
 
 
 class TestCustomVectorDistanceOperators:
-    """Test custom vector distance operators."""
+    """``custom_distance`` is not a WHERE predicate and is refused (#510)."""
 
-    def test_custom_distance_sql(self):
-        """Test custom distance calculation."""
-        path_sql = SQL("custom_vector")
+    def test_custom_distance_is_rejected(self):
+        """A bare call to a caller-supplied function, with no way to validate it."""
         config = {"function": "my_distance_func", "parameters": [1.0, 2.0, 3.0]}
-        result = build_custom_distance_sql(path_sql, config)
-        sql_str = result.as_string(None)
-        assert "my_distance_func(" in sql_str
+        with pytest.raises(WhereClauseError):
+            build_custom_distance_sql(SQL("custom_vector"), config)
 
 
 class TestBinaryVectorBitWidth:

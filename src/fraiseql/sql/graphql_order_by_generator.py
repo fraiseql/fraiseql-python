@@ -59,10 +59,6 @@ class VectorOrderBy:
     l2_distance: list[float] | dict[str, Any] | None = None
     l1_distance: list[float] | dict[str, Any] | None = None
     inner_product: list[float] | dict[str, Any] | None = None
-    custom_distance: dict[str, Any] | None = (
-        None  # {function: "my_distance_func", parameters: [...]}
-    )
-    vector_norm: Any | None = None  # For norm calculations
     hamming_distance: str | None = None  # bit string like "101010"
     jaccard_distance: str | None = None  # bit string like "111000"
 
