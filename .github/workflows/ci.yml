@@ -158,6 +158,12 @@ jobs:
       - name: Build (verify compilation)
         run: cargo build --manifest-path fraiseql_rs/Cargo.toml --all-features
 
+      # Neither clippy nor build above compiles the bench targets, so the benches
+      # drifted past the API they call and nothing noticed (#471). This is the
+      # step that keeps them building.
+      - name: Check all targets (benches and test binaries)
+        run: cargo check --manifest-path fraiseql_rs/Cargo.toml --all-targets --all-features
+
   ci-success:
     name: CI Success
     needs: [lint, type-check, unit-tests, integration-tests, build-extension]
