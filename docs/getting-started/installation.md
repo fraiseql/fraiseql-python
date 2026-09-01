@@ -73,8 +73,11 @@ fraiseql --version
 fraiseql init my-first-api
 cd my-first-api
 
-# Start development server
+# Start development server - /graphql is live straight away
 fraiseql dev
+
+# Start the bundled PostgreSQL and load the example schema
+docker compose up -d
 ```
 
 **What you get**:
