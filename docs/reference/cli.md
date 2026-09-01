@@ -63,7 +63,7 @@ fraiseql init PROJECT_NAME [OPTIONS]
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--template [basic\|blog\|ecommerce]` | `basic` | Project template to use |
-| `--database-url TEXT` | `postgresql://localhost/mydb` | PostgreSQL connection URL |
+| `--database-url TEXT` | the bundled compose service | PostgreSQL connection URL |
 | `--no-git` | Flag | Skip git repository initialization |
 
 ### Templates
@@ -95,23 +95,40 @@ my-project/
 │   ├── types/               # FraiseQL type definitions
 │   ├── mutations/           # GraphQL mutations
 │   └── queries/             # Custom query logic
+├── db/
+│   ├── schema/              # SQL loaded into a fresh database
+│   │   └── 001_users.sql    # tb_user, v_user, and two seed rows
+│   ├── seeds/               # Environment-specific seed data
+│   ├── migrations/          # Incremental schema changes
+│   └── environments/        # Per-environment migration config
 ├── tests/                   # Test files
-├── migrations/              # Database migrations
+├── docker-compose.yml      # PostgreSQL for local development
 ├── .env                     # Environment variables
 ├── .gitignore              # Git ignore patterns
 ├── pyproject.toml          # Project configuration
 └── README.md               # Project documentation
 ```
 
+The `db/` layout is the one `fraiseql migrate init` expects, so the two
+commands agree about where migrations live.
+
 ### Environment Variables
 
 The `.env` file is created with:
 
 ```bash
-FRAISEQL_DATABASE_URL=postgresql://localhost/mydb
+FRAISEQL_DATABASE_URL=postgresql://fraiseql:fraiseql@localhost:54320/my_project
 FRAISEQL_AUTO_CAMEL_CASE=true
-FRAISEQL_DEV_AUTH_PASSWORD=development-only-password
+FRAISEQL_DATABASE_POOL_TIMEOUT=5
 ```
+
+The URL points at the PostgreSQL in the generated `docker-compose.yml`, which
+publishes port 54320 rather than 5432 so it cannot collide with a PostgreSQL
+already installed on the machine.
+
+`FRAISEQL_DEV_AUTH_PASSWORD` is written commented out. Uncommenting it puts
+HTTP basic auth in front of `/graphql`, so every request — including
+GraphiQL's — then needs credentials.
 
 ### Examples
 
@@ -143,8 +160,13 @@ cd PROJECT_NAME
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-fraiseql dev
+fraiseql dev              # serves /graphql immediately, with no database
+docker compose up -d      # starts PostgreSQL and loads db/schema/*.sql
 ```
+
+`fraiseql dev` works before the database exists: queries resolve to empty
+results until `docker compose up -d` has run, and the server says so once at
+startup instead of repeating pool errors.
 
 ---
 

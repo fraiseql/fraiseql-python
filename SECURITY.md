@@ -25,7 +25,7 @@ Please do not report security vulnerabilities through public GitHub issues.
 
 **Report via GitHub Security Advisories**: [Create a Security Advisory](https://github.com/fraiseql/fraiseql-python/security/advisories/new)
 
-If you prefer email, send details to: **security@fraiseql.com** (response may be delayed)
+If you prefer email, send details to: **security@fraiseql.dev** (response may be delayed)
 
 Include:
 
@@ -238,6 +238,6 @@ Contact us for compliance documentation.
 For security questions that aren't vulnerabilities:
 
 - Open a GitHub discussion
-- Email: security@fraiseql.com
+- Email: security@fraiseql.dev
 
 Thank you for helping keep FraiseQL secure!
