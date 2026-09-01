@@ -71,7 +71,7 @@ FraiseQL uses a unified architecture with exclusive Rust pipeline execution:
 - **`fraiseql_rs/`**: Exclusive query execution engine
 - **Purpose**: Core performance component for all operations
 - **Architecture**: PostgreSQL → Rust Transformation → HTTP Response
-- **Installation**: Automatically included with `pip install fraiseql`
+- **Installation**: Automatically included with `pip install "fraiseql<2"`
 
 ### **Supporting Components**
 

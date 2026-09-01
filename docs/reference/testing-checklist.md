@@ -119,14 +119,14 @@ This checklist ensures FraiseQL documentation meets production quality standards
 
 ### **Basic Installation**
 
-- [ ] `pip install fraiseql` works
+- [ ] `pip install "fraiseql<2"` works
 - [ ] All dependencies install correctly
 - [ ] Import statements work
 - [ ] Basic functionality available
 
 ### **Enterprise Installation**
 
-- [ ] `pip install fraiseql[enterprise]` succeeds
+- [ ] `pip install "fraiseql[enterprise]<2"` succeeds
 - [ ] Optional dependencies install
 - [ ] Enterprise features are available
 - [ ] Performance optimizations active

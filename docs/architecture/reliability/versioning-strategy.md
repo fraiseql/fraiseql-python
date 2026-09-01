@@ -973,7 +973,7 @@ Security fixes are released as new versions on PyPI. Upgrade promptly when a sec
 is published:
 
 ```bash
-uv add "fraiseql>=1.23.11"
+uv add "fraiseql>=1.23.11,<2"
 ```
 
 ### 11.3 End-of-Life Behaviour

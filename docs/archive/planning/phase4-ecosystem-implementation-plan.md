@@ -455,7 +455,7 @@ FraiseQL provides native integration with LangChain for building RAG application
 ## Installation
 
 ```bash
-pip install fraiseql[langchain]
+pip install "fraiseql[langchain]<2"
 ```
 
 ## Quick Start
@@ -741,7 +741,7 @@ Use FraiseQL with LlamaIndex for data-augmented LLM applications.
 ## Installation
 
 ```bash
-pip install fraiseql[llamaindex]
+pip install "fraiseql[llamaindex]<2"
 ```
 
 ## Loading Data

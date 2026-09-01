@@ -23,7 +23,7 @@ Complete guide to implementing enterprise-grade authentication and authorization
 Complete example: JWT authentication with FraiseQL.
 
 Prerequisites:
-- pip install fraiseql pyjwt cryptography
+- pip install "fraiseql<2" pyjwt cryptography
 - Generate a secret key: python -c "import secrets; print(secrets.token_hex(32))"
 """
 

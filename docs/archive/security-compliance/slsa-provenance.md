@@ -380,7 +380,7 @@ An SBOM (Software Bill of Materials) lists all software components, libraries, a
 
 ```bash
 # Install fraiseql
-pip install fraiseql
+pip install "fraiseql<2"
 
 # Generate SBOM (uses the fraiseql CLI)
 fraiseql sbom generate --format cyclonedx --output sbom.json
@@ -597,7 +597,7 @@ SBOM may be generated separately from release artifacts:
 
 ```bash
 # Generate SBOM from installed package
-pip install fraiseql
+pip install "fraiseql<2"
 fraiseql sbom generate --format cyclonedx --output sbom.json
 ```
 

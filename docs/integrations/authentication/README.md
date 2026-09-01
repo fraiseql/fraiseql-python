@@ -26,7 +26,7 @@ and PostgreSQL Row-Level Security (RLS).
 
 **Required tools:**
 
-- FraiseQL v1 installed (`pip install fraiseql` / `uv add fraiseql`)
+- FraiseQL v1 installed (`pip install "fraiseql<2"` / `uv add "fraiseql<2"`)
 - A PostgreSQL 14+ database
 - Your chosen identity provider's console (for Auth0 or another OIDC issuer)
 

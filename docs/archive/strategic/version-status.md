@@ -24,7 +24,7 @@ FraiseQL uses a unified architecture with exclusive Rust pipeline execution for 
 
 ```bash
 # Install FraiseQL with exclusive Rust pipeline
-pip install fraiseql
+pip install "fraiseql<2"
 ```
 
 **Why FraiseQL?**
