@@ -26,7 +26,7 @@ This guide provides practical tools and techniques for benchmarking your FraiseQ
 Complete FraiseQL benchmarking script.
 
 Requirements:
-- pip install fraiseql psycopg asyncio timeit
+- pip install "fraiseql<2" psycopg asyncio timeit
 """
 
 import asyncio

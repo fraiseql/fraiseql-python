@@ -358,14 +358,14 @@ def test_user_query(client) -> None:
 
 ```
 ImportError: fraiseql Rust extension is not available.
-Please reinstall fraiseql: pip install --force-reinstall fraiseql
+Please reinstall fraiseql: pip install --force-reinstall "fraiseql<2"
 ```
 
 The Rust transform is bundled with FraiseQL as `fraiseql._fraiseql_rs`. If the wheel was built
 without it (or a source install failed to compile), reinstall a prebuilt wheel:
 
 ```bash
-pip install --force-reinstall fraiseql
+pip install --force-reinstall "fraiseql<2"
 ```
 
 If you build from source, ensure a Rust toolchain and maturin are available, then rebuild.

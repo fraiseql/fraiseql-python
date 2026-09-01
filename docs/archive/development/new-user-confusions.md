@@ -81,9 +81,9 @@ As a new user exploring this repository, I encountered several areas that were n
 
 **Confusion**: Multiple installation methods mentioned without clear guidance:
 
-- `pip install fraiseql`
-- `pip install fraiseql[rust]`
-- `pip install fraiseql[fastapi]`
+- `pip install "fraiseql<2"`
+- `pip install "fraiseql[rust]<2"`
+- `pip install "fraiseql[fastapi]<2"`
 - Different Python version requirements (3.11+ vs 3.13+)
 - Optional Rust compilation
 

@@ -33,10 +33,10 @@ The runtime follows a CQRS split against PostgreSQL:
 
 ```bash
 # uv (recommended)
-uv add fraiseql
+uv add "fraiseql<2"
 
 # or pip
-pip install fraiseql
+pip install "fraiseql<2"
 ```
 
 FastAPI integration is included. The optional Rust extension (`fraiseql_rs`) accelerates

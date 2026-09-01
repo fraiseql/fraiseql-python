@@ -24,7 +24,7 @@ By the end, you'll understand:
 1. **Install Python dependencies:**
 
    ```bash
-   pip install fraiseql fastapi uvicorn
+   pip install "fraiseql<2" fastapi uvicorn
    ```
 
 2. **Verify installation:**
@@ -234,7 +234,7 @@ query {
 
 **"ImportError: No module named 'fraiseql'"**
 
-- Solution: `pip install fraiseql`
+- Solution: `pip install "fraiseql<2"`
 
 **"Connection refused" to database**
 

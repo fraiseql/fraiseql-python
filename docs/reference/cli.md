@@ -19,7 +19,7 @@ Complete command-line interface reference for FraiseQL. The CLI provides project
 The CLI is installed automatically with FraiseQL:
 
 ```bash
-pip install fraiseql
+pip install "fraiseql<2"
 fraiseql --version
 ```
 
@@ -887,7 +887,7 @@ FraiseQL CLI respects these environment variables:
 
 ```bash
 # Ensure fraiseql is installed
-pip install fraiseql
+pip install "fraiseql<2"
 
 # Check installation
 which fraiseql

@@ -203,7 +203,7 @@ FROM tb_user;
 
 ```bash
 # Install dependencies
-pip install fraiseql pytest pytest-benchmark
+pip install "fraiseql<2" pytest pytest-benchmark
 
 # Start benchmark environment
 cd benchmarks

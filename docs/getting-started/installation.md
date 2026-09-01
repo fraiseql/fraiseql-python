@@ -37,19 +37,19 @@ Choose your installation path:
 ```
 What do you want to do?
 ├── 🚀 Quick Start (Recommended for most users - 5 minutes)
-│   └── pip install fraiseql
+│   └── pip install "fraiseql<2"
 │       └── fraiseql init my-project
 │           └── fraiseql dev
 ├── 🧪 Development/Testing
-│   └── pip install fraiseql[dev]
+│   └── pip install "fraiseql[dev]<2"
 ├── 📊 Production with Observability
-│   └── pip install fraiseql[tracing]
+│   └── pip install "fraiseql[tracing]<2"
 ├── 🔐 Production with Auth0
-│   └── pip install fraiseql[auth0]
+│   └── pip install "fraiseql[auth0]<2"
 ├── 📚 Documentation Building
-│   └── pip install fraiseql[docs]
+│   └── pip install "fraiseql[docs]<2"
 └── 🏗️ Everything (Development + Production)
-    └── pip install fraiseql[all]
+    └── pip install "fraiseql[all]<2"
 ```
 
 
@@ -64,7 +64,7 @@ What do you want to do?
 
 ```bash
 # Install core FraiseQL
-pip install fraiseql
+pip install "fraiseql<2"
 
 # Verify installation
 fraiseql --version
@@ -95,10 +95,10 @@ fraiseql dev
 
 ```bash
 # Install with development dependencies
-pip install fraiseql[dev]
+pip install "fraiseql[dev]<2"
 
 # Or install all optional dependencies
-pip install fraiseql[all]
+pip install "fraiseql[all]<2"
 ```
 
 **What you get** (in addition to Quick Start):
@@ -118,7 +118,7 @@ pip install fraiseql[all]
 
 ```bash
 # Install with observability features
-pip install fraiseql[tracing]
+pip install "fraiseql[tracing]<2"
 ```
 
 **What you get** (in addition to Quick Start):
@@ -137,7 +137,7 @@ pip install fraiseql[tracing]
 
 ```bash
 # Install with Auth0 support
-pip install fraiseql[auth0]
+pip install "fraiseql[auth0]<2"
 ```
 
 **What you get** (in addition to Quick Start):
@@ -155,7 +155,7 @@ pip install fraiseql[auth0]
 
 ```bash
 # Install with documentation tools
-pip install fraiseql[docs]
+pip install "fraiseql[docs]<2"
 ```
 
 **What you get** (in addition to Quick Start):
@@ -172,7 +172,7 @@ pip install fraiseql[docs]
 
 ```bash
 # Install everything (development + production features)
-pip install fraiseql[all]
+pip install "fraiseql[all]<2"
 ```
 
 **What you get** (all features from all options above):
@@ -310,7 +310,7 @@ xcode-select --install
 
 # Then reinstall FraiseQL
 pip uninstall fraiseql
-pip install fraiseql --no-cache-dir
+pip install "fraiseql<2" --no-cache-dir
 ```
 
 #### Issue: "Python version 3.13+ required"
@@ -336,11 +336,11 @@ pyenv global 3.13.0
 
 ```bash
 # Make sure you're in the right environment
-pip install fraiseql
+pip install "fraiseql<2"
 
 # Or reinstall
 pip uninstall fraiseql
-pip install fraiseql
+pip install "fraiseql<2"
 ```
 
 #### Issue: "fraiseql command not found"
@@ -355,7 +355,7 @@ python -m fraiseql --version
 pip show fraiseql
 
 # Option 3: Reinstall with --force
-pip install --force-reinstall fraiseql
+pip install --force-reinstall "fraiseql<2"
 ```
 
 #### Issue: "PostgreSQL connection failed"
@@ -410,7 +410,7 @@ python -c "from fraiseql.core.database import DatabasePool; print('Rust backend 
 
 # If import fails, reinstall with Rust
 pip uninstall fraiseql
-pip install fraiseql --no-cache-dir --verbose
+pip install "fraiseql<2" --no-cache-dir --verbose
 
 # Check for missing dependencies
 python -c "import sys; print('Python path:'); [print(p) for p in sys.path]"
@@ -441,7 +441,7 @@ pip uninstall fraiseql fraiseql-confiture -y
 pip cache purge
 
 # Reinstall
-pip install fraiseql[dev]
+pip install "fraiseql[dev]<2"
 ```
 
 #### Environment Issues

@@ -178,7 +178,7 @@ Use this checklist alongside framework-specific guides:
 
 ### Application Setup
 
-- [ ] Install FraiseQL: `pip install fraiseql`
+- [ ] Install FraiseQL: `pip install "fraiseql<2"`
 - [ ] Configure `create_fraiseql_app()`
 - [ ] Set database URL
 - [ ] Enable Rust pipeline: `enable_rust_pipeline=True`
