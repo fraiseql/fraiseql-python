@@ -2,11 +2,16 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| 0.11.x  | :white_check_mark: |
-| < 0.11  | :x:                |
+| Version                   | Supported          |
+| ------------------------- | ------------------ |
+| Latest 1.x release        | :white_check_mark: |
+| Any earlier 1.x release   | :x:                |
+
+Fixes ship in the next release cut from `dev`. There are no maintenance branches and
+older minors are not backported, so "supported" means the most recent release on PyPI.
+
+Note that v1 is this repository, `fraiseql-python`. The separate v2 project
+(`fraiseql/fraiseql`) has its own security policy; report v2 issues there.
 
 ## Reporting a Vulnerability
 
@@ -18,7 +23,7 @@ Please do not report security vulnerabilities through public GitHub issues.
 
 ### 2. Email Security Team
 
-**Report via GitHub Security Advisories**: [Create a Security Advisory](https://github.com/fraiseql/fraiseql/security/advisories/new)
+**Report via GitHub Security Advisories**: [Create a Security Advisory](https://github.com/fraiseql/fraiseql-python/security/advisories/new)
 
 If you prefer email, send details to: **security@fraiseql.com** (response may be delayed)
 
@@ -187,7 +192,7 @@ audit.log_mutation("update_user", user_id=123)
 
 ## Known Issues
 
-Check the [Security Advisories](https://github.com/fraiseql/fraiseql/security/advisories) page for known vulnerabilities.
+Check the [Security Advisories](https://github.com/fraiseql/fraiseql-python/security/advisories) page for known vulnerabilities.
 
 ## Disclosure Policy
 

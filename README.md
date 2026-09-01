@@ -13,7 +13,7 @@ typed GraphQL API over FastAPI — no build step, no code generation.
 PostgreSQL returns JSONB. An integrated Rust pipeline (`fraiseql_rs`) transforms it
 into the HTTP response. You write Python; the hot path runs in Rust.
 
-**Requires:** Python 3.13+ · PostgreSQL 13+
+**Requires:** Python 3.13 (3.14 not yet supported) · PostgreSQL 13+
 
 ```python
 import fraiseql
