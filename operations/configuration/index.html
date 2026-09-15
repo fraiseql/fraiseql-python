@@ -6672,10 +6672,16 @@ your views and Row-Level Security policies:</p>
     <span class="n">session_variables</span><span class="o">=</span><span class="p">{</span><span class="s2">"locale"</span><span class="p">:</span> <span class="s2">"app.locale"</span><span class="p">,</span> <span class="s2">"timezone"</span><span class="p">:</span> <span class="s2">"app.timezone"</span><span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>When <code>context["locale"] == "fr-FR"</code>, the connection executes
-<code>SET LOCAL app.locale = 'fr-FR'</code>, so a view can read it:</p>
-<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.locale'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span><span class="w"> </span><span class="s1">'fr-FR'</span><span class="p">)</span>
+<p>When your <code>context_getter</code> returns <code>{"locale": "fr-FR"}</code>, every query and mutation of
+that request runs with <code>app.locale</code> set to <code>'fr-FR'</code> for its transaction, so a view can
+read it. Once a transaction on a pooled connection has set the variable,
+<code>current_setting()</code> returns <code>''</code> rather than <code>NULL</code> there, so write the fallback with
+<code>NULLIF</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.locale'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">),</span><span class="w"> </span><span class="s1">'fr-FR'</span><span class="p">)</span>
 </code></pre></div>
+<p>A request's variables, built-in <code>app.*</code> ones included, are applied in a single
+<code>SELECT set_config(name, value, true), …</code> statement (the function form of <code>SET LOCAL</code>),
+which is what <code>pg_stat_statements</code> records. A context value of <code>None</code> is not forwarded.</p>
 <hr />
 <h2 id="metrics-and-observability">Metrics and Observability<a class="headerlink" href="#metrics-and-observability" title="Permanent link">&para;</a></h2>
 <p>FraiseQL ships an optional Prometheus-based metrics integration in

@@ -5166,9 +5166,10 @@
 <span class="c1"># 4. Returns connection to pool (SET LOCAL vars are auto-cleared)</span>
 </code></pre></div>
 <p>Your RLS policies then reference these session variables:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- This policy uses the session variable set by FraiseQL</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- This policy uses the session variable set by FraiseQL. NULLIF: on a pooled</span>
+<span class="c1">-- connection that already served a tenant, an unset variable reads as '', not NULL.</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="why-this-is-secure">Why This Is Secure<a class="headerlink" href="#why-this-is-secure" title="Permanent link">&para;</a></h3>
 <ul>
@@ -5206,10 +5207,11 @@
 <tr>
 <td><code>roles</code></td>
 <td><code>app.is_super_admin</code></td>
-<td>Computed from roles array</td>
+<td><code>true</code> when the roles (names or <code>{"name": ...}</code> dicts) include <code>super_admin</code>; <code>false</code> when they don't, or when <code>user_id</code> is set without <code>roles</code></td>
 </tr>
 </tbody>
 </table>
+<p>A key whose value is <code>None</code> is not forwarded.</p>
 <h2 id="tenant-isolation-architecture">Tenant Isolation Architecture<a class="headerlink" href="#tenant-isolation-architecture" title="Permanent link">&para;</a></h2>
 <h3 id="multi-tenant-data-flow">Multi-Tenant Data Flow<a class="headerlink" href="#multi-tenant-data-flow" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐

@@ -5205,7 +5205,7 @@
 <p>Complete command-line interface reference for FraiseQL. The CLI provides project scaffolding, development server, code generation, and SQL utilities.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <p>The CLI is installed automatically with FraiseQL:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>fraiseql
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fraiseql&lt;2"</span>
 fraiseql<span class="w"> </span>--version
 </code></pre></div>
 <h2 id="global-options">Global Options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h2>
@@ -5304,7 +5304,7 @@ fraiseql<span class="w"> </span>--version
 </tr>
 <tr>
 <td><code>--database-url TEXT</code></td>
-<td><code>postgresql://localhost/mydb</code></td>
+<td>the bundled compose service</td>
 <td>PostgreSQL connection URL</td>
 </tr>
 <tr>
@@ -5340,19 +5340,33 @@ fraiseql<span class="w"> </span>--version
 │   ├── types/               # FraiseQL type definitions
 │   ├── mutations/           # GraphQL mutations
 │   └── queries/             # Custom query logic
+├── db/
+│   ├── schema/              # SQL loaded into a fresh database
+│   │   └── 001_users.sql    # tb_user, v_user, and two seed rows
+│   ├── seeds/               # Environment-specific seed data
+│   ├── migrations/          # Incremental schema changes
+│   └── environments/        # Per-environment migration config
 ├── tests/                   # Test files
-├── migrations/              # Database migrations
+├── docker-compose.yml      # PostgreSQL for local development
 ├── .env                     # Environment variables
 ├── .gitignore              # Git ignore patterns
 ├── pyproject.toml          # Project configuration
 └── README.md               # Project documentation
 </code></pre></div>
+<p>The <code>db/</code> layout is the one <code>fraiseql migrate init</code> expects, so the two
+commands agree about where migrations live.</p>
 <h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
 <p>The <code>.env</code> file is created with:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://localhost/mydb
+<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span>postgresql://fraiseql:fraiseql@localhost:54320/my_project
 <span class="nv">FRAISEQL_AUTO_CAMEL_CASE</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_DEV_AUTH_PASSWORD</span><span class="o">=</span>development-only-password
+<span class="nv">FRAISEQL_DATABASE_POOL_TIMEOUT</span><span class="o">=</span><span class="m">5</span>
 </code></pre></div>
+<p>The URL points at the PostgreSQL in the generated <code>docker-compose.yml</code>, which
+publishes port 54320 rather than 5432 so it cannot collide with a PostgreSQL
+already installed on the machine.</p>
+<p><code>FRAISEQL_DEV_AUTH_PASSWORD</code> is written commented out. Uncommenting it puts
+HTTP basic auth in front of <code>/graphql</code>, so every request — including
+GraphiQL's — then needs credentials.</p>
 <h3 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h3>
 <p><strong>Basic project:</strong></p>
 <div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>init<span class="w"> </span>my-api
@@ -5371,8 +5385,12 @@ fraiseql<span class="w"> </span>--version
 python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
 <span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w">  </span><span class="c1"># Windows: .venv\Scripts\activate</span>
 pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
-fraiseql<span class="w"> </span>dev
+fraiseql<span class="w"> </span>dev<span class="w">              </span><span class="c1"># serves /graphql immediately, with no database</span>
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">      </span><span class="c1"># starts PostgreSQL and loads db/schema/*.sql</span>
 </code></pre></div>
+<p><code>fraiseql dev</code> works before the database exists: queries resolve to empty
+results until <code>docker compose up -d</code> has run, and the server says so once at
+startup instead of repeating pool errors.</p>
 <hr />
 <h2 id="fraiseql-dev">fraiseql dev<a class="headerlink" href="#fraiseql-dev" title="Permanent link">&para;</a></h2>
 <p>Start the development server with hot-reloading enabled.</p>
@@ -6210,7 +6228,7 @@ psql<span class="w"> </span><span class="nv">$DATABASE_URL</span><span class="w"
 <h2 id="troubleshooting_1">Troubleshooting<a class="headerlink" href="#troubleshooting_1" title="Permanent link">&para;</a></h2>
 <h3 id="command-not-found">Command Not Found<a class="headerlink" href="#command-not-found" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Ensure fraiseql is installed</span>
-pip<span class="w"> </span>install<span class="w"> </span>fraiseql
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fraiseql&lt;2"</span>
 
 <span class="c1"># Check installation</span>
 which<span class="w"> </span>fraiseql
