@@ -323,12 +323,23 @@ jobs:
     # happens to resolve on the runner, and runs the auditor with `uvx` so that
     # pip-audit's own dependency tree does not become part of the surface it is
     # auditing.
+    #
+    # Ignored advisories — each with the reason it does not apply and when to drop it:
+    #
+    # PYSEC-2026-3740 (GHSA-8mgp-746c-j5xp, CVE-2026-81726): nltk <= 3.10.3, no
+    # patched release yet. nltk's model persistence APIs (TransitionParser,
+    # AveragedPerceptron, PerceptronTagger.save_to_json, save_maxent_params) bypass
+    # its pathsec sandbox for caller-chosen paths. nltk enters only through the
+    # optional `llamaindex` extra: llama-index-core uses its Punkt tokenizer,
+    # stopwords and nltk.data, and fraiseql never imports nltk. Once nltk ships a
+    # fix, drop the ignore and add an nltk floor to [tool.uv] constraint-dependencies.
     - name: Audit Python dependencies
       run: |
         uv export --all-extras --no-emit-project \
           --format requirements-txt -o audit-requirements.txt
         uvx --from 'pip-audit>=2.10.1' pip-audit \
           --requirement audit-requirements.txt \
+          --ignore-vuln PYSEC-2026-3740 \
           --format json --output audit-results.json
 
     # Only reached when pip-audit exits 0. Re-reads the report so a schema change
