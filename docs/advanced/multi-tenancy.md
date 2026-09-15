@@ -81,9 +81,10 @@ repo = FraiseQLRepository(db_pool, context={
 Your RLS policies then reference these session variables:
 
 ```sql
--- This policy uses the session variable set by FraiseQL
+-- This policy uses the session variable set by FraiseQL. NULLIF: on a pooled
+-- connection that already served a tenant, an unset variable reads as '', not NULL.
 CREATE POLICY tenant_isolation ON orders
-    USING (tenant_id = current_setting('app.tenant_id', TRUE)::UUID);
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', TRUE), '')::UUID);
 ```
 
 ### Why This Is Secure
@@ -102,7 +103,9 @@ FraiseQL automatically sets these based on your context:
 | `tenant_id` | `app.tenant_id` | Multi-tenant isolation |
 | `user_id` | `app.user_id` | User-level row filtering |
 | `contact_id` | `app.contact_id` | Alternative user identifier |
-| `roles` | `app.is_super_admin` | Computed from roles array |
+| `roles` | `app.is_super_admin` | `true` when the roles (names or `{"name": ...}` dicts) include `super_admin`; `false` when they don't, or when `user_id` is set without `roles` |
+
+A key whose value is `None` is not forwarded.
 
 ## Tenant Isolation Architecture
 
