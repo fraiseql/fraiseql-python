@@ -23,6 +23,7 @@ from fraiseql.analysis.query_analyzer import QueryAnalyzer
 from fraiseql.auth.base import AuthProvider
 from fraiseql.core.graphql_parser import RustGraphQLParser
 from fraiseql.core.rust_pipeline import RustResponseBytes
+from fraiseql.db import FraiseQLRepository
 from fraiseql.execution.mode_selector import ModeSelector
 from fraiseql.execution.unified_executor import UnifiedExecutor
 from fraiseql.fastapi.config import FraiseQLConfig, IntrospectionPolicy
@@ -1270,7 +1271,13 @@ def create_graphql_router(
             else:
                 custom_context = await context_getter(http_request)
             # Merge with default context (custom values override defaults)
-            return {**default_context, **custom_context}
+            context = {**default_context, **custom_context}
+            # The repository sets session variables from its own context, not this one:
+            # hand it the request values they are read from (issue #534).
+            db = context.get("db")
+            if isinstance(db, FraiseQLRepository):
+                db._adopt_session_context(context)
+            return context
 
         context_dependency = Depends(get_merged_context)
     else:

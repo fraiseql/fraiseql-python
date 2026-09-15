@@ -22,7 +22,7 @@ Get started with FraiseQL in 5 minutes! This guide will walk you through creatin
 ## Step 1: Install FraiseQL
 
 ```bash
-pip install fraiseql[all]
+pip install "fraiseql[all]<2"
 ```
 
 ## Step 2: Create Database

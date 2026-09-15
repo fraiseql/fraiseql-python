@@ -21,7 +21,7 @@ The Rust pipeline is **always active** in FraiseQL. It automatically handles all
 To use the Rust pipeline, ensure you have:
 
 - [ ] FraiseQL installed
-- [ ] Rust extensions installed: `pip install fraiseql[rust]`
+- [ ] Rust extensions installed: `pip install "fraiseql[rust]<2"`
 - [ ] PostgreSQL database with JSONB views
 - [ ] GraphQL schema with proper type definitions
 
@@ -227,10 +227,10 @@ print(f"Average: {total_time/100:.4f}s per query")
 
 ```bash
 # Install Rust extensions
-pip install fraiseql[rust]
+pip install "fraiseql[rust]<2"
 
 # Or with uv
-uv add fraiseql[rust]
+uv add "fraiseql[rust]<2"
 ```
 
 **Performance optimization**

@@ -56,10 +56,10 @@ psql your_database_name -c "\dv v_*"
 
 ```bash
 # Install FraiseQL
-pip install fraiseql[all]
+pip install "fraiseql[all]<2"
 
 # Or if using uv
-uv add fraiseql
+uv add "fraiseql<2"
 
 # Verify installation
 python -c "import fraiseql; print('FraiseQL installed!')"

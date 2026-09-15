@@ -30,7 +30,7 @@ Tracing depends on the OpenTelemetry SDK and exporters. Install the tracing extr
 
 ```bash
 # OpenTelemetry SDK + OTLP/Jaeger exporters and psycopg instrumentation
-pip install "fraiseql[tracing]"
+pip install "fraiseql[tracing]<2"
 
 # Or install the OpenTelemetry packages directly
 pip install opentelemetry-sdk \
@@ -312,7 +312,7 @@ Start at `1.0` in development and lower the rate as traffic grows. Because the s
 
 ### No traces appearing
 
-- Confirm OpenTelemetry is installed (`pip install "fraiseql[tracing]"`); without it, tracing is a no-op.
+- Confirm OpenTelemetry is installed (`pip install "fraiseql[tracing]<2"`); without it, tracing is a no-op.
 - Confirm `enabled=True` and that `export_endpoint` points at a reachable collector.
 - Check the request path is not in `exclude_paths`.
 - Verify `sample_rate` is greater than `0.0`.

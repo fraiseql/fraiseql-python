@@ -129,10 +129,10 @@ Most applications will experience **automatic performance improvements** with mi
 
 ```bash
 # Update to v1.9+
-pip install fraiseql>=1.9.0
+pip install "fraiseql>=1.9.0,<2"
 
 # For development
-pip install fraiseql[dev]>=1.9.0
+pip install "fraiseql[dev]>=1.9.0,<2"
 ```
 
 #### Step 2: Repository Method Updates (If Using Legacy Methods)

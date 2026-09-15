@@ -5,7 +5,7 @@ via set_config() before each query/mutation execution.
 """
 
 from typing import Any
-from unittest.mock import AsyncMock, Mock, call, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
@@ -68,8 +68,8 @@ class TestStartedAtSessionVariable:
 
         await repo._set_session_variables(cursor)
 
-        last_call = cursor.execute.call_args_list[-1]
-        assert last_call == call(STARTED_AT_QUERY)
+        statement = cursor.execute.call_args_list[-1].args[0]
+        assert statement.endswith(STARTED_AT_QUERY.removeprefix("SELECT "))
 
     @pytest.mark.asyncio
     async def test_started_at_injected_even_without_context(self) -> None:
@@ -175,9 +175,7 @@ class TestCustomSessionVariables:
 
     @pytest.mark.asyncio
     async def test_custom_session_variable_forwarded(self) -> None:
-        """Custom session variables from config are SET LOCAL on the cursor."""
-        from psycopg.sql import SQL, Literal
-
+        """Custom session variables from config are set on the cursor, transaction-local."""
         config = Mock()
         config.session_variables = {"locale": "app.locale"}
 
@@ -188,9 +186,10 @@ class TestCustomSessionVariables:
 
         await repo._set_session_variables(cursor)
 
-        # Find the SET LOCAL call for app.locale
-        set_locale_call = call(SQL("SET LOCAL {} = {}").format(SQL("app.locale"), Literal("fr-FR")))
-        assert set_locale_call in cursor.execute.call_args_list
+        cursor.execute.assert_called_once_with(
+            f"SELECT set_config(%s, %s, true), {STARTED_AT_QUERY.removeprefix('SELECT ')}",
+            ["app.locale", "fr-FR"],
+        )
 
     @pytest.mark.asyncio
     async def test_custom_variable_before_started_at(self) -> None:
@@ -205,9 +204,9 @@ class TestCustomSessionVariables:
 
         await repo._set_session_variables(cursor)
 
-        # started_at must be the last call
-        last_call = cursor.execute.call_args_list[-1]
-        assert last_call == call(STARTED_AT_QUERY)
+        # started_at must be the last setting of the statement
+        statement = cursor.execute.call_args_list[-1].args[0]
+        assert statement.index("set_config(%s, %s, true)") < statement.index("fraiseql.started_at")
 
     @pytest.mark.asyncio
     async def test_custom_variable_skipped_if_not_in_context(self) -> None:
@@ -264,5 +263,11 @@ class TestCustomSessionVariables:
 
         await repo._set_session_variables(cursor)
 
-        # 2 custom variables + 1 started_at = 3 calls
-        assert cursor.execute.call_count == 3
+        # 2 custom variables + started_at, in one round trip
+        cursor.execute.assert_called_once()
+        assert cursor.execute.call_args.args[1] == [
+            "app.locale",
+            "fr-FR",
+            "app.timezone",
+            "Europe/Paris",
+        ]

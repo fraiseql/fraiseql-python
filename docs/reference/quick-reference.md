@@ -58,7 +58,7 @@ psql mydb -c "\dv v_*"                          # List views
 psql mydb -c "\dt tb_*"                         # List tables
 
 # Run application
-pip install fraiseql[all]                       # Install
+pip install "fraiseql[all]<2"                   # Install
 uvicorn app:app --reload                        # Start server
 curl http://localhost:8000/graphql              # Test endpoint
 

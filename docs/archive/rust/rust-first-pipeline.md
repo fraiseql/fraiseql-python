@@ -229,7 +229,7 @@ return await repo.find_rust("users", "users", info)
 
 **"fraiseql-rs not found"**
 
-- Install: `pip install fraiseql[rust]`
+- Install: `pip install "fraiseql[rust]<2"`
 - Verify: `python -c "import fraiseql_rs"`
 
 **Slow performance**

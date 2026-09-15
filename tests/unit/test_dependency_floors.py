@@ -31,6 +31,10 @@ REQUIRED_FLOORS = {
     # which is the point of that change. `click.edit()` is a command injection, and
     # FraiseQL's CLI never calls it; the floor moves because the package is core.
     "click": ("8.3.3", "core: the CLI's argument parser"),
+    # Also found by the pip-audit gate (GHSA-x8wg-4xgc-vr54): a path traversal in
+    # `DirectoryPromptRegistry.set()`, which llama-index-core does not use; the floor
+    # moves because the extra declares the package.
+    "banks": ("2.4.5", "optional: declared by the llamaindex extra"),
 }
 
 

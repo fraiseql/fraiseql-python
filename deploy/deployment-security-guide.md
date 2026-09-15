@@ -624,7 +624,7 @@ kubectl run -n fraiseql-production test-pod \
 
 ## Support
 
-For security issues, contact: security@fraiseql.io
+For security issues, contact: security@fraiseql.dev
 For general questions: docs@fraiseql.io
 
 ---

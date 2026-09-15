@@ -267,7 +267,7 @@ def items() -> list[Item]:
 
 ```bash
 # Install
-pip install fraiseql fastapi uvicorn
+pip install "fraiseql<2" fastapi uvicorn
 
 # Create database
 createdb myapp

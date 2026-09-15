@@ -73,7 +73,7 @@ Run it with any ASGI server (`uvicorn app:app`) and open `/graphql`.
 | Install FraiseQL and PostgreSQL | [Installation](getting-started/installation.md) |
 
 ```bash
-pip install "fraiseql[all]"
+pip install "fraiseql[all]<2"
 ```
 
 Requirements: **Python 3.13+** and **PostgreSQL 13+**.

@@ -229,7 +229,7 @@ uv build
 pip install dist/*.whl
 
 # Or deploy via package manager
-pip install git+https://github.com/fraiseql/fraiseql@hotfix/branch
+pip install git+https://github.com/fraiseql/fraiseql-python@hotfix/branch
 ```
 
 6. **Monitor closely:**

@@ -22,7 +22,7 @@ End-to-end example: Creating a user with FraiseQL mutations.
 
 Prerequisites:
 - PostgreSQL database
-- FraiseQL installed: pip install fraiseql
+- FraiseQL installed: pip install "fraiseql<2"
 - Run the SQL setup below first
 """
 

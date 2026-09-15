@@ -5,6 +5,109 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.26.0] - 2026-09-15
+
+### Fixed
+
+- **Session variables never reached PostgreSQL.** With
+  `session_variables={"locale": "app.locale"}` and a `context_getter` returning
+  `{"locale": ...}`, a view reading `current_setting('app.locale', true)` always
+  took its fallback. The request context was never copied into the repository,
+  and no read method applied session variables at all. The router now copies
+  every key a session variable is read from into `context["db"].context` -- on
+  POST, GET, `/graphql/rust` and the multi-field merge path -- and `find()`,
+  `find_one()`, `count()`, `exists()`, `sum()`, `avg()`, `min()`, `max()`,
+  `distinct()`, `pluck()`, `aggregate()` and `batch_exists()` apply them on
+  their own connection before the query, scoped to its transaction.
+  (#534, #535)
+- **Setting session variables from a context with `user_id` but no `roles`
+  aborted the transaction.** The `app.is_super_admin` lookup ran
+  `SET LOCAL app.is_super_admin = EXISTS (...)`, which PostgreSQL rejects
+  because a `SET` value cannot be an expression, and the fallback then failed
+  with `InFailedSqlTransaction`. Only the bug above had kept it unreachable on
+  the standard router. `app.is_super_admin` is now `'false'` when `roles` is
+  absent. `roles` given as role names -- the shape of `UserContext.roles` -- no
+  longer raises `AttributeError`, and a `None` context value is skipped instead
+  of being sent as the string `'None'`. (#535)
+- **`fraiseql init` followed by `fraiseql dev` did not serve a query.** `dev`
+  could not import the default `src.main:app` (`No module named 'src'`); the
+  generated `src/main.py` read `DATABASE_URL` while `.env` wrote
+  `FRAISEQL_DATABASE_URL`; the generated project depended on an unpinned
+  `fraiseql`, so installing it pulled v2; `FRAISEQL_DEV_AUTH_PASSWORD` was
+  active, so the first query returned 401; and the template resolver raised
+  `takes 2 positional arguments but 3 were given`. Generated projects now also
+  ship a `docker-compose.yml` (PostgreSQL on port 54320) and a seed schema, and
+  `dev` reports an unreachable database once instead of repeating the
+  traceback. (#527)
+- **The package metadata sent PyPI visitors to v2.** Homepage, Repository,
+  Issues and Changelog in `[project.urls]` resolved to `fraiseql/fraiseql`, and
+  Documentation to `fraiseql.dev` -- both the v2 project. They now point at
+  this repository and at the v1 documentation on GitHub Pages. (#525, #539)
+
+### Changed
+
+- **Built-in session variables are now set on the standard router.** An app
+  whose `context_getter` returns `tenant_id`, `contact_id`, `user_id` or
+  `roles` now gets `app.tenant_id`, `app.contact_id`, `app.user_id` and
+  `app.is_super_admin` on every query and mutation, as the documentation
+  already described. Views and RLS policies that read them will start
+  filtering. On a pooled connection, once any transaction has set a custom
+  variable, `current_setting(name, true)` returns `''` rather than `NULL`, so
+  wrap it in `NULLIF(..., '')` before a `COALESCE` or a cast; the
+  `session_variables` and RLS examples in the docs now do. (#535)
+- **Session variables are set in one round trip.** One `SET LOCAL` per
+  variable became a single `SELECT set_config(%s, %s, true), ...` with bind
+  parameters, so variable names are no longer interpolated into SQL. This
+  covers reads, `run()`, `execute_function*()`, mutations and turbo, and
+  `pg_stat_statements` now records the `set_config` statement. An app that
+  maps no session variable sends nothing extra. (#535)
+- **Dependency floors raised.** Runtime: `psycopg-pool>=3.3.1` and
+  `fraiseql-confiture>=0.44.0`. The `tracing` and `all` extras:
+  `opentelemetry-exporter-otlp>=1.44.0` and `protobuf>=7.36.1` -- a new major,
+  so an application that pins protobuf below 7 can no longer install them. The
+  `langchain` extra: `langsmith>=0.11.2`. Development tooling: `twine` 7,
+  `pytest-asyncio` 1.4, `psutil`, `pymdown-extensions`. (#523, #538)
+
+### Security
+
+- **`banks` raised to 2.4.5** for GHSA-x8wg-4xgc-vr54 / CVE-2026-71492, a path
+  traversal in `DirectoryPromptRegistry.set()`. It arrives with the
+  `llamaindex` extra, and so with `llm` and `all`. (#536)
+- **An nltk advisory has no fixed release.** PYSEC-2026-3740 /
+  GHSA-8mgp-746c-j5xp / CVE-2026-81726 affects every nltk release through
+  3.10.3, in its model-persistence APIs. nltk comes in only through
+  `llama-index-core` in the `llamaindex`, `llm` and `all` extras; fraiseql
+  never imports it, and llama-index-core does not use the affected APIs. The
+  dependency audit ignores the advisory until a fixed release exists. (#536)
+- **Vulnerability reports were routed to the v2 project.** `SECURITY.md`
+  pointed the security-advisory form and the known-issues list at
+  `fraiseql/fraiseql` and listed 1.0.x and 0.11.x as supported. It now points
+  at this repository and states what is supported: the latest 1.x release,
+  with no backports. The security contact is security@fraiseql.dev
+  everywhere. (#525, #527)
+
+### Documentation
+
+- **Install commands pin `fraiseql<2`.** v1 and v2 share the `fraiseql` name
+  on PyPI, and the bare name installs v2. The README and 67 install commands
+  across 34 docs pages now pin `<2`, quoted so the shell does not read it as a
+  redirect. (#524, #526)
+- **The README was rewritten**, from 1155 lines to 200. The performance claim
+  is now the 3.6-5.9x measured on 1.25.0; the "7-10x" it replaced was measured
+  against v0.11.5. (#524)
+
+### Internal
+
+- **`test_nested_organization_without_tenant_id` had failed since 2026-05-14
+  without anyone seeing it.** Its stub turned `mandatory_filters` into a column
+  name, its error check only failed on messages mentioning `tenant_id`, and
+  both tests skipped themselves under `GITHUB_ACTIONS`, so CI never ran the
+  file. It now runs in CI against the shared test database. (#516, #517)
+- The documentation build installs D2 without `--tala`, which the installer
+  stopped accepting. (#537)
+- Dropped `target-features` from the `fraiseql_rs` build dependencies; the
+  build script never used it. (#538)
+
 ## [1.25.0] - 2026-08-30
 
 ### Added

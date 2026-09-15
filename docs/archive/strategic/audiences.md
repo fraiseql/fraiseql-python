@@ -95,7 +95,7 @@ cd examples/blog_simple/
 
 ```bash
 # Production installation
-pip install fraiseql[enterprise]
+pip install "fraiseql[enterprise]<2"
 
 # Start with enterprise examples
 cd examples/ecommerce/
@@ -261,7 +261,7 @@ open examples/blog_simple/
 
 ```bash
 # Enterprise setup
-pip install fraiseql[enterprise]
+pip install "fraiseql[enterprise]<2"
 
 # Performance-focused examples
 open examples/ecommerce/

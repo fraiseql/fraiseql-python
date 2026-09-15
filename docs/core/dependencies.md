@@ -172,7 +172,7 @@ This allows you to:
 Users just install FraiseQL, which automatically pulls confiture from PyPI:
 
 ```bash
-pip install fraiseql
+pip install "fraiseql<2"
 # confiture is installed automatically as a dependency
 ```
 

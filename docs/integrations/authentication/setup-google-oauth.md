@@ -37,7 +37,7 @@ FraiseQL ships an `Auth0Provider` and a base `AuthProvider` ABC. There is **no**
 
 **Required Software:**
 
-- FraiseQL v1 (`pip install fraiseql` / `uv add fraiseql`)
+- FraiseQL v1 (`pip install "fraiseql<2"` / `uv add "fraiseql<2"`)
 - curl or a GraphQL client (for testing the API)
 - A PostgreSQL database (FraiseQL is PostgreSQL-only)
 - For Path A: an Auth0 tenant (free tier is fine)

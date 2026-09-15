@@ -2,11 +2,13 @@
 
 import logging
 import re
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import UTC
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin
 
+from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 from psycopg.sql import SQL, Composed
 from psycopg_pool import AsyncConnectionPool
@@ -57,6 +59,21 @@ _NULL_RESPONSE_CACHE: set[bytes] = {
 
 # Valid SQL column name pattern for mandatory_filters validation
 _SAFE_COLUMN = re.compile(r"^[a-z_][a-z0-9_]{0,62}$", re.IGNORECASE)
+
+# Request-context keys behind the built-in ``app.*`` session variables. The keys mapped
+# in ``config.session_variables`` are forwarded alongside them.
+_SESSION_CONTEXT_KEYS = ("tenant_id", "contact_id", "user_id", "roles")
+
+_STARTED_AT_SETTING = "set_config('fraiseql.started_at', clock_timestamp()::text, true)"
+
+
+def _has_super_admin_role(roles: Any) -> bool:
+    """Whether ``roles`` (role names or ``{"name": ...}`` dicts) include ``super_admin``."""
+    if not isinstance(roles, list):
+        return False
+    return any(
+        (role.get("name") if isinstance(role, Mapping) else role) == "super_admin" for role in roles
+    )
 
 
 def _make_mandatory_conditions(
@@ -1324,138 +1341,102 @@ class FraiseQLRepository:
         self._type_name_cache[view_name] = type_name
         return type_name
 
-    async def _set_session_variables(self, cursor_or_conn: Any) -> None:
-        """Set PostgreSQL session variables from context.
+    def _adopt_session_context(self, request_context: Mapping[str, Any]) -> None:
+        """Copy the request values that session variables are read from.
 
-        Sets app.tenant_id, app.contact_id, app.user_id, app.is_super_admin,
-        and fraiseql.started_at session variables if present in context.
-        Uses SET LOCAL to scope variables to the current transaction.
+        :meth:`_set_session_variables` reads this repository's own context, which the
+        FastAPI integration builds from configuration only. This copies the built-in
+        keys (``tenant_id``, ``contact_id``, ``user_id``, ``roles``) and every key mapped
+        in ``config.session_variables`` from the request context. ``user`` is left out:
+        in the FastAPI context it is the ``UserContext`` object, not an id.
+        """
+        keys = set(_SESSION_CONTEXT_KEYS)
+        config = self.context.get("config")
+        if config and hasattr(config, "session_variables"):
+            keys.update(config.session_variables)
+        for key in keys:
+            if key in request_context:
+                self.context[key] = request_context[key]
+
+    def _session_settings(self) -> list[tuple[str, str]]:
+        """Map this repository's context to ``(variable, value)`` session settings.
+
+        The built-ins come first: ``app.tenant_id``, ``app.contact_id`` (falling back to
+        ``user``), ``app.user_id`` and ``app.is_super_admin``. Every key mapped in
+        ``config.session_variables`` follows (issue #310). A ``None`` value counts as
+        absent.
+        """
+        context = self.context
+        settings: list[tuple[str, str]] = []
+
+        def add(variable: str, value: Any) -> None:
+            if value is not None:
+                settings.append((variable, str(value)))
+
+        add("app.tenant_id", context.get("tenant_id"))
+        contact_id = context.get("contact_id")
+        add("app.contact_id", context.get("user") if contact_id is None else contact_id)
+        add("app.user_id", context.get("user_id"))
+
+        # Row-Level Security flag. Without roles in context it is false: fail closed.
+        roles = context.get("roles")
+        if roles is not None or context.get("user_id") is not None:
+            add("app.is_super_admin", "true" if _has_super_admin_role(roles) else "false")
+
+        config = context.get("config")
+        if config and hasattr(config, "session_variables"):
+            for context_key, variable in config.session_variables.items():
+                add(variable, context.get(context_key))
+
+        return settings
+
+    async def _set_session_variables(self, cursor_or_conn: Any) -> None:
+        """Set this context's PostgreSQL session variables in a single round trip.
+
+        Every setting from :meth:`_session_settings`, then ``fraiseql.started_at``, is
+        applied with ``set_config(name, value, true)``, the function form of
+        ``SET LOCAL``: each value lasts until the end of the current transaction. They
+        go out as one ``SELECT`` whose names and values are bind parameters.
+
+        ``fraiseql.started_at`` is last so its timestamp is taken as close as possible
+        to the query that follows. SQL functions can compute elapsed time via:
+            clock_timestamp() - current_setting('fraiseql.started_at', true)::timestamptz
 
         Args:
             cursor_or_conn: Either a psycopg cursor or an asyncpg connection
         """
-        from psycopg.sql import SQL, Literal
+        settings = self._session_settings()
+        params = [part for setting in settings for part in setting]
 
         # Check if this is a cursor (psycopg) or connection (asyncpg)
         is_cursor = hasattr(cursor_or_conn, "execute") and hasattr(cursor_or_conn, "fetchone")
+        if is_cursor:
+            calls = ["set_config(%s, %s, true)"] * len(settings)
+        else:
+            calls = [f"set_config(${i}, ${i + 1}, true)" for i in range(1, len(params), 2)]
+        statement = "SELECT " + ", ".join([*calls, _STARTED_AT_SETTING])
 
-        if "tenant_id" in self.context:
-            if is_cursor:
-                await cursor_or_conn.execute(
-                    SQL("SET LOCAL app.tenant_id = {}").format(
-                        Literal(str(self.context["tenant_id"]))
-                    )
-                )
-            else:
-                # asyncpg connection
-                await cursor_or_conn.execute(
-                    "SET LOCAL app.tenant_id = $1", str(self.context["tenant_id"])
-                )
+        if not params:
+            await cursor_or_conn.execute(statement)
+        elif is_cursor:
+            await cursor_or_conn.execute(statement, params)
+        else:
+            await cursor_or_conn.execute(statement, *params)
 
-        if "contact_id" in self.context:
-            if is_cursor:
-                await cursor_or_conn.execute(
-                    SQL("SET LOCAL app.contact_id = {}").format(
-                        Literal(str(self.context["contact_id"]))
-                    )
-                )
-            else:
-                # asyncpg connection
-                await cursor_or_conn.execute(
-                    "SET LOCAL app.contact_id = $1", str(self.context["contact_id"])
-                )
-        elif "user" in self.context:
-            # Fallback to 'user' if 'contact_id' not set
-            if is_cursor:
-                await cursor_or_conn.execute(
-                    SQL("SET LOCAL app.contact_id = {}").format(Literal(str(self.context["user"])))
-                )
-            else:
-                # asyncpg connection
-                await cursor_or_conn.execute(
-                    "SET LOCAL app.contact_id = $1", str(self.context["user"])
-                )
+    @asynccontextmanager
+    async def _session_connection(self) -> AsyncIterator[AsyncConnection]:
+        """Check out a pool connection with this context's session variables set on it.
 
-        # RBAC-specific session variables for Row-Level Security
-        if "user_id" in self.context:
-            if is_cursor:
-                await cursor_or_conn.execute(
-                    SQL("SET LOCAL app.user_id = {}").format(Literal(str(self.context["user_id"])))
-                )
-            else:
-                # asyncpg connection
-                await cursor_or_conn.execute(
-                    "SET LOCAL app.user_id = $1", str(self.context["user_id"])
-                )
-
-        # Set super_admin flag based on user roles
-        if "roles" in self.context:
-            is_super_admin = (
-                any(r.get("name") == "super_admin" for r in self.context["roles"])
-                if isinstance(self.context["roles"], list)
-                else False
-            )
-            if is_cursor:
-                await cursor_or_conn.execute(
-                    SQL("SET LOCAL app.is_super_admin = {}").format(Literal(is_super_admin))
-                )
-            else:
-                # asyncpg connection
-                await cursor_or_conn.execute("SET LOCAL app.is_super_admin = $1", is_super_admin)
-        elif "user_id" in self.context:
-            # If roles not provided in context, check database for super_admin role
-            # This is a fallback that may be slower but ensures correctness
-            try:
-                user_id = self.context["user_id"]
-                if is_cursor:
-                    # For psycopg, we need to use the existing connection
-                    # Simplified check - production needs more robust role checking
-                    await cursor_or_conn.execute(
-                        SQL(
-                            "SET LOCAL app.is_super_admin = EXISTS (SELECT 1 FROM "
-                            "user_roles ur INNER JOIN roles r ON ur.role_id = r.id "
-                            "WHERE ur.user_id = {} AND r.name = 'super_admin')"
-                        ).format(Literal(str(user_id)))
-                    )
-                else:
-                    # asyncpg connection
-                    result = await cursor_or_conn.fetchval(
-                        "SELECT EXISTS (SELECT 1 FROM user_roles ur INNER JOIN "
-                        "roles r ON ur.role_id = r.id WHERE ur.user_id = $1 AND "
-                        "r.name = 'super_admin')",
-                        str(user_id),
-                    )
-                    await cursor_or_conn.execute("SET LOCAL app.is_super_admin = $1", result)
-            except Exception:
-                # If role checking fails, default to False for security
-                if is_cursor:
-                    await cursor_or_conn.execute(
-                        SQL("SET LOCAL app.is_super_admin = {}").format(Literal(False))
-                    )
-                else:
-                    await cursor_or_conn.execute("SET LOCAL app.is_super_admin = $1", False)
-
-        # Forward custom session variables from config (issue #310)
-        config = self.context.get("config")
-        if config and hasattr(config, "session_variables"):
-            for context_key, pg_variable in config.session_variables.items():
-                if context_key in self.context:
-                    value = str(self.context[context_key])
-                    if is_cursor:
-                        await cursor_or_conn.execute(
-                            SQL("SET LOCAL {} = {}").format(SQL(pg_variable), Literal(value))
-                        )
-                    else:
-                        await cursor_or_conn.execute(f"SET LOCAL {pg_variable} = $1", value)
-
-        # Inject wall-clock timestamp for DB-side execution duration measurement.
-        # SQL functions can compute elapsed time via:
-        #   clock_timestamp() - current_setting('fraiseql.started_at', true)::timestamptz
-        # Use set_config() via SELECT instead of SET LOCAL to avoid psycopg
-        # extended query protocol issues with function calls in SET statements.
-        await cursor_or_conn.execute(
-            "SELECT set_config('fraiseql.started_at', clock_timestamp()::text, true)"
-        )
+        The settings are transaction-local. A pool connection is not in autocommit, so
+        they open the transaction the caller's query then runs in, which ends when the
+        connection goes back to the pool. Nothing extra is sent when the context maps
+        no session variable.
+        """
+        async with self._pool.connection() as conn:
+            if self._session_settings():
+                async with conn.cursor() as cursor:
+                    await self._set_session_variables(cursor)
+            yield conn
 
     async def run(self, query: DatabaseQuery) -> list[dict[str, object]]:
         """Execute a SQL query using a connection from the pool.
@@ -1968,7 +1949,7 @@ class FraiseQLRepository:
         if info and hasattr(info, "context") and isinstance(info.context, dict):
             include_wrapper = not info.context.get("__has_multiple_root_fields__", False)
 
-        async with self._pool.connection() as conn:
+        async with self._session_connection() as conn:
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
@@ -2091,7 +2072,7 @@ class FraiseQLRepository:
         if info and hasattr(info, "context") and isinstance(info.context, dict):
             include_wrapper = not info.context.get("__has_multiple_root_fields__", False)
 
-        async with self._pool.connection() as conn:
+        async with self._session_connection() as conn:
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
@@ -2172,7 +2153,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query and return count
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             if params:
                 await cursor.execute(query, params)
             else:
@@ -2240,7 +2221,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             if params:
                 await cursor.execute(query, params)
             else:
@@ -2308,7 +2289,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query)
             result = await cursor.fetchone()
             return float(result[0]) if result and result[0] is not None else 0.0
@@ -2367,7 +2348,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query)
             result = await cursor.fetchone()
             return float(result[0]) if result and result[0] is not None else 0.0
@@ -2417,7 +2398,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query)
             result = await cursor.fetchone()
             return result[0] if result else None
@@ -2467,7 +2448,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query)
             result = await cursor.fetchone()
             return result[0] if result else None
@@ -2523,7 +2504,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query)
             results = await cursor.fetchall()
             return [row[0] for row in results] if results else []
@@ -2594,7 +2575,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query)
             results = await cursor.fetchall()
             return [row[0] for row in results] if results else []
@@ -2663,7 +2644,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             if params:
                 await cursor.execute(query, params)
             else:
@@ -2740,7 +2721,7 @@ class FraiseQLRepository:
         query = Composed(query_parts)
 
         # Execute query
-        async with self._pool.connection() as conn, conn.cursor() as cursor:
+        async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query, where_params + ids)
             results = await cursor.fetchall()
 

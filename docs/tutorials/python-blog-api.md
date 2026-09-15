@@ -549,7 +549,7 @@ if __name__ == "__main__":
 Run it:
 
 ```bash
-pip install "fraiseql[all]"
+pip install "fraiseql[all]<2"
 export DATABASE_URL=postgresql://localhost/blog
 uvicorn app:app --reload
 ```

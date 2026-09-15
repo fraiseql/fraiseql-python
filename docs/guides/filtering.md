@@ -24,7 +24,7 @@ Complete runnable example showing FraiseQL filtering.
 
 Prerequisites:
 - PostgreSQL with a users table/view
-- FraiseQL installed: pip install fraiseql
+- FraiseQL installed: pip install "fraiseql<2"
 """
 
 import asyncio
