@@ -555,12 +555,19 @@ config = FraiseQLConfig(
 )
 ```
 
-When `context["locale"] == "fr-FR"`, the connection executes
-`SET LOCAL app.locale = 'fr-FR'`, so a view can read it:
+When your `context_getter` returns `{"locale": "fr-FR"}`, every query and mutation of
+that request runs with `app.locale` set to `'fr-FR'` for its transaction, so a view can
+read it. Once a transaction on a pooled connection has set the variable,
+`current_setting()` returns `''` rather than `NULL` there, so write the fallback with
+`NULLIF`:
 
 ```sql
-WHERE code = COALESCE(current_setting('app.locale', true), 'fr-FR')
+WHERE code = COALESCE(NULLIF(current_setting('app.locale', true), ''), 'fr-FR')
 ```
+
+A request's variables, built-in `app.*` ones included, are applied in a single
+`SELECT set_config(name, value, true), …` statement (the function form of `SET LOCAL`),
+which is what `pg_stat_statements` records. A context value of `None` is not forwarded.
 
 ---
 
