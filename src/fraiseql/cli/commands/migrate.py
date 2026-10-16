@@ -3,12 +3,14 @@
 from pathlib import Path
 
 import click
-from confiture.core.connection import (
-    create_connection,
-    get_migration_class,
-    load_config,
-    load_migration_module,
-)
+from confiture.core.connection import create_connection, load_config
+
+try:
+    from confiture.core.connection import get_migration_class, load_migration_module
+except ImportError:
+    # confiture 1.16.0 moved these to a private module without a public re-export.
+    # Drop this fallback once fraiseql/confiture#737 gives them a public home.
+    from confiture.core._migrator.loader import get_migration_class, load_migration_module
 from confiture.core.migration_generator import MigrationGenerator
 from confiture.core.migrator import Migrator
 from rich.console import Console

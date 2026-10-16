@@ -418,9 +418,7 @@ class ResolverAnalyzer(ast.NodeVisitor):
             return None
 
         # First argument should be view name
-        if isinstance(node.args[0], ast.Str):
-            view_name = node.args[0].s
-        elif isinstance(node.args[0], ast.Constant):
+        if isinstance(node.args[0], ast.Constant):
             view_name = node.args[0].value
         else:
             return None

@@ -55,7 +55,7 @@ def _serialize_value(value: object, field_type: object = None) -> object:
         # Handle FraiseQL input objects (not dataclasses but similar structure)
         result = {
             field_name: _serialize_value(getattr(value, field_name), field_type)
-            for field_name, field_type in value.__annotations__.items()
+            for field_name, field_type in type(value).__annotations__.items()
             if hasattr(value, field_name) and getattr(value, field_name) is not UNSET
         }
     elif isinstance(value, list):
