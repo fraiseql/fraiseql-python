@@ -412,10 +412,11 @@ def debug_graphql_info(info: GraphQLResolveInfo) -> str:
         if info.operation.name:
             lines.append(f"Operation Name: {info.operation.name.value}")
 
-    # Show variables
-    if info.variable_values:
+    # Show variables: a dict on graphql-core 3.2, a VariableValues on 3.3
+    variables = getattr(info.variable_values, "coerced", info.variable_values)
+    if variables:
         lines.append("Variables:")
-        for key, value in info.variable_values.items():
+        for key, value in variables.items():
             lines.append(f"  {key}: {value}")
 
     # Show selected fields
