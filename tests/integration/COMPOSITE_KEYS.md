@@ -379,10 +379,11 @@ CREATE TABLE tb_resource (
 @key(fields=["id"])  # MVP: single field
 class User:
     id: ID
-    tenantId: String      # Added for multi-tenant
+    tenantId: String  # Added for multi-tenant
     identifier: str
     email: str
     name: str
+
 
 @type
 class Query:
@@ -406,14 +407,16 @@ class User:
     tenantId: String = external()
     orders: List["Order"]
 
+
 @type
 @key(fields=["id"])
 class Order:
     id: ID
-    tenantId: String      # Part of composite key
+    tenantId: String  # Part of composite key
     userId: ID
     status: str
     total: float
+
 
 @type
 class Query:

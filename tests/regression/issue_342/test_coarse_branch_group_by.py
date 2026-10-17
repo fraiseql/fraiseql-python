@@ -88,19 +88,19 @@ def test_coarse_branch_no_group_by_without_group_by_list() -> None:
 # ── end-to-end UNION ALL tests ────────────────────────────────────────────────
 
 
-BASE = dict(
-    coarse_view="v_events_month",
-    fine_grain_view="v_events_day",
-    time_grain_column="date",
-    time_grain_trunc="month",
-    group_by=["date"],
-    aggregations={"measures.volume": "SUM(measures.volume)"},
-    native_dimensions={"date"},
-    native_measures={"measures.volume": "volume"},
-    native_dimension_mapping=None,
-    jsonb_col="data",
-    extra_where=None,
-)
+BASE = {
+    "coarse_view": "v_events_month",
+    "fine_grain_view": "v_events_day",
+    "time_grain_column": "date",
+    "time_grain_trunc": "month",
+    "group_by": ["date"],
+    "aggregations": {"measures.volume": "SUM(measures.volume)"},
+    "native_dimensions": {"date"},
+    "native_measures": {"measures.volume": "volume"},
+    "native_dimension_mapping": None,
+    "jsonb_col": "data",
+    "extra_where": None,
+}
 
 
 def test_coarse_branch_has_group_by_in_three_branch_union() -> None:
@@ -119,8 +119,7 @@ def test_coarse_branch_has_group_by_in_three_branch_union() -> None:
     coarse_branch = branches[1]
     assert "v_events_month" in coarse_branch, "Branch 2 should be the coarse branch"
     assert "GROUP BY" in coarse_branch, (
-        "Coarse branch (Branch 2) must contain GROUP BY clause "
-        "(regression: issue #342)"
+        "Coarse branch (Branch 2) must contain GROUP BY clause (regression: issue #342)"
     )
 
 
@@ -165,6 +164,4 @@ def test_full_reproduction_from_issue_342() -> None:
     # Every branch that references v_events_month must have GROUP BY.
     for segment in rendered.split("UNION ALL"):
         if "v_events_month" in segment:
-            assert "GROUP BY" in segment, (
-                f"Coarse-grain segment is missing GROUP BY:\n{segment}"
-            )
+            assert "GROUP BY" in segment, f"Coarse-grain segment is missing GROUP BY:\n{segment}"

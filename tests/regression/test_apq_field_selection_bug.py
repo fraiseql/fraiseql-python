@@ -51,9 +51,7 @@ class TestAPQFieldSelectionBug:
         """Create a fresh memory backend."""
         return MemoryAPQBackend()
 
-    def test_cached_response_respects_field_selection(
-        self, config_with_caching, backend
-    ) -> None:
+    def test_cached_response_respects_field_selection(self, config_with_caching, backend) -> None:
         """Cached response should only include requested fields.
 
         This test verifies that when a query requests only specific fields,
@@ -111,9 +109,7 @@ class TestAPQFieldSelectionBug:
         # Get cached response
         from fraiseql.middleware.apq_caching import handle_apq_request_with_cache
 
-        result = handle_apq_request_with_cache(
-            request, backend, config_with_caching
-        )
+        result = handle_apq_request_with_cache(request, backend, config_with_caching)
 
         assert result is not None
         user_data = result["data"]["user"]
@@ -188,9 +184,7 @@ class TestAPQFieldSelectionBug:
 
         from fraiseql.middleware.apq_caching import handle_apq_request_with_cache
 
-        result = handle_apq_request_with_cache(
-            request_user_2, backend, config_with_caching
-        )
+        result = handle_apq_request_with_cache(request_user_2, backend, config_with_caching)
 
         # EXPECTED: Should NOT return user 1's data when requesting user 2
         # Either cache miss (variables in key) or correct data
@@ -199,9 +193,7 @@ class TestAPQFieldSelectionBug:
                 "Cache key should include variables - returned wrong user's data"
             )
 
-    def test_apq_cache_returns_stale_data_for_same_hash(
-        self, config_with_caching, backend
-    ) -> None:
+    def test_apq_cache_returns_stale_data_for_same_hash(self, config_with_caching, backend) -> None:
         """Document: APQ cache returns stale data when data changes but query doesn't.
 
         This is expected behavior for response caching - TTL controls staleness.
@@ -485,9 +477,7 @@ class TestAPQFieldSelectionEndToEnd:
         """Create a fresh memory backend."""
         return MemoryAPQBackend()
 
-    def test_apollo_client_flow_field_selection(
-        self, config_with_caching, backend
-    ) -> None:
+    def test_apollo_client_flow_field_selection(self, config_with_caching, backend) -> None:
         """Simulate real Apollo client APQ flow with field selection.
 
         This test simulates the exact request format from Apollo Client:
@@ -565,9 +555,7 @@ class TestAPQFieldSelectionEndToEnd:
         )
 
         # Get cached response
-        result = handle_apq_request_with_cache(
-            request, backend, config_with_caching
-        )
+        result = handle_apq_request_with_cache(request, backend, config_with_caching)
 
         # Verify result
         assert result is not None, "Should get cache hit"
@@ -585,9 +573,7 @@ class TestAPQFieldSelectionEndToEnd:
             assert "city" not in loc, "city was NOT requested but was returned"
             assert "metadata" not in loc, "metadata was NOT requested but was returned"
 
-    def test_nested_field_selection_filtering(
-        self, config_with_caching, backend
-    ) -> None:
+    def test_nested_field_selection_filtering(self, config_with_caching, backend) -> None:
         """Test that nested field selection is properly filtered.
 
         Query: { company { name address { city } } }
@@ -644,9 +630,7 @@ class TestAPQFieldSelectionEndToEnd:
             extensions={"persistedQuery": {"version": 1, "sha256Hash": query_hash}},
         )
 
-        result = handle_apq_request_with_cache(
-            request, backend, config_with_caching
-        )
+        result = handle_apq_request_with_cache(request, backend, config_with_caching)
 
         assert result is not None
         company = result["data"]["company"]
@@ -720,9 +704,7 @@ class TestAPQFieldSelectionEndToEnd:
             operationName="GetUser",
             extensions={"persistedQuery": {"version": 1, "sha256Hash": query_hash}},
         )
-        result1 = handle_apq_request_with_cache(
-            request_user1, backend, config_with_caching
-        )
+        result1 = handle_apq_request_with_cache(request_user1, backend, config_with_caching)
 
         # Request for user 2
         request_user2 = Mock(
@@ -731,9 +713,7 @@ class TestAPQFieldSelectionEndToEnd:
             operationName="GetUser",
             extensions={"persistedQuery": {"version": 1, "sha256Hash": query_hash}},
         )
-        result2 = handle_apq_request_with_cache(
-            request_user2, backend, config_with_caching
-        )
+        result2 = handle_apq_request_with_cache(request_user2, backend, config_with_caching)
 
         # CRITICAL: Each user should get their own data
         assert result1 is not None
@@ -742,9 +722,7 @@ class TestAPQFieldSelectionEndToEnd:
         assert result2 is not None
         assert result2["data"]["user"]["name"] == "Bob", "User 2 should get Bob"
 
-    def test_cached_response_filtered_on_retrieval(
-        self, config_with_caching, backend
-    ) -> None:
+    def test_cached_response_filtered_on_retrieval(self, config_with_caching, backend) -> None:
         """Test defense-in-depth: filtering happens on retrieval too.
 
         Even if somehow a full response was cached (legacy data, bug, etc.),
@@ -789,9 +767,7 @@ class TestAPQFieldSelectionEndToEnd:
             extensions={"persistedQuery": {"version": 1, "sha256Hash": query_hash}},
         )
 
-        result = handle_apq_request_with_cache(
-            request, backend, config_with_caching
-        )
+        result = handle_apq_request_with_cache(request, backend, config_with_caching)
 
         assert result is not None
         product = result["data"]["product"]

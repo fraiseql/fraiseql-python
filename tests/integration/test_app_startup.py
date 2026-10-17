@@ -62,7 +62,7 @@ class TestSchemaRegistryAppStartup:
         # Mock the initialize_schema_registry function to verify it gets called
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry") as mock_init:
             # Create the app
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -107,7 +107,7 @@ class TestSchemaRegistryAppStartup:
             return []
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry") as mock_init:
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[Equipment, Assignment],
                 queries=[assignments],
@@ -142,7 +142,7 @@ class TestSchemaRegistryAppStartup:
 
         # Measure startup time with registry initialization
         start = time.time()
-        app = create_fraiseql_app(
+        create_fraiseql_app(
             database_url="postgresql://test@localhost/test",
             types=[SimpleType],
             queries=[simple_query],
@@ -172,7 +172,7 @@ class TestSchemaRegistryAppStartup:
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry") as mock_init:
             # Create app with registry disabled
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],
@@ -204,7 +204,7 @@ class TestSchemaRegistryAppStartup:
         caplog.set_level(logging.INFO)
 
         with patch("fraiseql._fraiseql_rs.initialize_schema_registry"):
-            app = create_fraiseql_app(
+            create_fraiseql_app(
                 database_url="postgresql://test@localhost/test",
                 types=[User],
                 queries=[users],

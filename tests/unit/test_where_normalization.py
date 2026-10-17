@@ -127,12 +127,12 @@ class TestDictNormalization:
 
         assert len(clause.conditions) == 2
         # First condition should use FK
-        fk_cond = [c for c in clause.conditions if c.field_path == ["machine", "id"]][0]
+        fk_cond = next(c for c in clause.conditions if c.field_path == ["machine", "id"])
         assert fk_cond.lookup_strategy == "fk_column"
         assert fk_cond.target_column == "machine_id"
 
         # Second condition should use JSONB
-        jsonb_cond = [c for c in clause.conditions if c.field_path == ["machine", "name"]][0]
+        jsonb_cond = next(c for c in clause.conditions if c.field_path == ["machine", "name"])
         assert jsonb_cond.lookup_strategy == "jsonb_path"
         assert jsonb_cond.jsonb_path == ["machine", "name"]
 

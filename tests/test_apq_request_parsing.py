@@ -55,11 +55,11 @@ def test_graphql_request_with_query_and_extensions() -> None:
 def test_graphql_request_apq_validation_errors() -> None:
     """Test APQ validation catches invalid formats."""
     # Missing version
-    with pytest.raises(ValueError, match="persistedQuery.version is required"):
+    with pytest.raises(ValueError, match=r"persistedQuery\.version is required"):
         GraphQLRequest(extensions={"persistedQuery": {"sha256Hash": "abc123"}})
 
     # Missing sha256Hash
-    with pytest.raises(ValueError, match="persistedQuery.sha256Hash is required"):
+    with pytest.raises(ValueError, match=r"persistedQuery\.sha256Hash is required"):
         GraphQLRequest(extensions={"persistedQuery": {"version": 1}})
 
     # Wrong version
@@ -67,11 +67,11 @@ def test_graphql_request_apq_validation_errors() -> None:
         GraphQLRequest(extensions={"persistedQuery": {"version": 2, "sha256Hash": "abc123"}})
 
     # Empty sha256Hash
-    with pytest.raises(ValueError, match="persistedQuery.sha256Hash must be a non-empty string"):
+    with pytest.raises(ValueError, match=r"persistedQuery\.sha256Hash must be a non-empty string"):
         GraphQLRequest(extensions={"persistedQuery": {"version": 1, "sha256Hash": ""}})
 
     # Non-string sha256Hash
-    with pytest.raises(ValueError, match="persistedQuery.sha256Hash must be a non-empty string"):
+    with pytest.raises(ValueError, match=r"persistedQuery\.sha256Hash must be a non-empty string"):
         GraphQLRequest(extensions={"persistedQuery": {"version": 1, "sha256Hash": 123}})
 
 

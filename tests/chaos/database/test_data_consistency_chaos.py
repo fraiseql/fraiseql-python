@@ -4,7 +4,6 @@ Tests for data consistency issues and transactional integrity under chaos.
 Validates FraiseQL's handling of transaction rollbacks, partial updates, and constraint violations.
 """
 
-
 import pytest
 from chaos.base import ChaosTestCase
 from chaos.fraiseql_scenarios import FraiseQLTestScenarios, MockFraiseQLClient
@@ -33,8 +32,6 @@ class TestDataConsistencyChaos(ChaosTestCase):
         # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(4, int(8 * self.chaos_config.load_multiplier))
-
-
 
         for i in range(iterations):
             try:
@@ -97,8 +94,6 @@ class TestDataConsistencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(6 * self.chaos_config.load_multiplier))
 
-
-
         for i in range(iterations):
             try:
                 result = client.execute_query(operation)
@@ -150,8 +145,6 @@ class TestDataConsistencyChaos(ChaosTestCase):
         # Scale iterations based on hardware (7 on baseline, 3-28 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(7 * self.chaos_config.load_multiplier))
-
-
 
         for i in range(iterations):
             try:
@@ -243,7 +236,6 @@ class TestDataConsistencyChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(2 * self.chaos_config.load_multiplier))
 
-
         for i in range(iterations):
             thread = threading.Thread(target=simulate_transaction, args=(i,))
             threads.append(thread)
@@ -260,7 +252,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
         errors = 0
 
         while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+            result_type, _thread_id, data = results_queue.get()
             if result_type == "anomaly":
                 anomalies += 1
                 self.metrics.record_error()
@@ -301,8 +293,6 @@ class TestDataConsistencyChaos(ChaosTestCase):
         # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(4, int(8 * self.chaos_config.load_multiplier))
-
-
 
         for i in range(iterations):
             try:
@@ -360,8 +350,6 @@ class TestDataConsistencyChaos(ChaosTestCase):
         # Scale iterations based on hardware (6 on baseline, 3-24 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(6 * self.chaos_config.load_multiplier))
-
-
 
         for i in range(iterations):
             try:

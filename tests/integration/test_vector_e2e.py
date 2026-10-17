@@ -250,7 +250,7 @@ async def test_vector_with_other_filters(class_db_pool, test_schema, vector_test
         limit=5,
     )
 
-    results = extract_graphql_data(result, "test_documents")
+    extract_graphql_data(result, "test_documents")
 
 
 @pytest.mark.asyncio

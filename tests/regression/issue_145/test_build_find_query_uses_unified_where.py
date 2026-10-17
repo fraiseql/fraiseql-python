@@ -73,7 +73,7 @@ class TestBuildFindQueryUsesUnifiedWhere:
         # Patch _build_where_clause to verify it's called
         with patch.object(repo, "_build_where_clause", wraps=repo._build_where_clause) as mock_bwc:
             # Call _build_find_query
-            query = repo._build_find_query("tv_allocation", where=where, jsonb_column="data")
+            repo._build_find_query("tv_allocation", where=where, jsonb_column="data")
 
             # Verify _build_where_clause was called
             mock_bwc.assert_called_once()

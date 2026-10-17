@@ -25,7 +25,7 @@ async def test_memory_pressure_handling(chaos_db_client, chaos_test_schema, base
     Expected: FraiseQL handles memory pressure gracefully without crashes.
     """
     metrics = ChaosMetrics()
-    operation = FraiseQLTestScenarios.complex_nested_query()
+    FraiseQLTestScenarios.complex_nested_query()
 
     metrics.start_test()
 
@@ -90,7 +90,7 @@ async def test_cpu_spike_resilience(chaos_db_client, chaos_test_schema, baseline
     Expected: FraiseQL manages CPU resources and maintains responsiveness.
     """
     metrics = ChaosMetrics()
-    operation = FraiseQLTestScenarios.complex_nested_query()
+    FraiseQLTestScenarios.complex_nested_query()
 
     metrics.start_test()
 
@@ -168,7 +168,7 @@ async def test_disk_io_contention(chaos_db_client, chaos_test_schema, baseline_m
     io_times = []
     io_contention_events = 0
 
-    for i in range(io_operations):
+    for _i in range(io_operations):
         try:
             # Simulate I/O operation with potential contention
             base_io_time = 15  # 15ms base I/O time

@@ -28,19 +28,19 @@ def _make_tenant_wc(tenant_id: int = 1) -> WhereClause:
     return WhereClause(conditions=[cond])
 
 
-BASE = dict(
-    coarse_view="v_events_month",
-    fine_grain_view="v_events_day",
-    time_grain_column="date",
-    time_grain_trunc="month",
-    group_by=["date"],
-    aggregations={"data.volume": "SUM(data.volume)"},
-    native_dimensions={"date"},
-    native_measures={"data.volume": "volume"},
-    native_dimension_mapping=None,
-    jsonb_col="data",
-    extra_where=None,
-)
+BASE = {
+    "coarse_view": "v_events_month",
+    "fine_grain_view": "v_events_day",
+    "time_grain_column": "date",
+    "time_grain_trunc": "month",
+    "group_by": ["date"],
+    "aggregations": {"data.volume": "SUM(data.volume)"},
+    "native_dimensions": {"date"},
+    "native_measures": {"data.volume": "volume"},
+    "native_dimension_mapping": None,
+    "jsonb_col": "data",
+    "extra_where": None,
+}
 
 
 # ── structural tests ──────────────────────────────────────────────────────────

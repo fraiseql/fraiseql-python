@@ -130,7 +130,7 @@ class TestJSONPassthroughConfiguration:
             assert response.status_code == 200
             data = response.json()
             assert "data" in data
-            test_data = data["data"]["dataQuery"]
+            data["data"]["dataQuery"]
             # Passthrough is enabled - fields should be transformed
 
     def test_testing_mode_also_enables_passthrough(self) -> None:
@@ -165,5 +165,5 @@ class TestJSONPassthroughConfiguration:
             assert response.status_code == 200
             data = response.json()
             assert "data" in data
-            test_data = data["data"]["dataQuery"]
+            data["data"]["dataQuery"]
             # Passthrough is enabled in all non-development modes

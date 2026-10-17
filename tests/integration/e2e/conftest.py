@@ -1,8 +1,8 @@
 """Fixtures for end-to-end integration tests."""
 
 import pytest
-from fraiseql import fraise_type, query, mutation
-from fraiseql.gql.schema_builder import build_fraiseql_schema
+
+from fraiseql import fraise_type, query
 
 
 @pytest.fixture(scope="class")

@@ -66,10 +66,7 @@ class TestGraphQLPipelineBasic:
         query_def = {"operation": "query", "table": "users", "fields": ["id", "name"]}
 
         # Mock the Rust function - should return GraphQL format with data/errors
-        mock_result = json.dumps({
-            "data": [{"id": 1, "name": "Test User"}],
-            "errors": None
-        })
+        mock_result = json.dumps({"data": [{"id": 1, "name": "Test User"}], "errors": None})
 
         with patch.object(
             pipeline._rust, "execute_query_async", new_callable=AsyncMock

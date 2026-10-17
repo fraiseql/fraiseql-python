@@ -2,7 +2,7 @@ import pytest
 
 """Test potential Date scalar caching issues."""
 
-import datetime
+import datetime as dt
 
 import fraiseql
 from fraiseql.core.graphql_type import _graphql_type_cache, convert_type_to_graphql_output
@@ -18,8 +18,8 @@ def test_date_scalar_cache_behavior() -> None:
     registry.clear()
 
     # Convert date type multiple times
-    date_gql1 = convert_type_to_graphql_output(datetime.date)
-    date_gql2 = convert_type_to_graphql_output(datetime.date)
+    date_gql1 = convert_type_to_graphql_output(dt.date)
+    date_gql2 = convert_type_to_graphql_output(dt.date)
 
     # They should be the same instance
     assert date_gql1 is date_gql2
@@ -35,12 +35,12 @@ def test_date_scalar_with_schema_builder() -> None:
     @fraiseql.type
     class Event:
         name: str
-        start_date: datetime.date
-        end_date: datetime.date
+        start_date: dt.date
+        end_date: dt.date
 
     @fraiseql.query
     async def get_event(info) -> Event:
-        today = datetime.date.today()
+        today = dt.date.today()
         return Event(name="Conference", start_date=today, end_date=today)
 
     # Build schema using the helper function
@@ -72,11 +72,11 @@ def test_multiple_schema_builds_with_date() -> None:
     # First schema
     @fraiseql.type
     class Model1:
-        date1: datetime.date
+        date1: dt.date
 
     @fraiseql.query
     async def query1(info) -> Model1:
-        return (Model1(date1=datetime.date.today()),)
+        return (Model1(date1=dt.date.today()),)
 
     schema1 = build_fraiseql_schema(query_types=[Model1, query1])
     assert "Date" in schema1.type_map
@@ -84,11 +84,11 @@ def test_multiple_schema_builds_with_date() -> None:
     # Second schema - this might trigger duplicate if there's an issue
     @fraiseql.type
     class Model2:
-        date2: datetime.date
+        date2: dt.date
 
     @fraiseql.query
     async def query2(info) -> Model2:
-        return (Model2(date2=datetime.date.today()),)
+        return (Model2(date2=dt.date.today()),)
 
     schema2 = build_fraiseql_schema(query_types=[Model2, query2])
     assert "Date" in schema2.type_map

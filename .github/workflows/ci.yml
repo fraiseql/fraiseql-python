@@ -35,11 +35,13 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked --extra dev
 
+      # --no-fix: pyproject sets `fix = true`, so a plain `ruff check` would apply
+      # fixable findings in the runner and pass.
       - name: Ruff lint
-        run: uv run --extra dev ruff check src/
+        run: uv run --extra dev ruff check --no-fix src/ tests/
 
       - name: Ruff format
-        run: uv run --extra dev ruff format src/ --check
+        run: uv run --extra dev ruff format --check src/ tests/
 
   type-check:
     name: Type Check (ty)

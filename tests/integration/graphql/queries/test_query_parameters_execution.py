@@ -302,7 +302,7 @@ class TestPaginationExecution:
             context_value=gql_context,
         )
 
-        all_data, all_errors = parse_graphql_result(all_result)
+        all_data, _all_errors = parse_graphql_result(all_result)
         offset_data, offset_errors = parse_graphql_result(offset_result)
 
         assert offset_errors is None
@@ -382,7 +382,7 @@ class TestPaginationExecution:
             context_value=gql_context,
         )
 
-        data, errors = parse_graphql_result(result)
+        _data, errors = parse_graphql_result(result)
         assert errors is not None
 
     @pytest.mark.asyncio
@@ -409,7 +409,7 @@ class TestPaginationExecution:
             context_value=gql_context,
         )
 
-        data, errors = parse_graphql_result(result)
+        _data, errors = parse_graphql_result(result)
         assert errors is not None
 
 

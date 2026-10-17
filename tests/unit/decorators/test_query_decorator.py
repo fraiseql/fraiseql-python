@@ -31,7 +31,9 @@ async def getUser(info, id: ID) -> User | None:
     """Get a user by ID."""
     # IDScalar parses the id to uuid.UUID, so compare as string
     if str(id) == "123e4567-e89b-12d3-a456-426614174000":
-        return User(id=id if isinstance(id, UUID) else UUID(id), name="John Doe", email="john@example.com")
+        return User(
+            id=id if isinstance(id, UUID) else UUID(id), name="John Doe", email="john@example.com"
+        )
     return None
 
 
@@ -179,7 +181,11 @@ def test_mixed_decorators_and_explicit_queries() -> None:
     async def getPost(info, id: ID) -> Post | None:
         # IDScalar parses the id to uuid.UUID, so compare as string
         if str(id) == "323e4567-e89b-12d3-a456-426614174002":
-            return Post(id=id if isinstance(id, UUID) else UUID(id), title="Test Post", content="Test content")
+            return Post(
+                id=id if isinstance(id, UUID) else UUID(id),
+                title="Test Post",
+                content="Test content",
+            )
         return None
 
     # Build schema with both decorated and explicit queries

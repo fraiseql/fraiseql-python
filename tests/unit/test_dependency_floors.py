@@ -88,9 +88,9 @@ def test_sqlparse_is_not_a_runtime_dependency(pyproject: dict) -> None:
     which already degrades gracefully when it is absent.
 
     Declaring it under ``project.dependencies`` put four advisories in the runtime
-    surface of every install for a script-only tool. It still arrives transitively
-    via ``fraiseql-confiture``, so moving it does not remove the package — it moves
-    where the floor is enforced and what the scope of the finding is.
+    surface of every install for a script-only tool. It is now declared only in the
+    ``dev`` dependency group, and nothing in the runtime dependencies or the extras
+    pulls it in (``fraiseql-confiture``, the ``migrate`` extra, no longer does).
     """
     runtime = [name for name, _ in _declarations(pyproject, "sqlparse")]
     assert "project.dependencies" not in runtime

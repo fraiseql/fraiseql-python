@@ -9,7 +9,6 @@ from typing import Optional
 
 import pytest
 
-import fraiseql
 from fraiseql.fields import fraise_field
 from fraiseql.sql.graphql_where_generator import create_graphql_where_input
 from fraiseql.types import fraise_type
@@ -62,28 +61,6 @@ class TestNestedArrayWhereIntegration:
             if hasattr(print_servers_field, "where_input_type"):
                 assert print_servers_field.where_input_type == PrintServerWhereInput
 
-    def test_graphql_resolver_generation_fails_for_where_parameter(self) -> None:
-        """Test that GraphQL schema generation fails when where parameter is attempted."""
-        # Try to create a query that would use where parameters
-        try:
-
-            @fraiseql.query
-            async def network_configuration_with_where(
-                info,
-                id: uuid.UUID,
-                print_servers_where: Optional[dict] = None,  # This should fail
-            ) -> Optional[NetworkConfiguration]:
-                """This resolver attempts to use where filtering - should fail."""
-                # This is testing that the current system doesn't support this
-                return None
-
-            # If we get here, the test should fail because where support isn't implemented
-            assert False, "Expected where parameter support to not exist yet"
-
-        except Exception:
-            # Expected - where parameter support doesn't exist yet
-            pass
-
     def test_nested_field_resolver_creation_without_where_support(self) -> None:
         """Test that current nested field resolvers don't support where parameters."""
         from fraiseql.core.nested_field_resolver import create_smart_nested_field_resolver
@@ -106,7 +83,7 @@ class TestNestedArrayWhereIntegration:
         """Test that fraise_field now accepts where-related parameters."""
         # These should all work now that where support is implemented
         field1 = fraise_field(where_input_type=dict)
-        assert field1.where_input_type == dict
+        assert field1.where_input_type is dict
 
         field2 = fraise_field(supports_where_filtering=True)
         assert field2.supports_where_filtering is True

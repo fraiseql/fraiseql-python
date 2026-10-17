@@ -190,9 +190,7 @@ class TestDefaultDoesNotReachNonTextFields:
             pytest.skip('no collation on this server disagrees with "C" about case')
 
         byte = _names(
-            await _run(
-                class_db_pool, test_schema, {"name": "ASC"}, "C", native_dimensions={"name"}
-            )
+            await _run(class_db_pool, test_schema, {"name": "ASC"}, "C", native_dimensions={"name"})
         )
         ling = _names(
             await _run(

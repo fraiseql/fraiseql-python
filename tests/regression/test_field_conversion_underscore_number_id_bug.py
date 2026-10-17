@@ -225,7 +225,7 @@ async def test_dns_1_id_field_not_transformed(clear_registry) -> None:
     resolver = CreateNetworkConfiguration.__fraiseql_resolver__
 
     # Act
-    result = await resolver(mock_info, input_data)
+    await resolver(mock_info, input_data)
 
     # Assert - The function should receive the correct field names
     assert mock_db.last_function_call == "app.create_network_configuration"

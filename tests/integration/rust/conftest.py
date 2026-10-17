@@ -1,7 +1,8 @@
 """Fixtures for Rust pipeline integration tests."""
 
-import pytest
 import os
+
+import pytest
 
 
 @pytest.fixture(scope="session")

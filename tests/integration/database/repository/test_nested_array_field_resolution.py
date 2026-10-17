@@ -238,7 +238,7 @@ class TestNestedArrayFieldResolution:
             ],
         }
 
-        org = Organization.from_dict(data)
+        Organization.from_dict(data)
 
         # Test field resolution for deeply nested arrays
         from fraiseql.core.graphql_type import convert_type_to_graphql_output

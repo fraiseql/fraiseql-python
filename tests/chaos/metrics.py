@@ -12,6 +12,5 @@ class ChaosMetrics:
     """Placeholder ChaosMetrics class."""
 
 
-
 # Re-export for convenience
 __all__ = ["ChaosMetrics"]

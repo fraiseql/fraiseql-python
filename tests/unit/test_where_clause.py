@@ -487,7 +487,7 @@ class TestWhereClause:
             logical_op="OR",
         )
 
-        sql, params = clause.to_sql()
+        sql, _params = clause.to_sql()
 
         sql_str = sql.as_string(None)
         assert "OR" in sql_str
@@ -527,7 +527,7 @@ class TestWhereClause:
             ],
         )
 
-        sql, params = clause.to_sql()
+        sql, _params = clause.to_sql()
 
         sql_str = sql.as_string(None)
         assert "machine_id" in sql_str
@@ -561,7 +561,7 @@ class TestWhereClause:
             ),
         )
 
-        sql, params = clause.to_sql()
+        sql, _params = clause.to_sql()
 
         sql_str = sql.as_string(None)
         assert "NOT" in sql_str

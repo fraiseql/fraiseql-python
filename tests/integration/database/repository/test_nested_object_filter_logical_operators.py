@@ -170,7 +170,7 @@ class TestNestedObjectFilterLogicalOperatorsDatabase:
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
     async def setup_test_data(
-        self, class_db_pool: psycopg_pool.AsyncConnectionPool
+        self, class_db_pool: psycopg_pool.AsyncConnectionPool, test_schema
     ) -> AsyncGenerator[dict[str, uuid.UUID]]:
         """Set up test tables and data for nested object filtering tests."""
         async with class_db_pool.connection() as conn:

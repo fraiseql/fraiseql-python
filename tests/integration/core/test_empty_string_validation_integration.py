@@ -132,7 +132,7 @@ def test_validation_error_format_matches_graphql_standards() -> None:
 
     try:
         TestInput(first_name="", last_name="valid")
-        assert False, "Expected ValueError to be raised"
+        pytest.fail("Expected ValueError to be raised")
     except ValueError as e:
         error_message = str(e)
 

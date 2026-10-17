@@ -331,7 +331,7 @@ def test_error_type_code_computation(fraiseql_rs):
         ("noop:invalid_id", 422),
     ]
 
-    for status, expected_code in test_cases:
+    for status, _expected_code in test_cases:
         fake_error = {
             "status": status,
             "message": "Test error",

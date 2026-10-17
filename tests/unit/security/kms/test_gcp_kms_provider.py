@@ -41,16 +41,20 @@ class TestGCPKMSProvider:
         )
 
     def test_extends_base_provider(self, config):
-        with patch("fraiseql.security.kms.infrastructure.gcp_kms.GCP_KMS_AVAILABLE", True):
-            with patch("fraiseql.security.kms.infrastructure.gcp_kms.kms_v1"):
-                provider = GCPKMSProvider(config)
-                assert isinstance(provider, BaseKMSProvider)
+        with (
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.GCP_KMS_AVAILABLE", True),
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.kms_v1"),
+        ):
+            provider = GCPKMSProvider(config)
+            assert isinstance(provider, BaseKMSProvider)
 
     def test_provider_name(self, config):
-        with patch("fraiseql.security.kms.infrastructure.gcp_kms.GCP_KMS_AVAILABLE", True):
-            with patch("fraiseql.security.kms.infrastructure.gcp_kms.kms_v1"):
-                provider = GCPKMSProvider(config)
-                assert provider.provider_name == "gcp"
+        with (
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.GCP_KMS_AVAILABLE", True),
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.kms_v1"),
+        ):
+            provider = GCPKMSProvider(config)
+            assert provider.provider_name == "gcp"
 
     @pytest.mark.asyncio
     async def test_do_encrypt_calls_gcp_api(self, config):
@@ -58,8 +62,8 @@ class TestGCPKMSProvider:
         with (
             patch("fraiseql.security.kms.infrastructure.gcp_kms.GCP_KMS_AVAILABLE", True),
             patch("fraiseql.security.kms.infrastructure.gcp_kms.kms_v1") as mock_kms,
-            patch("fraiseql.security.kms.infrastructure.gcp_kms.types") as mock_types,
-            patch("fraiseql.security.kms.infrastructure.gcp_kms.gcp_exceptions") as mock_exc,
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.types"),
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.gcp_exceptions"),
         ):
             mock_client = AsyncMock()
             mock_kms.KeyManagementServiceAsyncClient.return_value = mock_client
@@ -85,8 +89,8 @@ class TestGCPKMSProvider:
         with (
             patch("fraiseql.security.kms.infrastructure.gcp_kms.GCP_KMS_AVAILABLE", True),
             patch("fraiseql.security.kms.infrastructure.gcp_kms.kms_v1") as mock_kms,
-            patch("fraiseql.security.kms.infrastructure.gcp_kms.types") as mock_types,
-            patch("fraiseql.security.kms.infrastructure.gcp_kms.gcp_exceptions") as mock_exc,
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.types"),
+            patch("fraiseql.security.kms.infrastructure.gcp_kms.gcp_exceptions"),
         ):
             mock_client = AsyncMock()
             mock_kms.KeyManagementServiceAsyncClient.return_value = mock_client

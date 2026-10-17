@@ -19,7 +19,7 @@ pytestmark = pytest.mark.integration
 
 # Check if Connection type exists
 try:
-    from fraiseql.types.generic import Connection
+    from fraiseql.types.generic import Connection  # noqa: F401 - availability check
 
     HAS_CONNECTION = True
 except ImportError:

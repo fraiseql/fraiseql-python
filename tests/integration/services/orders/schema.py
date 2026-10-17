@@ -10,6 +10,7 @@ from fraiseql import ID, extends, external, key, type
 @type
 class User:
     """User extended from users subgraph"""
+
     id: ID = external()
     orders: List["Order"]
 
@@ -18,6 +19,7 @@ class User:
 @key(fields=["id"])
 class Order:
     """Order entity - owned by this subgraph"""
+
     id: ID
     user_id: ID
     status: str

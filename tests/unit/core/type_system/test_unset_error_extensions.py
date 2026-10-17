@@ -199,8 +199,8 @@ def test_production_mode_error_handling(monkeypatch, clear_registry) -> None:
     from unittest.mock import MagicMock
 
     # Mock the database pool to avoid actual database connection
-    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db_pool", lambda: MagicMock())
-    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db", lambda: MagicMock())
+    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db_pool", MagicMock)
+    monkeypatch.setattr("fraiseql.fastapi.dependencies.get_db", MagicMock)
 
     # Create production app
     app = create_fraiseql_app(

@@ -2,7 +2,6 @@
 
 import pytest
 
-
 # Known exceptions for certain test rules
 # These are documented legitimate cases where strict rules don't apply
 

@@ -156,7 +156,7 @@ def test_factory_singleton_behavior() -> None:
 
     # Should create separate instances
     assert backend1 is not backend2
-    assert type(backend1) == type(backend2)
+    assert type(backend1) is type(backend2)
 
 
 def test_factory_with_cache_enabled() -> None:

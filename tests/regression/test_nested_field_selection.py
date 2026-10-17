@@ -268,9 +268,9 @@ async def test_nested_field_selection_single_level(graphql_app: "FastAPI"):
         assert "duplex" not in network_config, "Bug: duplex should not be returned"
 
         # Verify we got exactly 2 fields
-        assert (
-            len(network_config) == 2
-        ), f"Expected 2 fields, got {len(network_config)}: {list(network_config.keys())}"
+        assert len(network_config) == 2, (
+            f"Expected 2 fields, got {len(network_config)}: {list(network_config.keys())}"
+        )
 
 
 @pytest.mark.asyncio

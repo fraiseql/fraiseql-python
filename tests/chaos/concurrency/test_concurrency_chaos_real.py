@@ -148,7 +148,9 @@ async def test_race_condition_prevention(chaos_db_client, chaos_test_schema, bas
 
     # Race conditions should be minimal
     if race_conditions_detected > 0:
-        assert race_conditions_detected <= 1, f"Too many race conditions: {race_conditions_detected}"
+        assert race_conditions_detected <= 1, (
+            f"Too many race conditions: {race_conditions_detected}"
+        )
 
 
 @pytest.mark.chaos
@@ -223,9 +225,7 @@ async def test_deadlock_prevention_under_load(chaos_db_client, chaos_test_schema
 
     total_ops = num_concurrent * operations_per_concurrent
     success_rate = successes / total_ops
-    assert success_rate >= 0.75, (
-        f"Deadlock prevention failures: {success_rate:.2f} success rate"
-    )
+    assert success_rate >= 0.75, f"Deadlock prevention failures: {success_rate:.2f} success rate"
 
     # Deadlocks should be minimal
     if deadlock_events > 0:
@@ -255,6 +255,7 @@ async def test_concurrent_connection_pooling(chaos_db_client, chaos_test_schema,
 
     async def execute_with_connection_pool(request_id: int):
         """Execute operation using connection pool."""
+        nonlocal pool_exhaustion_events
         try:
             # Add randomness to execution
             if random.random() < 0.15:  # 15% chance of high latency
@@ -299,7 +300,7 @@ async def test_concurrent_connection_pooling(chaos_db_client, chaos_test_schema,
     assert success_rate >= 0.7, f"Connection pooling failures: {success_rate:.2f}"
 
     if execution_times:
-        avg_wait = statistics.mean(execution_times)
+        statistics.mean(execution_times)
         max_wait = max(execution_times)
         assert max_wait < 200, f"Excessive connection wait times: max {max_wait:.1f}ms"
 
@@ -377,7 +378,9 @@ async def test_concurrent_mutation_isolation(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_concurrency
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_load_shedding_under_extreme_concurrency(chaos_db_client, chaos_test_schema, baseline_metrics):
+async def test_load_shedding_under_extreme_concurrency(
+    chaos_db_client, chaos_test_schema, baseline_metrics
+):
     """Test load shedding behavior under extreme concurrent load.
 
     Scenario: Many concurrent requests exceed system capacity.
@@ -395,6 +398,7 @@ async def test_load_shedding_under_extreme_concurrency(chaos_db_client, chaos_te
 
     async def execute_under_extreme_load(request_id: int):
         """Execute query under extreme concurrent load."""
+        nonlocal load_shed_events
         try:
             # Inject varying latency to simulate resource contention
             if request_id % 3 == 0:

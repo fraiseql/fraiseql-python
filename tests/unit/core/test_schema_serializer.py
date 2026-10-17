@@ -234,7 +234,7 @@ class TestSchemaSerializer:
         async def dummy_query(info) -> list[types[0]]:
             return []
 
-        schema = build_fraiseql_schema(query_types=types + [dummy_query], mutation_resolvers=[])
+        schema = build_fraiseql_schema(query_types=[*types, dummy_query], mutation_resolvers=[])
 
         serializer = SchemaSerializer()
 

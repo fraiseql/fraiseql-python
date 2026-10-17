@@ -26,7 +26,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         """
         toxiproxy = ToxiproxyManager()
         # Setup PostgreSQL proxy
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         # Create FraiseQL client for testing
         client = MockFraiseQLClient()
@@ -41,7 +41,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             result = client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 10.0)
             baseline_times.append(execution_time)
@@ -61,7 +61,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             try:
                 result = client.execute_query(operation)
                 execution_time = result.get("_execution_time_ms", 10.0)
@@ -84,7 +84,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             result = client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 10.0)
             recovery_times.append(execution_time)
@@ -118,7 +118,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         """
         toxiproxy = ToxiproxyManager()
         # Setup proxy
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         # Create FraiseQL client for testing
         client = MockFraiseQLClient()
@@ -132,7 +132,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             result = client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 10.0)
             baseline_times.append(execution_time)
@@ -156,7 +156,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             try:
                 result = client.execute_query(operation, timeout=2.0)  # 2 second timeout
                 execution_time = result.get("_execution_time_ms", 2000.0)
@@ -180,7 +180,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             result = client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 10.0)
             recovery_times.append(execution_time)
@@ -208,7 +208,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         Expected: FraiseQL adapts to slow connection times.
         """
         toxiproxy = ToxiproxyManager()
-        proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
         self.metrics.start_test()
 
@@ -218,7 +218,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             start = time.time()
             time.sleep(0.01)  # 10ms connection time
             baseline_times.append((time.time() - start) * 1000)
@@ -238,7 +238,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
             # Uses multiplier-based formula to ensure meaningful test on all hardware
             iterations = max(3, int(2 * self.chaos_config.load_multiplier))
 
-            for i in range(iterations):
+            for _i in range(iterations):
                 start = time.time()
                 time.sleep(latency_ms / 1000.0)  # Simulate connection delay
                 connection_times.append((time.time() - start) * 1000)
@@ -254,7 +254,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(3 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             start = time.time()
             time.sleep(0.01)
             recovery_times.append((time.time() - start) * 1000)
@@ -281,7 +281,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
         toxiproxy = ToxiproxyManager()
 
         for drop_after_ms in [100, 500, 1000]:
-            proxy = toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
+            toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
 
             self.metrics.start_test()
 
@@ -291,7 +291,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
             # Uses multiplier-based formula to ensure meaningful test on all hardware
             iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-            for i in range(iterations):
+            for _i in range(iterations):
                 start = time.time()
                 time.sleep(0.020)  # 20ms query
                 successful_queries += 1
@@ -306,7 +306,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
             # Uses multiplier-based formula to ensure meaningful test on all hardware
             iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-            for i in range(iterations):
+            for _i in range(iterations):
                 start = time.time()
                 try:
                     # Simulate query that gets interrupted

@@ -67,7 +67,7 @@ async def test_permission_cache_invalidates_on_role_change() -> None:
         # Get initial permissions (should cache)
         permissions1 = await cache.get(user_id, tenant_id)
         assert permissions1 is not None
-        initial_count = len(permissions1)
+        len(permissions1)
 
         # Simulate new request (clear request-level cache)
         cache.clear_request_cache()
@@ -111,7 +111,7 @@ async def test_cascade_invalidation_on_role_permission_change() -> None:
         cache = PermissionCache(db_pool)
 
         user_id = uuid4()
-        role_id = uuid4()
+        uuid4()
         permission_id = uuid4()
         tenant_id = uuid4()
 

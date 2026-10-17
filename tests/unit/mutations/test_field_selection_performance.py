@@ -17,7 +17,7 @@ def fraiseql_rs():
     return rs
 
 
-def test_performance_small_response_field_filtering(fraiseql_rs, benchmark=None):
+def test_performance_small_response_field_filtering(fraiseql_rs):
     """Benchmark field filtering on small response (5 fields, request 2)."""
     fake_result = {
         "status": "success",
@@ -46,21 +46,16 @@ def test_performance_small_response_field_filtering(fraiseql_rs, benchmark=None)
             selected_fields,
         )
 
-    if benchmark:
-        # Using pytest-benchmark
-        result = benchmark(run_filtering)
-    else:
-        # Manual timing
-        start = time.perf_counter()
-        iterations = 10000
-        for _ in range(iterations):
-            run_filtering()
-        end = time.perf_counter()
-        avg_time = (end - start) / iterations
-        print(f"✅ Small response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
+    start = time.perf_counter()
+    iterations = 10000
+    for _ in range(iterations):
+        run_filtering()
+    end = time.perf_counter()
+    avg_time = (end - start) / iterations
+    print(f"✅ Small response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
 
 
-def test_performance_medium_response_field_filtering(fraiseql_rs, benchmark=None):
+def test_performance_medium_response_field_filtering(fraiseql_rs):
     """Benchmark field filtering on medium response (20 fields, request 5)."""
     # Create response with many auto-injected fields + entity
     fake_result = {
@@ -102,19 +97,16 @@ def test_performance_medium_response_field_filtering(fraiseql_rs, benchmark=None
             selected_fields,
         )
 
-    if benchmark:
-        result = benchmark(run_filtering)
-    else:
-        start = time.perf_counter()
-        iterations = 5000
-        for _ in range(iterations):
-            run_filtering()
-        end = time.perf_counter()
-        avg_time = (end - start) / iterations
-        print(f"✅ Medium response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
+    start = time.perf_counter()
+    iterations = 5000
+    for _ in range(iterations):
+        run_filtering()
+    end = time.perf_counter()
+    avg_time = (end - start) / iterations
+    print(f"✅ Medium response: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
 
 
-def test_performance_large_cascade_field_filtering(fraiseql_rs, benchmark=None):
+def test_performance_large_cascade_field_filtering(fraiseql_rs):
     """Benchmark field filtering on response with large cascade (100 entities)."""
     # Create 100 reservation entities in cascade
     cascade_entities = [
@@ -158,16 +150,13 @@ def test_performance_large_cascade_field_filtering(fraiseql_rs, benchmark=None):
             selected_fields,
         )
 
-    if benchmark:
-        result = benchmark(run_filtering)
-    else:
-        start = time.perf_counter()
-        iterations = 1000
-        for _ in range(iterations):
-            run_filtering()
-        end = time.perf_counter()
-        avg_time = (end - start) / iterations
-        print(f"✅ Large cascade: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
+    start = time.perf_counter()
+    iterations = 1000
+    for _ in range(iterations):
+        run_filtering()
+    end = time.perf_counter()
+    avg_time = (end - start) / iterations
+    print(f"✅ Large cascade: {avg_time * 1000:.3f}ms avg ({iterations} iterations)")
 
 
 def test_performance_no_filtering_vs_filtering(fraiseql_rs):

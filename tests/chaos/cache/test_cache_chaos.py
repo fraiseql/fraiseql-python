@@ -91,7 +91,7 @@ class TestCacheChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         total_operations = max(7, int(15 * self.chaos_config.load_multiplier))
 
-        for i in range(total_operations):
+        for _i in range(total_operations):
             try:
                 # Simulate cache access
                 if random.random() < 0.85:  # 85% cache hit rate
@@ -160,7 +160,9 @@ class TestCacheChaos(ChaosTestCase):
         failure_interval = max(1, int(1 / 0.25))  # Every 4th operation (25% rate)
         failure_iterations = set(range(failure_interval - 1, total_operations, failure_interval))
 
-        cache_miss_interval = max(1, int(1 / 0.2))  # Every 5th operation (20% miss rate = 80% hit rate)
+        cache_miss_interval = max(
+            1, int(1 / 0.2)
+        )  # Every 5th operation (20% miss rate = 80% hit rate)
 
         # State tracking
         backend_available = True
@@ -198,7 +200,9 @@ class TestCacheChaos(ChaosTestCase):
 
                     # Deterministic backend recovery (after 2-3 operations)
                     operations_in_failure = i - failure_start
-                    if operations_in_failure >= 2:  # Recover after 2 operations (40% cumulative chance)
+                    if (
+                        operations_in_failure >= 2
+                    ):  # Recover after 2 operations (40% cumulative chance)
                         backend_available = True
                         failure_start = None
                         print(f"Cache backend recovered at operation {i}")
@@ -237,8 +241,8 @@ class TestCacheChaos(ChaosTestCase):
         import queue
         import threading
 
-        client = MockFraiseQLClient()
-        operation = FraiseQLTestScenarios.simple_user_query()
+        MockFraiseQLClient()
+        FraiseQLTestScenarios.simple_user_query()
 
         self.metrics.start_test()
 
@@ -294,7 +298,7 @@ class TestCacheChaos(ChaosTestCase):
         execution_times = []
 
         while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+            result_type, _thread_id, data = results_queue.get()
             if result_type == "success":
                 successes += 1
                 execution_times.append(data)

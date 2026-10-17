@@ -53,12 +53,14 @@ async def chaos_db_client(class_db_pool, test_schema):
     yield client
     client.reset_chaos()
 
+
 @pytest_asyncio.fixture
 async def chaos_test_schema(test_schema, db_connection):
     """Initialize schema with test tables (users, posts, comments)"""
     # Creates tables
     # Inserts test data
     # Cleans up automatically
+
 
 @pytest.fixture
 def baseline_metrics():

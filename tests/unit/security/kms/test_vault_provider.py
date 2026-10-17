@@ -69,7 +69,7 @@ class TestVaultKMSProvider:
             mock_response.raise_for_status = MagicMock()
             mock_client.post.return_value = mock_response
 
-            ciphertext, algo = await provider._do_encrypt(
+            _ciphertext, algo = await provider._do_encrypt(
                 b"plaintext",
                 "my-key",
                 {"purpose": "test"},

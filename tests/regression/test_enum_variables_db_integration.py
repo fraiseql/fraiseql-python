@@ -52,7 +52,11 @@ class MockDatabase:
     async def find(self, table: str, **kwargs) -> list[dict]:
         """Simulate db.find() with filtering."""
         # Extract filters from kwargs
-        filters = {k: v for k, v in kwargs.items() if k not in ["info", "where", "limit", "offset", "order_by", "tenant_id"]}
+        filters = {
+            k: v
+            for k, v in kwargs.items()
+            if k not in ["info", "where", "limit", "offset", "order_by", "tenant_id"]
+        }
 
         # Simulate database query results based on filters
         all_allocations = [
@@ -257,7 +261,9 @@ class TestEnumVariablesWithDatabase:
             # Simulate filtering based on both enums
             results = []
             if period == Period.CURRENT and status == Status.ACTIVE:
-                results = [AllocationDetail(id="1", location="Floor1", period=period, status=status)]
+                results = [
+                    AllocationDetail(id="1", location="Floor1", period=period, status=status)
+                ]
             return results
 
         schema = fraiseql.build_fraiseql_schema(query_types=[allocations_detailed])

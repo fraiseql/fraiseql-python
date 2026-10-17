@@ -152,17 +152,17 @@ async def test_fraiseql_enum_coercion_in_resolver_wrapping():
 
     # Test 1: Pass enum instance (what wrap_resolver expects after GraphQL coercion)
     print("\n=== FRAISEQL WRAP: Enum Instance ===")
-    result = await field.resolve(None, MockInfo(), color=Color.RED)
+    await field.resolve(None, MockInfo(), color=Color.RED)
     print(f"Type: {received_types[-1][0]}, Value: {received_types[-1][1]}")
 
     # Test 2: Pass string (what might come from variables if graphql-core doesn't coerce)
     print("\n=== FRAISEQL WRAP: String Value ===")
-    result = await field.resolve(None, MockInfo(), color="RED")
+    await field.resolve(None, MockInfo(), color="RED")
     print(f"Type: {received_types[-1][0]}, Value: {received_types[-1][1]}")
 
     # Check if wrap_resolver converted string to enum
     string_received_type = received_types[-1][0]
-    string_received_value = received_types[-1][1]
+    received_types[-1][1]
     if string_received_type == "Color":
         print("✅ wrap_resolver converted string to Color enum")
     elif string_received_type == "str":

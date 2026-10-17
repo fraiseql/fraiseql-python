@@ -234,7 +234,7 @@ class RealisticPerformanceAssessment:
         cls,
         pool: AsyncConnectionPool,
         query: str,
-        params: list[Any] = None,
+        params: list[Any] | None = None,
         query_description: str = "",
     ) -> TimingBreakdown:
         """Measure realistic query execution.
@@ -258,7 +258,7 @@ class RealisticPerformanceAssessment:
             pool_acquire_ms = (pool_acquire_end - pool_acquire_start) * 1000
 
             # Phase 2: Execute query
-            query_start = time.perf_counter()
+            time.perf_counter()
             async with conn.cursor(row_factory=dict_row) as cursor:
                 fetch_start = time.perf_counter()
                 await cursor.execute(query, params)
@@ -353,7 +353,7 @@ class TestRealisticPerformance:
         """Measure: SELECT data FROM tv_user WHERE tenant_id = ? LIMIT 100
 
         Multi-row list query for a tenant.
-        100 users × 5KB = ~500KB of JSONB data.
+        100 users x 5KB = ~500KB of JSONB data.
         """
         # Setup
         await RealisticPerformanceAssessment.cleanup_tables(class_db_pool)
@@ -524,7 +524,7 @@ class TestRealisticPerformance:
         async with class_db_pool.connection() as conn:
             for tenant_id in tenant_ids:
                 user_ids = []
-                for i in range(10):
+                for _i in range(10):
                     user_id = uuid.uuid4()
                     user_payload = RealisticPerformanceAssessment._generate_user_payload(
                         str(user_id), global_user_idx

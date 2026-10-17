@@ -42,7 +42,7 @@ async def test_jwt_expiration_during_request(
 
     iterations = max(5, int(10 * chaos_config.load_multiplier))
 
-    for i in range(iterations):
+    for _i in range(iterations):
         try:
             # Simulate JWT validation
             if random.random() < 0.15:  # 15% chance of token expiration during processing
@@ -110,7 +110,7 @@ async def test_rbac_policy_failure(
 
     iterations = max(6, int(12 * chaos_config.load_multiplier))
 
-    for i in range(iterations):
+    for _i in range(iterations):
         try:
             # Simulate RBAC policy check
             if random.random() < 0.2:  # 20% chance of policy evaluation failure
@@ -184,16 +184,17 @@ async def test_authentication_service_outage(
 
     outage_iterations = set(range(outage_interval - 1, total_operations, outage_interval))
     auth_fail_iterations = set(range(auth_fail_interval - 1, total_operations, auth_fail_interval))
-    degraded_success_iterations = set(range(degraded_success_interval - 1, total_operations, degraded_success_interval))
+    degraded_success_iterations = set(
+        range(degraded_success_interval - 1, total_operations, degraded_success_interval)
+    )
     recovery_iterations = set(range(recovery_interval - 1, total_operations, recovery_interval))
 
     for i in range(total_operations):
         try:
             # Deterministic auth service availability - repeatable every run
-            if auth_service_available:
-                if i in outage_iterations:
-                    auth_service_available = False
-                    service_outages += 1
+            if auth_service_available and i in outage_iterations:
+                auth_service_available = False
+                service_outages += 1
 
             if auth_service_available:
                 # Normal authentication

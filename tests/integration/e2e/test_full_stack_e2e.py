@@ -553,7 +553,7 @@ class TestProductionReadiness:
         schema = production_schema.build_schema()
 
         # Execute many operations
-        for i in range(20):
+        for _i in range(20):
             query_str = "query { getUsers { id } }"
             result = await graphql(schema, query_str)
             assert result is not None

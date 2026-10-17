@@ -304,10 +304,12 @@ def validate_database_chaos_test_success(
         (passed, status_message, detailed_results)
     """
     if test_type.startswith("query_execution"):
-        query_subtype = test_type.split("_")[-1]  # Extract subtype (timeout, deadlock, etc.)
+        query_subtype = test_type.rsplit("_", maxsplit=1)[
+            -1
+        ]  # Extract subtype (timeout, deadlock, etc.)
         return Phase2SuccessCriteria.validate_query_execution_chaos_test(test_case, query_subtype)
     if test_type.startswith("data_consistency"):
-        consistency_subtype = test_type.split("_")[
+        consistency_subtype = test_type.rsplit("_", maxsplit=1)[
             -1
         ]  # Extract subtype (transaction, constraint, etc.)
         return Phase2SuccessCriteria.validate_data_consistency_chaos_test(
@@ -357,7 +359,7 @@ def generate_phase2_report(test_results: List[Tuple[bool, str, Dict[str, Any]]])
     execution_success_rates = []
     consistency_error_rates = []
 
-    for passed, _, details in test_results:
+    for _passed, _, details in test_results:
         success_rate = details.get("success_rate", 0)
         error_rate = details.get("error_rate", 0)
 
@@ -419,7 +421,7 @@ def print_phase2_report(report: Dict[str, Any]):
         f"  Data Consistency Tests: {breakdown['consistency_passed']}/{breakdown['consistency_tests']}"
     )
 
-    perf = report["performance_analysis"]
+    report["performance_analysis"]
     print("\nPERFORMANCE ANALYSIS:")
     print(".2f")
     print(".2f")

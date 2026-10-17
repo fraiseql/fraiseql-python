@@ -104,7 +104,7 @@ def scalar_test_schema(meta_test_schema):
 
     # Manually register all scalars to ensure they're available
     # This simulates what would happen in real usage when scalars are used in field types
-    for scalar_name, scalar_class in get_all_scalar_types():
+    for _scalar_name, scalar_class in get_all_scalar_types():
         meta_test_schema.register_scalar(scalar_class)
 
     # Register a simple query
@@ -119,7 +119,7 @@ def scalar_test_schema(meta_test_schema):
     return meta_test_schema
 
 
-@pytest.mark.parametrize("scalar_name,scalar_class", get_all_scalar_types())
+@pytest.mark.parametrize(("scalar_name", "scalar_class"), get_all_scalar_types())
 def test_scalar_in_schema_registration(scalar_name, scalar_class, scalar_test_schema):
     """Every scalar should be registrable in a GraphQL schema."""
     # Build the schema using the prepared registry from the fixture
@@ -137,7 +137,7 @@ def test_scalar_in_schema_registration(scalar_name, scalar_class, scalar_test_sc
     )
 
 
-@pytest.mark.parametrize("scalar_name,scalar_class", get_all_scalar_types())
+@pytest.mark.parametrize(("scalar_name", "scalar_class"), get_all_scalar_types())
 async def test_scalar_in_graphql_query(scalar_name, scalar_class, scalar_test_schema):
     """Every scalar should work as a query argument without validation errors."""
     from graphql import graphql
@@ -186,7 +186,7 @@ async def test_scalar_in_graphql_query(scalar_name, scalar_class, scalar_test_sc
 
 
 @pytest.mark.parametrize(
-    "scalar_name,scalar_class",
+    ("scalar_name", "scalar_class"),
     [
         ("CIDRScalar", CIDRScalar),
         ("CUSIPScalar", CUSIPScalar),
@@ -352,7 +352,7 @@ async def test_scalar_in_where_clause(scalar_name, scalar_class, meta_test_pool)
             await conn.commit()
 
 
-@pytest.mark.parametrize("scalar_name,scalar_class", get_all_scalar_types())
+@pytest.mark.parametrize(("scalar_name", "scalar_class"), get_all_scalar_types())
 async def test_scalar_database_roundtrip(scalar_name, scalar_class, meta_test_pool):
     """Every scalar should persist/retrieve correctly from database."""
     # Create a temporary table for this scalar

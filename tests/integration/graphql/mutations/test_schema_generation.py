@@ -145,7 +145,7 @@ class TestTypeConversion:
 
     def test_nested_optional_lists(self):
         """Handle complex nested types."""
-        schema = MutationSchema(
+        MutationSchema(
             mutation_name="Test",
             success_type=type("S", (), {}),
             error_type=type("E", (), {}),
@@ -154,7 +154,7 @@ class TestTypeConversion:
 
         # list[list[int]]
         inner_list = list[int]  # [Int!]!
-        outer_list = list[inner_list]  # [[Int!]!!]!
+        list[inner_list]  # [[Int!]!!]!
         # Note: This gets complex - the implementation may need adjustment
         # For v1.8.0, we'll focus on simple list[X] patterns
 

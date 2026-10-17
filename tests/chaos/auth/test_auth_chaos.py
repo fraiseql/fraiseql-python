@@ -58,7 +58,9 @@ class TestAuthenticationChaos(ChaosTestCase):
         other_failure_interval = max(1, int(1 / 0.05))  # Every ~20th iteration
 
         expiration_iterations = set(range(expiration_interval - 1, iterations, expiration_interval))
-        other_failure_iterations = set(range(other_failure_interval - 1, iterations, other_failure_interval))
+        other_failure_iterations = set(
+            range(other_failure_interval - 1, iterations, other_failure_interval)
+        )
         # Remove overlap to maintain intended failure rates
         other_failure_iterations -= expiration_iterations
 
@@ -134,7 +136,9 @@ class TestAuthenticationChaos(ChaosTestCase):
         policy_failure_interval = max(1, int(1 / 0.2))  # Every ~5th iteration
         denial_interval = max(1, int(1 / 0.3))  # Every ~3rd iteration
 
-        policy_failure_iterations = set(range(policy_failure_interval - 1, iterations, policy_failure_interval))
+        policy_failure_iterations = set(
+            range(policy_failure_interval - 1, iterations, policy_failure_interval)
+        )
         denial_iterations = set(range(denial_interval - 1, iterations, denial_interval))
         # Remove overlap - denials take precedence
         policy_failure_iterations -= denial_iterations
@@ -215,7 +219,9 @@ class TestAuthenticationChaos(ChaosTestCase):
         outage_start_iterations = set(range(outage_interval - 1, total_operations, outage_interval))
 
         auth_failure_interval = max(1, int(1 / 0.1))  # Every 10th operation (10% rate)
-        auth_failure_iterations = set(range(auth_failure_interval - 1, total_operations, auth_failure_interval))
+        auth_failure_iterations = set(
+            range(auth_failure_interval - 1, total_operations, auth_failure_interval)
+        )
         # Remove overlaps - outage takes precedence
         auth_failure_iterations -= outage_start_iterations
 
@@ -361,7 +367,7 @@ class TestAuthenticationChaos(ChaosTestCase):
         execution_times = []
 
         while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+            result_type, _thread_id, data = results_queue.get()
             if result_type == "success":
                 successes += 1
                 execution_times.append(data)
@@ -419,7 +425,7 @@ class TestAuthenticationChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(5, int(10 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             try:
                 # Simulate token validation
                 token_type = random.random()
@@ -504,7 +510,9 @@ class TestAuthenticationChaos(ChaosTestCase):
 
         permission_iterations = set(range(permission_interval - 1, iterations, permission_interval))
         role_error_iterations = set(range(role_error_interval - 1, iterations, role_error_interval))
-        other_error_iterations = set(range(other_error_interval - 1, iterations, other_error_interval))
+        other_error_iterations = set(
+            range(other_error_interval - 1, iterations, other_error_interval)
+        )
 
         # Remove overlaps - permission takes precedence
         role_error_iterations -= permission_iterations

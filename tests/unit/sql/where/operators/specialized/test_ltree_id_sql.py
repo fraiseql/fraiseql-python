@@ -389,8 +389,11 @@ class TestDescendantOfIdNativeColumn:
         )
         mock_registry = MagicMock()
         mock_registry.config.default_entity_schema = None
-        with patch(
-            "fraiseql.gql.builders.registry.SchemaRegistry.get_instance",
-            return_value=mock_registry,
-        ), pytest.raises(ValueError, match="default_entity_schema"):
+        with (
+            patch(
+                "fraiseql.gql.builders.registry.SchemaRegistry.get_instance",
+                return_value=mock_registry,
+            ),
+            pytest.raises(ValueError, match="default_entity_schema"),
+        ):
             condition.to_sql()

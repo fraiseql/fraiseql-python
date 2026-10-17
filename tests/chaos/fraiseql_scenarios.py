@@ -254,9 +254,9 @@ class MockFraiseQLClient:
 
             return response
 
-        except Exception as e:
+        except Exception:
             self._release_connection()
-            raise e
+            raise
 
     def _acquire_connection(self):
         """Simulate connection pool acquisition."""

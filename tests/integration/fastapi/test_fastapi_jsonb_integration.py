@@ -317,7 +317,8 @@ class TestFastAPIJSONBIntegration:
 
         # Make HTTP request
         response = client.post(
-            "/graphql", json={"query": query_str, "variables": {"id": "00000000-0000-0000-0000-000000000001"}}
+            "/graphql",
+            json={"query": query_str, "variables": {"id": "00000000-0000-0000-0000-000000000001"}},
         )
 
         # ASSERTION 1: HTTP status should be 200

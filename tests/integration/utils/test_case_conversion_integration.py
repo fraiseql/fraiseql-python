@@ -114,7 +114,7 @@ class TestCaseConversionIntegration:
             )
 
     @pytest.mark.parametrize(
-        "field_name,expected_camel",
+        ("field_name", "expected_camel"),
         [
             # Basic cases
             ("id", "id"),

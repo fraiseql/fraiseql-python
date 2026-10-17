@@ -11,7 +11,7 @@ SCHEMA_SQL = Path("src/fraiseql/monitoring/schema.sql")
 
 
 @pytest_asyncio.fixture(scope="class", loop_scope="class")
-async def query_stats_db(class_db_pool, test_schema):  # noqa: ANN201
+async def query_stats_db(class_db_pool, test_schema):
     """Set up monitoring schema including query stats objects."""
     schema_sql = SCHEMA_SQL.read_text()
 
