@@ -1,22 +1,64 @@
-"""Database migration management commands."""
+"""Database migration management commands.
 
+`up`, `down` and `status` delegate to confiture's `MigratorSession`
+(`Migrator.from_config`), which loads both `.py` and `.up.sql` migrations and
+takes confiture's migration lock, checksum checks and safety gates. Only that
+public, contract-tested surface is used, so it works across every confiture
+release fraiseql allows (see fraiseql/confiture#737).
+"""
+
+from datetime import datetime
 from pathlib import Path
+from typing import Any
+from urllib.parse import quote
 
 import click
-from confiture.core.connection import create_connection, load_config
-
-try:
-    from confiture.core.connection import get_migration_class, load_migration_module
-except ImportError:
-    # confiture 1.16.0 moved these to a private module without a public re-export.
-    # Drop this fallback once fraiseql/confiture#737 gives them a public home.
-    from confiture.core._migrator.loader import get_migration_class, load_migration_module
-from confiture.core.migration_generator import MigrationGenerator
+import yaml
+from confiture.config.environment import Environment
 from confiture.core.migrator import Migrator
 from rich.console import Console
 from rich.table import Table
 
 console = Console()
+
+
+def _database_url(database: dict[str, Any]) -> str:
+    """Build a database URL from a `database:` mapping, with confiture's old defaults."""
+    user = quote(str(database.get("user", "postgres")), safe="")
+    password = quote(str(database.get("password", "")), safe="")
+    credentials = f"{user}:{password}" if password else user
+    host = database.get("host", "localhost")
+    port = database.get("port", 5432)
+    name = quote(str(database.get("database", "postgres")), safe="")
+    return f"postgresql://{credentials}@{host}:{port}/{name}"
+
+
+def _open_session(config_path: Path, migrations_path: Path) -> Any:
+    """Open a confiture `MigratorSession` for an environment file.
+
+    `fraiseql migrate init` used to write the connection as a `database:` mapping
+    (host, port, ...), which confiture's `Environment` doesn't accept: it needs
+    `database_url`. Such files are converted here, so existing projects keep
+    working; any other file is handed to confiture as is.
+    """
+    data = yaml.safe_load(config_path.read_text()) or {}
+    if "database_url" not in data and isinstance(data.get("database"), dict):
+        environment = {key: value for key, value in data.items() if key != "database"}
+        environment["database_url"] = _database_url(data["database"])
+        return Migrator.from_config(Environment(**environment), migrations_dir=migrations_path)
+    return Migrator.from_config(config_path, migrations_dir=migrations_path)
+
+
+def _migration_files(migrations_path: Path) -> list[Path]:
+    """Python and SQL (`.up.sql`) migration files, in version order."""
+    return sorted([*migrations_path.glob("*.py"), *migrations_path.glob("*.up.sql")])
+
+
+def _split_migration_filename(migration_file: Path) -> tuple[str, str]:
+    """Split `<version>_<name>.py` or `<version>_<name>.up.sql` into (version, name)."""
+    stem = migration_file.name.removesuffix(".up.sql").removesuffix(".py")
+    version, _, name = stem.partition("_")
+    return version, name or stem
 
 
 @click.group()
@@ -141,12 +183,7 @@ include_dirs:
   - db/schema/10_tables
 exclude_dirs: []
 
-database:
-  host: localhost
-  port: 5432
-  database: fraiseql_local
-  user: postgres
-  password: postgres
+database_url: postgresql://postgres:postgres@localhost:5432/fraiseql_local
 """
         )
 
@@ -221,11 +258,9 @@ def create(name: str, migrations_dir: str) -> None:
         migrations_path = Path(migrations_dir)
         migrations_path.mkdir(parents=True, exist_ok=True)
 
-        # Generate migration file
-        generator = MigrationGenerator(migrations_dir=migrations_path)
-
-        version = generator._get_next_version()
-        class_name = generator._to_class_name(name)
+        # Same version and class-name scheme as confiture's own generator
+        version = datetime.now().astimezone().strftime("%Y%m%d%H%M%S")
+        class_name = "".join(word.capitalize() for word in name.split("_"))
         filename = f"{version}_{name}.py"
         filepath = migrations_path / filename
 
@@ -322,29 +357,29 @@ def status(migrations_dir: str, config: str) -> None:
             console.print("\n💡 Run 'fraiseql migrate init' to get started")
             return
 
-        # Find migration files
-        migration_files = sorted(migrations_path.glob("*.py"))
+        migration_files = _migration_files(migrations_path)
 
         if not migration_files:
             console.print("[yellow]No migrations found.[/yellow]")
             console.print("\n💡 Run 'fraiseql migrate create <name>' to create one")
             return
 
-        # Get applied migrations from database
-        applied_versions = set()
+        # (version, name, status) per migration; status is None when the database
+        # can't be reached and only the files are known
+        rows: list[tuple[str, str, str | None]] = []
         config_path = Path(config)
 
         if config_path.exists():
             try:
-                config_data = load_config(config_path)
-                conn = create_connection(config_data)
-                migrator = Migrator(connection=conn)
-                migrator.initialize()
-                applied_versions = set(migrator.get_applied_versions())
-                conn.close()
+                with _open_session(config_path, migrations_path) as session:
+                    result = session.status()
+                rows = [(m.version, m.name, m.status) for m in result.migrations]
             except Exception as e:
                 console.print(f"[yellow]⚠️  Could not connect to database: {e}[/yellow]")
                 console.print("[yellow]Showing file list only (status unknown)[/yellow]\n")
+
+        if not rows:
+            rows = [(*_split_migration_filename(f), None) for f in migration_files]
 
         # Display migrations in a table
         table = Table(title="FraiseQL Migrations")
@@ -352,31 +387,22 @@ def status(migrations_dir: str, config: str) -> None:
         table.add_column("Name", style="green")
         table.add_column("Status", style="yellow")
 
-        pending_count = 0
-        applied_count = 0
-
-        for migration_file in migration_files:
-            # Extract version and name from filename
-            parts = migration_file.stem.split("_", 1)
-            version = parts[0] if len(parts) > 0 else "???"
-            name = parts[1] if len(parts) > 1 else migration_file.stem
-
-            # Determine status
-            if applied_versions:
-                if version in applied_versions:
-                    status_text = "[green]✅ applied[/green]"
-                    applied_count += 1
-                else:
-                    status_text = "[yellow]⏳ pending[/yellow]"
-                    pending_count += 1
-            else:
+        status_labels = {
+            "applied": "[green]✅ applied[/green]",
+            "pending": "[yellow]⏳ pending[/yellow]",
+        }
+        for version, name, migration_status in rows:
+            if migration_status is None:
                 status_text = "unknown"
-
+            else:
+                status_text = status_labels.get(migration_status, migration_status)
             table.add_row(version, name, status_text)
 
         console.print(table)
-        console.print(f"\n📊 Total: {len(migration_files)} migrations", end="")
-        if applied_versions:
+        console.print(f"\n📊 Total: {len(rows)} migrations", end="")
+        if any(migration_status is not None for _, _, migration_status in rows):
+            applied_count = sum(1 for *_, s in rows if s == "applied")
+            pending_count = sum(1 for *_, s in rows if s == "pending")
             console.print(f" ({applied_count} applied, {pending_count} pending)")
         else:
             console.print()
@@ -422,52 +448,28 @@ def up(migrations_dir: str, config: str, target: str | None) -> None:
             console.print("\n💡 Run 'fraiseql migrate init' to create it")
             raise click.ClickException(f"Config file not found: {config}")
 
-        # Load configuration
-        config_data = load_config(config_path)
+        with _open_session(config_path, migrations_path) as session:
+            result = session.up(target=target)
 
-        # Create database connection
-        conn = create_connection(config_data)
+        for migration in result.migrations_applied:
+            console.print(
+                f"[cyan]⚡ Applied {migration.version}_{migration.name}[/cyan] [green]✅[/green]"
+            )
+        for version in result.skipped:
+            console.print(f"[yellow]⏭️  Skipped {version}[/yellow]")
 
-        # Create migrator
-        migrator = Migrator(connection=conn)
-        migrator.initialize()
+        if not result.success:
+            raise click.ClickException(result.error_summary or "Migration failed")
 
-        # Find pending migrations
-        pending_migrations = migrator.find_pending(migrations_dir=migrations_path)
-
-        if not pending_migrations:
+        if not result.migrations_applied:
             console.print("[green]✅ No pending migrations. Database is up to date.[/green]")
-            conn.close()
             return
 
-        console.print(f"[cyan]📦 Found {len(pending_migrations)} pending migration(s)[/cyan]\n")
-
-        # Apply migrations
-        applied_count = 0
-        for migration_file in pending_migrations:
-            # Load migration module
-            module = load_migration_module(migration_file)
-            migration_class = get_migration_class(module)
-
-            # Create migration instance
-            migration = migration_class(connection=conn)
-
-            # Check target
-            if target and migration.version > target:
-                console.print(f"[yellow]⏭️  Skipping {migration.version} (after target)[/yellow]")
-                break
-
-            # Apply migration
-            console.print(
-                f"[cyan]⚡ Applying {migration.version}_{migration.name}...[/cyan]", end=" "
-            )
-            migrator.apply(migration)
-            console.print("[green]✅[/green]")
-            applied_count += 1
-
-        console.print(f"\n[green]✅ Successfully applied {applied_count} migration(s)![/green]")
+        console.print(
+            f"\n[green]✅ Successfully applied "
+            f"{len(result.migrations_applied)} migration(s)![/green]"
+        )
         console.print("\n💡 Your FraiseQL schema is up to date!")
-        conn.close()
 
     except Exception as e:
         console.print(f"[red]❌ Error applying migrations: {e}[/red]")
@@ -510,71 +512,35 @@ def down(migrations_dir: str, config: str, steps: int) -> None:
             console.print(f"[red]❌ Config file not found: {config}[/red]")
             raise click.ClickException(f"Config file not found: {config}")
 
-        # Load configuration
-        config_data = load_config(config_path)
+        with _open_session(config_path, migrations_path) as session:
+            applied_count = len(session.status().applied)
 
-        # Create database connection
-        conn = create_connection(config_data)
+            if not applied_count:
+                console.print("[yellow]⚠️  No applied migrations to rollback.[/yellow]")
+                return
 
-        # Create migrator
-        migrator = Migrator(connection=conn)
-        migrator.initialize()
+            rollback_count = min(steps, applied_count)
+            console.print(f"[cyan]📦 Rolling back {rollback_count} migration(s)[/cyan]\n")
 
-        # Get applied migrations
-        applied_versions = migrator.get_applied_versions()
+            if not click.confirm(f"⚠️  This will rollback {rollback_count} migration(s). Continue?"):
+                console.print("[yellow]Rollback cancelled.[/yellow]")
+                return
 
-        if not applied_versions:
-            console.print("[yellow]⚠️  No applied migrations to rollback.[/yellow]")
-            conn.close()
-            return
+            result = session.down(steps=steps)
 
-        # Get migrations to rollback (last N)
-        versions_to_rollback = applied_versions[-steps:]
-
-        console.print(f"[cyan]📦 Rolling back {len(versions_to_rollback)} migration(s)[/cyan]\n")
-
-        # Confirm rollback
-        if not click.confirm(
-            f"⚠️  This will rollback {len(versions_to_rollback)} migration(s). Continue?"
-        ):
-            console.print("[yellow]Rollback cancelled.[/yellow]")
-            conn.close()
-            return
-
-        # Rollback migrations in reverse order
-        rolled_back_count = 0
-        for version in reversed(versions_to_rollback):
-            # Find migration file
-            migration_files = migrator.find_migration_files(migrations_dir=migrations_path)
-            migration_file = None
-            for mf in migration_files:
-                if migrator._version_from_filename(mf.name) == version:
-                    migration_file = mf
-                    break
-
-            if not migration_file:
-                console.print(f"[red]❌ Migration file for version {version} not found[/red]")
-                continue
-
-            # Load migration module
-            module = load_migration_module(migration_file)
-            migration_class = get_migration_class(module)
-
-            # Create migration instance
-            migration = migration_class(connection=conn)
-
-            # Rollback migration
+        for migration in result.migrations_rolled_back:
             console.print(
-                f"[cyan]⚡ Rolling back {migration.version}_{migration.name}...[/cyan]", end=" "
+                f"[cyan]⚡ Rolled back {migration.version}_{migration.name}[/cyan] "
+                "[green]✅[/green]"
             )
-            migrator.rollback(migration)
-            console.print("[green]✅[/green]")
-            rolled_back_count += 1
+
+        if not result.success:
+            raise click.ClickException(result.error or "Rollback failed")
 
         console.print(
-            f"\n[green]✅ Successfully rolled back {rolled_back_count} migration(s)![/green]"
+            f"\n[green]✅ Successfully rolled back "
+            f"{len(result.migrations_rolled_back)} migration(s)![/green]"
         )
-        conn.close()
 
     except Exception as e:
         console.print(f"[red]❌ Error rolling back migrations: {e}[/red]")
