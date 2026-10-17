@@ -11,7 +11,9 @@ from fraiseql import query
 from fraiseql.fastapi import create_fraiseql_app
 from fraiseql.types import fraise_type
 
-pytestmark = pytest.mark.integration
+# The test builds a schema from the global SchemaRegistry, which other tests in the
+# same process leave types in; start it from an empty registry.
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clear_registry")]
 
 # Define the User type
 

@@ -1,7 +1,13 @@
 """Docstring extraction for GraphQL query and mutation descriptions."""
 
+import pytest
+
 import fraiseql
 from fraiseql.gql.schema_builder import build_fraiseql_schema
+
+# These tests build schemas from the global SchemaRegistry, which other tests in the
+# same process leave types in; start each one from an empty registry.
+pytestmark = pytest.mark.usefixtures("clear_registry")
 
 
 class TestQueryDescriptions:

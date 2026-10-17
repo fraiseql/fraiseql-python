@@ -227,6 +227,11 @@ addopts = [
   "--strict-config",
   "--disable-warnings",
   "-ra",
+  # Under pytest-xdist (`-n auto`), send each module or class to one worker as a unit.
+  # Class- and module-scoped fixtures build apps on global state (the schema
+  # registries), which another file's function-scoped cleanup would wipe mid-class.
+  # No effect without -n.
+  "--dist=loadscope",
   # Container tests build the runtime image; opt in with `pytest -m container`,
   # which overrides this default.
   "-m",

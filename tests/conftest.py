@@ -173,6 +173,23 @@ def _clear_all_fraiseql_state() -> None:
     clear_fraiseql_state()
 
 
+@pytest.fixture(autouse=True)
+def _reset_schema_config() -> Generator[None]:
+    """Restore SchemaConfig's defaults after every test.
+
+    SchemaConfig is a process-wide singleton, and `build_fraiseql_schema(camel_case_fields=False)`
+    writes into it and leaves it there. Tests that convert types without building a schema
+    then got snake_case names from whichever test ran before them in the same process,
+    which under pytest-xdist depends on how tests land on workers.
+
+    Yields:
+        None: This fixture performs teardown only.
+    """
+    yield
+    if FRAISEQL_AVAILABLE:
+        SchemaConfig.reset()  # type: ignore
+
+
 @pytest.fixture
 def use_snake_case() -> Generator[None]:
     """Fixture to use snake_case field names in tests.
