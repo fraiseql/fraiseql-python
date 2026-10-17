@@ -252,7 +252,9 @@ def _extract_field_location(field_node: Any) -> dict[str, int] | None:
 
 
 def _extract_variable_defaults(
-    query_string: str, operation_name: str | None = None
+    query_string: str,
+    operation_name: str | None = None,
+    document: DocumentNode | None = None,
 ) -> dict[str, Any]:
     """Extract default values for variables from operation definition.
 
@@ -265,16 +267,16 @@ def _extract_variable_defaults(
     Args:
         query_string: GraphQL query string
         operation_name: Optional operation name for multi-operation queries
+        document: query_string already parsed, to avoid parsing it again
 
     Returns:
         Dict mapping variable names to their default values
     """
-    from graphql import OperationDefinitionNode, parse
-
-    try:
-        document = parse(query_string)
-    except Exception:
-        return {}
+    if document is None:
+        try:
+            document = parse(query_string)
+        except Exception:
+            return {}
 
     defaults = {}
 
@@ -563,7 +565,10 @@ def extract_field_selections(
 
 
 def _extract_root_query_fields(
-    query_string: str, operation_name: str | None = None, variables: dict[str, Any] | None = None
+    query_string: str,
+    operation_name: str | None = None,
+    variables: dict[str, Any] | None = None,
+    document: DocumentNode | None = None,
 ) -> list[dict[str, Any]]:
     """Extract root-level query fields with their selections, applying directive filtering.
 
@@ -571,6 +576,7 @@ def _extract_root_query_fields(
         query_string: GraphQL query string
         operation_name: Optional operation name for multi-operation queries
         variables: Query variables for directive evaluation
+        document: query_string already parsed, to avoid parsing it again
 
     Returns:
         List of dicts with field info:
@@ -584,7 +590,8 @@ def _extract_root_query_fields(
         ]
     """
     try:
-        document = parse(query_string)
+        if document is None:
+            document = parse(query_string)
 
         for definition in document.definitions:
             if not isinstance(definition, OperationDefinitionNode):
@@ -887,19 +894,17 @@ async def execute_multi_field_query(
         Exception: If field extraction or resolver execution fails
     """
     # Parse once; reused by _extract_variable_defaults, _extract_root_query_fields,
-    # and _build_field_selections_recursive (fragment lookup for issue #288 fix).
-    from graphql import parse as _gql_parse
-
+    # _build_field_selections_recursive (issue #288) and the resolvers' fragments (#554).
     from fraiseql.core.rust_pipeline import fraiseql_rs
 
-    _parsed_query = _gql_parse(query_string)
+    _parsed_query = parse(query_string)
     operation = _select_query_operation(_parsed_query, operation_name)
     fragments = {
         d.name.value: d for d in _parsed_query.definitions if isinstance(d, FragmentDefinitionNode)
     }
 
     # Extract variable defaults from operation definition
-    variable_defaults = _extract_variable_defaults(query_string, operation_name)
+    variable_defaults = _extract_variable_defaults(query_string, operation_name, _parsed_query)
 
     # Merge defaults with provided variables (provided variables take precedence)
     if variable_defaults:
@@ -907,7 +912,7 @@ async def execute_multi_field_query(
         variables = merged_variables
 
     # Extract all root fields (with directive evaluation using variables)
-    fields_info = _extract_root_query_fields(query_string, operation_name, variables)
+    fields_info = _extract_root_query_fields(query_string, operation_name, variables, _parsed_query)
 
     if not fields_info:
         raise ValueError("No root query fields found in multi-field query")
