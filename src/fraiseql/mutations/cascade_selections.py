@@ -30,7 +30,7 @@ def extract_cascade_selections(info: GraphQLResolveInfo) -> Optional[str]:
     Example returned JSON:
         {"fields": ["updated", "metadata"], "updated": {"fields": ["__typename", "id"]}}
     """
-    if not info or not info.field_nodes:
+    if info is None or not info.field_nodes:
         return None
 
     for field_node in info.field_nodes:

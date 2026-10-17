@@ -504,7 +504,7 @@ def field(
             ) -> Any:
                 # Check if N+1 detector is available in context
                 detector = None
-                if track_n1 and info and hasattr(info, "context") and info.context:
+                if track_n1 and hasattr(info, "context") and info.context:
                     detector = getattr(info.context, "get", lambda x: None)("n1_detector")
                 if detector and detector.enabled:
                     start_time = time.time()
@@ -538,7 +538,7 @@ def field(
             ) -> Any:
                 # Check if N+1 detector is available in context
                 detector = None
-                if track_n1 and info and hasattr(info, "context") and info.context:
+                if track_n1 and hasattr(info, "context") and info.context:
                     detector = getattr(info.context, "get", lambda x: None)("n1_detector")
                 if detector and detector.enabled:
                     start_time = time.time()

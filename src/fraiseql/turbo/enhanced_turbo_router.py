@@ -1,7 +1,6 @@
 """Enhanced TurboRouter with complexity-based caching and adaptive behavior."""
 
 import time
-from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any, Optional
 
