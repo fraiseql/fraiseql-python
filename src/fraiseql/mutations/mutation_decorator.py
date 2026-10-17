@@ -57,7 +57,7 @@ def _extract_mutation_selected_fields(info: GraphQLResolveInfo, type_name: str) 
 
     Extracts: ["status", "machine"] for type_name="CreateMachineSuccess"
     """
-    if not info or not info.field_nodes:
+    if info is None or not info.field_nodes:
         return None
 
     selected_fields = set()

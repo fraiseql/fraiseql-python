@@ -17,7 +17,7 @@ dev = [
   "pytest-forked>=1.6.0",
   "testcontainers>=4.14.2",
   "twine>=7.0.0",
-  "ty>=0.0.35",
+  "ty>=0.0.89",
   "moto[kms]>=5.1.21",
   "sqlparse>=0.6.0"
 ]
@@ -129,8 +129,8 @@ dev = [
   "pytest-mock>=3.15.0",
   "pytest-benchmark>=5.2.3",
   "tox>=4.58.0",
-  "ruff>=0.15.12",
-  "ty>=0.0.35",
+  "ruff>=0.17.1",
+  "ty>=0.0.89",
   "build>=1.4.0",
   "twine>=7.0.0",
   "pyyaml>=6.0.2",
@@ -227,6 +227,11 @@ addopts = [
   "--strict-config",
   "--disable-warnings",
   "-ra",
+  # Under pytest-xdist (`-n auto`), send each module or class to one worker as a unit.
+  # Class- and module-scoped fixtures build apps on global state (the schema
+  # registries), which another file's function-scoped cleanup would wipe mid-class.
+  # No effect without -n.
+  "--dist=loadscope",
   # Container tests build the runtime image; opt in with `pytest -m container`,
   # which overrides this default.
   "-m",

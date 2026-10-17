@@ -10,6 +10,11 @@ from fraiseql.types.scalars.coordinates import (
     serialize_coordinate,
 )
 
+# The schema tests build schemas from the global SchemaRegistry, which other tests in
+# the same process leave types in; start each test from an empty registry.
+pytestmark = pytest.mark.usefixtures("clear_registry")
+
+
 # --- Serialization Tests ---
 
 

@@ -6,6 +6,10 @@ from graphql import GraphQLObjectType
 import fraiseql
 from fraiseql.core.graphql_type import convert_type_to_graphql_output
 
+# These tests build schemas from the global SchemaRegistry, which other tests in the
+# same process leave types in; start each one from an empty registry.
+pytestmark = pytest.mark.usefixtures("clear_registry")
+
 
 class TestTypeDescriptions:
     def test_fraise_type_uses_docstring_as_description(self) -> None:
