@@ -55,12 +55,13 @@ jobs:
         with:
           python-version: '3.13'
 
-      # From uv.lock into .venv, as in the lint job.
+      # From uv.lock into .venv, as in the lint job, with every extra: src/ includes the
+      # integrations (langchain, llamaindex, ...), and ty resolves their imports.
       - name: Install dependencies
-        run: uv sync --locked --extra dev
+        run: uv sync --locked --all-extras
 
       - name: ty check
-        run: uv run --extra dev ty check src/
+        run: uv run --all-extras ty check src/
 
   unit-tests:
     name: Unit Tests (Python ${{ matrix.python-version }})
