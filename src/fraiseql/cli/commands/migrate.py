@@ -471,6 +471,8 @@ def up(migrations_dir: str, config: str, target: str | None) -> None:
         )
         console.print("\n💡 Your FraiseQL schema is up to date!")
 
+    except click.ClickException:
+        raise
     except Exception as e:
         console.print(f"[red]❌ Error applying migrations: {e}[/red]")
         raise click.ClickException(str(e))
@@ -542,6 +544,8 @@ def down(migrations_dir: str, config: str, steps: int) -> None:
             f"{len(result.migrations_rolled_back)} migration(s)![/green]"
         )
 
+    except click.ClickException:
+        raise
     except Exception as e:
         console.print(f"[red]❌ Error rolling back migrations: {e}[/red]")
         raise click.ClickException(str(e))

@@ -3,7 +3,7 @@
 [![Quality Gate](https://github.com/fraiseql/fraiseql-python/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/fraiseql/fraiseql-python/actions/workflows/ci.yml)
 [![Documentation](https://github.com/fraiseql/fraiseql-python/actions/workflows/docs.yml/badge.svg?branch=dev)](https://github.com/fraiseql/fraiseql-python/actions/workflows/docs.yml)
 [![Release](https://img.shields.io/github/v/release/fraiseql/fraiseql-python)](https://github.com/fraiseql/fraiseql-python/releases/latest)
-[![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.13%20%7C%203.14-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 **A Python GraphQL framework for PostgreSQL.** Declare types and operations with
@@ -13,7 +13,7 @@ typed GraphQL API over FastAPI — no build step, no code generation.
 PostgreSQL returns JSONB. An integrated Rust pipeline (`fraiseql_rs`) transforms it
 into the HTTP response. You write Python; the hot path runs in Rust.
 
-**Requires:** Python 3.13 (3.14 not yet supported) · PostgreSQL 13+
+**Requires:** Python 3.13 or 3.14 · PostgreSQL 13+
 
 ```python
 import fraiseql
@@ -85,7 +85,7 @@ different architecture. Both are actively maintained.
 
 | | **v1 — this repo** | **v2 — [fraiseql/fraiseql](https://github.com/fraiseql/fraiseql)** |
 |---|---|---|
-| Status | Stable (1.26.0) | Active (2.14.1; breaking changes ship in minor releases) |
+| Status | Stable (1.27.0) | Active (2.16.0; breaking changes ship in minor releases) |
 | Engine | Python + Rust pipeline | Compiled Rust engine |
 | Schema authoring | Python decorators | 16+ languages |
 | Databases | **PostgreSQL only** | PostgreSQL, MySQL, SQLite, SQL Server |

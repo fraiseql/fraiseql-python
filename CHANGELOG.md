@@ -5,6 +5,89 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.0] - 2026-10-17
+
+### Added
+
+- **Python 3.14 support**, alongside 3.13 (`requires-python = ">=3.13,<3.15"`).
+  Each platform now gets cp313 and cp314 wheels, so 3.14 users don't need a
+  Rust toolchain, and CI runs the unit tests on both interpreters. confiture
+  supports 3.14 only from 1.30.0, which in turn requires 3.14, so the
+  dependency is split by interpreter: `fraiseql-confiture>=0.44.0,<1.30` on
+  3.13 and `fraiseql-confiture>=1.30.0` on 3.14. (#546)
+- **`fraiseql migrate` runs `.up.sql` / `.down.sql` migrations**, alongside the
+  `.py` migrations `migrate create` writes, in one directory. (#548)
+
+### Fixed
+
+- **`fraiseql migrate` failed at import on a fresh 1.26.0 install.** 1.26.0
+  allowed any `fraiseql-confiture>=0.44.0`, and from confiture 1.16.0 the
+  migration loader it imported is private, so on 3.13 (which resolves
+  confiture 1.29.0) every `fraiseql` CLI command raised `ImportError: cannot
+  import name 'get_migration_class'`. `up`, `down` and `status` now go through
+  confiture's public `MigratorSession`, and nothing fraiseql imports from
+  confiture is private. confiture's contract tests now pin that surface, from
+  1.38.0. (#546, #548, fraiseql/confiture#737)
+- **A pending `.up.sql` migration crashed `migrate up` and `migrate down`,**
+  which loaded it as Python. `status` also listed only `.py` files. (#548)
+- **`migrate up` skipped confiture's safety checks**: the migration lock (two
+  concurrent runs could both apply a migration), checksum verification, and
+  the superuser, destructive and non-transactional gates. The session runs
+  all of them. (#548)
+- **A failed `migrate up` or `migrate down` exits non-zero** with confiture's
+  error message, printed once. (#548)
+- **On Python 3.14, `to_dict()` on an `@fraiseql.input` object returned `{}`**,
+  and mutations raised serializing input objects: both read
+  `__annotations__` from the instance, which PEP 749 no longer allows. (#546)
+
+### Changed
+
+- **`fraiseql migrate init` writes `database_url:`** in
+  `db/environments/local.yaml` instead of a `database:` mapping, since
+  confiture's `Environment` accepts only the URL. Existing files with a
+  `database:` mapping keep working: fraiseql converts the mapping to a URL with
+  the same defaults as before (localhost, 5432, user and database `postgres`,
+  empty password). (#548)
+- **`migrate up` / `migrate down` report what was applied or rolled back**
+  (`Applied <version>_<name>`, `Rolled back ...`, `Skipped ...`) after the run,
+  instead of printing before each step. (#548)
+- **Dependency floors raised.** Runtime: `graphql-core>=3.2.12` (fresh installs
+  get 3.3), `starlette>=1.6.0`, `uvicorn>=0.53.0`, `python-dateutil>=2.9.0.post0`.
+  Development: `langchain-core>=1.6.3`. (#545)
+
+### Security
+
+- **Floors raised past 41 advisories in 11 packages.** Runtime: `urllib3>=2.8.0`,
+  `pyjwt>=2.15.0` (also in the `auth0` extra), and `anyio>=4.14.2` through a
+  constraint. Extras: `werkzeug>=3.1.9`, `banks>=2.5.1`, `pypdf>=6.19.0`, and
+  constraints on `multidict`, `fsspec`, `tinytag` and `langgraph-sdk`.
+  Development: `virtualenv`. (#545)
+- **A pyjwt advisory has no fixed release.** PYSEC-2026-4146: `jwt.decode()`
+  mutates a caller-supplied `options` dict when `verify_signature` is falsy,
+  so a dict reused across calls carries the change into later decodes.
+  fraiseql's only unverified decode passes a fresh dict on every call, so the
+  dependency audit ignores the advisory until a fixed release exists. (#545)
+
+### Documentation
+
+- **The `fraiseql migrate` reference matches the CLI.** `docs/core/migrations.md`
+  documented options that never existed (`up --steps`, `up --dry-run`,
+  `down --force`, `init --path`) and `001_name.sql` files under `migrations/`.
+  It now documents the `db/` layout `init` creates, timestamped `.py` and
+  `.up.sql` migrations, and the real options.
+
+### Internal
+
+- `uv.lock` pins confiture 1.38.0 on 3.14, the first release whose contract
+  tests cover fraiseql, and 1.29.0 on 3.13, the release a fresh 3.13 install
+  resolves. It pinned 0.45.0 before, which is why CI missed the 1.26.0 import
+  failure.
+- Tests no longer mock graphql-core AST nodes with `MagicMock(spec=...)`,
+  which stopped working in graphql-core 3.3. (#545)
+- pre-commit pins `toml-sort==0.24.4`, so pre-commit.ci stops reformatting
+  `uv.lock`. (#545)
+- ruff 0.17 conventions: `import datetime as dt`, combined `async with`. (#545)
+
 ## [1.26.0] - 2026-09-15
 
 ### Fixed
