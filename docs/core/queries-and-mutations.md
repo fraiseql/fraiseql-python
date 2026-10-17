@@ -908,6 +908,25 @@ class CreateNetworkConfig:
 # Database receives: { ip_address: "192.168.1.1/24" }
 ```
 
+`prepare_input` can also be `async`, and it can take the resolver's `info` as a second argument, for example to call an outside service with a client from the GraphQL context:
+
+```python
+@fraiseql.mutation(enable_cascade=True)
+class CreateContract:
+    input: CreateContractInput
+    success: CreateContractSuccess
+    error: CreateContractError
+
+    @staticmethod
+    async def prepare_input(input_data: dict, info: GraphQLResolveInfo) -> dict:
+        """Resolve the provider's company identifier before the SQL call."""
+        registry = info.context["company_registry"]
+        provider = await registry.lookup(input_data["siret"])
+        return {**input_data, "provider": provider}
+```
+
+The hook receives `info` when it takes a second positional parameter (or `*args`). It runs before a database connection is taken from the pool, so a slow call doesn't hold one. An exception it raises becomes a top-level GraphQL error.
+
 **PostgreSQL Function Requirements**:
 
 For class-based mutations, the PostgreSQL function should:
@@ -975,6 +994,7 @@ $$;
 - All mutations are automatically registered with GraphQL schema
 - prepare_input hook allows transforming input data before database calls
 - prepare_input is called after GraphQL validation but before PostgreSQL function
+- prepare_input may be sync or async, and may take `info` as a second argument
 
 ## @subscription Decorator
 

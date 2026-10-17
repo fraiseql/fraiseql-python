@@ -3,6 +3,7 @@
 Provides test app, client, and database setup for cascade integration tests.
 """
 
+import asyncio
 from typing import AsyncGenerator, Optional
 from unittest.mock import AsyncMock, MagicMock
 
@@ -58,6 +59,13 @@ class CreatePostWithEntitySuccess:
 
 
 @fraiseql.type
+class CreatePostEnrichedSuccess:
+    post: Post
+    message: str
+    cascade: Cascade
+
+
+@fraiseql.type
 class CreatePostError:
     code: int
     message: str
@@ -102,6 +110,20 @@ class UpdatePostTitle:
     input: CreatePostInput  # Reuse same input for simplicity
     success: UpdatePostTitleSuccess
     error: UpdatePostTitleError
+
+
+@mutation(enable_cascade=True, function="create_post_enriched")
+class CreatePostEnriched:
+    """Mutation whose async prepare_input takes info (issue #557)."""
+
+    input: CreatePostInput
+    success: CreatePostEnrichedSuccess
+    error: CreatePostError
+
+    @staticmethod
+    async def prepare_input(input_data: dict, info: "GraphQLResolveInfo") -> dict:
+        await asyncio.sleep(0)
+        return {**input_data, "title": f"{input_data['title']} via {info.field_name}"}
 
 
 # Test query (required for GraphQL schema)
@@ -442,6 +464,14 @@ async def cascade_db_schema(
             $$ LANGUAGE plpgsql;
         """)
 
+        # Same behaviour as create_post_with_entity, for CreatePostEnriched (#557)
+        await conn.execute("""
+            CREATE OR REPLACE FUNCTION public.create_post_enriched(input_data JSONB)
+            RETURNS mutation_response AS $$
+                SELECT public.create_post_with_entity(input_data);
+            $$ LANGUAGE sql;
+        """)
+
         # Insert test user (no schema prefix - uses search_path)
         await conn.execute("""
             INSERT INTO tb_user (id, name, post_count)
@@ -473,12 +503,13 @@ def cascade_app(cascade_db_schema, create_fraiseql_app_with_db) -> FastAPI:
             User,
             CreatePostSuccess,
             CreatePostWithEntitySuccess,
+            CreatePostEnrichedSuccess,
             CreatePostError,
             UpdatePostTitleSuccess,
             UpdatePostTitleError,
         ],
         queries=[get_post],
-        mutations=[CreatePost, CreatePostWithEntity, UpdatePostTitle],
+        mutations=[CreatePost, CreatePostWithEntity, UpdatePostTitle, CreatePostEnriched],
     )
     return app
 

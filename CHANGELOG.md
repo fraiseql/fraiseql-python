@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A mutation's `prepare_input` hook can be `async`, and can take `info`** (#557).
+  An async hook is awaited, so it can enrich the input with I/O (an outbound
+  HTTP call, say) before the PostgreSQL function runs. A hook that takes a
+  second positional parameter receives the resolver's `info`, so a client can
+  come from `info.context`. The hook runs before a pool connection is
+  acquired. Existing one-argument sync hooks behave as before.
+
 ### Fixed
 
 - **`fraise_field` fields failed in modules using `from __future__ import

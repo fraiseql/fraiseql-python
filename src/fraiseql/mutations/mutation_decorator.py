@@ -1,5 +1,6 @@
 """PostgreSQL function-based mutation decorator."""
 
+import inspect
 import json
 import logging
 import re
@@ -442,6 +443,20 @@ def _extract_entity_field_selections_basic(
     return None
 
 
+def _hook_accepts_info(hook: Callable) -> bool:
+    """Return whether a prepare_input hook takes info as a second positional argument."""
+    try:
+        params = inspect.signature(hook).parameters.values()
+    except (TypeError, ValueError):
+        return False
+    positional = [
+        p
+        for p in params
+        if p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+    ]
+    return len(positional) >= 2 or any(p.kind == inspect.Parameter.VAR_POSITIONAL for p in params)
+
+
 class MutationDefinition:
     """Definition of a PostgreSQL-backed mutation."""
 
@@ -482,6 +497,12 @@ class MutationDefinition:
 
         # Derive entity field name and type from success type
         self.entity_field_name, self.entity_type = self._derive_entity_info()
+
+        # Optional input hook; its signature is inspected once here, not per request
+        self.prepare_input = getattr(mutation_class, "prepare_input", None)
+        self.prepare_input_takes_info = self.prepare_input is not None and _hook_accepts_info(
+            self.prepare_input
+        )
 
     def _derive_entity_info(self) -> tuple[str | None, str | None]:
         """Derive entity field name and type from success type annotations.
@@ -718,9 +739,15 @@ class MutationDefinition:
             # Convert input to dict
             input_data = _to_dict(input)
 
-            # Call prepare_input hook if defined on mutation class
-            if hasattr(self.mutation_class, "prepare_input"):
-                input_data = self.mutation_class.prepare_input(input_data)
+            # Call prepare_input hook if defined on mutation class. It may be async and
+            # may take info (#557). It runs before a pool connection is acquired, so a
+            # slow call in the hook doesn't hold one.
+            if self.prepare_input is not None:
+                if self.prepare_input_takes_info:
+                    prepared = self.prepare_input(input_data, info)
+                else:
+                    prepared = self.prepare_input(input_data)
+                input_data = await prepared if inspect.isawaitable(prepared) else prepared
 
             # Call PostgreSQL function via Rust executor
             from fraiseql.mutations.rust_executor import execute_mutation_rust
@@ -1171,6 +1198,31 @@ def mutation(
             # Frontend sends: { id: "...", notes: "" }
             # Database receives: { id: "...", notes: null }
 
+        Mutation with an async prepare_input hook that takes info::\
+
+            @fraiseql.mutation(enable_cascade=True)
+            class CreateContract:
+                input: CreateContractInput
+                success: CreateContractSuccess
+                error: CreateContractError
+
+                @staticmethod
+                async def prepare_input(input_data: dict, info: GraphQLResolveInfo) -> dict:
+                    \"\"\"Resolve the provider's company identifier before the SQL call.\"\"\"
+                    registry = info.context["company_registry"]
+                    provider = await registry.lookup(input_data["siret"])
+                    return {**input_data, "provider": provider}
+
+        prepare_input can take three forms:
+
+        - ``def prepare_input(input_data: dict) -> dict``
+        - ``async def prepare_input(input_data: dict) -> dict``
+        - ``def`` or ``async def prepare_input(input_data: dict, info) -> dict``,
+          which receives the resolver's GraphQL ``info`` (and so ``info.context``)
+
+        A hook is passed ``info`` when it takes a second positional parameter or
+        ``*args``; the signature is inspected once, when the mutation is defined.
+
     PostgreSQL Function Requirements:
         For class-based mutations, the PostgreSQL function should:
 
@@ -1234,6 +1286,9 @@ def mutation(
         - All mutations are automatically registered with the GraphQL schema
         - The prepare_input hook allows transforming input data before database calls
         - prepare_input is called after GraphQL validation but before the PostgreSQL function
+        - prepare_input runs before a database connection is taken from the pool, so a
+          slow call in an async hook doesn't hold a connection
+        - An exception raised in prepare_input becomes a top-level GraphQL error
         - Use prepare_input for multi-field transformations, empty string normalization, etc.
     """
 
