@@ -241,6 +241,34 @@ async def test_cascade_with_only_cascade_no_entity_query(cascade_http_client):
 
 
 @pytest.mark.asyncio
+async def test_async_prepare_input_with_info_reaches_function(cascade_http_client):
+    """An async prepare_input taking info runs, and cascade still comes back (#557)."""
+    mutation_query = """
+    mutation CreatePostEnriched($input: CreatePostInput!) {
+        createPostEnriched(input: $input) {
+            ... on CreatePostEnrichedSuccess {
+                post { title }
+                cascade { updated { __typename operation } }
+            }
+            ... on CreatePostError { code message }
+        }
+    }
+    """
+    variables = {"input": {"title": "Draft", "authorId": "user-123"}}
+
+    response = await cascade_http_client.post(
+        "/graphql", json={"query": mutation_query, "variables": variables}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "errors" not in body, body
+    result = body["data"]["createPostEnriched"]
+    assert result["post"]["title"] == "Draft via createPostEnriched"
+    assert {u["__typename"] for u in result["cascade"]["updated"]} == {"Post", "User"}
+
+
+@pytest.mark.asyncio
 async def test_cascade_end_to_end(cascade_http_client):
     """Test complete cascade flow from PostgreSQL function to GraphQL response.
 

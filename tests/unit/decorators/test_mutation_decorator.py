@@ -1,5 +1,6 @@
 """Tests for the @mutation decorator."""
 
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -697,3 +698,200 @@ class TestPrepareInputHook:
 
         # Result is a dict (new Rust pipeline behavior)
         assert isinstance(result, dict)
+
+
+class TestAsyncPrepareInputHook:
+    """prepare_input may be async and may take the resolver's info (issue #557)."""
+
+    @staticmethod
+    async def _run(mutation_class: type, info: Mock | None = None) -> tuple[dict, Any]:
+        """Call the mutation's resolver; return the executor's kwargs and the result."""
+        if info is None:
+            info = Mock()
+            info.context = {"db": MockDatabase()}
+            info.field_nodes = []
+        input_obj = Mock()
+        input_obj.to_dict = lambda: {"siret": "  12345678900011 "}
+        mock_response = MockRustResponseBytes(
+            {
+                "data": {
+                    "createContract": {
+                        "status": "success",
+                        "message": "Contract created",
+                        "object_data": {"id": "123", "name": "Contract", "email": "c@x.com"},
+                        "_cascade": {"updated": [], "deleted": [], "invalidations": []},
+                    }
+                }
+            }
+        )
+        with patch(
+            "fraiseql.mutations.rust_executor.execute_mutation_rust",
+            new_callable=AsyncMock,
+            return_value=mock_response,
+        ) as mock_executor:
+            result = await mutation_class.__fraiseql_resolver__(info, input_obj)
+        mock_executor.assert_called_once()
+        return mock_executor.call_args.kwargs, result
+
+    @pytest.mark.asyncio
+    async def test_async_one_arg_hook_is_awaited(self) -> None:
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            @staticmethod
+            async def prepare_input(input_data: dict) -> dict:
+                return {"siret": input_data["siret"].strip()}
+
+        kwargs, _ = await self._run(CreateContract)
+
+        assert kwargs["input_data"] == {"siret": "12345678900011"}
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("is_async", [False, True])
+    async def test_two_arg_hook_receives_resolver_info(self, is_async: bool) -> None:
+        received: list[Any] = []
+
+        def enrich(input_data: dict, info: Any) -> dict:
+            received.append(info)
+            return {**input_data, "provider": info.context["registry"][input_data["siret"]]}
+
+        async def enrich_async(input_data: dict, info: Any) -> dict:
+            return enrich(input_data, info)
+
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            prepare_input = staticmethod(enrich_async if is_async else enrich)
+
+        info = Mock()
+        info.context = {
+            "db": MockDatabase(),
+            "registry": {"  12345678900011 ": {"name": "Acme"}},
+        }
+        info.field_nodes = []
+
+        kwargs, _ = await self._run(CreateContract, info)
+
+        assert received == [info]
+        assert kwargs["input_data"]["provider"] == {"name": "Acme"}
+
+    @pytest.mark.asyncio
+    async def test_var_positional_hook_receives_info(self) -> None:
+        received: list[tuple] = []
+
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            @staticmethod
+            def prepare_input(*args: Any) -> dict:
+                received.append(args)
+                return args[0]
+
+        info = Mock()
+        info.context = {"db": MockDatabase()}
+        info.field_nodes = []
+
+        await self._run(CreateContract, info)
+
+        assert len(received) == 1
+        assert received[0][1] is info
+
+    @pytest.mark.asyncio
+    async def test_classmethod_hook_with_info(self) -> None:
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            suffix = "-checked"
+
+            @classmethod
+            async def prepare_input(cls, input_data: dict, info: Any) -> dict:
+                return {"siret": input_data["siret"].strip() + cls.suffix}
+
+        kwargs, _ = await self._run(CreateContract)
+
+        assert kwargs["input_data"] == {"siret": "12345678900011-checked"}
+
+    @pytest.mark.asyncio
+    async def test_hook_runs_before_pool_connection(self) -> None:
+        events: list[str] = []
+        db = MockDatabase()
+        pool = db.get_pool()
+        original_connection = pool.connection
+
+        def connection() -> Any:
+            events.append("connection")
+            return original_connection()
+
+        pool.connection = connection
+
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            @staticmethod
+            async def prepare_input(input_data: dict) -> dict:
+                events.append("prepare_input")
+                return input_data
+
+        info = Mock()
+        info.context = {"db": db}
+        info.field_nodes = []
+
+        await self._run(CreateContract, info)
+
+        assert events == ["prepare_input", "connection"]
+
+    @pytest.mark.asyncio
+    async def test_hook_error_propagates_without_acquiring_connection(self) -> None:
+        db = MockDatabase()
+        db.get_pool().connection = Mock(side_effect=AssertionError("connection acquired"))
+
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            @staticmethod
+            async def prepare_input(input_data: dict) -> dict:
+                msg = "registry unavailable"
+                raise RuntimeError(msg)
+
+        info = Mock()
+        info.context = {"db": db}
+        info.field_nodes = []
+        input_obj = Mock()
+        input_obj.to_dict = lambda: {"siret": "1"}
+
+        with pytest.raises(RuntimeError, match="registry unavailable"):
+            await CreateContract.__fraiseql_resolver__(info, input_obj)
+
+    @pytest.mark.asyncio
+    async def test_cascade_returned_with_async_hook(self) -> None:
+        @mutation(enable_cascade=True)
+        class CreateContract:
+            input: SampleInput
+            success: SampleSuccess
+            error: SampleError
+
+            @staticmethod
+            async def prepare_input(input_data: dict, info: Any) -> dict:
+                return input_data
+
+        _, result = await self._run(CreateContract)
+
+        assert result["_cascade"] == {"updated": [], "deleted": [], "invalidations": []}
