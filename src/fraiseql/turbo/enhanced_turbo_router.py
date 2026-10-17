@@ -40,7 +40,6 @@ class EnhancedTurboRegistry(TurboRegistry):
         self.max_total_weight = max_total_weight
         self.enable_adaptive_caching = enable_adaptive_caching
         self.total_weight = 0.0
-        self._queries: OrderedDict[str, EnhancedTurboQuery] = OrderedDict()
 
     def calculate_cache_weight(self, query: EnhancedTurboQuery) -> float:
         """Calculate cache weight based on complexity and usage.

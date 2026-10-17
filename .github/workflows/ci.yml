@@ -28,14 +28,18 @@ jobs:
       - name: Check uv.lock is in sync with pyproject.toml
         run: uv lock --check
 
+      # Install from uv.lock into .venv, the environment `uv run` uses, so CI
+      # runs the locked ruff, ty and test dependencies. The dev extra carries
+      # test-only packages and confiture (the `migrate` extra). The editable
+      # install builds fraiseql_rs, so integration tests load the extension.
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked --extra dev
 
       - name: Ruff lint
-        run: uv run ruff check src/
+        run: uv run --extra dev ruff check src/
 
       - name: Ruff format
-        run: uv run ruff format src/ --check
+        run: uv run --extra dev ruff format src/ --check
 
   type-check:
     name: Type Check (ty)
@@ -51,11 +55,12 @@ jobs:
         with:
           python-version: '3.13'
 
+      # From uv.lock into .venv, as in the lint job.
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked --extra dev
 
       - name: ty check
-        run: uv run ty check src/
+        run: uv run --extra dev ty check src/
 
   unit-tests:
     name: Unit Tests (Python ${{ matrix.python-version }})
@@ -75,13 +80,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      # From uv.lock into .venv, as in the lint job.
       - name: Install dependencies
-        run: uv pip install --system -e ".[dev]"
+        run: uv sync --locked --extra dev
 
       - name: Run unit tests
-        # `uv run` syncs .venv from uv.lock with no extras, and fraiseql is
-        # imported from there; --extra dev brings in test-only packages and
-        # confiture (the `migrate` extra).
         run: uv run --extra dev pytest tests/unit/ -q --tb=short
 
   integration-tests:
@@ -117,17 +120,11 @@ jobs:
       - name: Install Rust (for fraiseql_rs extension)
         uses: dtolnay/rust-toolchain@stable
 
+      # From uv.lock into .venv, as in the lint job.
       - name: Install dependencies
-        run: |
-          uv pip install --system maturin
-          uv pip install --system -e ".[dev]"
-          maturin build --manifest-path fraiseql_rs/Cargo.toml --release --manylinux off
-          uv pip install --system fraiseql_rs/target/wheels/*.whl --force-reinstall
+        run: uv sync --locked --extra dev
 
       - name: Run integration tests
-        # `uv run` syncs .venv from uv.lock with no extras, and fraiseql is
-        # imported from there; --extra dev brings in test-only packages and
-        # confiture (the `migrate` extra).
         run: uv run --extra dev pytest tests/integration/ -q --tb=short
         env:
           DATABASE_URL: postgresql://fraiseql_test:fraiseql_test_password@localhost:5433/test_fraiseql
