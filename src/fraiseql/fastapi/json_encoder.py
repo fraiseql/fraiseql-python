@@ -1,6 +1,6 @@
 """Custom JSON encoder for FraiseQL FastAPI responses."""
 
-import datetime
+import datetime as dt
 import decimal
 import ipaddress
 import json
@@ -75,11 +75,11 @@ class FraiseQLJSONEncoder(json.JSONEncoder):
             return obj_dict
 
         # Handle date and datetime
-        if isinstance(obj, datetime.datetime):
+        if isinstance(obj, dt.datetime):
             return obj.isoformat()
-        if isinstance(obj, datetime.date):
+        if isinstance(obj, dt.date):
             return obj.isoformat()
-        if isinstance(obj, datetime.time):
+        if isinstance(obj, dt.time):
             return obj.isoformat()
 
         # Handle UUID

@@ -9,40 +9,23 @@ Related to GitHub issue #525.
 
 from unittest.mock import MagicMock
 
-from graphql import FieldNode, InlineFragmentNode, TypeNode
+from graphql import FieldNode, InlineFragmentNode, NamedTypeNode, NameNode, SelectionSetNode
 
 from fraiseql.mutations.mutation_decorator import _extract_entity_field_selections
 
 
 def create_field_node(name: str, selections: list | None = None) -> FieldNode:
-    """Helper to create a FieldNode mock."""
-    field = MagicMock(spec=FieldNode)
-    field.name.value = name
-
-    if selections is not None:
-        field.selection_set = MagicMock()
-        field.selection_set.selections = selections
-    else:
-        field.selection_set = None
-
-    return field
+    """Helper to create a FieldNode."""
+    selection_set = None if selections is None else SelectionSetNode(selections=tuple(selections))
+    return FieldNode(name=NameNode(value=name), selection_set=selection_set)
 
 
 def create_inline_fragment(type_name: str, selections: list) -> InlineFragmentNode:
-    """Helper to create an InlineFragmentNode mock."""
-    fragment = MagicMock(spec=InlineFragmentNode)
-
-    # Create properly nested type_condition mock
-    type_condition = MagicMock(spec=TypeNode)
-    name_mock = MagicMock()
-    name_mock.value = type_name
-    type_condition.name = name_mock
-    fragment.type_condition = type_condition
-
-    # Create selection set mock
-    fragment.selection_set = MagicMock()
-    fragment.selection_set.selections = selections
-    return fragment
+    """Helper to create an InlineFragmentNode."""
+    return InlineFragmentNode(
+        type_condition=NamedTypeNode(name=NameNode(value=type_name)),
+        selection_set=SelectionSetNode(selections=tuple(selections)),
+    )
 
 
 class TestEntityFieldExtraction:
@@ -77,16 +60,12 @@ class TestEntityFieldExtraction:
         success_fragment = create_inline_fragment("CreateLocationSuccess", [location_field])
 
         # Mutation field: createLocation { ... }
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
 
         info.field_nodes = [mutation_field]
 
         # Extract selections
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # Should return nested dict with fields
         assert result is not None
@@ -132,19 +111,13 @@ class TestEntityFieldExtraction:
         location_field = create_field_node("location", location_selections)
 
         # Success fragment
-        success_fragment = create_inline_fragment(
-            "CreateLocationSuccess", [location_field]
-        )
+        success_fragment = create_inline_fragment("CreateLocationSuccess", [location_field])
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
         # Extract selections
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # Should have top-level fields
         assert result is not None
@@ -194,18 +167,12 @@ class TestEntityFieldExtraction:
         ]
         location_field = create_field_node("location", location_selections)
 
-        success_fragment = create_inline_fragment(
-            "CreateLocationSuccess", [location_field]
-        )
+        success_fragment = create_inline_fragment("CreateLocationSuccess", [location_field])
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # Verify nested structure
         assert result is not None
@@ -233,18 +200,12 @@ class TestEntityFieldExtraction:
             create_field_node("status"),
             create_field_node("message"),
         ]
-        success_fragment = create_inline_fragment(
-            "CreateLocationSuccess", success_selections
-        )
+        success_fragment = create_inline_fragment("CreateLocationSuccess", success_selections)
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # Should return None when entity not selected
         assert result is None
@@ -269,18 +230,12 @@ class TestEntityFieldExtraction:
         # location with no sub-selections
         location_field = create_field_node("location", [])
 
-        success_fragment = create_inline_fragment(
-            "CreateLocationSuccess", [location_field]
-        )
+        success_fragment = create_inline_fragment("CreateLocationSuccess", [location_field])
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # Empty selection = return None (don't filter, return all fields)
         assert result is None
@@ -294,18 +249,12 @@ class TestEntityFieldExtraction:
             create_field_node("code"),
             create_field_node("message"),
         ]
-        error_fragment = create_inline_fragment(
-            "CreateLocationError", error_selections
-        )
+        error_fragment = create_inline_fragment("CreateLocationError", error_selections)
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [error_fragment]
+        mutation_field = create_field_node("mutation", [error_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # Should return None when fragment type doesn't match
         assert result is None
@@ -315,17 +264,13 @@ class TestEntityFieldExtraction:
         info = MagicMock()
         info.field_nodes = []
 
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         assert result is None
 
     def test_none_info(self):
         """Test when info is None."""
-        result = _extract_entity_field_selections(
-            None, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(None, "CreateLocationSuccess", "location")
 
         assert result is None
 
@@ -374,9 +319,7 @@ class TestEntityFieldExtraction:
             [machine_field, prev_loc_field, new_loc_field],
         )
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
         # Extract machine selections
@@ -416,18 +359,12 @@ class TestEntityFieldExtraction:
         ]
         location_field = create_field_node("location", entity_selections)
 
-        success_fragment = create_inline_fragment(
-            "CreateLocationSuccess", [location_field]
-        )
+        success_fragment = create_inline_fragment("CreateLocationSuccess", [location_field])
 
-        mutation_field = MagicMock(spec=FieldNode)
-        mutation_field.selection_set = MagicMock()
-        mutation_field.selection_set.selections = [success_fragment]
+        mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(
-            info, "CreateLocationSuccess", "location"
-        )
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
         # __typename should be excluded
         assert result is not None

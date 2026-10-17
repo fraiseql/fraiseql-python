@@ -6,7 +6,7 @@ UUIDs, enums, IP addresses, and nested dataclasses. Fields set to `fraiseql.UNSE
 are automatically excluded from the resulting JSON object.
 """
 
-import datetime
+import datetime as dt
 import enum
 import ipaddress
 import json
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 def _serialize_basic(value: object) -> object:
     if isinstance(value, uuid.UUID | ipaddress.IPv4Address | ipaddress.IPv6Address):
         return str(value)
-    if isinstance(value, datetime.date | datetime.datetime):
+    if isinstance(value, dt.date | dt.datetime):
         return value.isoformat()
     if isinstance(value, enum.Enum):
         return value.value
