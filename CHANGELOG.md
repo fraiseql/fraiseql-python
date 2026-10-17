@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   output type: list[Item]`. Plain annotations and `Annotated[..., fraise_field()]`
   were not affected. Annotations are now resolved first, for `@fraiseql.type`,
   `@fraiseql.input`, `@fraiseql.interface` and the mutation result types.
+- **A query with several root fields lost a field that used a named fragment
+  spread.** `query { products { ...ProductFields } productsCount }` returned
+  `products: []` with `Fragment 'ProductFields' not found` (#554). The
+  multi-field path built each resolver's `info` with no fragments, so
+  `db.find()` could not expand the spread. The resolvers now get the
+  document's fragments, the executed operation and a real `path`, and the
+  request's `operationName` selects the operation when the document holds
+  several.
 
 ## [1.27.1] - 2026-10-17
 
