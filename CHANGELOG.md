@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.28.0] - 2026-10-17
+
 ### Added
 
 - **A mutation's `prepare_input` hook can be `async`, and can take `info`** (#557).
