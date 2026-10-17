@@ -66,13 +66,9 @@ async def products_count(info) -> int:
     return await _repo(info).count(_VIEW)
 
 
+@pytest.mark.usefixtures("clear_registry_class")
 class TestIssue554MultiFieldFragment:
     """Named fragment spreads must resolve in multi-field queries backed by db.find()."""
-
-    @pytest.fixture(scope="class")
-    def clear_registry_fixture(self, clear_registry_class) -> None:
-        """Clear registry before the class runs."""
-        return
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
     async def setup_data(self, class_db_pool, test_schema) -> None:
