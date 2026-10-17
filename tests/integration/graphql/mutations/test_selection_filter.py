@@ -4,23 +4,22 @@ import pytest
 
 from unittest.mock import MagicMock
 
-from graphql import FieldNode
+from graphql import FieldNode, NameNode, SelectionSetNode
 
 from fraiseql.mutations.selection_filter import filter_mutation_result
 
 pytestmark = pytest.mark.integration
 
 
-def create_field_node_mock(name, alias=None, selections=None) -> None:
-    """Create a properly configured FieldNode mock."""
-    mock = MagicMock(spec=FieldNode)
-    mock.name.value = name
-    mock.alias = alias
-    if selections is not None:
-        mock.selection_set.selections = selections
-    else:
-        mock.selection_set = None
-    return mock
+def create_field_node_mock(name, alias=None, selections=None) -> FieldNode:
+    """Create a FieldNode."""
+    return FieldNode(
+        name=NameNode(value=name),
+        alias=NameNode(value=alias) if alias else None,
+        selection_set=None
+        if selections is None
+        else SelectionSetNode(selections=tuple(selections)),
+    )
 
 
 @pytest.mark.unit

@@ -333,6 +333,14 @@ jobs:
     # optional `llamaindex` extra: llama-index-core uses its Punkt tokenizer,
     # stopwords and nltk.data, and fraiseql never imports nltk. Once nltk ships a
     # fix, drop the ignore and add an nltk floor to [tool.uv] constraint-dependencies.
+    #
+    # PYSEC-2026-4146 (GHSA-gvp8-978c-rx2q, CVE-2026-103001): pyjwt, no patched
+    # release yet. jwt.decode()/decode_complete() mutate a caller-supplied `options`
+    # dict in place when verify_signature is falsy, so a dict reused across calls
+    # carries the change into later decodes. fraiseql's only unverified decode
+    # (auth/native/tokens.py) passes a fresh dict literal per call, and auth0.py
+    # passes no options. Once pyjwt ships a fix, drop the ignore and raise the
+    # pyjwt floor.
     - name: Audit Python dependencies
       run: |
         uv export --all-extras --no-emit-project \
@@ -340,6 +348,7 @@ jobs:
         uvx --from 'pip-audit>=2.10.1' pip-audit \
           --requirement audit-requirements.txt \
           --ignore-vuln PYSEC-2026-3740 \
+          --ignore-vuln PYSEC-2026-4146 \
           --format json --output audit-results.json
 
     # Only reached when pip-audit exits 0. Re-reads the report so a schema change

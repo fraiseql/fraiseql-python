@@ -4,7 +4,7 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
-from graphql import FragmentDefinitionNode
+from graphql import FragmentDefinitionNode, NamedTypeNode, NameNode, SelectionSetNode
 
 from fraiseql import _get_fraiseql_rs
 
@@ -131,9 +131,11 @@ def test_empty_named_fragment():
     mock_fragment_spread = MagicMock()
     mock_fragment_spread.name.value = "EmptyFragment"
 
-    mock_fragment_def = MagicMock(spec=FragmentDefinitionNode)
-    mock_fragment_def.type_condition.name.value = "CreateMachineSuccess"
-    mock_fragment_def.selection_set.selections = []
+    mock_fragment_def = FragmentDefinitionNode(
+        name=NameNode(value="EmptyFragment"),
+        type_condition=NamedTypeNode(name=NameNode(value="CreateMachineSuccess")),
+        selection_set=SelectionSetNode(selections=()),
+    )
 
     mock_field_node.selection_set.selections = [mock_fragment_spread]
     mock_info.field_nodes = [mock_field_node]
