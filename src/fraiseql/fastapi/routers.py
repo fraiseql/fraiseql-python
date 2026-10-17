@@ -10,13 +10,18 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response
 from graphql import (
+    DocumentNode,
     FieldNode,
+    FragmentDefinitionNode,
     FragmentSpreadNode,
+    GraphQLObjectType,
+    GraphQLOutputType,
     GraphQLSchema,
     InlineFragmentNode,
     OperationDefinitionNode,
     parse,
 )
+from graphql.pyutils import Path
 from pydantic import BaseModel, field_validator
 
 from fraiseql.analysis.query_analyzer import QueryAnalyzer
@@ -798,11 +803,67 @@ def _encode_field_row(value: Any) -> Any:
     return value
 
 
+def _select_query_operation(
+    document: DocumentNode, operation_name: str | None
+) -> OperationDefinitionNode | None:
+    """Return the query operation to execute: the one named, or else the first."""
+    for definition in document.definitions:
+        if not isinstance(definition, OperationDefinitionNode):
+            continue
+        if definition.operation.value != "query":
+            continue
+        if operation_name and (not definition.name or definition.name.value != operation_name):
+            continue
+        return definition
+    return None
+
+
+class _MultiFieldResolveInfo:
+    """Stand-in for graphql-core's GraphQLResolveInfo on the multi-field merge path.
+
+    execute_multi_field_query calls each root resolver itself, so it builds the resolve
+    info itself too. It carries what FraiseQL resolvers and their helpers read: the field
+    node and the document's fragments (db.find() expands spreads from them, issue #554),
+    the operation, and a graphql-core Path.
+
+    ``variable_values`` holds the request variables merged with the operation's
+    defaults. Unlike graphql-core, they are not coerced to their input types; readers
+    such as debug.py accept either form.
+    """
+
+    def __init__(
+        self,
+        *,
+        field_name: str,
+        field_node: FieldNode,
+        response_key: str,
+        parent_type: GraphQLObjectType,
+        return_type: GraphQLOutputType,
+        schema: GraphQLSchema,
+        fragments: dict[str, FragmentDefinitionNode],
+        operation: OperationDefinitionNode | None,
+        variable_values: dict[str, Any],
+        context: dict[str, Any],
+    ) -> None:
+        self.field_name = field_name
+        self.field_nodes = [field_node]
+        self.return_type = return_type
+        self.parent_type = parent_type
+        self.path = Path(None, response_key, parent_type.name)
+        self.schema = schema
+        self.fragments = fragments
+        self.root_value = None
+        self.operation = operation
+        self.variable_values = variable_values
+        self.context = context
+
+
 async def execute_multi_field_query(
     schema: GraphQLSchema,
     query_string: str,
     variables: dict[str, Any] | None,
     context: dict[str, Any],
+    operation_name: str | None = None,
 ) -> RustResponseBytes:
     """Execute multi-field query entirely in Rust - bypass graphql-core.
 
@@ -817,6 +878,7 @@ async def execute_multi_field_query(
         query_string: GraphQL query string
         variables: Query variables
         context: GraphQL context with database connection, etc.
+        operation_name: Operation to execute when the document holds several
 
     Returns:
         RustResponseBytes with complete {"data": {...}} response
@@ -831,9 +893,13 @@ async def execute_multi_field_query(
     from fraiseql.core.rust_pipeline import fraiseql_rs
 
     _parsed_query = _gql_parse(query_string)
+    operation = _select_query_operation(_parsed_query, operation_name)
+    fragments = {
+        d.name.value: d for d in _parsed_query.definitions if isinstance(d, FragmentDefinitionNode)
+    }
 
     # Extract variable defaults from operation definition
-    variable_defaults = _extract_variable_defaults(query_string, None)
+    variable_defaults = _extract_variable_defaults(query_string, operation_name)
 
     # Merge defaults with provided variables (provided variables take precedence)
     if variable_defaults:
@@ -841,7 +907,7 @@ async def execute_multi_field_query(
         variables = merged_variables
 
     # Extract all root fields (with directive evaluation using variables)
-    fields_info = _extract_root_query_fields(query_string, None, variables)
+    fields_info = _extract_root_query_fields(query_string, operation_name, variables)
 
     if not fields_info:
         raise ValueError("No root query fields found in multi-field query")
@@ -888,35 +954,21 @@ async def execute_multi_field_query(
         if not resolver:
             raise ValueError(f"No resolver found for field '{field_name}'")
 
-        # Execute resolver
-        # Resolvers expect: resolve(root, info, **args)
-        # For root-level queries, root is None
-        # We need to create a GraphQL ResolveInfo object, but for simplicity
-        # in Phase 2, we'll call the resolver directly and hope it doesn't need full info
-
-        # SIMPLIFIED: Assume resolver returns the data we need
-        # In a real implementation, we'd need to construct proper ResolveInfo
+        # Execute resolver. Root-level resolvers get root=None and a resolve info
+        # built here, since graphql-core does not run on this path.
         try:
-            # Most FraiseQL resolvers are async and expect (info, **kwargs)
-            # Try calling with minimal info
-
-            # Create minimal resolve info
-            # This is a simplified version - proper implementation would build full ResolveInfo
-            class MinimalInfo:
-                def __init__(self, field_name: str, context: dict, field_node: Any) -> None:
-                    self.field_name = field_name
-                    self.context = context
-                    self.field_nodes = [field_node]
-                    self.parent_type = query_type  # noqa: B023
-                    self.path = None
-                    self.return_type = field_def.type  # noqa: B023
-                    self.schema = schema
-                    self.fragments = {}
-                    self.root_value = None
-                    self.operation = None
-                    self.variable_values = variables or {}
-
-            info = MinimalInfo(field_name, context, field_node)
+            info = _MultiFieldResolveInfo(
+                field_name=field_name,
+                field_node=field_node,
+                response_key=response_key,
+                parent_type=query_type,
+                return_type=field_def.type,
+                schema=schema,
+                fragments=fragments,
+                operation=operation,
+                variable_values=variables or {},
+                context=context,
+            )
 
             # Execute resolver
             # Resolvers can have different signatures:
@@ -1529,7 +1581,11 @@ def create_graphql_router(
                     return _forbidden_error_payload(exc)
                 try:
                     result = await execute_multi_field_query(
-                        schema, request.query, request.variables, context
+                        schema,
+                        request.query,
+                        request.variables,
+                        context,
+                        operation_name=request.operationName,
                     )
                     # execute_multi_field_query returns RustResponseBytes
                     return Response(
