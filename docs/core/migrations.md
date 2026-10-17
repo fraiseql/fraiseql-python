@@ -33,14 +33,26 @@ Database migrations allow you to:
 
 FraiseQL's migration system is powered by **confiture** (https://github.com/fraiseql/confiture):
 
-- **Simple**: SQL-based migrations (no complex DSL to learn)
+- **Simple**: plain SQL migrations (`.up.sql` / `.down.sql`), or Python when you need it
 - **Integrated**: Built into the `fraiseql` CLI
-- **Safe**: Track applied migrations to prevent duplicates
+- **Safe**: each migration runs in a transaction, applied migrations are tracked so
+  they never run twice, and concurrent `migrate up` runs are serialized by a lock
 - **Flexible**: Works with any PostgreSQL schema
 
 ---
 
 ## Quick Start
+
+### Install
+
+`fraiseql migrate` needs the `migrate` extra:
+
+```bash
+pip install "fraiseql[migrate]<2"
+```
+
+It is optional because confiture depends on
+[pglast](https://github.com/lelit/pglast), which is licensed GPL-3.0-or-later.
 
 ### Initialize Migrations
 
@@ -50,28 +62,56 @@ cd my-fraiseql-project
 
 # Initialize migration system
 fraiseql migrate init
-
-# This creates:
-# - migrations/ directory
-# - migrations/README.md with instructions
 ```
+
+This creates a `db/` directory:
+
+```text
+db/
+├── README.md
+├── environments/
+│   └── local.yaml        # database connection for `migrate up/down/status`
+├── migrations/           # migration files
+├── schema/
+│   ├── 00_common/extensions.sql
+│   └── 10_tables/example.sql
+└── seeds/
+    ├── common/
+    ├── development/
+    └── test/
+```
+
+`db/environments/local.yaml` holds the database connection:
+
+```yaml
+name: local
+include_dirs:
+  - db/schema/00_common
+  - db/schema/10_tables
+exclude_dirs: []
+
+database_url: postgresql://postgres:postgres@localhost:5432/fraiseql_local
+```
+
+Edit `database_url` to point at your database. Older projects have a `database:`
+mapping (`host`, `port`, `database`, `user`, `password`) instead; it still works,
+and FraiseQL turns it into a URL for you.
 
 ### Create Your First Migration
 
-```bash
-# Create a new migration
-fraiseql migrate create initial_schema
+A migration is either a pair of SQL files or a Python file. Both kinds can live in
+the same directory and are applied in version order.
 
-# This creates:
-# - migrations/001_initial_schema.sql
+**SQL migration.** Write two files that share a version and a name, the version
+being a timestamp:
+
+```text
+db/migrations/20260115103000_initial_schema.up.sql
+db/migrations/20260115103000_initial_schema.down.sql
 ```
 
-### Write the Migration
-
-Edit `migrations/001_initial_schema.sql`:
-
 ```sql
--- Migration 001: Initial schema
+-- 20260115103000_initial_schema.up.sql
 
 -- Users table
 CREATE TABLE tb_user (
@@ -93,45 +133,73 @@ CREATE TABLE tb_post (
 );
 ```
 
+```sql
+-- 20260115103000_initial_schema.down.sql
+DROP TABLE tb_post;
+DROP TABLE tb_user;
+```
+
+Every `.up.sql` needs its `.down.sql`: `migrate up` refuses to run without it.
+
+**Python migration.** `fraiseql migrate create` writes one for you:
+
+```bash
+fraiseql migrate create initial_schema
+# Creates db/migrations/20260115103000_initial_schema.py
+```
+
+```python
+from confiture.models.migration import Migration
+
+
+class InitialSchema(Migration):
+    """Migration: initial_schema."""
+
+    version = "20260115103000"
+    name = "initial_schema"
+
+    def up(self) -> None:
+        self.execute("CREATE TABLE tb_user (...)")
+
+    def down(self) -> None:
+        self.execute("DROP TABLE tb_user")
+```
+
 ### Apply the Migration
 
 ```bash
-# Apply pending migrations
 fraiseql migrate up
 
-# Output:
-# ✓ Running migration: 001_initial_schema.sql
-# ✓ Migration completed successfully
+# ⚡ Applied 20260115103000_initial_schema ✅
+#
+# ✅ Successfully applied 1 migration(s)!
 ```
 
 ---
 
 ## Migration Commands
 
-### `fraiseql migrate init`
-
-Initialize the migration system in your project.
+`up`, `down` and `status` read the connection from `--config`
+(default `db/environments/local.yaml`), and every command except `init` takes
+`--migrations-dir` (default `db/migrations`). Use another environment file to
+target another database:
 
 ```bash
-fraiseql migrate init
-
-# Creates:
-# - migrations/ directory
-# - migrations/README.md
+fraiseql migrate up --config db/environments/production.yaml
 ```
 
-**Options:**
+### `fraiseql migrate init [PATH]`
 
-- `--path PATH`: Custom migrations directory (default: `./migrations`)
+Create the `db/` layout shown above in `PATH` (default: the current directory).
+If `db/` already exists, it asks before overwriting files.
 
 ### `fraiseql migrate create <name>`
 
-Create a new migration file.
+Create a Python migration named `<timestamp>_<name>.py`, with a `Migration`
+subclass whose `up()` and `down()` you fill in.
 
 ```bash
 fraiseql migrate create add_comments_table
-
-# Creates: migrations/002_add_comments_table.sql
 ```
 
 **Naming conventions:**
@@ -142,65 +210,54 @@ fraiseql migrate create add_comments_table
 
 ### `fraiseql migrate up`
 
-Apply all pending migrations.
+Apply pending migrations, oldest first.
 
 ```bash
+# Apply every pending migration
 fraiseql migrate up
 
-# Apply all pending migrations
+# Apply pending migrations up to and including this version
+fraiseql migrate up --target 20260116142000
 ```
 
-**Options:**
-
-- `--steps N`: Apply only N migrations
-- `--dry-run`: Show what would be applied without running
-
-```bash
-# Apply next 2 migrations only
-fraiseql migrate up --steps 2
-
-# Preview migrations without applying
-fraiseql migrate up --dry-run
-```
+If a migration fails, its transaction is rolled back, the command stops and exits
+non-zero, and migrations applied before it in the same run stay applied.
 
 ### `fraiseql migrate down`
 
-Roll back the last migration.
+Roll back applied migrations, newest first, after asking for confirmation.
 
 ```bash
+# Roll back the most recent migration
 fraiseql migrate down
 
-# Rolls back the most recent migration
-```
-
-**Options:**
-
-- `--steps N`: Roll back N migrations
-- `--force`: Skip confirmation prompt
-
-```bash
-# Roll back last 2 migrations
+# Roll back the last 2 migrations
 fraiseql migrate down --steps 2
-
-# Roll back without confirmation (dangerous!)
-fraiseql migrate down --force
 ```
 
 **⚠️ Warning**: Only use `down` in development. In production, prefer forward-only migrations.
 
 ### `fraiseql migrate status`
 
-Show migration status.
+List every migration file and whether it is applied.
 
 ```bash
 fraiseql migrate status
-
-# Output:
-# Migration Status:
-#   ✓ 001_initial_schema.sql (applied 2024-01-15 10:30:00)
-#   ✓ 002_add_comments_table.sql (applied 2024-01-16 14:20:00)
-#   ○ 003_add_indexes.sql (pending)
 ```
+
+```text
+                 FraiseQL Migrations
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Version        ┃ Name               ┃ Status     ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ 20260115103000 │ initial_schema     │ ✅ applied │
+│ 20260116142000 │ add_comments_table │ ⏳ pending │
+└────────────────┴────────────────────┴────────────┘
+
+📊 Total: 2 migrations (1 applied, 1 pending)
+```
+
+If the database can't be reached, it still lists the files, with status `unknown`.
 
 ---
 
@@ -209,12 +266,9 @@ fraiseql migrate status
 ### Basic Structure
 
 ```sql
--- Migration 001: Description of what this migration does
+-- 20260115103000_add_user_profile.up.sql
 --
--- Author: Your Name
--- Date: 2024-01-15
---
--- This migration adds support for user profiles with bio and avatar.
+-- Adds support for user profiles with bio and avatar.
 
 -- Create table
 CREATE TABLE tb_user_profile (
@@ -234,13 +288,18 @@ FROM tb_user
 WHERE created_at < NOW() - INTERVAL '1 day';
 ```
 
+```sql
+-- 20260115103000_add_user_profile.down.sql
+DROP TABLE tb_user_profile;
+```
+
 ### Migration Best Practices
 
 1. **One purpose per migration**
 
    ```sql
    -- ✅ Good: Focused on one change
-   -- Migration 005: Add email verification
+   -- 20260120090000_add_email_verification.up.sql
 
    ALTER TABLE tb_user ADD COLUMN email_verified BOOLEAN DEFAULT FALSE;
    CREATE INDEX idx_user_email_verified ON tb_user(email_verified);
@@ -248,31 +307,22 @@ WHERE created_at < NOW() - INTERVAL '1 day';
 
    ```sql
    -- ❌ Bad: Multiple unrelated changes
-   -- Migration 005: Various updates
+   -- 20260120090000_various_updates.up.sql
 
    ALTER TABLE tb_user ADD COLUMN email_verified BOOLEAN;
    CREATE TABLE tb_settings (...);  -- Unrelated!
    ALTER TABLE tb_post ADD COLUMN views INTEGER;  -- Also unrelated!
    ```
 
-2. **Include rollback comments**
+2. **Write a real `down`**
 
-   ```sql
-   -- Migration 010: Add post categories
-
-   CREATE TABLE tb_category (
-       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-       name TEXT NOT NULL UNIQUE
-   );
-
-   -- Rollback:
-   -- DROP TABLE tb_category;
-   ```
+   The `.down.sql` file (or `down()` method) should undo exactly what `up` did,
+   so `fraiseql migrate down` leaves the schema as it was.
 
 3. **Handle existing data**
 
    ```sql
-   -- Migration 015: Make email required
+   -- 20260125110000_make_email_required.up.sql
 
    -- First, ensure all existing users have emails
    UPDATE tb_user SET email = username || '@example.com'
@@ -291,7 +341,7 @@ When using FraiseQL's CQRS pattern, your migrations will include both command (`
 ### Example: Adding a CQRS Entity
 
 ```sql
--- Migration 020: Add comments with CQRS pattern
+-- 20260201100000_add_comments.up.sql
 
 -- ============================================================================
 -- COMMAND SIDE: Normalized table for writes
@@ -363,42 +413,41 @@ async def initial_sync():
 1. **Always test migrations first**
 
    ```bash
-   # Test in development
-   fraiseql migrate up --dry-run
-
-   # Apply in development
-   fraiseql migrate up
+   # Apply against a development or staging database
+   fraiseql migrate up --config db/environments/staging.yaml
 
    # Verify application works
    ./test_suite.sh
    ```
 
-2. **Use transactions**
+2. **Don't add `BEGIN` / `COMMIT`**
 
-   ```sql
-   -- Migration 030: Update post status
+   Each migration already runs in its own transaction, and a failure rolls back
+   everything that migration did. A `COMMIT` inside the file would end that
+   transaction early.
 
-   BEGIN;
+3. **Run what can't be in a transaction from a Python migration**
 
-   ALTER TABLE tb_post ADD COLUMN status TEXT DEFAULT 'draft';
-   UPDATE tb_post SET status = CASE
-       WHEN published THEN 'published'
-       ELSE 'draft'
-   END;
-   ALTER TABLE tb_post DROP COLUMN published;
+   `CREATE INDEX CONCURRENTLY` doesn't lock writes, but PostgreSQL refuses to run
+   it inside a transaction. Set `transactional = False` on a Python migration:
 
-   COMMIT;
+   ```python
+   class AddPostCreatedIndex(Migration):
+       version = "20260301120000"
+       name = "add_post_created_index"
+       transactional = False  # required for CONCURRENTLY
+
+       def up(self) -> None:
+           self.execute(
+               "CREATE INDEX CONCURRENTLY idx_post_created ON tb_post(created_at)"
+           )
+
+       def down(self) -> None:
+           self.execute("DROP INDEX CONCURRENTLY idx_post_created")
    ```
 
-3. **Avoid long-running migrations during peak hours**
-
-   ```sql
-   -- ❌ Bad: Locks table during heavy read load
-   CREATE INDEX CONCURRENTLY idx_post_created ON tb_post(created_at);
-
-   -- ✅ Better: Create index concurrently (doesn't lock)
-   CREATE INDEX CONCURRENTLY idx_post_created ON tb_post(created_at);
-   ```
+   A non-transactional migration that fails midway is not rolled back, so keep it
+   to one statement.
 
 4. **Have a rollback plan**
 
@@ -407,7 +456,7 @@ async def initial_sync():
    pg_dump -U user -d database > backup_before_migration.sql
 
    # Apply migration
-   fraiseql migrate up
+   fraiseql migrate up --config db/environments/production.yaml
 
    # If something goes wrong
    psql -U user -d database < backup_before_migration.sql
@@ -421,14 +470,16 @@ async def initial_sync():
 
 set -e  # Exit on error
 
+CONFIG=db/environments/production.yaml
+
 echo "1. Creating database backup..."
 pg_dump -U $DB_USER -d $DB_NAME > backup_$(date +%Y%m%d_%H%M%S).sql
 
 echo "2. Running migrations..."
-fraiseql migrate up
+fraiseql migrate up --config $CONFIG
 
 echo "3. Verifying database state..."
-fraiseql migrate status
+fraiseql migrate status --config $CONFIG
 
 echo "4. Running application tests..."
 ./test_suite.sh
@@ -440,69 +491,48 @@ echo "✓ Deployment complete!"
 
 ## Troubleshooting
 
-### Migration Already Applied
+### Migration Modified After Being Applied
 
-**Problem**: Migration file modified after being applied.
+**Problem**: An applied migration file was edited. Recent confiture releases
+compare each applied file with the checksum recorded when it ran, and refuse to
+continue:
 
-```bash
-fraiseql migrate up
-# Error: Migration 003_add_indexes.sql checksum mismatch
+```text
+Error: Checksum verification failed for 1 migration(s): 20260115103000.
+Migration files have been modified after application.
 ```
 
-**Solution**: Don't modify applied migrations. Create a new migration instead:
+**Solution**: Restore the applied file, and make the change in a new migration
+instead.
 
-```bash
-fraiseql migrate create fix_indexes
+### Migration Failed
+
+**Problem**: `fraiseql migrate up` stopped with an error.
+
+```text
+Error: Failed to apply migration 20260201100000 (add_comments): SQL execution failed | ...
 ```
 
-### Migration Failed Midway
+**Solution**: The failed migration's transaction was rolled back, so nothing it
+did remains, and it isn't recorded as applied. Fix the file and run
+`fraiseql migrate up` again. Migrations applied before it in the same run stay
+applied.
 
-**Problem**: Migration partially applied then failed.
-
-```sql
--- Migration 040: Multiple operations
-
-ALTER TABLE tb_user ADD COLUMN phone TEXT;  -- ✓ Applied
-CREATE INDEX idx_user_phone ON tb_user(phone);  -- ✓ Applied
-ALTER TABLE tb_post ADD COLUMN invalid_column INVALID_TYPE;  -- ✗ Failed
-```
-
-**Solution**:
-
-1. Check what was applied:
-
-   ```bash
-   psql -U user -d database -c "\d tb_user"
-   ```
-
-2. Manually fix:
-
-   ```sql
-   -- Remove partially applied changes
-   ALTER TABLE tb_user DROP COLUMN phone;
-   DROP INDEX idx_user_phone;
-   ```
-
-3. Fix migration file and reapply:
-
-   ```bash
-   fraiseql migrate up
-   ```
+(A migration with `transactional = False` is the exception: check by hand what it
+left behind before re-running it.)
 
 ### Migration Tracking Out of Sync
 
-**Problem**: Migration tracking table and actual schema don't match.
+**Problem**: The recorded migrations and the actual schema don't match.
 
-**Solution**: Reset migration tracking (⚠️ dangerous):
+**Solution**: Applied migrations are recorded in the `tb_confiture` table. Inspect it
+before changing anything:
 
 ```sql
--- Check what migrations are tracked
-SELECT * FROM fraiseql_migrations ORDER BY applied_at;
-
--- If needed, manually mark migration as applied
-INSERT INTO fraiseql_migrations (version, applied_at)
-VALUES ('003_add_indexes', NOW());
+SELECT * FROM tb_confiture;
 ```
+
+Prefer fixing the schema with a new migration over editing this table by hand.
 
 ---
 
@@ -513,7 +543,7 @@ VALUES ('003_add_indexes', NOW());
 When you need to migrate large amounts of data:
 
 ```sql
--- Migration 050: Migrate user preferences
+-- 20260310090000_migrate_user_preferences.up.sql
 
 -- Create new table
 CREATE TABLE tb_user_preferences (
@@ -571,7 +601,7 @@ ALTER TABLE tb_user DROP COLUMN old_email;
 When you create foreign keys, consider CASCADE implications:
 
 ```sql
--- Migration 060: Add comments with CASCADE
+-- 20260320100000_add_comments.up.sql
 
 CREATE TABLE tb_comment (
     id UUID PRIMARY KEY,
@@ -614,5 +644,5 @@ async def setup_ivm():
 
 ---
 
-**Last Updated**: 2025-10-11
-**FraiseQL Version**: 0.1.0+
+**Last Updated**: 2026-10-17
+**FraiseQL Version**: 1.27.0+

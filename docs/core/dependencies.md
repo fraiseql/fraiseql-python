@@ -102,12 +102,13 @@ await setup_auto_cascade_rules(cache, schema, verbose=True)
 **PostgreSQL migrations, sweetly done 🍓**
 
 ```bash
-# Install from PyPI (when published)
-pip install confiture
-
-# Or install from GitHub
-pip install git+https://github.com/fraiseql/confiture.git
+# Installed by FraiseQL's `migrate` extra
+pip install "fraiseql[migrate]<2"
 ```
+
+It is published on PyPI as `fraiseql-confiture`. It is optional because it
+depends on [pglast](https://github.com/lelit/pglast), which is licensed
+GPL-3.0-or-later.
 
 **What it does**:
 
@@ -152,13 +153,13 @@ If you're developing FraiseQL itself and need local copies:
 ```toml
 # pyproject.toml
 [project]
-dependencies = [
-  "confiture>=0.2.0",
-  # ... other dependencies
+[project.optional-dependencies]
+migrate = [
+  "fraiseql-confiture>=1.30.0",
 ]
 
 [tool.uv.sources]
-confiture = { path = "../confiture", editable = true }
+fraiseql-confiture = { path = "../confiture", editable = true }
 ```
 
 This allows you to:
@@ -169,11 +170,10 @@ This allows you to:
 
 ### For FraiseQL Users
 
-Users just install FraiseQL, which automatically pulls confiture from PyPI:
+confiture comes with FraiseQL's `migrate` extra:
 
 ```bash
-pip install "fraiseql<2"
-# confiture is installed automatically as a dependency
+pip install "fraiseql[migrate]<2"
 ```
 
 PostgreSQL extensions need to be installed separately:

@@ -46,6 +46,8 @@ What do you want to do?
 │   └── pip install "fraiseql[tracing]<2"
 ├── 🔐 Production with Auth0
 │   └── pip install "fraiseql[auth0]<2"
+├── 🗄️ Database Migrations (fraiseql migrate)
+│   └── pip install "fraiseql[migrate]<2"
 ├── 📚 Documentation Building
 │   └── pip install "fraiseql[docs]<2"
 └── 🏗️ Everything (Development + Production)
@@ -89,6 +91,7 @@ docker compose up -d
 - ❌ Testing tools
 - ❌ Observability features
 - ❌ Auth0 integration
+- ❌ `fraiseql migrate` (see Option 5)
 
 ### Option 2: Development Setup
 
@@ -150,7 +153,26 @@ pip install "fraiseql[auth0]<2"
 - ✅ User authentication middleware
 - ✅ Role-based access control
 
-### Option 5: Documentation Building
+### Option 5: Database Migrations
+
+**Use case**: Managing your schema with `fraiseql migrate`
+
+```bash
+# Install with the migration tool
+pip install "fraiseql[migrate]<2"
+```
+
+**What you get** (in addition to Quick Start):
+
+- ✅ `fraiseql migrate init / create / up / down / status`, powered by
+  [confiture](https://github.com/fraiseql/confiture)
+
+confiture is optional because it depends on
+[pglast](https://github.com/lelit/pglast), which is licensed GPL-3.0-or-later.
+Without this extra, `fraiseql migrate` prints the command above. See the
+[Migrations guide](../core/migrations.md).
+
+### Option 6: Documentation Building
 
 **Use case**: Building documentation locally
 
@@ -167,7 +189,7 @@ pip install "fraiseql[docs]<2"
 - ✅ Material theme
 - ✅ Documentation deployment tools
 
-### Option 6: Everything
+### Option 7: Everything
 
 **Use case**: Full development and production setup
 
@@ -184,6 +206,7 @@ pip install "fraiseql[all]<2"
 - ✅ All Development features (testing, code quality)
 - ✅ All Tracing features (OpenTelemetry, monitoring)
 - ✅ All Auth0 features
+- ✅ `fraiseql migrate`
 - ✅ All Documentation features
 
 ## Feature Matrix
@@ -199,6 +222,7 @@ pip install "fraiseql[all]<2"
 | **OpenTelemetry** | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | **Auth0 Integration** | ❌ | ✅ | ❌ | ✅ | ❌ | ✅ |
 | **Documentation Tools** | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ |
+| **`fraiseql migrate`** | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ |
 | **PostgreSQL Caching** | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ |
 | **Error Monitoring** | ❌ | ✅ | ✅ | ❌ | ❌ | ✅ |
 

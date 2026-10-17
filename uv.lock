@@ -862,8 +862,6 @@ dependencies = [
   {name = "click"},
   {name = "cryptography"},
   {name = "fastapi"},
-  {name = "fraiseql-confiture", version = "0.45.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.14'"},
-  {name = "fraiseql-confiture", version = "1.37.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.14'"},
   {name = "graphql-core"},
   {name = "httpx"},
   {name = "jinja2"},
@@ -885,7 +883,7 @@ dependencies = [
 ]
 name = "fraiseql"
 source = {editable = "."}
-version = "1.26.0"
+version = "1.27.0"
 
 [package.dev-dependencies]
 dev = [
@@ -919,7 +917,7 @@ docs = [
 ]
 
 [package.metadata]
-provides-extras = ["all", "auth0", "aws", "dev", "docs", "kms", "kms-all", "kms-aws", "kms-gcp", "kms-vault", "langchain", "llamaindex", "llm", "sbom", "tracing"]
+provides-extras = ["all", "auth0", "aws", "dev", "docs", "kms", "kms-all", "kms-aws", "kms-gcp", "kms-vault", "langchain", "llamaindex", "llm", "migrate", "sbom", "tracing"]
 requires-dist = [
   {name = "aioboto3", marker = "extra == 'all'", specifier = ">=15.5.0"},
   {name = "aioboto3", marker = "extra == 'kms-all'", specifier = ">=15.5.0"},
@@ -946,8 +944,10 @@ requires-dist = [
   {name = "fraiseql", extras = ["langchain"], marker = "extra == 'llm'"},
   {name = "fraiseql", extras = ["llamaindex"], marker = "extra == 'all'"},
   {name = "fraiseql", extras = ["llamaindex"], marker = "extra == 'llm'"},
-  {name = "fraiseql-confiture", marker = "python_full_version < '3.14'", specifier = ">=0.44.0,<1.30"},
-  {name = "fraiseql-confiture", marker = "python_full_version >= '3.14'", specifier = ">=1.30.0"},
+  {name = "fraiseql", extras = ["migrate"], marker = "extra == 'all'"},
+  {name = "fraiseql", extras = ["migrate"], marker = "extra == 'dev'"},
+  {name = "fraiseql-confiture", marker = "python_full_version >= '3.14' and extra == 'migrate'", specifier = ">=1.30.0"},
+  {name = "fraiseql-confiture", marker = "python_full_version < '3.14' and extra == 'migrate'", specifier = ">=0.44.0,<1.30"},
   {name = "google-cloud-kms", marker = "extra == 'all'", specifier = ">=3.16.0"},
   {name = "google-cloud-kms", marker = "extra == 'kms-all'", specifier = ">=3.16.0"},
   {name = "google-cloud-kms", marker = "extra == 'kms-gcp'", specifier = ">=3.16.0"},
@@ -1063,6 +1063,8 @@ all = [
   {name = "boto3"},
   {name = "cryptography"},
   {name = "cyclonedx-python-lib"},
+  {name = "fraiseql-confiture", version = "1.29.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.14'"},
+  {name = "fraiseql-confiture", version = "1.38.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.14'"},
   {name = "google-cloud-kms"},
   {name = "httpx"},
   {name = "langchain"},
@@ -1099,6 +1101,8 @@ dev = [
   {name = "email-validator"},
   {name = "faker"},
   {name = "filelock"},
+  {name = "fraiseql-confiture", version = "1.29.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.14'"},
+  {name = "fraiseql-confiture", version = "1.38.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.14'"},
   {name = "hvac"},
   {name = "moto"},
   {name = "pre-commit"},
@@ -1171,6 +1175,10 @@ llm = [
   {name = "pillow"},
   {name = "pypdf"}
 ]
+migrate = [
+  {name = "fraiseql-confiture", version = "1.29.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version < '3.14'"},
+  {name = "fraiseql-confiture", version = "1.38.0", source = {registry = "https://pypi.org/simple"}, marker = "python_full_version >= '3.14'"}
+]
 sbom = [
   {name = "cyclonedx-python-lib"},
   {name = "packageurl-python"}
@@ -1186,27 +1194,26 @@ tracing = [
 
 [[package]]
 dependencies = [
-  {name = "cryptography", marker = "python_full_version < '3.14'"},
+  {name = "pglast", marker = "python_full_version < '3.14'"},
   {name = "psycopg", extra = ["binary", "pool"], marker = "python_full_version < '3.14'"},
   {name = "pydantic", marker = "python_full_version < '3.14'"},
   {name = "pyyaml", marker = "python_full_version < '3.14'"},
   {name = "rich", marker = "python_full_version < '3.14'"},
   {name = "sqlglot", marker = "python_full_version < '3.14'"},
-  {name = "sqlparse", marker = "python_full_version < '3.14'"},
   {name = "typer", marker = "python_full_version < '3.14'"}
 ]
 name = "fraiseql-confiture"
 resolution-markers = [
   "python_full_version < '3.14'"
 ]
-sdist = {url = "https://files.pythonhosted.org/packages/c0/9d/f36e79ee7402b8dbf3b337492f2853c7c09c986333b0878f5d46c937360e/fraiseql_confiture-0.45.0.tar.gz", hash = "sha256:8ebb36bc272fa74abbf0e6372f706758830ea20a34c7518c199cbb487a75df49", size = 2390825, upload-time = "2026-08-30T10:24:05.183Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/32/c5/e46717cb543c65be19ab0f36a584376a0645bebcdcdb2cd4a5b05141b1d1/fraiseql_confiture-1.29.0.tar.gz", hash = "sha256:210151a8b5f4017c580cdaf80d840fdd262e640c0d44c7391a47a6aceec42894", size = 3779078, upload-time = "2026-10-01T11:07:39.655Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "0.45.0"
+version = "1.29.0"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/de/1d/56a69cb108e302b35d5b9cb4ca668c17e869b2a471d28794288591d0fe77/fraiseql_confiture-0.45.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:ede2e17625e90723d6f3cca568b8914d02cee5c4a0c1f56601bfbc1733e91341", size = 1135102, upload-time = "2026-08-30T10:24:00.54Z"},
-  {url = "https://files.pythonhosted.org/packages/ce/c9/e913f266ebb1b48961655a463498970e1dc7f51826f49226bf92ca4ce09d/fraiseql_confiture-0.45.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:476d05d0164a27ea062a8a70d654408fbdc457f012dae1caeb4550931300a907", size = 1179992, upload-time = "2026-08-30T10:24:01.655Z"},
-  {url = "https://files.pythonhosted.org/packages/a2/8c/938f39fb80ba4ec92656718a15150fbe98a1b4c0714e64c91039e185a5e9/fraiseql_confiture-0.45.0-cp313-cp313-win_amd64.whl", hash = "sha256:1a8ba2c570353d2ab7c77306ac9385be8bef8b47aac1c4e32c896a59407c819b", size = 1090365, upload-time = "2026-08-30T10:24:02.765Z"},
-  {url = "https://files.pythonhosted.org/packages/c5/65/e60bf385e000ebc80394d40f17bcfbacbed3dc6658d08614d260fa5ee04b/fraiseql_confiture-0.45.0-cp314-cp314-win_amd64.whl", hash = "sha256:3f37d28ba12e2027c51147a928aaf94fbf4b4ba57ca8e30861e1e8456ed338dd", size = 1090365, upload-time = "2026-08-30T10:24:03.992Z"}
+  {url = "https://files.pythonhosted.org/packages/89/57/8fd0de1a86b52752071cc6791cbe73f476f4dbfd34014cd95d8c99c2da6e/fraiseql_confiture-1.29.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:eb63734d63b2ead9e576970bf4c2fcc546fc94f2d9670a7c1c8c3c8e739bf0e7", size = 1553076, upload-time = "2026-10-01T11:07:34.303Z"},
+  {url = "https://files.pythonhosted.org/packages/6f/07/c08c056473ada840a75d7cd12f3068512bbe4fc63e77d106fa7455410456/fraiseql_confiture-1.29.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:599511fce95db710c6df30d28262a0f1149c975e01ef90d5c5fc2ef3f373e9eb", size = 1582441, upload-time = "2026-10-01T11:07:35.461Z"},
+  {url = "https://files.pythonhosted.org/packages/4e/a8/aee8e59f3046a3822c48b34bef0932e39f30f274e8cecd369cc62066ef84/fraiseql_confiture-1.29.0-cp313-cp313-win_amd64.whl", hash = "sha256:b27a3164a9ed1dac6896bf7279e0083e1278f68f88f94c83bada9830cd561e21", size = 1496426, upload-time = "2026-10-01T11:07:36.673Z"},
+  {url = "https://files.pythonhosted.org/packages/de/c6/90874b72e8892f3411ee96d1c405e77ddd5fd480444fdaa5f0d28e3d97cb/fraiseql_confiture-1.29.0-cp314-cp314-win_amd64.whl", hash = "sha256:de5c3e67175e1ad371e475cbf9cc78e89c50c2c318464e6fef8f11abebfa7203", size = 1496428, upload-time = "2026-10-01T11:07:37.941Z"}
 ]
 
 [[package]]
@@ -1223,13 +1230,13 @@ name = "fraiseql-confiture"
 resolution-markers = [
   "python_full_version >= '3.14'"
 ]
-sdist = {url = "https://files.pythonhosted.org/packages/27/82/ced622e606741d733908b31572113ec3965c4733f1dc7928e185cbe4a28a/fraiseql_confiture-1.37.0.tar.gz", hash = "sha256:e868f4a3500aef0f243c833c58236015d90e3df5e2eb2b6dc2514d8e1f133d81", size = 4113954, upload-time = "2026-10-16T12:05:27.172Z"}
+sdist = {url = "https://files.pythonhosted.org/packages/7e/3b/5ec8b619d73e33eed456d4127083d6c32882beef299dd52fbc3320413e45/fraiseql_confiture-1.38.0.tar.gz", hash = "sha256:03cb2b2bd6d33e1c15c40df788658ce47306252d6223da2efc4078505731da45", size = 4119446, upload-time = "2026-10-17T13:14:34.38Z"}
 source = {registry = "https://pypi.org/simple"}
-version = "1.37.0"
+version = "1.38.0"
 wheels = [
-  {url = "https://files.pythonhosted.org/packages/55/25/51bd9a2834d94a54357643e9c3778745eb29da969a8790137d1d37088d7f/fraiseql_confiture-1.37.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:5435404eec8ac39095655592b4ce265feb426ba3b73dfb13b4e4b26fff800eda", size = 1685494, upload-time = "2026-10-16T12:05:21.835Z"},
-  {url = "https://files.pythonhosted.org/packages/54/9e/703e33d67e72296f652f77df1685e602720fe5c41e0fa7488f1e3b33addc/fraiseql_confiture-1.37.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:cf463ec1fd076b4f4a17e05b03dfc1fc36359774b1c758fdf10df13c834237da", size = 1712240, upload-time = "2026-10-16T12:05:24.092Z"},
-  {url = "https://files.pythonhosted.org/packages/d7/e2/d23d49f07245e52e9092f1d0325b34aa02f33a86322526a4c1ac545c2af9/fraiseql_confiture-1.37.0-cp314-cp314-win_amd64.whl", hash = "sha256:46a4a1abf8c43dbf6ba422284864c5fc87ca9e02cfe8786d6cd4d0f98d1ef24f", size = 1630642, upload-time = "2026-10-16T12:05:25.539Z"}
+  {url = "https://files.pythonhosted.org/packages/d7/6e/c3c1f0181ddafb550be880cdc05167882b37fd65182cd6bbaa8ad9d84d3e/fraiseql_confiture-1.38.0-cp314-cp314-macosx_11_0_arm64.whl", hash = "sha256:0458b8ab0499f92cd2353ac1481364111953b8d7870c02801cf1b6a09a4f9249", size = 1685716, upload-time = "2026-10-17T13:14:27.885Z"},
+  {url = "https://files.pythonhosted.org/packages/ab/1b/03a0ac5b92a73235b33d294690966eff541001625c320b8405b3c71d3c8b/fraiseql_confiture-1.38.0-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:1183ed7b083af2119d57b24a1c84d7b46cccd5bb3c5869ef6adad48cf9229ad7", size = 1712458, upload-time = "2026-10-17T13:14:29.761Z"},
+  {url = "https://files.pythonhosted.org/packages/89/d7/fea64d628ae603f0fc1766356b4df3fedff69e92f81bf7a0753b12cb71b5/fraiseql_confiture-1.38.0-cp314-cp314-win_amd64.whl", hash = "sha256:6b5869b9db3a5c6fb42c454d16d302efcbfa31653b310aef8a4cbbef0bbae942", size = 1630863, upload-time = "2026-10-17T13:14:31.233Z"}
 ]
 
 [[package]]

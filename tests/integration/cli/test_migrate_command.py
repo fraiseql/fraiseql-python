@@ -156,10 +156,12 @@ def test_created_migration_applies(project: tuple[Path, Path]) -> None:
 def test_failed_migration_exits_nonzero(project: tuple[Path, Path]) -> None:
     migrations_dir, _ = project
     (migrations_dir / "20260101000000_broken.up.sql").write_text("CREATE TABLE (;")
+    (migrations_dir / "20260101000000_broken.down.sql").write_text("SELECT 1;")
 
     result = _run(["up"], project)
     assert result.exit_code != 0
     assert "Successfully applied" not in result.output
+    assert result.output.count("Failed to apply migration") == 1
 
 
 def test_down_cancelled_keeps_migration(project: tuple[Path, Path], migrate_db: str) -> None:
