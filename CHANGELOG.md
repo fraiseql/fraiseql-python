@@ -5,6 +5,34 @@ All notable changes to FraiseQL are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.27.1] - 2026-10-17
+
+### Security
+
+- **Field-level authorization on the resolver-bypass paths lost arguments given
+  as variables, on graphql-core 3.3.** The Rust merge, passthrough,
+  TurboRouter, `POST /graphql/rust` and APQ-cache paths re-check
+  `authorize_fields` before serving data, passing each gated field's arguments
+  to the authorizer. graphql-core 3.3 (what `graphql-core>=3.2.12` resolves to)
+  changed `get_argument_values` to take a `VariableValues` instead of a dict,
+  so with any argument given as a variable the call raised and the arguments
+  became `{}`. A policy that denies on an argument value -- such as a `where`
+  filter on a gated list field -- then allowed the request, and two selections
+  that differed only in their variables were checked once. Variables are now
+  coerced against each operation's definitions first, as execution does, and
+  variables that don't coerce are rejected. graphql-core 3.2 was not affected.
+  Affects 1.23.6 through 1.27.0. (GHSA-f94w-r8x8-c3mx)
+
+### Fixed
+
+- `debug_graphql_info` raised `AttributeError` on graphql-core 3.3 when the
+  operation had variables. (#550)
+
+### Internal
+
+- CI installs from `uv.lock`, with ruff 0.17.1 and ty 0.0.89, and `pytest -n
+  auto` no longer fails tests that depend on what ran before them. (#550)
+
 ## [1.27.0] - 2026-10-17
 
 ### Added

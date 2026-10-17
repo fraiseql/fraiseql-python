@@ -159,3 +159,67 @@ async def test_enforcement_calls_authorizer_with_field_identity() -> None:
     schema = _build(authorizer=recorder)
     await _enforce(schema, "{ account { secret } }")
     assert recorder.calls == [("Account.secret", {})]
+
+
+def _gated_schema() -> Any:
+    """A schema whose ``Query.doc(id, filter)`` carries the gate marker."""
+    from graphql import build_schema
+
+    schema = build_schema(
+        """
+        input Filter { scope: String = "own" }
+        type Query { doc(id: Int, filter: Filter): String }
+        """
+    )
+
+    def resolve(*_: Any, **__: Any) -> str:
+        return "doc"
+
+    resolve.__fraiseql_field_gated__ = True  # type: ignore[attr-defined]
+    resolve.__fraiseql_field_auth_id__ = "Query.doc"  # type: ignore[attr-defined]
+    schema.query_type.fields["doc"].resolve = resolve
+    return schema
+
+
+def test_iter_gated_selections_passes_variable_arguments() -> None:
+    """Arguments given as variables reach the authorizer.
+
+    On graphql-core 3.3, ``get_argument_values`` takes a ``VariableValues``, not a dict. Passing
+    the request's dict raised, and the arguments silently became ``{}``.
+    """
+    document = parse("query Q($id: Int) { doc(id: $id) }")
+
+    assert iter_gated_selections(_gated_schema(), document, {"id": 5}) == [("Query.doc", {"id": 5})]
+
+
+def test_iter_gated_selections_checks_each_variable_value() -> None:
+    """Two selections that differ only in their variables are two checks, not one."""
+    document = parse("query Q($a: Int, $b: Int) { x: doc(id: $a) y: doc(id: $b) }")
+
+    assert iter_gated_selections(_gated_schema(), document, {"a": 1, "b": 2}) == [
+        ("Query.doc", {"id": 1}),
+        ("Query.doc", {"id": 2}),
+    ]
+
+
+def test_iter_gated_selections_coerces_variables_like_the_resolver() -> None:
+    """Input-object defaults are applied, as in the arguments the resolver receives."""
+    document = parse("query Q($f: Filter) { doc(filter: $f) }")
+
+    assert iter_gated_selections(_gated_schema(), document, {"f": {}}) == [
+        ("Query.doc", {"filter": {"scope": "own"}})
+    ]
+
+
+def test_iter_gated_selections_uses_variables_inside_fragments() -> None:
+    document = parse("query Q($id: Int) { ...F } fragment F on Query { doc(id: $id) }")
+
+    assert iter_gated_selections(_gated_schema(), document, {"id": 7}) == [("Query.doc", {"id": 7})]
+
+
+def test_iter_gated_selections_rejects_variables_that_do_not_coerce() -> None:
+    """Fail closed: the request would be rejected by execution for the same reason."""
+    document = parse("query Q($id: Int) { doc(id: $id) }")
+
+    with pytest.raises(GraphQLError, match=r"\$id"):
+        iter_gated_selections(_gated_schema(), document, {"id": "not-an-int"})
