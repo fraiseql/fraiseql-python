@@ -155,8 +155,9 @@ def define_fraiseql_type(
 
         raise TypeError(
             f"Forward reference '{undefined_name}' in {cls.__name__} cannot be resolved. "
-            f"Define '{undefined_name}' before '{cls.__name__}', or use "
-            f"'from __future__ import annotations' for deferred evaluation."
+            f"Define '{undefined_name}' before '{cls.__name__}' at module level, or import "
+            f"it into that module: annotations are resolved against the module's globals "
+            f"when the decorator runs."
         ) from e
     field_map, patched_annotations = collect_fraise_fields(typed_cls, type_hints, kind=kind)
 
