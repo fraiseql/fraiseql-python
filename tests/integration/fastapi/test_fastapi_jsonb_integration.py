@@ -77,6 +77,7 @@ async def create_product_with_jsonb(
     return await repo.find_one("test_products_fastapi_jsonb_view", mandatory_filters={"id": id})
 
 
+@pytest.mark.usefixtures("clear_registry_class")
 class TestFastAPIJSONBIntegration:
     """Test FastAPI router with JSONB entities through complete HTTP stack.
 
@@ -84,11 +85,6 @@ class TestFastAPIJSONBIntegration:
         HTTP Request → FastAPI Router → execute_graphql() → Resolver → Repository
         → RustResponseBytes → HTTP Response
     """
-
-    @pytest.fixture(scope="class")
-    def clear_registry_fixture(self, clear_registry_class):
-        """Clear registry before class tests."""
-        return
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
     async def setup_fastapi_jsonb_test(self, class_db_pool, test_schema) -> None:
