@@ -100,7 +100,7 @@ class TestDeriveAutoAggregationNativeDimensions:
         assert result is not None
         group_by, _, native_set, _ = result
         assert "period_date" in group_by
-        assert "category_id" in group_by   # not selected, but always included
+        assert "category_id" in group_by  # not selected, but always included
         assert native_set == {"period_date", "category_id"}
 
     def test_skip_when_still_works_with_native_dims(self) -> None:

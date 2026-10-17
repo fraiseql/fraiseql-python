@@ -17,7 +17,9 @@ from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_slow_query_timeout_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_slow_query_timeout_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of slow queries that exceed timeout limits.
 
     Scenario: Queries take progressively longer to execute via latency injection.
@@ -40,8 +42,7 @@ async def test_slow_query_timeout_handling(chaos_db_client, chaos_test_schema, b
         try:
             # Try to execute with specific timeout
             result = await asyncio.wait_for(
-                chaos_db_client.execute_query(operation),
-                timeout=timeout_seconds
+                chaos_db_client.execute_query(operation), timeout=timeout_seconds
             )
             execution_time = result.get("_execution_time_ms", 0)
 
@@ -76,7 +77,9 @@ async def test_slow_query_timeout_handling(chaos_db_client, chaos_test_schema, b
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_deadlock_detection_and_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_deadlock_detection_and_recovery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test detection and recovery from database deadlocks.
 
     Scenario: Concurrent operations create deadlock conditions.
@@ -94,8 +97,6 @@ async def test_deadlock_detection_and_recovery(chaos_db_client, chaos_test_schem
     # Scale iterations based on hardware (10 on baseline, 5-40 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(5, int(10 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:
@@ -135,7 +136,9 @@ async def test_deadlock_detection_and_recovery(chaos_db_client, chaos_test_schem
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_serialization_failure_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_serialization_failure_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of serialization failures in concurrent environments.
 
     Scenario: Multiple transactions conflict due to concurrent modifications.
@@ -153,8 +156,6 @@ async def test_serialization_failure_handling(chaos_db_client, chaos_test_schema
     # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(4, int(8 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         retry_count = 0
@@ -177,7 +178,7 @@ async def test_serialization_failure_handling(chaos_db_client, chaos_test_schema
                     serialization_errors += 1
                     retry_count += 1
                     # Exponential backoff
-                    await asyncio.sleep(0.01 * (2 ** retry_count))
+                    await asyncio.sleep(0.01 * (2**retry_count))
                 else:
                     raise
 
@@ -186,16 +187,16 @@ async def test_serialization_failure_handling(chaos_db_client, chaos_test_schema
     # Validate serialization failure handling
     assert serialization_errors > 0, "Should experience serialization conflicts"
     assert successful_commits >= 6, "Should successfully commit most operations after retries"
-    assert serialization_errors <= successful_commits, (
-        "Should resolve most conflicts with retries"
-    )
+    assert serialization_errors <= successful_commits, "Should resolve most conflicts with retries"
 
 
 @pytest.mark.chaos
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_query_execution_pool_exhaustion(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_query_execution_pool_exhaustion(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of database connection pool exhaustion during query execution.
 
     Scenario: All database connections become occupied, new queries queue or fail.
@@ -217,8 +218,6 @@ async def test_query_execution_pool_exhaustion(chaos_db_client, chaos_test_schem
     # Scale iterations based on hardware (5 on baseline, 3-20 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(5 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:
@@ -255,7 +254,9 @@ async def test_query_execution_pool_exhaustion(chaos_db_client, chaos_test_schem
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_query_complexity_resource_exhaustion(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_query_complexity_resource_exhaustion(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of resource exhaustion from highly complex queries.
 
     Scenario: Very complex queries consume excessive database resources.
@@ -277,14 +278,11 @@ async def test_query_complexity_resource_exhaustion(chaos_db_client, chaos_test_
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(5 * chaos_config.load_multiplier))
 
-
-
     for i in range(iterations):
         try:
             # Complex query that might exhaust resources
             result = await asyncio.wait_for(
-                chaos_db_client.execute_query(complex_operation),
-                timeout=10.0
+                chaos_db_client.execute_query(complex_operation), timeout=10.0
             )
             execution_time = result.get("_execution_time_ms", 100.0)
             metrics.record_query_time(execution_time)
@@ -316,7 +314,9 @@ async def test_query_complexity_resource_exhaustion(chaos_db_client, chaos_test_
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_concurrent_query_deadlock_simulation(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_concurrent_query_deadlock_simulation(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test deadlock detection in concurrent query scenarios.
 
     Scenario: Multiple queries execute concurrently, creating deadlock potential.
@@ -349,7 +349,9 @@ async def test_concurrent_query_deadlock_simulation(chaos_db_client, chaos_test_
     successful_results = [r for r in results if isinstance(r, tuple) and r[1] is not None]
     error_results = [r for r in results if isinstance(r, tuple) and r[2] is not None]
 
-    assert len(successful_results) + len(error_results) == 3, "All concurrent queries should complete"
+    assert len(successful_results) + len(error_results) == 3, (
+        "All concurrent queries should complete"
+    )
     assert len(successful_results) >= 2, "Most concurrent queries should succeed"
 
     # Check for reasonable execution times (should not be excessively slow)

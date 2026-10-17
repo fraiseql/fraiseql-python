@@ -57,7 +57,9 @@ async def test_query_execution_success_rate(chaos_db_client, chaos_test_schema, 
 @pytest.mark.chaos_validation
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_data_consistency_under_concurrent_load(chaos_db_client, chaos_test_schema, baseline_metrics):
+async def test_data_consistency_under_concurrent_load(
+    chaos_db_client, chaos_test_schema, baseline_metrics
+):
     """Validate data consistency under concurrent load.
 
     Success Criteria: Concurrent operations should maintain data consistency
@@ -199,16 +201,16 @@ async def test_latency_degradation_bounds(chaos_db_client, chaos_test_schema, ba
         degradation = chaos_avg - baseline_avg
 
         # Max degradation threshold: 10 seconds (10000ms)
-        assert degradation < 10000, (
-            f"Latency degradation {degradation:.1f}ms exceeds 10s threshold"
-        )
+        assert degradation < 10000, f"Latency degradation {degradation:.1f}ms exceeds 10s threshold"
 
 
 @pytest.mark.chaos
 @pytest.mark.chaos_validation
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_operation_isolation_under_concurrency(chaos_db_client, chaos_test_schema, baseline_metrics):
+async def test_operation_isolation_under_concurrency(
+    chaos_db_client, chaos_test_schema, baseline_metrics
+):
     """Validate operation isolation under concurrent execution.
 
     Success Criteria: Concurrent operations should maintain isolation
@@ -247,9 +249,7 @@ async def test_operation_isolation_under_concurrency(chaos_db_client, chaos_test
 
     # Most operations should maintain isolation
     isolation_successes = sum(1 for r in results if r is True)
-    assert isolation_successes >= num_concurrent * 0.8, (
-        "Most operations should maintain isolation"
-    )
+    assert isolation_successes >= num_concurrent * 0.8, "Most operations should maintain isolation"
 
 
 @pytest.mark.chaos

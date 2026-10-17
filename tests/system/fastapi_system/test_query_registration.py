@@ -35,7 +35,9 @@ class Post:
 async def getUser(info, id: ID) -> User:
     """Get user by ID."""
     # IDScalar parses the id to uuid.UUID, so use it directly or convert if string
-    return User(id=id if isinstance(id, UUID) else UUID(id), name="Test User", email="test@example.com")
+    return User(
+        id=id if isinstance(id, UUID) else UUID(id), name="Test User", email="test@example.com"
+    )
 
 
 @fraiseql.query
@@ -59,7 +61,11 @@ async def listUsers(info) -> list[User]:
 async def getPost(info, id: ID) -> Post:
     """Get post by ID."""
     # IDScalar parses the id to uuid.UUID, so use it directly or convert if string
-    return Post(id=id if isinstance(id, UUID) else UUID(id), title="Test Post", authorId=UUID("123e4567-e89b-12d3-a456-426614174000"))
+    return Post(
+        id=id if isinstance(id, UUID) else UUID(id),
+        title="Test Post",
+        authorId=UUID("123e4567-e89b-12d3-a456-426614174000"),
+    )
 
 
 # Define queries using QueryRoot pattern with @field

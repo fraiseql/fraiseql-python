@@ -55,7 +55,13 @@ class TestDecoratedQueriesWithEnums:
         async def allocations(info, period: Period | None = None) -> list[Allocation]:
             """Decorated query resolver with enum parameter."""
             # Log what type we received
-            type_log.append({"type": type(period).__name__, "value": str(period), "is_enum": isinstance(period, Period)})
+            type_log.append(
+                {
+                    "type": type(period).__name__,
+                    "value": str(period),
+                    "is_enum": isinstance(period, Period),
+                }
+            )
 
             # Simulate the printoptim pattern
             filters = {}
@@ -147,7 +153,9 @@ class TestDecoratedQueriesWithEnums:
         if inline_is_enum and variable_is_enum:
             print("\n✅ BOTH are Period enums - bug appears fixed")
         elif inline_is_enum and not variable_is_enum:
-            print(f"\n🐛 BUG CONFIRMED: inline={inline_type} (enum), variable={variable_type} (not enum)")
+            print(
+                f"\n🐛 BUG CONFIRMED: inline={inline_type} (enum), variable={variable_type} (not enum)"
+            )
         elif not inline_is_enum and not variable_is_enum:
             print("\n⚠️  Both are strings - coercion not happening in either case")
 
@@ -174,8 +182,10 @@ class TestDecoratedQueriesWithEnums:
             period_is_enum = isinstance(period, Period)
             status_is_enum = isinstance(status, Status)
 
-            print(f"\nRECEIVED: period type={type(period).__name__} (enum={period_is_enum}), "
-                  f"status type={type(status).__name__} (enum={status_is_enum})")
+            print(
+                f"\nRECEIVED: period type={type(period).__name__} (enum={period_is_enum}), "
+                f"status type={type(status).__name__} (enum={status_is_enum})"
+            )
 
             if period_is_enum and status_is_enum:
                 return [Record(id="1", period=period, status=status)]

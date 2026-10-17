@@ -9,6 +9,7 @@ from fraiseql import ID, key, type
 @key(fields=["id"])
 class User:
     """User entity - owned by this subgraph"""
+
     id: ID
     email: str
     name: str
@@ -37,10 +38,7 @@ class Mutation:
         """Create a new user"""
 
     def update_user(
-        self,
-        id: ID,
-        email: Optional[str] = None,
-        name: Optional[str] = None
+        self, id: ID, email: Optional[str] = None, name: Optional[str] = None
     ) -> Optional[User]:
         """Update user"""
 

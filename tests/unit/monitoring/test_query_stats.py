@@ -159,9 +159,7 @@ class TestGetStats:
 
     @pytest.mark.asyncio
     async def test_graceful_degradation_on_undefined_table(self) -> None:
-        pool, _ = _make_mock_pool(
-            side_effect=psycopg.errors.UndefinedTable("v_query_stats")
-        )
+        pool, _ = _make_mock_pool(side_effect=psycopg.errors.UndefinedTable("v_query_stats"))
         collector = QueryStatsCollector(pool)
         stats = await collector.get_stats()
         assert stats == []
@@ -179,13 +177,9 @@ class TestGetStats:
 
     @pytest.mark.asyncio
     async def test_warns_only_once(self) -> None:
-        pool, _ = _make_mock_pool(
-            side_effect=psycopg.errors.UndefinedTable("v_query_stats")
-        )
+        pool, _ = _make_mock_pool(side_effect=psycopg.errors.UndefinedTable("v_query_stats"))
         collector = QueryStatsCollector(pool)
-        with patch(
-            "fraiseql.monitoring.query_stats.logger"
-        ) as mock_logger:
+        with patch("fraiseql.monitoring.query_stats.logger") as mock_logger:
             await collector.get_stats()
             await collector.get_stats()
             assert mock_logger.warning.call_count == 1
@@ -249,9 +243,7 @@ class TestResetStats:
     @pytest.mark.asyncio
     async def test_raises_fraiseql_error_on_insufficient_privilege(self) -> None:
         pool, _ = _make_mock_pool(
-            side_effect=psycopg.errors.InsufficientPrivilege(
-                "permission denied"
-            )
+            side_effect=psycopg.errors.InsufficientPrivilege("permission denied")
         )
         collector = QueryStatsCollector(pool)
         with pytest.raises(FraiseQLError, match="insufficient privileges"):
@@ -267,16 +259,12 @@ class TestSingleton:
     """Test init_query_stats / get_query_stats_collector."""
 
     def test_collector_is_none_before_init(self) -> None:
-        with patch(
-            "fraiseql.monitoring.query_stats._collector_instance", None
-        ):
+        with patch("fraiseql.monitoring.query_stats._collector_instance", None):
             assert get_query_stats_collector() is None
 
     def test_init_returns_collector(self) -> None:
         pool = MagicMock()
-        with patch(
-            "fraiseql.monitoring.query_stats._collector_instance", None
-        ):
+        with patch("fraiseql.monitoring.query_stats._collector_instance", None):
             collector = init_query_stats(pool)
             assert isinstance(collector, QueryStatsCollector)
 

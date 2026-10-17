@@ -10,6 +10,7 @@ from fraiseql import ID, extends, external, key, type
 @type
 class Order:
     """Order extended from orders subgraph"""
+
     id: ID = external()
     products: List["Product"]
 
@@ -18,6 +19,7 @@ class Order:
 @key(fields=["id"])
 class Product:
     """Product entity - owned by this subgraph"""
+
     id: ID
     identifier: str
     name: str
@@ -53,7 +55,7 @@ class Mutation:
         name: str,
         price: float,
         stock: int,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> Product:
         """Create a new product"""
 

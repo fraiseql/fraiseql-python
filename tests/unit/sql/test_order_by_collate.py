@@ -20,14 +20,12 @@ class TestOrderByCollate:
         """
         ob = OrderBy(field="name", collation="en_US.utf8")
         result = ob.to_sql().as_string(None)
-        assert '(t ->> \'name\') COLLATE "en_US.utf8" ASC' in result
+        assert "(t ->> 'name') COLLATE \"en_US.utf8\" ASC" in result
 
     def test_nested_field_with_collation(self):
         """Test collation on nested field."""
         ob = OrderBy(
-            field="profile.lastName",
-            direction=OrderDirection.DESC,
-            collation="fr_FR.utf8"
+            field="profile.lastName", direction=OrderDirection.DESC, collation="fr_FR.utf8"
         )
         result = ob.to_sql().as_string(None)
         # Should have: t -> 'profile' -> 'lastName' COLLATE "fr_FR.utf8" DESC
@@ -52,11 +50,13 @@ class TestOrderByCollate:
 
     def test_multiple_fields_mixed_collations(self):
         """Test OrderBySet with mixed collations."""
-        obs = OrderBySet([
-            OrderBy(field="country", collation="C"),
-            OrderBy(field="name", collation="en_US.utf8"),
-            OrderBy(field="age")  # No collation
-        ])
+        obs = OrderBySet(
+            [
+                OrderBy(field="country", collation="C"),
+                OrderBy(field="name", collation="en_US.utf8"),
+                OrderBy(field="age"),  # No collation
+            ]
+        )
         result = obs.to_sql().as_string(None)
         assert "ORDER BY" in result
         assert 'COLLATE "C"' in result
@@ -69,7 +69,7 @@ class TestOrderByCollate:
         ob = OrderBy(
             field="embedding.cosine_distance",
             value=[0.1, 0.2, 0.3],
-            collation="en_US.utf8"  # Should be ignored
+            collation="en_US.utf8",  # Should be ignored
         )
         result = ob.to_sql().as_string(None)
         # Vector operations use column name directly, no COLLATE

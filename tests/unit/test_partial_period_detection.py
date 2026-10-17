@@ -35,7 +35,7 @@ from fraiseql.where_clause import FieldCondition, WhereClause
         (date(2025, 7, 1), "quarter", True),
         (date(2025, 10, 1), "quarter", True),
         # week: Monday aligned
-        (date(2025, 3, 3), "week", True),   # 2025-03-03 is a Monday
+        (date(2025, 3, 3), "week", True),  # 2025-03-03 is a Monday
         (date(2025, 3, 4), "week", False),  # Tuesday
         # day: always aligned
         (date(2025, 3, 3), "day", True),

@@ -17,7 +17,9 @@ from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_packet_loss_recovery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test recovery from packet loss at different severity levels.
 
     Scenario: Network drops packets at specified rate (1%, 5%, 10%).
@@ -151,7 +153,9 @@ async def test_packet_loss_recovery(chaos_db_client, chaos_test_schema, baseline
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_packet_corruption_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of corrupted packets.
 
     Scenario: Network delivers corrupted data at varying rates.
@@ -237,7 +241,9 @@ async def test_packet_corruption_handling(chaos_db_client, chaos_test_schema, ba
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_out_of_order_delivery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_out_of_order_delivery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of out-of-order packet delivery.
 
     Scenario: Network delivers packets in wrong order (variable arrival timing).
@@ -293,7 +299,9 @@ async def test_out_of_order_delivery(chaos_db_client, chaos_test_schema, baselin
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_duplicate_packet_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_duplicate_packet_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of duplicate packet delivery.
 
     Scenario: Network delivers duplicate packets (TCP handles detection).

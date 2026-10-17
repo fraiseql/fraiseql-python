@@ -160,7 +160,9 @@ class TestCacheChaos(ChaosTestCase):
         failure_interval = max(1, int(1 / 0.25))  # Every 4th operation (25% rate)
         failure_iterations = set(range(failure_interval - 1, total_operations, failure_interval))
 
-        cache_miss_interval = max(1, int(1 / 0.2))  # Every 5th operation (20% miss rate = 80% hit rate)
+        cache_miss_interval = max(
+            1, int(1 / 0.2)
+        )  # Every 5th operation (20% miss rate = 80% hit rate)
 
         # State tracking
         backend_available = True
@@ -198,7 +200,9 @@ class TestCacheChaos(ChaosTestCase):
 
                     # Deterministic backend recovery (after 2-3 operations)
                     operations_in_failure = i - failure_start
-                    if operations_in_failure >= 2:  # Recover after 2 operations (40% cumulative chance)
+                    if (
+                        operations_in_failure >= 2
+                    ):  # Recover after 2 operations (40% cumulative chance)
                         backend_available = True
                         failure_start = None
                         print(f"Cache backend recovered at operation {i}")

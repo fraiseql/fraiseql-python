@@ -108,9 +108,7 @@ class Phase1SuccessCriteria:
         # Check error rate is acceptable
         error_rate = results.get("error_count", 0) / max(total_ops, 1)
         if error_rate > 0.2:  # Max 20% errors under latency
-            issues.append(
-                f"Error rate too high under latency: {error_rate:.1%} (max 20%)"
-            )
+            issues.append(f"Error rate too high under latency: {error_rate:.1%} (max 20%)")
             passed = False
 
         status_msg = "PASS" if passed else "FAIL"

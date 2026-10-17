@@ -865,9 +865,7 @@ class TestLTreeIndexOperatorsGraphQL:
 
     def test_index_gte_operator_graphql_integration(self) -> None:
         """Test index_gte operator generates correct SQL."""
-        result = self.strategy.build_sql(
-            "index_gte", ("physics", self.path_sql, 2), LTree
-        )
+        result = self.strategy.build_sql("index_gte", ("physics", self.path_sql, 2), LTree)
         sql_str = result.as_string(None)
         assert "index(" in sql_str
         assert "physics" in sql_str

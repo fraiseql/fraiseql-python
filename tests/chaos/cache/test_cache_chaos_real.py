@@ -18,7 +18,9 @@ from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 @pytest.mark.chaos_cache
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_cache_invalidation_storm(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_cache_invalidation_storm(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test cache invalidation storm resilience.
 
     Scenario: Massive cache invalidation causes cache thrashing.
@@ -79,7 +81,9 @@ async def test_cache_invalidation_storm(chaos_db_client, chaos_test_schema, base
 @pytest.mark.chaos_cache
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_cache_corruption_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_cache_corruption_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test cache corruption detection and recovery.
 
     Scenario: Cache contains corrupted data.
@@ -144,7 +148,9 @@ async def test_cache_corruption_handling(chaos_db_client, chaos_test_schema, bas
 @pytest.mark.chaos_cache
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_cache_backend_failure(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_cache_backend_failure(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test cache backend failure and recovery.
 
     Scenario: Cache backend becomes unavailable.
@@ -243,7 +249,9 @@ async def test_cache_backend_failure(chaos_db_client, chaos_test_schema, baselin
 @pytest.mark.chaos_cache
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_cache_stampede_prevention(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_cache_stampede_prevention(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test cache stampede prevention under concurrent load.
 
     Scenario: Multiple concurrent requests try to populate same cache entry.
@@ -310,9 +318,7 @@ async def test_cache_stampede_prevention(chaos_db_client, chaos_test_schema, bas
             errors += 1
 
     # Validate stampede prevention
-    assert successes >= num_threads * 0.8, (
-        f"Too many failed requests: {successes}/{num_threads}"
-    )
+    assert successes >= num_threads * 0.8, f"Too many failed requests: {successes}/{num_threads}"
 
     if execution_times:
         avg_time = statistics.mean(execution_times)

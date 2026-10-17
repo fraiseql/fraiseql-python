@@ -184,7 +184,9 @@ async def test_authentication_service_outage(
 
     outage_iterations = set(range(outage_interval - 1, total_operations, outage_interval))
     auth_fail_iterations = set(range(auth_fail_interval - 1, total_operations, auth_fail_interval))
-    degraded_success_iterations = set(range(degraded_success_interval - 1, total_operations, degraded_success_interval))
+    degraded_success_iterations = set(
+        range(degraded_success_interval - 1, total_operations, degraded_success_interval)
+    )
     recovery_iterations = set(range(recovery_interval - 1, total_operations, recovery_interval))
 
     for i in range(total_operations):

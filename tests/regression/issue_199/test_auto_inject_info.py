@@ -62,9 +62,7 @@ async def test_query_decorator_auto_injects_info_into_context():
         assert "graphql_info" in info.context, (
             "Decorator should inject info into context['graphql_info']"
         )
-        assert info.context["graphql_info"] is info, (
-            "Injected info should be the same object"
-        )
+        assert info.context["graphql_info"] is info, "Injected info should be the same object"
         return []
 
     # Call the decorated function
@@ -145,6 +143,7 @@ async def test_existing_resolvers_unchanged():
 
     Validates that the change is backwards compatible.
     """
+
     # Define a query with explicit info=info (old pattern)
     @fraiseql.query
     async def users_old_style(info: Any, limit: int = 10) -> list[User]:

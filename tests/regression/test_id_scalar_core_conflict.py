@@ -196,9 +196,7 @@ class TestIDTypeFixed:
             return []
 
         # All types with ID should work together without conflicts
-        schema = fraiseql.build_fraiseql_schema(
-            query_types=[users, posts, comments]
-        )
+        schema = fraiseql.build_fraiseql_schema(query_types=[users, posts, comments])
 
         assert schema is not None
 
@@ -242,8 +240,7 @@ class TestIDTypeFixed:
 
         # Should not have serialization errors
         assert result.errors is None or not any(
-            "ID" in str(e) and "serialize" in str(e).lower()
-            for e in result.errors
+            "ID" in str(e) and "serialize" in str(e).lower() for e in result.errors
         )
 
     def test_schema_type_map_contains_id_scalar(self):
@@ -263,10 +260,7 @@ class TestIDTypeFixed:
         assert "ID" in schema.type_map, "ID scalar should be in schema type_map"
 
         # FraiseQL's custom ID scalar replaces the built-in
-        id_types = [
-            name for name in schema.type_map.keys()
-            if name == "ID"
-        ]
+        id_types = [name for name in schema.type_map.keys() if name == "ID"]
         assert len(id_types) == 1, "Expected exactly 1 'ID' type in schema"
 
     def test_schema_uses_custom_id_scalar(self):

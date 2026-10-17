@@ -40,6 +40,7 @@ def toxiproxy():
         except:
             pass
 
+
 # For unittest-style tests, provide a default toxiproxy instance
 _default_toxiproxy = ToxiproxyManager()
 

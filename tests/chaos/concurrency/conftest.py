@@ -16,5 +16,5 @@ def inject_chaos_config(request, chaos_config):
     This fixture runs automatically for all tests in this directory and
     makes chaos_config available as self.chaos_config in test methods.
     """
-    if hasattr(request, 'instance') and request.instance is not None:
+    if hasattr(request, "instance") and request.instance is not None:
         request.instance.chaos_config = chaos_config

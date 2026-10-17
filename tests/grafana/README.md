@@ -209,8 +209,7 @@ When adding a new dashboard:
        ]
 
        for expected in expected_panels:
-           assert expected in panel_titles, \
-               f"Your dashboard missing panel: {expected}"
+           assert expected in panel_titles, f"Your dashboard missing panel: {expected}"
    ```
 
 3. **Add expected tags** to tag validation:

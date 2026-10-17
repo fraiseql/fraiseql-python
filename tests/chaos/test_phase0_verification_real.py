@@ -159,6 +159,7 @@ async def test_chaos_injection_basic(chaos_db_client, chaos_test_schema, baselin
     # Verify chaos had effect
     if baseline_times and chaos_times:
         import statistics
+
         baseline_avg = statistics.mean(baseline_times)
         chaos_avg = statistics.mean(chaos_times)
         # Chaos should show measurable delay

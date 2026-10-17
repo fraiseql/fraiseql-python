@@ -418,17 +418,15 @@ class TestBinaryVectorBitWidth:
     QUERY_BITS = "1111000011110000111100001111000011110000111100001111000011110000"
 
     def test_hamming_casts_both_operands_to_the_literal_width(self) -> None:
-        result = build_hamming_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        result = build_hamming_distance_sql(SQL("(data ->> 'fingerprint')"), self.QUERY_BITS)
         assert result.as_string(None) == (
-            "((data ->> 'fingerprint'))::bit(64) <~> "
-            f"'{self.QUERY_BITS}'::bit(64)"
+            f"((data ->> 'fingerprint'))::bit(64) <~> '{self.QUERY_BITS}'::bit(64)"
         )
 
     def test_jaccard_casts_both_operands_to_the_literal_width(self) -> None:
-        result = build_jaccard_distance_sql(SQL('(data ->> \'fingerprint\')'), self.QUERY_BITS)
+        result = build_jaccard_distance_sql(SQL("(data ->> 'fingerprint')"), self.QUERY_BITS)
         assert result.as_string(None) == (
-            "jaccard_distance(((data ->> 'fingerprint'))::bit(64), "
-            f"'{self.QUERY_BITS}'::bit(64))"
+            f"jaccard_distance(((data ->> 'fingerprint'))::bit(64), '{self.QUERY_BITS}'::bit(64))"
         )
 
     @pytest.mark.parametrize("builder", [build_hamming_distance_sql, build_jaccard_distance_sql])
@@ -452,7 +450,7 @@ class TestBinaryVectorBitWidth:
     )
     def test_column_side_is_cast_too(self, builder, prefix) -> None:
         """The path is a JSONB text extraction, so it needs the cast as well."""
-        sql_str = builder(SQL('(data ->> \'fp\')'), "101010").as_string(None)
+        sql_str = builder(SQL("(data ->> 'fp')"), "101010").as_string(None)
         assert sql_str.startswith(prefix)
 
 
@@ -470,7 +468,7 @@ class TestJaccardRendersWithoutAPercentSign:
     BITS = "111000"
 
     def test_jaccard_uses_the_function_form(self) -> None:
-        result = build_jaccard_distance_sql(SQL('(data ->> \'fp\')'), self.BITS)
+        result = build_jaccard_distance_sql(SQL("(data ->> 'fp')"), self.BITS)
         assert result.as_string(None) == (
             "jaccard_distance(((data ->> 'fp'))::bit(6), '111000'::bit(6))"
         )

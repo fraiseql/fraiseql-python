@@ -67,7 +67,7 @@ class TestDictShape:
     def test_text_field_gets_the_default(self) -> None:
         sql = _render({"name": "ASC"}, _Config(), _Doc)
 
-        assert sql == 'ORDER BY (t ->> \'name\') COLLATE "fr_FR.utf8" ASC'
+        assert sql == "ORDER BY (t ->> 'name') COLLATE \"fr_FR.utf8\" ASC"
 
     def test_numeric_field_is_left_alone(self) -> None:
         """The silent wrong answer #481 refused to ship: 1, 10, 2."""

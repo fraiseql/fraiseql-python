@@ -148,7 +148,9 @@ async def test_race_condition_prevention(chaos_db_client, chaos_test_schema, bas
 
     # Race conditions should be minimal
     if race_conditions_detected > 0:
-        assert race_conditions_detected <= 1, f"Too many race conditions: {race_conditions_detected}"
+        assert race_conditions_detected <= 1, (
+            f"Too many race conditions: {race_conditions_detected}"
+        )
 
 
 @pytest.mark.chaos
@@ -223,9 +225,7 @@ async def test_deadlock_prevention_under_load(chaos_db_client, chaos_test_schema
 
     total_ops = num_concurrent * operations_per_concurrent
     success_rate = successes / total_ops
-    assert success_rate >= 0.75, (
-        f"Deadlock prevention failures: {success_rate:.2f} success rate"
-    )
+    assert success_rate >= 0.75, f"Deadlock prevention failures: {success_rate:.2f} success rate"
 
     # Deadlocks should be minimal
     if deadlock_events > 0:
@@ -377,7 +377,9 @@ async def test_concurrent_mutation_isolation(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_concurrency
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_load_shedding_under_extreme_concurrency(chaos_db_client, chaos_test_schema, baseline_metrics):
+async def test_load_shedding_under_extreme_concurrency(
+    chaos_db_client, chaos_test_schema, baseline_metrics
+):
     """Test load shedding behavior under extreme concurrent load.
 
     Scenario: Many concurrent requests exceed system capacity.

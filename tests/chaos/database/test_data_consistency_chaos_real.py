@@ -16,7 +16,9 @@ from chaos.fraiseql_scenarios import FraiseQLTestScenarios
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_transaction_rollback_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_transaction_rollback_recovery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test recovery from transaction rollbacks.
 
     Scenario: Transactions are rolled back due to conflicts or errors.
@@ -34,8 +36,6 @@ async def test_transaction_rollback_recovery(chaos_db_client, chaos_test_schema,
     # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(4, int(8 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:
@@ -79,7 +79,9 @@ async def test_transaction_rollback_recovery(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_partial_update_failure_recovery(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_partial_update_failure_recovery(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test recovery from partial update failures.
 
     Scenario: Multi-field updates fail partway through execution.
@@ -96,8 +98,6 @@ async def test_partial_update_failure_recovery(chaos_db_client, chaos_test_schem
     # Scale iterations based on hardware (6 on baseline, 3-24 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(6 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:
@@ -136,7 +136,9 @@ async def test_partial_update_failure_recovery(chaos_db_client, chaos_test_schem
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_constraint_violation_handling(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_constraint_violation_handling(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of database constraint violations.
 
     Scenario: Operations violate database constraints (unique, foreign key, check).
@@ -153,8 +155,6 @@ async def test_constraint_violation_handling(chaos_db_client, chaos_test_schema,
     # Scale iterations based on hardware (7 on baseline, 3-28 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(7 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:
@@ -193,7 +193,9 @@ async def test_constraint_violation_handling(chaos_db_client, chaos_test_schema,
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_transaction_isolation_anomaly_simulation(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_transaction_isolation_anomaly_simulation(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test handling of transaction isolation anomalies.
 
     Scenario: Concurrent transactions create isolation anomalies (dirty reads, etc).
@@ -267,7 +269,9 @@ async def test_transaction_isolation_anomaly_simulation(chaos_db_client, chaos_t
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_data_corruption_detection(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_data_corruption_detection(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test detection of data corruption scenarios.
 
     Scenario: Database returns corrupted or inconsistent data.
@@ -284,8 +288,6 @@ async def test_data_corruption_detection(chaos_db_client, chaos_test_schema, bas
     # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(4, int(8 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:
@@ -316,16 +318,16 @@ async def test_data_corruption_detection(chaos_db_client, chaos_test_schema, bas
 
     # Validate corruption detection
     assert corruption_detected > 0, "Should detect some data corruption"
-    assert valid_responses > corruption_detected, (
-        "Should have more valid responses than corruption"
-    )
+    assert valid_responses > corruption_detected, "Should have more valid responses than corruption"
 
 
 @pytest.mark.chaos
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_cascading_failure_prevention(chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config):
+async def test_cascading_failure_prevention(
+    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
+):
     """Test prevention of cascading failures in data operations.
 
     Scenario: One failed operation shouldn't cause cascading failures.
@@ -345,8 +347,6 @@ async def test_cascading_failure_prevention(chaos_db_client, chaos_test_schema, 
     # Scale iterations based on hardware (6 on baseline, 3-24 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(6 * chaos_config.load_multiplier))
-
-
 
     for i in range(iterations):
         try:

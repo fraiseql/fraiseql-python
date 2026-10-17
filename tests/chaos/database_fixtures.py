@@ -301,6 +301,4 @@ def baseline_metrics() -> Dict[str, Any]:
 
 def pytest_configure(config):
     """Register chaos-specific pytest markers."""
-    config.addinivalue_line(
-        "markers", "chaos_real_db: chaos tests using real PostgreSQL database"
-    )
+    config.addinivalue_line("markers", "chaos_real_db: chaos tests using real PostgreSQL database")

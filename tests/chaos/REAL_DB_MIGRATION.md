@@ -119,13 +119,16 @@ class RealFraiseQLClient:
     def reset_chaos(self):
         """Clear all chaos conditions."""
 
+
 @pytest_asyncio.fixture
 async def chaos_db_client(class_db_pool, test_schema):
     """Provide real client connected to test database."""
 
+
 @pytest_asyncio.fixture
 async def chaos_test_schema(test_schema, db_connection):
     """Prepare schema with test tables (users, posts, comments)."""
+
 
 @pytest.fixture
 def baseline_metrics():
@@ -155,9 +158,7 @@ class TestDatabaseConnectionChaos(ChaosTestCase):
 @pytest.mark.chaos_database
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_connection_refused_recovery(
-    chaos_db_client, chaos_test_schema, baseline_metrics
-):
+async def test_connection_refused_recovery(chaos_db_client, chaos_test_schema, baseline_metrics):
     """Test recovery from connection refused."""
     operation = FraiseQLTestScenarios.simple_user_query()
 
@@ -267,10 +268,9 @@ async def test_concurrent_chaos(chaos_db_client):
     chaos_db_client.inject_latency(100)  # 100ms latency
 
     # Run 5 concurrent queries
-    results = await asyncio.gather(*[
-        chaos_db_client.execute_query(operation)
-        for _ in range(5)
-    ], return_exceptions=True)
+    results = await asyncio.gather(
+        *[chaos_db_client.execute_query(operation) for _ in range(5)], return_exceptions=True
+    )
 
     # Validate all completed
     errors = [r for r in results if isinstance(r, Exception)]
@@ -417,6 +417,7 @@ async def chaos_db_client(...):
 class TestXxx:
     def test_foo(self, chaos_db_client):
         result = await chaos_db_client.execute_query(...)
+
 
 # Correct:
 @pytest.mark.asyncio

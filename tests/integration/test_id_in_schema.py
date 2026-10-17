@@ -1,6 +1,5 @@
 """Integration tests for ID type in schema."""
 
-
 import pytest
 from graphql import graphql
 
