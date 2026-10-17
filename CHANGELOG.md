@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   document's fragments, the executed operation and a real `path`, and the
   request's `operationName` selects the operation when the document holds
   several.
+- **The error for an annotation naming an undefined type suggested a fix that
+  doesn't work.** It said to use `from __future__ import annotations`, but the
+  decorator resolves annotations as it runs, so that raises the same error.
+  It now says to define the type first at module level, or import it there.
 
 ## [1.27.1] - 2026-10-17
 
