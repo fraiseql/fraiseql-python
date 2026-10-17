@@ -64,10 +64,14 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # One wheel per supported interpreter. The last version listed is the
+      # job's default python, so the pip installs below keep running on 3.13.
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: |
+            3.14
+            3.13
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -81,7 +85,7 @@ jobs:
       - name: Build wheel
         run: |
           pip install maturin
-          maturin build --release --target ${{ matrix.target }} ${{ matrix.maturin-args }}
+          maturin build --release --target ${{ matrix.target }} --find-interpreter ${{ matrix.maturin-args }}
           mkdir -p dist/
           cp fraiseql_rs/target/wheels/*.whl dist/
 

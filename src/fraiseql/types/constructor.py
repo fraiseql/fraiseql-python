@@ -243,7 +243,8 @@ def define_fraiseql_type(
             from fraiseql.types.definitions import UNSET
 
             result = {}
-            for field_name in getattr(self, "__annotations__", {}):
+            # Python 3.14 (PEP 749) no longer exposes class annotations on instances
+            for field_name in getattr(type(self), "__annotations__", {}):
                 if hasattr(self, field_name):
                     field_value = getattr(self, field_name)
                     if field_value is not UNSET:

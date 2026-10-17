@@ -104,13 +104,9 @@ def _extract_attribute_docstrings(cls: type) -> dict[str, str]:
                         if i + 1 < len(node.body):
                             next_stmt = node.body[i + 1]
                             if isinstance(next_stmt, ast.Expr) and isinstance(
-                                next_stmt.value, (ast.Constant, ast.Str)
+                                next_stmt.value, ast.Constant
                             ):
-                                # Handle both Python 3.8+ (Constant) and older (Str)
-                                if isinstance(next_stmt.value, ast.Constant):
-                                    docstring = next_stmt.value.value
-                                else:  # ast.Str
-                                    docstring = next_stmt.value.s
+                                docstring = next_stmt.value.value
 
                                 # Only use if it's actually a string
                                 if isinstance(docstring, str):

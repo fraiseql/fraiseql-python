@@ -58,8 +58,12 @@ jobs:
         run: uv run ty check src/
 
   unit-tests:
-    name: Unit Tests
+    name: Unit Tests (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14']
     steps:
       - uses: actions/checkout@v7
 
@@ -69,7 +73,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: uv pip install --system -e ".[dev]"
