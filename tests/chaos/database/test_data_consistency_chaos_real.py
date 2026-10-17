@@ -254,7 +254,7 @@ async def test_transaction_isolation_anomaly_simulation(
 
     for result in results:
         if isinstance(result, tuple):
-            thread_id, anom_count, success_count = result
+            _thread_id, anom_count, success_count = result
             anomalies += anom_count
             successes += success_count
 

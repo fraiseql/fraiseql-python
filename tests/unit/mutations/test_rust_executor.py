@@ -221,8 +221,8 @@ async def test_execute_mutation_error_format():
 
     # Verify SQL was called with correct parameters
     mock_cursor.execute.assert_called_once()
-    args, kwargs = mock_cursor.execute.call_args
-    query = args[0]
+    args, _kwargs = mock_cursor.execute.call_args
+    args[0]
     params = args[1]
 
     # Should have context args + input JSON

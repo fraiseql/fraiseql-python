@@ -120,7 +120,7 @@ class TestLTreePathComparisonIntegration:
             ("top.a.z", "top.b"),  # Different depths
         ]
 
-        for left, right in test_cases:
+        for _left, right in test_cases:
             graphql_where = {"path": {"lt": right}}
             where_clause = build_where_clause(graphql_where)
 

@@ -42,7 +42,7 @@ async def test_find_auto_extracts_info_from_context() -> None:
 
         # Call find WITHOUT passing info parameter
         # The fix should auto-extract it from context
-        result = await repo.find("tv_location", limit=10)
+        await repo.find("tv_location", limit=10)
 
         # Verify execute_via_rust_pipeline was called
         assert mock_execute.called
@@ -92,7 +92,7 @@ async def test_find_uses_explicit_info_over_context() -> None:
 
         # Call find WITH explicit info parameter
         # Should use explicit_info, not context_info
-        result = await repo.find("tv_location", info=explicit_info, limit=10)
+        await repo.find("tv_location", info=explicit_info, limit=10)
 
         # Verify field_name is from explicit_info
         call_args = mock_execute.call_args
@@ -132,7 +132,7 @@ async def test_find_one_auto_extracts_info_from_context() -> None:
         mock_execute.return_value = RustResponseBytes(mock_response)
 
         # Call find_one WITHOUT passing info
-        result = await repo.find_one("tv_location", mandatory_filters={"id": "123"})
+        await repo.find_one("tv_location", mandatory_filters={"id": "123"})
 
         # Verify field_name is "location" from context, not "tv_location" from view_name
         call_args = mock_execute.call_args
@@ -166,7 +166,7 @@ async def test_find_falls_back_to_view_name_when_no_info_available() -> None:
         mock_execute.return_value = RustResponseBytes(mock_response)
 
         # Call find WITHOUT info and without info in context
-        result = await repo.find("tv_location", limit=10)
+        await repo.find("tv_location", limit=10)
 
         # In this case, field_name should fall back to view_name
         call_args = mock_execute.call_args

@@ -9,6 +9,7 @@ Run this script to generate baseline_metrics.json with confidence intervals.
 
 import json
 import statistics
+import sys
 import time
 from pathlib import Path
 from typing import Any, Dict, List
@@ -211,4 +212,4 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    sys.exit(main())

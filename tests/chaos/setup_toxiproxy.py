@@ -136,7 +136,7 @@ class FraiseQLToxiproxySetup:
             if response.status_code == 200:
                 return response.json()
             return None
-        except:
+        except Exception:
             return None
 
     def list_proxies(self) -> Dict[str, Any]:

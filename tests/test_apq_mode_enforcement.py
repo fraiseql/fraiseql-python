@@ -25,7 +25,7 @@ class TestAPQDisabledMode:
 
         # APQ request with hash only - in disabled mode, this should be treated
         # as a regular request (no query), which would fail
-        request = GraphQLRequest(
+        GraphQLRequest(
             extensions={
                 "persistedQuery": {
                     "version": 1,

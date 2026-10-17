@@ -94,7 +94,7 @@ class TestMemoryLeakDetection:
         ]
 
         # Execute each query many times
-        for i in range(500):
+        for _i in range(500):
             for query_str in queries:
                 result = await graphql(schema, query_str)
                 assert result is not None
@@ -114,7 +114,7 @@ class TestMemoryLeakDetection:
         query_str = "query { getUsers { id email } }"
 
         # Execute queries that use database connections
-        for i in range(200):
+        for _i in range(200):
             result = await graphql(schema, query_str)
             assert result is not None
 
@@ -157,7 +157,7 @@ class TestMemoryLeakDetection:
         """
 
         # Execute introspection multiple times
-        for i in range(50):
+        for _i in range(50):
             result = await graphql(schema, introspection_query)
             assert result is not None
             assert result.data is not None
@@ -184,7 +184,7 @@ class TestMemoryLeakDetection:
         """
 
         # Execute complex queries multiple times
-        for i in range(100):
+        for _i in range(100):
             result = await graphql(schema, complex_query)
             assert result is not None
 
@@ -223,7 +223,7 @@ class TestMemoryLeakDetection:
             return result
 
         # Execute concurrent queries
-        for batch in range(10):
+        for _batch in range(10):
             tasks = [execute_query() for _ in range(20)]
             results = await asyncio.gather(*tasks)
 
@@ -256,7 +256,7 @@ class TestMemoryLeakDetection:
         """
 
         # Execute multiple times
-        for i in range(100):
+        for _i in range(100):
             result = await graphql(schema, large_query)
             assert result is not None
 
@@ -274,12 +274,12 @@ class TestResourceLeakDetection:
         query_str = "query { getUsers { id } }"
 
         # Execute many queries
-        for i in range(100):
+        for _i in range(100):
             result = await graphql(schema, query_str)
             assert result is not None
 
         # Verify connection pool is still healthy
-        pool_stats = meta_test_pool.get_stats() if hasattr(meta_test_pool, "get_stats") else None
+        meta_test_pool.get_stats() if hasattr(meta_test_pool, "get_stats") else None
 
         # Basic health check - can still execute queries
         final_result = await graphql(schema, query_str)
@@ -303,7 +303,7 @@ class TestResourceLeakDetection:
         """Test that schema caching doesn't cause memory growth."""
         # Create multiple schemas (simulating different requests)
         schemas = []
-        for i in range(10):
+        for _i in range(10):
             schema = memory_test_schema.build_schema()
             schemas.append(schema)
 

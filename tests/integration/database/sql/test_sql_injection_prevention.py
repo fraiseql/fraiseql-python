@@ -267,7 +267,9 @@ class TestSQLInjectionPrevention:
         # Malicious string should be safely parameterized
         assert "DROP TABLE" not in sql_str or "DROP TABLE" in repr(sql_str)
 
-    @pytest.mark.parametrize("operator,value", [("depth_eq", 3), ("depth_gt", 2), ("depth_lt", 5)])
+    @pytest.mark.parametrize(
+        ("operator", "value"), [("depth_eq", 3), ("depth_gt", 2), ("depth_lt", 5)]
+    )
     def test_ltree_depth_operators_require_field_type(self, operator, value) -> None:
         """Test that ltree depth operators require explicit field type specification.
 

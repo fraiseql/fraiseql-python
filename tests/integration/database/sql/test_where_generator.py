@@ -302,8 +302,8 @@ class TestUnwrapType:
 
     def test_no_unwrap_needed(self) -> None:
         """Test types that don't need unwrapping."""
-        assert unwrap_type(str) == str
-        assert unwrap_type(int) == int
+        assert unwrap_type(str) is str
+        assert unwrap_type(int) is int
         assert unwrap_type(list[str]) == list[str]
 
     def test_complex_union(self) -> None:

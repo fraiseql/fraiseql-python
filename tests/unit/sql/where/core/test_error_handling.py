@@ -12,7 +12,7 @@ class TestInvalidOperators:
 
     def test_invalid_operator_name_text(self):
         """Test that invalid operator names raise appropriate errors for text fields."""
-        with pytest.raises(ValueError, match="unsupported|invalid|not found"):
+        with pytest.raises(ValueError, match=r"unsupported|invalid|not found"):
             get_operator_function(FieldType.STRING, "invalid_op")
 
     def test_invalid_operator_name_numeric(self):
@@ -32,7 +32,7 @@ class TestTypeMismatches:
     def test_in_requires_list_text(self):
         """Test that 'in' operator requires a list for text fields."""
         func = get_operator_function(FieldType.STRING, "in")
-        with pytest.raises((TypeError, ValueError), match="list|iterable|array"):
+        with pytest.raises((TypeError, ValueError), match=r"list|iterable|array"):
             func(SQL("field"), "not-a-list")
 
     def test_in_requires_list_numeric(self):

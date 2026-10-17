@@ -181,7 +181,7 @@ class TestPerformanceBaseline:
         # Execute many queries quickly
         start_time = time.perf_counter()
 
-        for i in range(50):
+        for _i in range(50):
             result = await graphql(schema, query_str)
             assert result is not None
 

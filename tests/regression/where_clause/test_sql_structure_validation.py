@@ -168,7 +168,7 @@ class TestSQLStructureValidation:
 
             if expected_strategy == "numeric":
                 assert "::numeric" in sql_str, f"Missing numeric casting: {sql_str}"
-            elif expected_strategy == "text" and value_type == bool:
+            elif expected_strategy == "text" and value_type is bool:
                 # Special case for boolean
                 assert "'true'" in sql_str or "'false'" in sql_str, (
                     f"Missing text boolean value: {sql_str}"

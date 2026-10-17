@@ -300,7 +300,7 @@ pythonpath = ["src"]
 testpaths = ["tests", "examples"]
 
 [tool.ruff]
-exclude = ["tests", "examples", "tools", "scripts", "conftest.py", "dev", "verify_native_errors.py", "deploy/docker/entrypoint.py", ".phases"]
+exclude = ["examples", "tools", "scripts", "dev", "verify_native_errors.py", "deploy/docker/entrypoint.py", ".phases"]
 fix = true
 line-length = 100
 src = ["src"]
@@ -492,18 +492,41 @@ select = ["ALL"]
 ]
 "tests/**/*.py" = [
   "S101",  # Use of assert
-  "DTZ011",  # Use of datetime.date.today() in tests is acceptable
   "PLR2004",  # Magic values are OK in tests
   "S105",  # Hardcoded passwords OK in tests
   "S106",  # Hardcoded passwords OK in tests
-  "ARG001",  # Unused arguments OK in test fixtures
-  "ARG002",  # Unused arguments OK in test fixtures
-  "ANN001",  # Missing type annotations in test fixtures (complex types)
+  "ARG",  # Unused arguments OK in test fixtures
+  "ANN",  # Annotations on test functions and fixtures add nothing pytest uses
+  "D",  # Test names say what they check; docstrings are optional
   "T201",  # Print statements OK in tests (debugging output)
-  "D100",  # Missing module docstrings in tests
-  "D101",  # Missing class docstrings in tests
-  "D102",  # Missing method docstrings in tests
-  "D103"  # Missing function docstrings in tests
+  "E501",  # Long SQL, JSON and GraphQL literals; code lines are kept short by the formatter
+  "PGH003",  # Bare `# type: ignore` on deliberately ill-typed test input
+  "DTZ",  # Naive datetimes are test data, not wall-clock times
+  "S104",  # Binding 0.0.0.0 in server config fixtures
+  "S113",  # HTTP calls go to local test servers
+  "S311",  # Random test data is not cryptographic
+  "PTH",  # open()/os.path in test helpers
+  "TD",  # TODO format
+  "FIX",  # TODOs
+  "TRY002",  # Raising bare Exception to simulate failures
+  "B017",  # pytest.raises(Exception) where any failure is the point
+  "ASYNC240",  # Blocking pathlib calls in async tests are on tmp files
+  "ASYNC251",  # time.sleep in async tests that exercise blocking behaviour
+  "N801",  # Class names that mirror GraphQL type names
+  "N815",  # camelCase attributes that mirror GraphQL fields
+  "SLF001",  # Tests reach into private members
+  "EXE",  # Shebangs on test scripts
+  "A001",  # Test data named after GraphQL fields (`id`, `type`, `filter`)
+  "A004",
+  "A006",
+  "N803",  # Argument and import names that mirror GraphQL or SQL names
+  "N811",
+  "N812",
+  "PT017",  # Tests that accept either outcome assert on the exception when one is raised
+  "TC",  # fraiseql reads annotations at runtime; keep imports real
+  "ASYNC",  # Blocking calls inside async tests
+  "SIM102",  # Nested ifs that carry a comment per condition
+  "SIM113"  # Explicit tallies in chaos loops
 ]
 "tests/types/test_json_type_support.py" = [
   "E501"  # Long JSON string in test

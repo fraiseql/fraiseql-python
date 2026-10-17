@@ -41,11 +41,11 @@ async def ensure_rbac_schema(class_db_pool, test_schema) -> None:
 async def test_role_inheritance_chain(db_repo) -> None:
     """Verify role inherits permissions from parent roles."""
     # Create role chain: admin -> manager -> developer -> junior_dev
-    hierarchy = RoleHierarchy(db_repo)
+    RoleHierarchy(db_repo)
 
     # This test assumes the seed data from the migration is loaded
     # In a real test, we'd create the roles first
-    junior_dev_role_id = uuid4()  # Would be actual ID from seed data
+    uuid4()  # Would be actual ID from seed data
 
     # For now, test the basic functionality with a mock
     # inherited_roles = await hierarchy.get_inherited_roles(junior_dev_role_id)

@@ -122,7 +122,7 @@ def test_first_query_returns_null_simple() -> None:
         # Assertions
         first_query_user = result1.get("data", {}).get("user")
         second_query_user = result2.get("data", {}).get("user")
-        users_data = result3.get("data", {}).get("users", [])
+        result3.get("data", {}).get("users", [])
 
         # The bug: first query returns null, second query works
         if first_query_user is None and second_query_user is not None:

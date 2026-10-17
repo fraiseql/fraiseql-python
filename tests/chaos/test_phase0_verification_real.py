@@ -56,7 +56,7 @@ async def test_metrics_collection_real_db(chaos_db_client, chaos_test_schema, ba
     metrics.start_test()
 
     # Execute multiple queries
-    for i in range(5):
+    for _i in range(5):
         try:
             result = await chaos_db_client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 10.0)

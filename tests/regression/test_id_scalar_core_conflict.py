@@ -260,7 +260,7 @@ class TestIDTypeFixed:
         assert "ID" in schema.type_map, "ID scalar should be in schema type_map"
 
         # FraiseQL's custom ID scalar replaces the built-in
-        id_types = [name for name in schema.type_map.keys() if name == "ID"]
+        id_types = [name for name in schema.type_map if name == "ID"]
         assert len(id_types) == 1, "Expected exactly 1 'ID' type in schema"
 
     def test_schema_uses_custom_id_scalar(self):
@@ -276,7 +276,7 @@ class TestIDTypeFixed:
 
         schema = fraiseql.build_fraiseql_schema(query_types=[things])
 
-        sdl = print_schema(schema)
+        print_schema(schema)
 
         # Custom ID scalar with UUID validation is in the schema
         # It's named "ID" for Apollo/Relay cache compatibility

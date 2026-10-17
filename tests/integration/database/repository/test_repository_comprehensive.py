@@ -427,7 +427,7 @@ class TestCQRSRepositoryErrorHandling:
         with patch.object(repository.executor, "execute_function") as mock_exec:
             mock_exec.side_effect = Exception("function fn_create_invalid does not exist")
 
-            with pytest.raises(Exception, match="function.*does not exist"):
+            with pytest.raises(Exception, match=r"function.*does not exist"):
                 await repository.create("invalid", {"data": "test"})
 
     @pytest.mark.asyncio

@@ -96,17 +96,17 @@ except ImportError:
     pass  # Skip cascade fixtures if dependencies not available
 
 try:
-    from tests.fixtures.security.vault_conftest import (  # noqa: F401
-        vault_container,
-        vault_token,
-        vault_transit_ready,
-        vault_url,
-    )
     from tests.fixtures.security.aws_conftest import (  # noqa: F401
         aws_kms_client,
         aws_kms_mock,
         aws_region,
         kms_key_id,
+    )
+    from tests.fixtures.security.vault_conftest import (  # noqa: F401
+        vault_container,
+        vault_token,
+        vault_transit_ready,
+        vault_url,
     )
 except ImportError:
     pass  # Skip security fixtures if dependencies not available
@@ -144,7 +144,7 @@ def clear_type_caches() -> Generator[None]:
         _type_registry.clear()  # type: ignore
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def clear_registry() -> Generator[None]:
     """Clear the schema registry before and after each test.
 
@@ -238,6 +238,7 @@ async def setup_hybrid_table(class_db_pool, test_schema):
         dict with test data IDs
     """
     import uuid
+
     from fraiseql.db import register_type_for_view
 
     # Get connection, do setup, then release it before yielding

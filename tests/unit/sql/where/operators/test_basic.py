@@ -179,10 +179,7 @@ class TestBasicOperatorsEdgeCases:
         path_sql = SQL("data->>'balance'")
         result = build_eq_sql(path_sql, -100)
         sql_str = result.as_string(None)
-        assert (
-            sql_str == "data->>'balance'::numeric = -100"
-            or sql_str == "data->>'balance'::numeric =  -100"
-        )
+        assert sql_str in {"data->>'balance'::numeric = -100", "data->>'balance'::numeric =  -100"}
 
     def test_eq_with_large_numbers(self):
         """Test equality with large numbers."""
@@ -217,7 +214,9 @@ class TestBasicOperatorsEdgeCases:
         path_sql = SQL("data->>'title'")
         result = build_eq_sql(path_sql, "café & naïve résumé")
         sql_str = result.as_string(None)
-        assert "café" in sql_str and "naïve" in sql_str and "résumé" in sql_str
+        assert "café" in sql_str
+        assert "naïve" in sql_str
+        assert "résumé" in sql_str
 
     def test_neq_with_null_like_values(self):
         """Test inequality with null-like values."""

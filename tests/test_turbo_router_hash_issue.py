@@ -228,6 +228,6 @@ class TestTurboRouterHashIssue:
 
         # 4. Should also work with slightly different formatting
         minified_query = "query GetNetworkConfigurations{networkConfigurations{id ipAddress}}"
-        found_minified = registry.get(minified_query)
+        registry.get(minified_query)
         # This might be None due to different content, but the hash lookup should work
         # The key test is that the raw hash lookup succeeded above

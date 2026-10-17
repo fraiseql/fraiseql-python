@@ -1,6 +1,7 @@
 """Fixtures for operator E2E tests (network, arrays, ltree, etc.)."""
 
 import pytest
+
 from fraiseql import fraise_type, query
 
 

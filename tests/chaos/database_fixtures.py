@@ -127,8 +127,8 @@ class RealFraiseQLClient:
 
         except TimeoutError:
             raise TimeoutError(f"Query execution timeout after {timeout}s")
-        except Exception as e:
-            raise e
+        except Exception:
+            raise
 
     async def _execute_test_query(
         self, conn: psycopg.AsyncConnection, operation: GraphQLOperation

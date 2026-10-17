@@ -3,8 +3,9 @@
 # This module provides fixtures and configuration for chaos engineering tests.
 # Chaos tests inject failures into FraiseQL to validate resilience and recovery.
 
-import sys
 import os
+import sys
+
 import pytest
 
 # Add tests directory to Python path for chaos module imports
@@ -12,11 +13,10 @@ tests_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if tests_dir not in sys.path:
     sys.path.insert(0, tests_dir)
 
-from chaos.base import ChaosTestCase
+from chaos.adaptive_config import ChaosConfig, get_chaos_config
+from chaos.base import ChaosMetrics, ChaosTestCase
+from chaos.environment import EnvironmentInfo, detect_environment
 from chaos.fixtures import ToxiproxyManager
-from chaos.base import ChaosMetrics
-from chaos.adaptive_config import get_chaos_config, ChaosConfig
-from chaos.environment import detect_environment, EnvironmentInfo
 
 # Note: pytest_plugins moved to top-level tests/conftest.py
 # to comply with pytest plugin loading requirements
@@ -37,7 +37,7 @@ def toxiproxy():
     for proxy_name in list(manager.proxies.keys()):
         try:
             manager.delete_proxy(proxy_name)
-        except:
+        except Exception:
             pass
 
 

@@ -100,7 +100,7 @@ async def test_cache_corruption_handling(
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     total_operations = max(7, int(15 * chaos_config.load_multiplier))
 
-    for i in range(total_operations):
+    for _i in range(total_operations):
         try:
             # Simulate cache access
             if random.random() < 0.85:  # 85% cache hit rate
@@ -258,7 +258,7 @@ async def test_cache_stampede_prevention(
     Expected: FraiseQL prevents cache stampede with proper synchronization.
     """
     metrics = ChaosMetrics()
-    operation = FraiseQLTestScenarios.simple_user_query()
+    FraiseQLTestScenarios.simple_user_query()
 
     metrics.start_test()
 

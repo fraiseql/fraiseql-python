@@ -72,7 +72,7 @@ class TestAWSKMSProvider:
             }
             mock_client.encrypt.return_value = mock_response
 
-            ciphertext, algo = await provider._do_encrypt(
+            _ciphertext, algo = await provider._do_encrypt(
                 b"plaintext",
                 "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012",
                 {"purpose": "test"},

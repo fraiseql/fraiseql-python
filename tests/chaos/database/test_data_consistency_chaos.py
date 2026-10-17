@@ -252,7 +252,7 @@ class TestDataConsistencyChaos(ChaosTestCase):
         errors = 0
 
         while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+            result_type, _thread_id, data = results_queue.get()
             if result_type == "anomaly":
                 anomalies += 1
                 self.metrics.record_error()

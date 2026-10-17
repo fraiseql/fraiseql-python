@@ -66,7 +66,7 @@ async def test_query_decorator_auto_injects_info_into_context():
         return []
 
     # Call the decorated function
-    result = await users(mock_info)
+    await users(mock_info)
 
     # Verify injection happened
     assert "graphql_info" in mock_info.context

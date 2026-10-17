@@ -45,7 +45,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
                 if execution_time > timeout_duration:
                     # Query should have timed out
                     self.metrics.record_error()
-                    assert False, (
+                    pytest.fail(
                         f"Query should have timed out: {execution_time:.1f}ms > {timeout_duration}ms"
                     )
                 else:
@@ -60,7 +60,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
             except Exception as e:
                 # Other errors should be handled gracefully
                 self.metrics.record_error()
-                assert False, f"Unexpected error: {e}"
+                pytest.fail(f"Unexpected error: {e}")
 
         self.metrics.end_test()
 
@@ -206,7 +206,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             try:
                 result = client.execute_query(operation)
                 execution_time = result.get("_execution_time_ms", 20.0)
@@ -249,7 +249,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
 
         # Use the most complex operation available
         complex_operation = FraiseQLTestScenarios.search_query()
-        simple_operation = FraiseQLTestScenarios.simple_user_query()
+        FraiseQLTestScenarios.simple_user_query()
 
         self.metrics.start_test()
 
@@ -261,7 +261,7 @@ class TestQueryExecutionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             try:
                 # Complex query that might exhaust resources
                 result = client.execute_query(complex_operation, timeout=10.0)
@@ -333,10 +333,10 @@ class TestQueryExecutionChaos(ChaosTestCase):
             thread.join()
 
         # Record results
-        for thread_id, execution_time in results:
+        for _thread_id, execution_time in results:
             self.metrics.record_query_time(execution_time)
 
-        for thread_id, error in errors:
+        for _thread_id, error in errors:
             if "deadlock" in error.lower():
                 self.metrics.record_error()
 

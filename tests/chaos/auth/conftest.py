@@ -1,6 +1,7 @@
 # Conftest for tests/chaos/auth
-import sys
 import os
+import sys
+
 import pytest
 
 tests_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

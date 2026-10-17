@@ -72,34 +72,19 @@ class TestAuth0Provider:
         provider = PyAuthProvider.auth0("example.auth0.com", ["https://example.com"])
 
         # Test with obviously invalid token
-        try:
+        # Expected: validation should fail for invalid token
+        # Note: May fail with "No tokio runtime" if not in async context
+        with pytest.raises(RuntimeError, match=r"Token validation failed|Invalid|No tokio runtime"):
             provider.validate_token_blocking("not.a.valid.token")
-            # If we get here, validation should have failed
-            assert False, "Should have raised RuntimeError for invalid token"
-        except RuntimeError as e:
-            # Expected: validation should fail for invalid token
-            # Note: May fail with "No tokio runtime" if not in async context
-            assert (
-                "Token validation failed" in str(e)
-                or "Invalid" in str(e)
-                or "No tokio runtime" in str(e)
-            )
 
     def test_auth0_expired_token(self):
         """Test Auth0 rejects expired tokens."""
         provider = PyAuthProvider.auth0("example.auth0.com", ["https://example.com"])
 
         # Test with a malformed token (empty)
-        try:
+        # Expected: validation should fail (may need async context for actual validation)
+        with pytest.raises(RuntimeError, match=r"Token validation failed|Invalid|No tokio runtime"):
             provider.validate_token_blocking("")
-            assert False, "Should have raised RuntimeError for empty token"
-        except RuntimeError as e:
-            # Expected: validation should fail (may need async context for actual validation)
-            assert (
-                "Token validation failed" in str(e)
-                or "Invalid" in str(e)
-                or "No tokio runtime" in str(e)
-            )
 
 
 class TestCustomJWTProvider:
@@ -132,7 +117,7 @@ class TestCustomJWTProvider:
                 audience=["https://api.example.com"],
                 jwks_url="http://example.com/.well-known/jwks.json",  # HTTP, not HTTPS
             )
-            assert False, "Should reject HTTP JWKS URL"
+            pytest.fail("Should reject HTTP JWKS URL")
         except ValueError:
             pass  # Expected
 
@@ -145,16 +130,9 @@ class TestCustomJWTProvider:
         )
 
         # Test with invalid token
-        try:
+        # May fail due to missing tokio runtime in sync context
+        with pytest.raises(RuntimeError, match=r"Token validation failed|Invalid|No tokio runtime"):
             provider.validate_token_blocking("invalid.token.here")
-            assert False, "Should have raised RuntimeError"
-        except RuntimeError as e:
-            # May fail due to missing tokio runtime in sync context
-            assert (
-                "Token validation failed" in str(e)
-                or "Invalid" in str(e)
-                or "No tokio runtime" in str(e)
-            )
 
 
 class TestJWKSCaching:
@@ -314,7 +292,7 @@ class TestSecurity:
                 audience=["https://api.example.com"],
                 jwks_url="http://insecure.com/.well-known/jwks.json",
             )
-            assert False, "Should reject HTTP JWKS URLs"
+            pytest.fail("Should reject HTTP JWKS URLs")
         except (ValueError, RuntimeError):
             pass  # Expected - HTTPS validation should catch this
 
@@ -334,7 +312,7 @@ class TestSecurity:
         for token in invalid_tokens:
             try:
                 provider.validate_token_blocking(token)
-                assert False, f"Should have rejected token: {token}"
+                pytest.fail(f"Should have rejected token: {token}")
             except RuntimeError:
                 pass  # Expected
 

@@ -567,7 +567,7 @@ class TestEdgeCases:
 
         @dataclass
         class ComplexType:
-            nested_optional: Optional[Optional[str]] = None
+            nested_optional: Union[str, None] = None
 
         field_type = _get_field_type(ComplexType, "nested_optional")
         assert field_type is not None

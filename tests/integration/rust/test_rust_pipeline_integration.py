@@ -354,7 +354,7 @@ class TestRustPipelineErrorHandling:
         try:
             # Try invalid SQL that should fail gracefully
             async with meta_test_pool.connection() as conn:
-                result = await conn.execute("SELECT * FROM nonexistent_table_invalid_sql_test")
+                await conn.execute("SELECT * FROM nonexistent_table_invalid_sql_test")
                 # If it succeeds, that's unexpected but not a crash
                 # If it fails, it should be a clean database error
         except Exception as e:

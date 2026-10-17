@@ -319,7 +319,8 @@ class TestOperatorDescriptions:
 
         isnull_desc = OPERATOR_DESCRIPTIONS["isnull"]
         assert "null" in isnull_desc.lower()
-        assert "true" in isnull_desc.lower() and "false" in isnull_desc.lower()
+        assert "true" in isnull_desc.lower()
+        assert "false" in isnull_desc.lower()
 
 
 class TestApolloStudioIntegration:

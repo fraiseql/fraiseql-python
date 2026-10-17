@@ -38,7 +38,7 @@ class TestJSONBKeyExistence:
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
     async def setup_test_products(
-        self, class_db_pool: psycopg_pool.AsyncConnectionPool, test_types
+        self, class_db_pool: psycopg_pool.AsyncConnectionPool, test_schema, test_types
     ) -> AsyncGenerator[None]:
         """Create test products with JSONB attributes."""
         # Register types for views (for development mode)

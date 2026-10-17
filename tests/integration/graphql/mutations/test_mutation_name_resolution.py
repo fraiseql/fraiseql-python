@@ -184,7 +184,7 @@ class TestMutationNameResolution:
         )
 
     @pytest.mark.parametrize(
-        "mutation_class,expected_resolver_name,expected_input_type",
+        ("mutation_class", "expected_resolver_name", "expected_input_type"),
         [
             (CreateItem, "create_item", CreateItemInput),
             (CreateItemComponent, "create_item_component", CreateItemComponentInput),

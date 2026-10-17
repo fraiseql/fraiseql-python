@@ -258,7 +258,7 @@ class TestEntityRoutingSystem:
         assert "dns_server" in metrics["normal_entities"]
 
     @pytest.mark.parametrize(
-        "turbo_entities,normal_entities,expected_error",
+        ("turbo_entities", "normal_entities", "expected_error"),
         [
             ([], [], None),  # Empty lists should be valid
             (["valid_entity"], [], None),  # Single entity in turbo

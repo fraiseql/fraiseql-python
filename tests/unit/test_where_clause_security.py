@@ -23,7 +23,7 @@ class TestSQLInjectionProtection:
             jsonb_path=malicious_path,
         )
 
-        sql, params = condition.to_sql()
+        sql, _params = condition.to_sql()
         sql_str = sql.as_string(None)
 
         # Should be escaped as literal string, not executed as SQL
@@ -43,7 +43,7 @@ class TestSQLInjectionProtection:
             target_column=malicious_field,
         )
 
-        sql, params = condition.to_sql()
+        sql, _params = condition.to_sql()
         sql_str = sql.as_string(None)
 
         # Identifier() should quote field names

@@ -367,7 +367,7 @@ class TestAuthenticationChaos(ChaosTestCase):
         execution_times = []
 
         while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+            result_type, _thread_id, data = results_queue.get()
             if result_type == "success":
                 successes += 1
                 execution_times.append(data)
@@ -425,7 +425,7 @@ class TestAuthenticationChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(5, int(10 * self.chaos_config.load_multiplier))
 
-        for i in range(iterations):
+        for _i in range(iterations):
             try:
                 # Simulate token validation
                 token_type = random.random()

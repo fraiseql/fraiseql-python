@@ -23,7 +23,7 @@ from fraiseql.where_clause import FieldCondition, WhereClause
 
 
 @pytest.mark.parametrize(
-    "dt, trunc, expected",
+    ("dt", "trunc", "expected"),
     [
         (date(2025, 2, 1), "month", True),
         (date(2025, 1, 15), "month", False),

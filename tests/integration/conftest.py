@@ -1,7 +1,8 @@
 """Shared fixtures for all integration tests."""
 
-import pytest
 import psycopg_pool
+import pytest
+
 from fraiseql.gql.builders import SchemaRegistry
 
 

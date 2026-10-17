@@ -3,13 +3,6 @@
 import pytest
 
 # Import database fixtures
-from tests.fixtures.database.database_conftest import (
-    class_db_pool,
-    test_schema,
-    postgres_url,
-    postgres_container,
-)
-
 from fraiseql.db import FraiseQLRepository
 
 

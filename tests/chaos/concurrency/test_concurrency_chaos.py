@@ -159,7 +159,6 @@ class TestConcurrencyChaos(ChaosTestCase):
         # Scale num_threads based on hardware (6 on baseline, 3-24 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         num_threads = max(3, int(6 * self.chaos_config.load_multiplier))
-        results = []
         errors = []
 
         threads = []
@@ -206,7 +205,7 @@ class TestConcurrencyChaos(ChaosTestCase):
 
         if simulated_results:
             wait_times = [r["wait_time"] for r in simulated_results]
-            avg_wait = statistics.mean(wait_times)
+            statistics.mean(wait_times)
             max_wait = max(wait_times)
             assert max_wait < 0.100, f"Excessive lock wait times: max {max_wait:.3f}s"
 

@@ -43,7 +43,7 @@ def test_field_wrapper_priority_over_signature() -> None:
     the parameter inspection that would otherwise classify the target as ``self``-only.
     """
 
-    def self_only_looking(self) -> str:  # noqa: N805 - deliberately self-only shape
+    def self_only_looking(self) -> str:
         return "ok"
 
     self_only_looking.__fraiseql_field__ = True  # type: ignore[attr-defined]
@@ -80,7 +80,7 @@ def test_bound_method_without_info() -> None:
 def test_unbound_self_and_info() -> None:
     seen: dict[str, Any] = {}
 
-    def m(self, info: Any) -> str:  # noqa: N805 - unbound method shape
+    def m(self, info: Any) -> str:
         seen["args"] = (self, info)
         return "self+info"
 
@@ -94,7 +94,7 @@ def test_unbound_self_and_info() -> None:
 def test_unbound_self_only() -> None:
     seen: dict[str, Any] = {}
 
-    def m(self) -> str:  # noqa: N805 - unbound method shape, no info declared
+    def m(self) -> str:
         seen["args"] = (self,)
         return "self-only"
 
@@ -120,14 +120,14 @@ def test_regular_root_style_function() -> None:
 
 
 def test_kwargs_are_threaded_through() -> None:
-    def m(self, info: Any, *, limit: int = 0) -> int:  # noqa: N805
+    def m(self, info: Any, *, limit: int = 0) -> int:
         return limit
 
     assert invoke_resolver(m, _ROOT, _INFO, limit=7) == 7
 
 
 def test_async_target_returns_awaitable() -> None:
-    async def m(self, info: Any) -> str:  # noqa: N805
+    async def m(self, info: Any) -> str:
         return "async"
 
     result = invoke_resolver(m, _ROOT, _INFO)
@@ -146,7 +146,7 @@ def test_inspects_target_not_original_func() -> None:
     """
     seen: dict[str, Any] = {}
 
-    def original(self) -> str:  # noqa: N805 - the inner, self-only method
+    def original(self) -> str:
         return "original"
 
     def faithful_wrapper(root: Any, info: Any, *args: Any, **kwargs: Any) -> str:

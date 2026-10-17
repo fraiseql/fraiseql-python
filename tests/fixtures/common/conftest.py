@@ -2,8 +2,6 @@
 Common test configuration for FraiseQL.
 """
 
-import pytest
-
 
 def pytest_configure(config) -> None:
     """Configure common test markers."""

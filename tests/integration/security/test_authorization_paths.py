@@ -33,7 +33,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
-from collections.abc import AsyncGenerator  # noqa: TC003 — runtime hint for get_type_hints
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any

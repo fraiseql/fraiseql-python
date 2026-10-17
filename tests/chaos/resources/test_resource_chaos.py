@@ -26,7 +26,7 @@ class TestResourceChaos(ChaosTestCase):
         Expected: FraiseQL handles memory pressure gracefully without crashes.
         """
         client = MockFraiseQLClient()
-        operation = FraiseQLTestScenarios.complex_nested_query()
+        FraiseQLTestScenarios.complex_nested_query()
 
         self.metrics.start_test()
 
@@ -113,7 +113,7 @@ class TestResourceChaos(ChaosTestCase):
             cpu_load_factor = expected_complexity / 25.0  # Scale factor
             processing_time = 0.010 + (cpu_load_factor * 0.005)  # Base 10ms + complexity factor
 
-            start = time.time()
+            time.time()
             time.sleep(processing_time)  # Simulate CPU-bound processing
 
             # Execute the operation
@@ -167,7 +167,7 @@ class TestResourceChaos(ChaosTestCase):
         io_times = []
         io_contention_events = 0
 
-        for i in range(io_operations):
+        for _i in range(io_operations):
             # Simulate I/O operation with potential contention
             base_io_time = 0.015  # 15ms base I/O time
 
@@ -177,7 +177,7 @@ class TestResourceChaos(ChaosTestCase):
                 contention_delay = random.uniform(0.050, 0.150)  # 50-150ms additional delay
                 base_io_time += contention_delay
 
-            start = time.time()
+            time.time()
             time.sleep(base_io_time)
 
             # Execute write operation
@@ -235,7 +235,7 @@ class TestResourceChaos(ChaosTestCase):
                 exhaustion_factor = (i + 1) / exhaustion_operations  # 0.125 to 1.0
                 delay = 0.045 + (exhaustion_factor * 0.100)  # 45ms to 145ms
 
-                start = time.time()
+                time.time()
                 time.sleep(delay)
 
                 result = client.execute_query(operation)

@@ -321,7 +321,8 @@ class TestWhereClauseEdgeCases:
         result = results[0]
         device = result.get("device")
         department = result.get("department")
-        assert device is not None and department is not None
+        assert device is not None
+        assert department is not None
         assert str(device.get("id")).lower() == str(test_data["device2_id"]).lower()
         assert str(department.get("id")).lower() == str(test_data["department1_id"]).lower()
 

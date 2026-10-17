@@ -167,11 +167,11 @@ class TestVectorFilterRejectsBadInput:
 
     def test_sibling_filters_do_not_mask_a_bad_vector_filter(self) -> None:
         """The scoping filter surviving alone is exactly the dangerous outcome."""
+        where = WhereType()
+        where.OR = [
+            {"tenant": {"eq": "acme"}, "embedding": {"cosine_distance": {"bad": 1}}},
+        ]
         with pytest.raises(WhereClauseError):
-            where = WhereType()
-            where.OR = [
-                {"tenant": {"eq": "acme"}, "embedding": {"cosine_distance": {"bad": 1}}},
-            ]
             where.to_sql()
 
 

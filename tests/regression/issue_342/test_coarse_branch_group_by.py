@@ -88,19 +88,19 @@ def test_coarse_branch_no_group_by_without_group_by_list() -> None:
 # ── end-to-end UNION ALL tests ────────────────────────────────────────────────
 
 
-BASE = dict(
-    coarse_view="v_events_month",
-    fine_grain_view="v_events_day",
-    time_grain_column="date",
-    time_grain_trunc="month",
-    group_by=["date"],
-    aggregations={"measures.volume": "SUM(measures.volume)"},
-    native_dimensions={"date"},
-    native_measures={"measures.volume": "volume"},
-    native_dimension_mapping=None,
-    jsonb_col="data",
-    extra_where=None,
-)
+BASE = {
+    "coarse_view": "v_events_month",
+    "fine_grain_view": "v_events_day",
+    "time_grain_column": "date",
+    "time_grain_trunc": "month",
+    "group_by": ["date"],
+    "aggregations": {"measures.volume": "SUM(measures.volume)"},
+    "native_dimensions": {"date"},
+    "native_measures": {"measures.volume": "volume"},
+    "native_dimension_mapping": None,
+    "jsonb_col": "data",
+    "extra_where": None,
+}
 
 
 def test_coarse_branch_has_group_by_in_three_branch_union() -> None:

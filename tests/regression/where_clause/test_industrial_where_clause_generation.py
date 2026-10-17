@@ -295,7 +295,6 @@ class TestREDPhaseProductionScenarios:
         self, class_db_pool, setup_realistic_network_devices
     ) -> None:
         """Test hostname filtering with .local domains works correctly."""
-        setup_realistic_network_devices
 
         register_type_for_view(
             "network_devices",
@@ -322,7 +321,6 @@ class TestREDPhaseProductionScenarios:
         self, class_db_pool, setup_realistic_network_devices
     ) -> None:
         """Test port filtering with numeric values works correctly."""
-        setup_realistic_network_devices
 
         register_type_for_view(
             "network_devices",
@@ -346,7 +344,6 @@ class TestREDPhaseProductionScenarios:
         self, class_db_pool, setup_realistic_network_devices
     ) -> None:
         """Test boolean filtering works correctly."""
-        setup_realistic_network_devices
 
         register_type_for_view(
             "network_devices",
@@ -372,7 +369,6 @@ class TestREDPhaseProductionScenarios:
         self, class_db_pool, setup_realistic_network_devices
     ):
         """Test mixed filters combining hostname, port, and boolean work correctly."""
-        setup_realistic_network_devices
 
         register_type_for_view(
             "network_devices",

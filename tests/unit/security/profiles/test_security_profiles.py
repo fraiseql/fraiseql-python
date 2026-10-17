@@ -322,7 +322,7 @@ class TestProfileEnforcerIntegration:
     """Integration tests for ProfileEnforcer with different profiles."""
 
     @pytest.mark.parametrize(
-        "profile,expected_middleware_count",
+        ("profile", "expected_middleware_count"),
         [
             (STANDARD_PROFILE, 4),  # body size, rate limit, security headers, csrf
             (REGULATED_PROFILE, 4),  # same as standard

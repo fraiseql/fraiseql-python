@@ -193,9 +193,11 @@ class TestWhereFieldIntegration:
         complex_fields = getattr(ComplexNetwork, "__gql_fields__", {})
 
         devices_field = complex_fields.get("devices")
-        assert devices_field and devices_field.supports_where_filtering
+        assert devices_field
+        assert devices_field.supports_where_filtering
         assert devices_field.nested_where_type == DeviceModel
 
         servers_field = complex_fields.get("servers")
-        assert servers_field and servers_field.supports_where_filtering
+        assert servers_field
+        assert servers_field.supports_where_filtering
         assert servers_field.nested_where_type == TestServer

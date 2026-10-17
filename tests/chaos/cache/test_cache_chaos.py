@@ -91,7 +91,7 @@ class TestCacheChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         total_operations = max(7, int(15 * self.chaos_config.load_multiplier))
 
-        for i in range(total_operations):
+        for _i in range(total_operations):
             try:
                 # Simulate cache access
                 if random.random() < 0.85:  # 85% cache hit rate
@@ -241,8 +241,8 @@ class TestCacheChaos(ChaosTestCase):
         import queue
         import threading
 
-        client = MockFraiseQLClient()
-        operation = FraiseQLTestScenarios.simple_user_query()
+        MockFraiseQLClient()
+        FraiseQLTestScenarios.simple_user_query()
 
         self.metrics.start_test()
 
@@ -298,7 +298,7 @@ class TestCacheChaos(ChaosTestCase):
         execution_times = []
 
         while not results_queue.empty():
-            result_type, thread_id, data = results_queue.get()
+            result_type, _thread_id, data = results_queue.get()
             if result_type == "success":
                 successes += 1
                 execution_times.append(data)

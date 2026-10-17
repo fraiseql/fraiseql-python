@@ -294,7 +294,7 @@ class TestHybridTableNestedObjectFiltering:
         repo = FraiseQLRepository(class_db_pool, context={"mode": "development"})
 
         MachineWhereInput = create_graphql_where_input(Machine)
-        LocationWhereInput = create_graphql_where_input(Location)
+        create_graphql_where_input(Location)
         AllocationWhereInput = create_graphql_where_input(Allocation)
 
         # Complex filter with both machine and location nested filters

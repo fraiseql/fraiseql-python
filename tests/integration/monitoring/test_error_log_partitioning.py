@@ -392,7 +392,7 @@ class TestNotificationLogPartitioning:
             result = await cur.fetchone()
             assert result is not None
 
-            relname, relkind = result
+            _relname, relkind = result
             # relkind 'p' means partitioned table
             assert relkind == "p"
 

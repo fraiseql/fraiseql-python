@@ -49,7 +49,7 @@ async def test_slow_query_timeout_handling(
             if execution_time > timeout_duration:
                 # Query should have timed out
                 metrics.record_error()
-                assert False, (
+                pytest.fail(
                     f"Query should have timed out: {execution_time:.1f}ms > {timeout_duration}ms"
                 )
             else:
@@ -63,7 +63,7 @@ async def test_slow_query_timeout_handling(
         except Exception as e:
             # Other errors should be handled gracefully
             metrics.record_error()
-            assert False, f"Unexpected error: {e}"
+            pytest.fail(f"Unexpected error: {e}")
 
     chaos_db_client.reset_chaos()
     metrics.end_test()
@@ -219,7 +219,7 @@ async def test_query_execution_pool_exhaustion(
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(5 * chaos_config.load_multiplier))
 
-    for i in range(iterations):
+    for _i in range(iterations):
         try:
             result = await chaos_db_client.execute_query(operation)
             execution_time = result.get("_execution_time_ms", 20.0)
@@ -245,7 +245,7 @@ async def test_query_execution_pool_exhaustion(
     metrics.end_test()
 
     # Validate pool exhaustion handling
-    total_operations = exhausted_operations + pool_exhaustion_errors
+    exhausted_operations + pool_exhaustion_errors
     assert pool_exhaustion_errors >= 0, "Pool exhaustion handling verified"
     assert exhausted_operations >= 0, "Some operations completed"
 
@@ -266,7 +266,7 @@ async def test_query_complexity_resource_exhaustion(
 
     # Use complex operations
     complex_operation = FraiseQLTestScenarios.search_query()
-    simple_operation = FraiseQLTestScenarios.simple_user_query()
+    FraiseQLTestScenarios.simple_user_query()
 
     metrics.start_test()
 
@@ -278,7 +278,7 @@ async def test_query_complexity_resource_exhaustion(
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     iterations = max(3, int(5 * chaos_config.load_multiplier))
 
-    for i in range(iterations):
+    for _i in range(iterations):
         try:
             # Complex query that might exhaust resources
             result = await asyncio.wait_for(

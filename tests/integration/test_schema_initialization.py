@@ -229,7 +229,7 @@ class TestSchemaRegistryInitialization:
 
         # Note: This schema has already been initialized in test_01, so we
         # just verify the serialization performance is acceptable
-        schema = build_fraiseql_schema(query_types=types + [large_query], mutation_resolvers=[])
+        schema = build_fraiseql_schema(query_types=[*types, large_query], mutation_resolvers=[])
 
         serializer = SchemaSerializer()
 

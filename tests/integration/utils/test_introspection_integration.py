@@ -116,7 +116,7 @@ class TestIntrospectionIntegration:
 
         # Check field metadata
         name_field = fields["name"]
-        assert name_field["type"] == str
+        assert name_field["type"] is str
         assert name_field["purpose"] == "input"
 
         age_field = fields["age"]
@@ -154,7 +154,7 @@ class TestIntrospectionIntegration:
 
         # Check field metadata
         id_field = fields["id"]
-        assert id_field["type"] == int
+        assert id_field["type"] is int
         # Note: "both" indicates field can be used in both input and output contexts
         assert id_field["purpose"] in ("output", "both")
 
@@ -188,7 +188,7 @@ class TestIntrospectionIntegration:
 
         # Check field metadata
         message_field = fields["message"]
-        assert message_field["type"] == str
+        assert message_field["type"] is str
         assert message_field["default"] == "User created successfully"
 
     def test_describe_error_type(self, introspection_test_schema):
@@ -225,7 +225,7 @@ class TestIntrospectionIntegration:
         assert message_field["default"] is None or isinstance(message_field["default"], str)
 
         code_field = fields["code"]
-        assert code_field["type"] == int
+        assert code_field["type"] is int
         # Default may be 0 or None depending on error decorator implementation
         assert code_field["default"] in (0, None)
 

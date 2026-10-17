@@ -188,7 +188,7 @@ async def test_rbac_policy_enforcement(chaos_db_client, chaos_test_schema, basel
     policy_successes = 0
     policy_checks = 0
 
-    for i in range(10):
+    for _i in range(10):
         try:
             # Simulate policy check by executing write operation
             result = await chaos_db_client.execute_query(operation)

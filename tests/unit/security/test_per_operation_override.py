@@ -87,7 +87,8 @@ async def test_per_op_deny_beats_global_allow() -> None:
         authorizer=Allow(),
     )
     denied = await graphql(schema, 'mutation { mutPeropDeny(name: "x") { id } }')
-    assert denied.errors and denied.errors[0].extensions["code"] == "FORBIDDEN"
+    assert denied.errors
+    assert denied.errors[0].extensions["code"] == "FORBIDDEN"
     assert "mut_perop_deny" not in _ran
 
     allowed = await graphql(schema, 'mutation { mutNoPerop(name: "x") { id } }')
@@ -106,7 +107,8 @@ async def test_per_op_allow_beats_global_deny() -> None:
     assert "mut_perop_allow" in _ran
 
     denied = await graphql(schema, 'mutation { mutNoPerop(name: "x") { id } }')
-    assert denied.errors and denied.errors[0].extensions["code"] == "FORBIDDEN"
+    assert denied.errors
+    assert denied.errors[0].extensions["code"] == "FORBIDDEN"
     assert "mut_no_perop" not in _ran
 
 
@@ -116,7 +118,8 @@ async def test_query_per_op_deny_beats_global_allow() -> None:
         authorizer=Allow(),
     )
     denied = await graphql(schema, "{ qPeropDeny { id } }")
-    assert denied.errors and denied.errors[0].extensions["code"] == "FORBIDDEN"
+    assert denied.errors
+    assert denied.errors[0].extensions["code"] == "FORBIDDEN"
     assert "q_perop_deny" not in _ran
 
     allowed = await graphql(schema, "{ qNoPerop { id } }")

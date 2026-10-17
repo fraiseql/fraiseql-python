@@ -88,7 +88,7 @@ async def test_data_consistency_under_concurrent_load(
 
     # Execute concurrent mutations
     tasks = [execute_mutation_safely(i) for i in range(num_concurrent)]
-    results = await asyncio.gather(*tasks, return_exceptions=True)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     metrics.end_test()
 
@@ -222,7 +222,6 @@ async def test_operation_isolation_under_concurrency(
     metrics.start_test()
 
     num_concurrent = 4
-    isolation_maintained = True
 
     async def execute_mixed_operations(op_id: int):
         """Execute read or write operations concurrently."""
@@ -270,7 +269,7 @@ async def test_cascading_failure_containment(chaos_db_client, chaos_test_schema,
     cascade_attempts = 0
     cascade_prevented = 0
 
-    for i in range(10):
+    for _i in range(10):
         try:
             # Primary operation
             result = await chaos_db_client.execute_query(simple_op)

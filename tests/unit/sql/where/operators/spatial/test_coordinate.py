@@ -25,7 +25,9 @@ class TestCoordinateBasicOperators:
         path_sql = SQL("location")
         result = build_coordinate_eq_sql(path_sql, (45.5, -122.6))
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-122.6" in sql_str and "45.5" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
         assert "::point" in sql_str
         assert "=" in sql_str
 
@@ -34,7 +36,9 @@ class TestCoordinateBasicOperators:
         path_sql = SQL("location")
         result = build_coordinate_neq_sql(path_sql, (47.6, -122.3))
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-122.3" in sql_str and "47.6" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.3" in sql_str
+        assert "47.6" in sql_str
         assert "::point" in sql_str
         assert "!=" in sql_str
 
@@ -44,8 +48,12 @@ class TestCoordinateBasicOperators:
         coords = [(45.5, -122.6), (47.6, -122.3)]
         result = build_coordinate_in_sql(path_sql, coords)
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-122.6" in sql_str and "45.5" in sql_str
-        assert "POINT(" in sql_str and "-122.3" in sql_str and "47.6" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.3" in sql_str
+        assert "47.6" in sql_str
         assert "::point" in sql_str
         assert "IN" in sql_str
 
@@ -55,8 +63,12 @@ class TestCoordinateBasicOperators:
         coords = [(40.7, -74.0), (34.0, -118.2)]
         result = build_coordinate_notin_sql(path_sql, coords)
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-74.0" in sql_str and "40.7" in sql_str
-        assert "POINT(" in sql_str and "-118.2" in sql_str and "34.0" in sql_str
+        assert "POINT(" in sql_str
+        assert "-74.0" in sql_str
+        assert "40.7" in sql_str
+        assert "POINT(" in sql_str
+        assert "-118.2" in sql_str
+        assert "34.0" in sql_str
         assert "::point" in sql_str
         assert "NOT IN" in sql_str
 
@@ -70,7 +82,8 @@ class TestCoordinateBasicOperators:
         sql_str = result.as_string(None)
         assert "::point = POINT(" in sql_str
         assert "data ->> 'location'" in sql_str
-        assert "-122.6" in sql_str and "45.5" in sql_str  # PostgreSQL POINT uses (lng, lat) order
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
 
     def test_build_coordinate_inequality_sql(self) -> None:
         """Should build proper POINT casting for coordinate inequality."""
@@ -95,9 +108,15 @@ class TestCoordinateBasicOperators:
         sql_str = result.as_string(None)
         assert "data ->> 'position'" in sql_str
         assert "IN (" in sql_str
-        assert "POINT(" in sql_str and "-122.6" in sql_str and "45.5" in sql_str
-        assert "POINT(" in sql_str and "-122.3425" in sql_str and "47.6097" in sql_str
-        assert "POINT(" in sql_str and "-74.006" in sql_str and "40.7128" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.3425" in sql_str
+        assert "47.6097" in sql_str
+        assert "POINT(" in sql_str
+        assert "-74.006" in sql_str
+        assert "40.7128" in sql_str
 
     def test_build_coordinate_not_in_list_sql(self) -> None:
         """Should build proper POINT casting for coordinate NOT IN lists."""
@@ -125,7 +144,9 @@ class TestCoordinateDistancePostGIS:
         result = build_coordinate_distance_within_sql(path_sql, center, distance)
         sql_str = result.as_string(None)
         assert "ST_DWithin" in sql_str
-        assert "POINT(" in sql_str and "-122.6" in sql_str and "45.5" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
         assert "1000.0" in sql_str
         assert "::point" in sql_str
 
@@ -137,7 +158,8 @@ class TestCoordinateDistancePostGIS:
         result = build_coordinate_distance_within_sql(path_sql, center, distance)
         sql_str = result.as_string(None)
         assert "ST_DWithin" in sql_str
-        assert "POINT(" in sql_str and "0.0" in sql_str
+        assert "POINT(" in sql_str
+        assert "0.0" in sql_str
         assert "0.0" in sql_str
 
     def test_build_coordinate_distance_within_sql_postgis(self) -> None:
@@ -153,7 +175,9 @@ class TestCoordinateDistancePostGIS:
         assert "ST_DWithin(" in sql_str
         assert "data ->> 'coordinates'" in sql_str
         assert "::point" in sql_str
-        assert "POINT(" in sql_str and "-122.6" in sql_str and "45.5" in sql_str
+        assert "POINT(" in sql_str
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
         assert "1000" in sql_str
 
 
@@ -250,7 +274,9 @@ class TestCoordinateEdgeCases:
         coords = [(51.5, -0.1)]  # London
         result = build_coordinate_in_sql(path_sql, coords)
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-0.1" in sql_str and "51.5" in sql_str
+        assert "POINT(" in sql_str
+        assert "-0.1" in sql_str
+        assert "51.5" in sql_str
         assert "::point" in sql_str
 
 
@@ -262,35 +288,44 @@ class TestCoordinateBoundaryValues:
         path_sql = SQL("location")
         result = build_coordinate_eq_sql(path_sql, (90.0, 0.0))
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "0.0" in sql_str and "90.0" in sql_str
+        assert "POINT(" in sql_str
+        assert "0.0" in sql_str
+        assert "90.0" in sql_str
 
     def test_south_pole(self):
         """Test South Pole coordinates."""
         path_sql = SQL("location")
         result = build_coordinate_eq_sql(path_sql, (-90.0, 0.0))
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "0.0" in sql_str and "-90.0" in sql_str
+        assert "POINT(" in sql_str
+        assert "0.0" in sql_str
+        assert "-90.0" in sql_str
 
     def test_prime_meridian(self):
         """Test Prime Meridian coordinates."""
         path_sql = SQL("location")
         result = build_coordinate_eq_sql(path_sql, (0.0, 0.0))
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "0.0" in sql_str
+        assert "POINT(" in sql_str
+        assert "0.0" in sql_str
 
     def test_international_date_line(self):
         """Test International Date Line coordinates."""
         path_sql = SQL("location")
         result = build_coordinate_eq_sql(path_sql, (0.0, 180.0))
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "180.0" in sql_str and "0.0" in sql_str
+        assert "POINT(" in sql_str
+        assert "180.0" in sql_str
+        assert "0.0" in sql_str
 
     def test_negative_longitude(self):
         """Test negative longitude (Western Hemisphere)."""
         path_sql = SQL("location")
         result = build_coordinate_eq_sql(path_sql, (40.7, -74.0))  # New York
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-74.0" in sql_str and "40.7" in sql_str
+        assert "POINT(" in sql_str
+        assert "-74.0" in sql_str
+        assert "40.7" in sql_str
 
 
 class TestCoordinatePointOrderConversion:
@@ -306,9 +341,9 @@ class TestCoordinatePointOrderConversion:
         result = build_coordinate_eq_sql(path_sql, (45.5, -122.6))
 
         sql_str = result.as_string(None)
-        assert (
-            "POINT(" in sql_str and "-122.6" in sql_str and "45.5" in sql_str
-        )  # lng first, then lat
+        assert "POINT(" in sql_str
+        assert "-122.6" in sql_str
+        assert "45.5" in sql_str
         assert "POINT(45.5, -122.6)" not in sql_str  # NOT lat first
 
     def test_coordinate_edge_cases(self) -> None:
@@ -322,7 +357,9 @@ class TestCoordinatePointOrderConversion:
         # South pole
         result = build_coordinate_eq_sql(path_sql, (-90, 135))  # lat=-90, lng=135
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "135" in sql_str and "-90" in sql_str
+        assert "POINT(" in sql_str
+        assert "135" in sql_str
+        assert "-90" in sql_str
 
         # International date line (lng=180)
         result = build_coordinate_eq_sql(path_sql, (0, 180))  # lat=0, lng=180
@@ -332,4 +369,6 @@ class TestCoordinatePointOrderConversion:
         # International date line negative (lng=-180)
         result = build_coordinate_eq_sql(path_sql, (0, -180))  # lat=0, lng=-180
         sql_str = result.as_string(None)
-        assert "POINT(" in sql_str and "-180" in sql_str and "0" in sql_str
+        assert "POINT(" in sql_str
+        assert "-180" in sql_str
+        assert "0" in sql_str
