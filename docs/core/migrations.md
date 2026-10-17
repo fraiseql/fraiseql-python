@@ -43,6 +43,17 @@ FraiseQL's migration system is powered by **confiture** (https://github.com/frai
 
 ## Quick Start
 
+### Install
+
+`fraiseql migrate` needs the `migrate` extra:
+
+```bash
+pip install "fraiseql[migrate]<2"
+```
+
+It is optional because confiture depends on
+[pglast](https://github.com/lelit/pglast), which is licensed GPL-3.0-or-later.
+
 ### Initialize Migrations
 
 ```bash

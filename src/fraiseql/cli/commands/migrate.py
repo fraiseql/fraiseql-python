@@ -5,6 +5,9 @@
 takes confiture's migration lock, checksum checks and safety gates. Only that
 public, contract-tested surface is used, so it works across every confiture
 release fraiseql allows (see fraiseql/confiture#737).
+
+confiture is the optional `migrate` extra, because it depends on pglast
+(GPL-3.0-or-later), so it is imported only when a command needs it.
 """
 
 from datetime import datetime
@@ -14,12 +17,16 @@ from urllib.parse import quote
 
 import click
 import yaml
-from confiture.config.environment import Environment
-from confiture.core.migrator import Migrator
 from rich.console import Console
+from rich.markup import escape
 from rich.table import Table
 
 console = Console()
+
+MISSING_CONFITURE = (
+    "fraiseql migrate needs confiture, which is not installed. "
+    'Install it with: pip install "fraiseql[migrate]<2"'
+)
 
 
 def _database_url(database: dict[str, Any]) -> str:
@@ -40,7 +47,17 @@ def _open_session(config_path: Path, migrations_path: Path) -> Any:
     (host, port, ...), which confiture's `Environment` doesn't accept: it needs
     `database_url`. Such files are converted here, so existing projects keep
     working; any other file is handed to confiture as is.
+
+    Raises `click.ClickException` when confiture isn't installed.
     """
+    try:
+        from confiture.config.environment import Environment
+        from confiture.core.migrator import Migrator
+    except ModuleNotFoundError as e:
+        if e.name != "confiture":
+            raise
+        raise click.ClickException(MISSING_CONFITURE) from e
+
     data = yaml.safe_load(config_path.read_text()) or {}
     if "database_url" not in data and isinstance(data.get("database"), dict):
         environment = {key: value for key, value in data.items() if key != "database"}
@@ -374,6 +391,9 @@ def status(migrations_dir: str, config: str) -> None:
                 with _open_session(config_path, migrations_path) as session:
                     result = session.status()
                 rows = [(m.version, m.name, m.status) for m in result.migrations]
+            except click.ClickException as e:
+                console.print(f"[yellow]⚠️  {escape(e.message)}[/yellow]")
+                console.print("[yellow]Showing file list only (status unknown)[/yellow]\n")
             except Exception as e:
                 console.print(f"[yellow]⚠️  Could not connect to database: {e}[/yellow]")
                 console.print("[yellow]Showing file list only (status unknown)[/yellow]\n")

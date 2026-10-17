@@ -176,7 +176,8 @@ hence the `<2` pin. Your API is live at `http://localhost:8000/graphql`.
 
 The `fraiseql` CLI covers `init`, `dev`, `check`, `doctor`, `generate`, `sql`,
 `migrate`, `turbo`, `sbom` and `query-stats`. Run `fraiseql --help` or see the
-[CLI reference](docs/reference/cli.md).
+[CLI reference](docs/reference/cli.md). `migrate` needs the `migrate` extra:
+`pip install "fraiseql[migrate]<2"`.
 
 ---
 

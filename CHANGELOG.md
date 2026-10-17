@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Each platform now gets cp313 and cp314 wheels, so 3.14 users don't need a
   Rust toolchain, and CI runs the unit tests on both interpreters. confiture
   supports 3.14 only from 1.30.0, which in turn requires 3.14, so the
-  dependency is split by interpreter: `fraiseql-confiture>=0.44.0,<1.30` on
-  3.13 and `fraiseql-confiture>=1.30.0` on 3.14. (#546)
+  `migrate` extra is split by interpreter: `fraiseql-confiture>=0.44.0,<1.30`
+  on 3.13 and `fraiseql-confiture>=1.30.0` on 3.14. (#546)
 - **`fraiseql migrate` runs `.up.sql` / `.down.sql` migrations**, alongside the
   `.py` migrations `migrate create` writes, in one directory. (#548)
 
@@ -42,6 +42,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Breaking: `fraiseql migrate` needs the new `migrate` extra.** confiture
+  moved from the runtime dependencies to `fraiseql[migrate]`, because since
+  confiture 1.16.0 it depends on [pglast](https://github.com/lelit/pglast),
+  which is GPL-3.0-or-later. Every 3.14 install would have pulled it in, as
+  fresh 3.13 installs of 1.26.0 already did. A plain `pip install "fraiseql<2"`
+  now installs no GPL code. If you use `fraiseql migrate`, install
+  `pip install "fraiseql[migrate]<2"`. Without the extra, `migrate up` and
+  `down` exit with that command, `status` prints it and lists the files, and
+  `init` and `create` work as before. `fraiseql[all]` and `fraiseql[dev]`
+  include the extra.
 - **`fraiseql migrate init` writes `database_url:`** in
   `db/environments/local.yaml` instead of a `database:` mapping, since
   confiture's `Environment` accepts only the URL. Existing files with a
