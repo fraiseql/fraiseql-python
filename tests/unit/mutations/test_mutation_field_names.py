@@ -71,6 +71,11 @@ def _build(mutations: list[Any], **kwargs: Any) -> tuple[GraphQLSchema, list[str
     return schema, [str(w.message) for w in caught if issubclass(w.category, FutureWarning)]
 
 
+def _field_renames(future: list[str]) -> list[str]:
+    """The field lines of the FutureWarnings (result union lines are tested elsewhere)."""
+    return [line for w in future for line in w.splitlines() if line.startswith("  field ")]
+
+
 def _fields(schema: GraphQLSchema) -> list[str]:
     assert schema.mutation_type is not None
     return sorted(schema.mutation_type.fields)
@@ -112,7 +117,7 @@ class TestSharedFunction:
             "CreateThingEnrichedResult",
             ["CreateThingEnrichedSuccess", "CreateThingError"],
         )
-        assert future == []
+        assert _field_renames(future) == []
 
     def test_both_call_the_shared_function(self) -> None:
         t = _types()
@@ -226,7 +231,7 @@ class TestNameOverride:
         schema, future = _build([CreateThing])
 
         assert _fields(schema) == ["makeThing"]
-        assert future == []
+        assert _field_renames(future) == []
 
     def test_name_is_used_as_given_without_camel_case(self) -> None:
         t = _types()
@@ -251,7 +256,7 @@ class TestNameOverride:
         schema, future = _build([create_thing])
 
         assert _fields(schema) == ["makeThing"]
-        assert future == []
+        assert _field_renames(future) == []
 
     def test_same_name_twice_raises(self) -> None:
         t = _types()
@@ -346,7 +351,7 @@ class TestDeprecatedFunctionName:
         schema, future = _build([CreateThing])
 
         assert _fields(schema) == ["createThing"]
-        assert future == []
+        assert _field_renames(future) == []
 
     def test_snake_case_schema(self) -> None:
         t = _types()
@@ -375,7 +380,7 @@ class TestFunctionResolvers:
         schema, future = _build([fn_create_thing])
 
         assert _fields(schema) == ["fnCreateThing"]
-        assert future == []
+        assert _field_renames(future) == []
 
     def test_plain_resolver_keeps_its_name(self) -> None:
         t = _types()
@@ -386,14 +391,14 @@ class TestFunctionResolvers:
         schema, future = _build([fn_create_thing])
 
         assert _fields(schema) == ["fnCreateThing"]
-        assert future == []
+        assert _field_renames(future) == []
 
 
 class TestAutoDiscoveredMutations:
     """The ``name:`` in a ``@fraiseql:mutation`` comment is the 2.0.0 field name."""
 
     @staticmethod
-    async def _generate(comment_name: str) -> Any:
+    async def _generate(comment_name: str, result_name: str | None = None) -> Any:
         from fraiseql.introspection.input_generator import InputGenerator
         from fraiseql.introspection.metadata_parser import MutationAnnotation
         from fraiseql.introspection.mutation_generator import MutationGenerator
@@ -423,7 +428,10 @@ class TestAutoDiscoveredMutations:
                 language="plpgsql",
             ),
             MutationAnnotation(
-                name=comment_name, success_type="CreateThingSuccess", error_type="CreateThingError"
+                name=comment_name,
+                success_type="CreateThingSuccess",
+                error_type="CreateThingError",
+                result_name=result_name,
             ),
             {"CreateThingSuccess": t.S, "CreateThingError": t.E},
             NoCompositeTypes(),
@@ -443,13 +451,35 @@ class TestAutoDiscoveredMutations:
         assert "@fraiseql:mutation comment" in future[0]
 
     @pytest.mark.asyncio
+    async def test_comment_result_name_is_used(self) -> None:
+        generated = await self._generate("fnCreateThing", result_name="ThingOutcome")
+
+        schema, future = _build([generated])
+
+        assert schema.mutation_type is not None
+        union = schema.mutation_type.fields["fnCreateThing"].type
+        assert getattr(union, "name", None) == "ThingOutcome"
+        assert future == []
+
+    def test_comment_result_name_is_parsed(self) -> None:
+        from fraiseql.introspection.metadata_parser import MetadataParser
+
+        annotation = MetadataParser().parse_mutation_annotation(
+            "@fraiseql:mutation\nname: createThing\nsuccess_type: S\nerror_type: E\n"
+            "result_name: ThingOutcome"
+        )
+
+        assert annotation is not None
+        assert annotation.result_name == "ThingOutcome"
+
+    @pytest.mark.asyncio
     async def test_comment_name_matching_today_does_not_warn(self) -> None:
         generated = await self._generate("fnCreateThing")
 
         schema, future = _build([generated])
 
         assert _fields(schema) == ["fnCreateThing"]
-        assert future == []
+        assert _field_renames(future) == []
 
 
 class _FakeCursor:

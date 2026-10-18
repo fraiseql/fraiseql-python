@@ -469,6 +469,7 @@ class MutationDefinition:
         error_config: MutationErrorConfig | None = None,
         enable_cascade: bool = False,
         graphql_name: str | None = None,
+        result_name: str | None = None,
     ) -> None:
         self.mutation_class = mutation_class
         self.name = mutation_class.__name__
@@ -480,6 +481,9 @@ class MutationDefinition:
         # it doesn't come from the class name (auto-discovery sets it from the
         # @fraiseql:mutation comment). None means the class-derived name.
         self.default_graphql_name: str | None = None
+        # Result union name chosen with result_name=, used as given. When None, the
+        # schema builder names the union after the field (see MutationTypeBuilder).
+        self.result_name = result_name
 
         # Store the provided schema for lazy resolution
         self._provided_schema = schema
@@ -901,28 +905,15 @@ class MutationDefinition:
         # Store mutation definition for schema building
         resolver.__fraiseql_mutation__ = self
 
-        # Set proper annotations for the resolver
-        # We use FraiseUnion wrapper for success/error result unions
-        from typing import Annotated
-
-        from fraiseql.mutations.decorators import FraiseUnion
-
+        # Set proper annotations for the resolver. The result union is named at
+        # schema build (MutationTypeBuilder), where every mutation's name is known.
         if self.success_type and self.error_type:
             # Check if success and error types are the same (single result type pattern)
             if self.success_type is self.error_type:
                 # Single result type used for both success and error - no union needed
                 return_type = self.success_type
             else:
-                # Create union name from success type (e.g., CreateUserSuccess -> CreateUserResult)
-                success_name = getattr(self.success_type, "__name__", "Success")
-                base_name = success_name.removesuffix("Success")
-                union_name = f"{base_name}Result"
-
-                # Wrap in FraiseUnion to indicate this is a result union
-                return_type = Annotated[
-                    self.success_type | self.error_type,
-                    FraiseUnion(union_name),
-                ]
+                return_type = self.success_type | self.error_type
         else:
             return_type = self.success_type or self.error_type
 
@@ -942,6 +933,7 @@ def mutation(
     enable_cascade: bool = False,
     authorizer: Any | None = None,
     name: str | None = None,
+    result_name: str | None = None,
 ) -> type[T] | Callable[[type[T]], type[T]] | Callable[..., Any]:
     """Decorator to define GraphQL mutations with PostgreSQL function backing.
 
@@ -966,6 +958,13 @@ def mutation(
             ``function=`` differs from its class name keeps the name taken from
             ``function=`` and the schema build emits a ``FutureWarning``; pass
             ``name=`` to keep that name or choose another.
+        result_name: GraphQL name of the result union (``success | error``), used as
+            given. By default it is the field name plus ``Result``
+            (``createPost`` -> ``CreatePostResult``), one union per mutation. Until
+            fraiseql 2.0.0, a mutation whose union was named after its success type
+            (``PostSuccess`` -> ``PostResult``) keeps that name and the schema build
+            emits a ``FutureWarning``; pass ``result_name=`` to keep it or choose
+            another. Ignored when there is no union (same success and error type).
 
     Returns:
         Decorated mutation with automatic PostgreSQL function integration
@@ -1328,6 +1327,7 @@ def mutation(
             # Per-operation authorizer override (issue #362).
             fn.__fraiseql_authorizer__ = authorizer
             fn.__fraiseql_graphql_name__ = name
+            fn.__fraiseql_result_name__ = result_name
 
             # Auto-register with schema
             registry.register_mutation(fn)
@@ -1338,7 +1338,14 @@ def mutation(
         cls = cls_or_fn
         # Create mutation definition
         definition = MutationDefinition(
-            cls, function, schema, context_params, error_config, enable_cascade, name
+            cls,
+            function,
+            schema,
+            context_params,
+            error_config,
+            enable_cascade,
+            name,
+            result_name,
         )
 
         # Store definition on the class

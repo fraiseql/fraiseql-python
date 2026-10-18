@@ -59,13 +59,6 @@ class CreatePostWithEntitySuccess:
 
 
 @fraiseql.type
-class CreatePostEnrichedSuccess:
-    post: Post
-    message: str
-    cascade: Cascade
-
-
-@fraiseql.type
 class CreatePostError:
     code: int
     message: str
@@ -112,12 +105,16 @@ class UpdatePostTitle:
     error: UpdatePostTitleError
 
 
-@mutation(enable_cascade=True, function="create_post_enriched")
+@mutation(enable_cascade=True, function="create_post_with_entity")
 class CreatePostEnriched:
-    """Mutation whose async prepare_input takes info (issue #557)."""
+    """Mutation whose async prepare_input takes info (issue #557).
+
+    It shares its SQL function and result types with CreatePostWithEntity, which
+    used to drop one of the two fields or fail the schema build.
+    """
 
     input: CreatePostInput
-    success: CreatePostEnrichedSuccess
+    success: CreatePostWithEntitySuccess
     error: CreatePostError
 
     @staticmethod
@@ -464,14 +461,6 @@ async def cascade_db_schema(
             $$ LANGUAGE plpgsql;
         """)
 
-        # Same behaviour as create_post_with_entity, for CreatePostEnriched (#557)
-        await conn.execute("""
-            CREATE OR REPLACE FUNCTION public.create_post_enriched(input_data JSONB)
-            RETURNS mutation_response AS $$
-                SELECT public.create_post_with_entity(input_data);
-            $$ LANGUAGE sql;
-        """)
-
         # Insert test user (no schema prefix - uses search_path)
         await conn.execute("""
             INSERT INTO tb_user (id, name, post_count)
@@ -503,7 +492,6 @@ def cascade_app(cascade_db_schema, create_fraiseql_app_with_db) -> FastAPI:
             User,
             CreatePostSuccess,
             CreatePostWithEntitySuccess,
-            CreatePostEnrichedSuccess,
             CreatePostError,
             UpdatePostTitleSuccess,
             UpdatePostTitleError,
