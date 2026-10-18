@@ -220,15 +220,15 @@ mutation UpdateUserPreference($input: PreferenceInput!) {
 ### SQL Function (No CASCADE Tracking)
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_update_preference(
+-- p_user_id comes from the GraphQL context (context_params), the rest from input
+CREATE OR REPLACE FUNCTION update_preference(
     p_user_id UUID,
-    p_key TEXT,
-    p_value TEXT
+    input JSONB
 ) RETURNS JSONB AS $$
 BEGIN
     UPDATE tb_user_preferences
-    SET value = p_value, updated_at = NOW()
-    WHERE user_id = p_user_id AND key = p_key;
+    SET value = input->>'value', updated_at = NOW()
+    WHERE user_id = p_user_id AND key = input->>'key';
 
     -- Simple success response (no _cascade object)
     RETURN jsonb_build_object(
@@ -245,7 +245,7 @@ $$ LANGUAGE plpgsql;
 ```python
 from fraiseql import mutation
 
-@mutation  # Note: enable_cascade=False by default
+@mutation(context_params={"user_id": "p_user_id"})  # enable_cascade=False by default
 class UpdatePreference:
     """Simple preference update - no side effects"""
     input: UpdatePreferenceInput

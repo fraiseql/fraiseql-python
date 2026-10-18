@@ -103,7 +103,7 @@ To add your own mutations:
 
 1. Define input/success/error types
 2. Create a PostgreSQL function returning `mutation_result`
-3. Use FraiseQLMutation class with matching function names
+3. Write a `@fraiseql.mutation` class named after the function (`CreateUser` calls `create_user`)
 4. Add to schema with `build_fraiseql_schema()`
 
 The system automatically handles the rest!

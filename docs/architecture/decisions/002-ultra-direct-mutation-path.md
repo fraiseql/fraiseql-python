@@ -729,6 +729,18 @@ class DeleteCustomer:
     failure: DeleteCustomerError
 ```
 
+> **Note (2026-10):** a schema-qualified `function=` no longer builds: the field name
+> would contain a dot (`GraphQLError: Names must only contain [_a-zA-Z0-9]`). Pass the
+> schema separately, and the error type as `error:` (`failure:` is not read):
+>
+> ```python
+> @mutation(function="delete_customer", schema="app")
+> class DeleteCustomer:
+>     input: DeleteCustomerInput
+>     success: DeleteCustomerSuccess
+>     error: DeleteCustomerError
+> ```
+
 **FraiseQL automatically:**
 
 1. ✅ Detects `execute_function_raw_json` availability

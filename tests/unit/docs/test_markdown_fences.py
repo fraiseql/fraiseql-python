@@ -95,3 +95,29 @@ def test_closer_with_info_string_is_reported() -> None:
 def test_markdown_fences_are_balanced(path: str) -> None:
     text = (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace")
     assert find_fence_problems(text) == []
+
+
+# Mutation APIs fraiseql doesn't have. A short, literal tripwire, not a parser.
+# ADRs are historical records and keep what they said at the time.
+_INVENTED_MUTATION_APIS = {
+    "cascade_effects": re.compile(r"\bcascade_effects\b"),
+    'function="<schema>.<name>"': re.compile(r"""function=["']\w+\.\w+["']"""),
+    "FraiseQLMutation": re.compile(r"\bFraiseQLMutation\b"),
+}
+_ADR_PREFIX = "docs/architecture/decisions/"
+
+
+@pytest.mark.skipif(not _FILES, reason="needs a git checkout to list the docs")
+def test_no_invented_mutation_apis() -> None:
+    hits = []
+    for path in _FILES:
+        if path.startswith(_ADR_PREFIX):
+            continue
+        text = (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            hits.extend(
+                f"{path}:{lineno}: {name}"
+                for name, pattern in _INVENTED_MUTATION_APIS.items()
+                if pattern.search(line)
+            )
+    assert hits == []

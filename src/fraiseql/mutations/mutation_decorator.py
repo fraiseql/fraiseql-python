@@ -946,7 +946,8 @@ def mutation(
         _cls: The mutation function or class to decorate (when used without parentheses)
         function: PostgreSQL function name (defaults to snake_case of class name).
             It only picks the SQL function: any number of mutations may share one.
-        schema: PostgreSQL schema containing the function (defaults to "graphql")
+        schema: PostgreSQL schema containing the function (defaults to the config's
+            ``default_mutation_schema``, ``"public"``)
         context_params: Maps GraphQL context keys to PostgreSQL function parameter names
         error_config: Optional configuration for error detection behavior
         enable_cascade: Enable GraphQL cascade functionality to include side effects in response
@@ -991,7 +992,7 @@ def mutation(
                 success: CreateUserSuccess
                 error: CreateUserError
 
-            # This automatically calls PostgreSQL function: graphql.create_user(input)
+            # This automatically calls PostgreSQL function: public.create_user(input)
             # and parses the result into either CreateUserSuccess or CreateUserError
 
         Mutation with custom PostgreSQL function::\
