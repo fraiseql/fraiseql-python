@@ -8,7 +8,7 @@ import pytest
 import fraiseql
 from fraiseql.types.lazy_properties import clear_auto_generated_cache
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clear_registry")]
 
 
 @pytest.mark.integration

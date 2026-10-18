@@ -11,7 +11,7 @@ from graphql import graphql
 
 import fraiseql
 
-pytestmark = pytest.mark.regression
+pytestmark = [pytest.mark.regression, pytest.mark.usefixtures("clear_registry")]
 
 
 @fraiseql.enum

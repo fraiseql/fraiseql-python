@@ -15,7 +15,6 @@ import pytest
 from fraiseql import query
 from fraiseql.core.schema_serializer import SchemaSerializer
 from fraiseql.gql.schema_builder import build_fraiseql_schema
-from fraiseql.mutations.decorators import clear_mutation_registries
 from fraiseql.types import fraise_type
 
 # Import Rust extension for tests
@@ -24,7 +23,7 @@ try:
 except ImportError:
     _fraiseql_rs = None
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clear_registry")]
 
 
 # Skip tests if Rust extension is not available
@@ -37,10 +36,6 @@ class TestSchemaRegistryInitialization:
     Note: The schema registry is a global singleton, so it can only be
     initialized once per test session. Tests are ordered to handle this.
     """
-
-    def setup_method(self) -> None:
-        """Clear mutation registries before each test to avoid pollution."""
-        clear_mutation_registries()
 
     @requires_rust
     def test_01_initialize_simple_schema(self) -> None:

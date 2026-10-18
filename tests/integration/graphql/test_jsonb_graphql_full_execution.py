@@ -119,7 +119,7 @@ class TestJSONBFullGraphQLExecution:
     """
 
     @pytest_asyncio.fixture(scope="class", loop_scope="class")
-    async def setup_graphql_jsonb_test(self, class_db_pool, test_schema):
+    async def setup_graphql_jsonb_test(self, clear_registry_class, class_db_pool, test_schema):
         """Create test data and register types for GraphQL execution."""
         # Register type with has_jsonb_data=True
         register_type_for_view(
