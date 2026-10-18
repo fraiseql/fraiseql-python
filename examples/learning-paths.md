@@ -203,13 +203,6 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Materialized views for performance
 - ✅ Real-time dashboard optimization
 
-**[`real_time_chat/`](real_time_chat/README.md)** - Real-time performance
-
-- ✅ WebSocket optimization
-- ✅ Presence tracking at scale
-- ✅ Event-driven architecture
-- ✅ Connection pooling
-
 ### 🎯 Performance Path Outcomes
 
 - ✅ Optimize GraphQL query performance
@@ -248,21 +241,7 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Docker and containerization
 - ✅ Migration strategies
 
-**[`real_time_chat/`](real_time_chat/README.md)** - Event-driven systems
-
-- ✅ Real-time event processing
-- ✅ WebSocket architecture
-- ✅ Presence and state management
-- ✅ Scalable messaging
-
 ### Phase 3: Compliance & Governance (60 minutes)
-
-**[`admin-panel/`](admin-panel/README.md)** - Administrative systems
-
-- ✅ User management at scale
-- ✅ Administrative interfaces
-- ✅ Governance and compliance
-- ✅ Audit and reporting
 
 **[`analytics_dashboard/`](analytics_dashboard/README.md)** - Enterprise analytics
 
@@ -323,7 +302,7 @@ If you need specific patterns, here are the best examples:
 | **Caching** | [`caching_example.py`](caching_example.py) | [`apq_multi_tenant/`](apq_multi_tenant/README.md) |
 | **CQRS** | [`complete_cqrs_blog/`](complete_cqrs_blog.md) | [`blog_api/`](blog_api/README.md) |
 | **Multi-tenant** | [`apq_multi_tenant/`](apq_multi_tenant.md) | [`saas-starter/`](saas-starter/README.md) |
-| **Real-time** | [`real_time_chat/`](real_time_chat.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
+| **Real-time** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
 | **Enterprise** | [`enterprise_patterns/`](enterprise_patterns.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
 
 ### Use Case-Based Learning
@@ -334,8 +313,7 @@ If you need specific patterns, here are the best examples:
 | **E-commerce** | [`ecommerce/`](ecommerce/README.md) | Complete business logic |
 | **SaaS Platform** | [`saas-starter/`](saas-starter/README.md) | Multi-tenant foundation |
 | **Analytics** | [`analytics_dashboard/`](analytics_dashboard/README.md) | High-performance BI |
-| **Real-time App** | [`real_time_chat/`](real_time_chat/README.md) | WebSocket architecture |
-| **Admin System** | [`admin-panel/`](admin-panel/README.md) | User management |
+| **Real-time App** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | WebSocket architecture |
 
 ---
 

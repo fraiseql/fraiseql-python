@@ -121,3 +121,29 @@ def test_no_invented_mutation_apis() -> None:
                 if pattern.search(line)
             )
     assert hits == []
+
+
+# Examples removed because they were written against APIs fraiseql never had.
+_REMOVED_EXAMPLES = (
+    "admin-panel",
+    "compliance-demo",
+    "ecommerce_api",
+    "multi-tenant-saas",
+    "real_time_chat",
+)
+
+
+@pytest.mark.skipif(not _FILES, reason="needs a git checkout to list the docs")
+def test_no_dangling_example_links() -> None:
+    pattern = re.compile(r"\b(" + "|".join(map(re.escape, _REMOVED_EXAMPLES)) + r")\b")
+    own_files = tuple(f"examples/{name}/" for name in _REMOVED_EXAMPLES)
+    paths = [p for p in _FILES if not p.startswith((_ADR_PREFIX, *own_files))]
+    hits = []
+    for path in [*paths, "mkdocs.yml"]:
+        text = (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace")
+        hits.extend(
+            f"{path}:{lineno}: {match.group(1)}"
+            for lineno, line in enumerate(text.splitlines(), 1)
+            for match in pattern.finditer(line)
+        )
+    assert hits == []

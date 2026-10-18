@@ -62,13 +62,8 @@ _BUILDABLE = [
 # Examples with mutations that don't build on the current API. Their mutation
 # names are already 2.0.0-clean; move one to _BUILDABLE once it builds.
 _BROKEN = {
-    "examples.admin-panel.mutations": "imports fraiseql.Info, which fraiseql doesn't have",
-    "examples.compliance-demo.main": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples.ecommerce.mutations": "decorates a function where a class is expected",
-    "examples.ecommerce_api.mutations": "imports fraiseql.QueryType, which fraiseql doesn't have",
     "examples.enterprise_patterns.mutations": "uses a pydantic FieldInfo as a type",
-    "examples.multi-tenant-saas.main": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
-    "examples.real_time_chat.mutations": "imports fraiseql.QueryType, which fraiseql doesn't have",
     "examples.saas-starter.main": "imports fraiseql.Info, which fraiseql doesn't have",
     "examples.security.secure_graphql_api": "uses fraiseql.union, which fraiseql doesn't have",
 }

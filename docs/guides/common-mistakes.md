@@ -375,11 +375,6 @@ During verification, these mistakes were found in actual examples:
 - ❌ Foreign keys to id instead of pk_*
 - ❌ Views without direct id columns
 
-### From examples/ecommerce_api/ (Minor Issues)
-
-- ⚠️ Some functions with inconsistent variable naming
-- ⚠️ Missing sync calls in a few mutation functions
-
 ### From examples/blog_api/ (Gold Standard)
 
 - ✅ 100% compliant after Phase 5 fixes
