@@ -17,6 +17,7 @@ from graphql import GraphQLResolveInfo
 from fraiseql.db import DatabaseQuery
 from fraiseql.fastapi.dependencies import get_db_pool
 from fraiseql.partial_instantiation import get_available_fields, is_partial_instance
+from fraiseql.utils.paths import format_path
 
 logger = structlog.get_logger()
 
@@ -122,7 +123,7 @@ def profile_resolver(
                 log_context = {
                     "resolver": resolver_name,
                     "field": info.field_name,
-                    "path": str(info.path),
+                    "path": info.path.as_list(),
                     "parent_type": type(parent).__name__ if parent else None,
                 }
 
@@ -173,7 +174,7 @@ def profile_resolver(
             log_context = {
                 "resolver": resolver_name,
                 "field": info.field_name,
-                "path": str(info.path),
+                "path": info.path.as_list(),
                 "parent_type": type(parent).__name__ if parent else None,
             }
 
@@ -403,7 +404,7 @@ def debug_graphql_info(info: GraphQLResolveInfo) -> str:
         f"Field: {info.field_name}",
         f"Parent Type: {info.parent_type}",
         f"Return Type: {info.return_type}",
-        f"Path: {info.path}",
+        f"Path: {format_path(info.path)}",
     ]
 
     # Show operation
