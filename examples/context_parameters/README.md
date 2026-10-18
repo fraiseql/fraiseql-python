@@ -36,8 +36,27 @@ FraiseQL now supports context parameters that automatically extract values from 
 ### 1. Define your mutation with context parameters
 
 ```python
-from fraiseql.mutations import mutation
 from uuid import UUID
+
+import fraiseql
+from fraiseql.mutations import mutation
+
+@fraiseql.input
+class CreateLocationInput:
+    name: str
+    address: str
+    latitude: float
+    longitude: float
+
+@fraiseql.success
+class CreateLocationSuccess:
+    location_id: UUID
+    message: str
+
+@fraiseql.error
+class CreateLocationError:
+    message: str
+    code: str
 
 @mutation(
     function="create_location",
@@ -50,21 +69,7 @@ from uuid import UUID
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
-
-class CreateLocationInput:
-    name: str
-    address: str
-    latitude: float
-    longitude: float
-
-class CreateLocationSuccess:
-    location_id: UUID
-    message: str
-
-class CreateLocationError:
-    message: str
-    code: str
+    error: CreateLocationError
 ```
 
 ### 2. Set up your GraphQL context

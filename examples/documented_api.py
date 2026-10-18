@@ -7,9 +7,10 @@ with FraiseQL, including docstrings, descriptions, and examples.
 from datetime import datetime
 from uuid import UUID
 
+from graphql import GraphQLResolveInfo
+
 import fraiseql
 from fraiseql.types import ID
-from fraiseql import Info
 
 
 @fraiseql.type
@@ -41,7 +42,7 @@ class Post:
 
 @fraiseql.query
 def get_user(
-    info: Info,
+    info: GraphQLResolveInfo,
     id: ID
 ) -> User | None:
     """Get a single user by ID.
@@ -68,7 +69,7 @@ def get_user(
 
 @fraiseql.query
 def get_users(
-    info: Info,
+    info: GraphQLResolveInfo,
     limit: int = 10,
     active_only: bool = True
 ) -> list[User]:
@@ -99,7 +100,7 @@ def get_users(
 
 @fraiseql.query
 def search_posts(
-    info: Info,
+    info: GraphQLResolveInfo,
     query: str,
     published_only: bool = True
 ) -> list[Post]:
@@ -131,7 +132,7 @@ def search_posts(
 
 @fraiseql.mutation
 async def create_user(
-    info: Info,
+    info: GraphQLResolveInfo,
     email: str,
     name: str
 ) -> User:
@@ -170,7 +171,7 @@ async def create_user(
 
 @fraiseql.mutation
 async def update_user(
-    info: Info,
+    info: GraphQLResolveInfo,
     id: ID,
     name: str | None = None,
     email: str | None = None
@@ -216,31 +217,30 @@ async def update_user(
 
 
 # Schema configuration with documentation
-schema = fraiseql.build_schema(
-    query=[get_user, get_users, search_posts],
-    mutation=[create_user, update_user],
-    types=[User, Post]
+schema = fraiseql.build_fraiseql_schema(
+    query_types=[User, Post, get_user, get_users, search_posts],
+    mutation_resolvers=[create_user, update_user],
 )
 
 # FastAPI integration
 if __name__ == "__main__":
     import asyncpg
     import uvicorn
-    from fastapi import FastAPI
 
-    from fraiseql.fastapi import FraiseQLRouter
-
-    app = FastAPI(
-        title="Documented API Example",
-        description="A well-documented GraphQL API built with FraiseQL",
-        version="1.0.0"
-    )
+    from fraiseql.fastapi import create_fraiseql_app
 
     # In production, use proper async setup
     # This is simplified for example purposes
     print("Note: This is an example. Set up proper database connection in production.")
 
-    # router = FraiseQLRouter(repo=repo, schema=schema)
-    # app.include_router(router, prefix="/graphql")
+    # app = create_fraiseql_app(
+    #     database_url="postgresql://localhost/mydb",
+    #     types=[User, Post],
+    #     queries=[get_user, get_users, search_posts],
+    #     mutations=[create_user, update_user],
+    #     title="Documented API Example",
+    #     description="A well-documented GraphQL API built with FraiseQL",
+    #     version="1.0.0",
+    # )
 
     # uvicorn.run(app, host="0.0.0.0", port=8000)

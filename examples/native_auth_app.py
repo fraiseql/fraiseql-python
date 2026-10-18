@@ -18,7 +18,6 @@ from uuid import UUID
 
 from fastapi import FastAPI
 from psycopg_pool import AsyncConnectionPool
-from pydantic import EmailStr
 
 import fraiseql
 from fraiseql.types import ID
@@ -38,7 +37,7 @@ class User:
     """User type for GraphQL API."""
 
     id: ID
-    email: EmailStr
+    email: fraiseql.EmailAddress
     name: str
     roles: list[str]
     is_active: bool

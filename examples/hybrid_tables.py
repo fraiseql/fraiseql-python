@@ -7,9 +7,10 @@ where writes go to one table and reads come from an optimized view.
 from datetime import datetime
 from uuid import UUID, uuid4
 
+from graphql import GraphQLResolveInfo
+
 import fraiseql
 from fraiseql.types import ID
-from fraiseql import Info
 from fraiseql.db import FraiseQLRepository
 
 
@@ -68,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_products_stock ON products(stock);
 
 @fraiseql.query
 def get_products(
-    info: Info,
+    info: GraphQLResolveInfo,
     limit: int = 100,
     in_stock_only: bool = False
 ) -> list[Product]:
@@ -91,7 +92,7 @@ def get_products(
 
 @fraiseql.query
 def get_product(
-    info: Info,
+    info: GraphQLResolveInfo,
     id: ID
 ) -> Product | None:
     """Get a single product by ID from the read view."""
@@ -100,7 +101,7 @@ def get_product(
 
 @fraiseql.mutation
 async def create_product(
-    info: Info,
+    info: GraphQLResolveInfo,
     name: str,
     description: str,
     price: float,
@@ -134,7 +135,7 @@ async def create_product(
 
 @fraiseql.mutation
 async def update_product_stock(
-    info: Info,
+    info: GraphQLResolveInfo,
     id: ID,
     quantity_delta: int
 ) -> Product:
