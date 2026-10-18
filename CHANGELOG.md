@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   schema build raise a `ValueError` naming both. A success type shared by a
   cascade mutation and a non-cascade one shows the `cascade` field on both
   (`null` on the latter).
+- **A function mutation could replace a class mutation calling a function of
+  the same name, or the other way round.** A function `create_thing` and a class
+  `MakeThing` with `function="create_thing"` shared a registry entry, so the one
+  registered last was the only one in the schema. Both are kept now:
+  `createThing` (the function) and `makeThing` (the class).
 
 ### Deprecated
 

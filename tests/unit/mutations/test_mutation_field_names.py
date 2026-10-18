@@ -217,6 +217,63 @@ class TestRegistry:
         assert CreateThing.__fraiseql_resolver__ in registered
         assert first.__fraiseql_resolver__ not in registered
 
+    @pytest.mark.parametrize("function_first", [True, False])
+    def test_function_and_class_sharing_a_key_are_both_registered(
+        self, function_first: bool
+    ) -> None:
+        """A function create_thing and a class calling create_thing don't replace each other."""
+        from fraiseql.gql.builders.registry import SchemaRegistry
+
+        t = _types()
+
+        def define_function() -> Any:
+            @mutation
+            async def create_thing(info: Any, input: t.In) -> t.S | t.E:  # type: ignore[valid-type]
+                raise NotImplementedError
+
+            return create_thing
+
+        def define_class() -> Any:
+            @mutation(function="create_thing")
+            class MakeThing:
+                input: t.In
+                success: t.S2
+                error: t.E
+
+            return MakeThing
+
+        if function_first:
+            create_thing, make_thing = define_function(), define_class()
+        else:
+            make_thing, create_thing = define_class(), define_function()
+
+        registered = list(SchemaRegistry.get_instance().mutations.values())
+        assert create_thing in registered
+        assert make_thing.__fraiseql_resolver__ in registered
+
+        schema, _ = _build([create_thing, make_thing])
+
+        assert _fields(schema) == ["createThing", "makeThing"]
+
+    def test_redefined_function_replaces_the_old_one(self) -> None:
+        from fraiseql.gql.builders.registry import SchemaRegistry
+
+        t = _types()
+
+        @mutation
+        async def create_thing(info: Any, input: t.In) -> t.S | t.E:  # type: ignore[valid-type]
+            raise NotImplementedError
+
+        first = create_thing
+
+        @mutation
+        async def create_thing(info: Any, input: t.In) -> t.S2 | t.E:  # type: ignore[valid-type,no-redef]
+            raise NotImplementedError
+
+        registered = list(SchemaRegistry.get_instance().mutations.values())
+        assert create_thing in registered
+        assert first not in registered
+
 
 class TestNameOverride:
     def test_name_sets_the_field_name(self) -> None:
