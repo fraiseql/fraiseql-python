@@ -263,7 +263,13 @@ async def delete_post(info, id: ID) -> bool:
 # These demonstrate the new FraiseQL enterprise mutation patterns
 
 
-@fraiseql.mutation(function="app.create_post")  # Uses app/core split
+# Uses app/core split
+@fraiseql.mutation(
+    name="createPostEnterprise",
+    function="create_post",
+    schema="app",
+    result_name="CreatePostEnterpriseResult",
+)
 class CreatePostEnterprise:
     """Create blog post with enterprise patterns.
 
@@ -280,7 +286,12 @@ class CreatePostEnterprise:
     noop: CreatePostNoop  # For duplicate handling
 
 
-@fraiseql.mutation(function="app.update_post")
+@fraiseql.mutation(
+    name="updatePostEnterprise",
+    function="update_post",
+    schema="app",
+    result_name="UpdatePostEnterpriseResult",
+)
 class UpdatePostEnterprise:
     """Update blog post with change tracking.
 
@@ -297,7 +308,12 @@ class UpdatePostEnterprise:
     noop: UpdatePostNoop  # For no-changes scenarios
 
 
-@fraiseql.mutation(function="app.create_user")
+@fraiseql.mutation(
+    name="createUserEnterprise",
+    function="create_user",
+    schema="app",
+    result_name="CreateUserEnterpriseResult",
+)
 class CreateUserEnterprise:
     """Create user with validation and NOOP handling.
 

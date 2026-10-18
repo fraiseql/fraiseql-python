@@ -461,12 +461,12 @@ class AddCommentInput:
 
 
 @fraiseql.success
-class ChangeSuccess:
+class ApplyOperationSuccess:
     change: DocumentChange
 
 
 @fraiseql.error
-class ChangeError:
+class ApplyOperationError:
     message: str
     code: str = "OPERATION_FAILED"
 ```
@@ -499,7 +499,7 @@ async def comments(info, document_id: ID) -> list[Comment]:
 @fraiseql.mutation
 async def apply_operation(
     info, input: ApplyOperationInput
-) -> ChangeSuccess | ChangeError:
+) -> ApplyOperationSuccess | ApplyOperationError:
     db = info.context["db"]
     user_id = info.context["user_id"]
     result = await db.execute_function(
@@ -512,9 +512,9 @@ async def apply_operation(
         },
     )
     if not result.get("success"):
-        return ChangeError(message=result.get("message", "failed"))
+        return ApplyOperationError(message=result.get("message", "failed"))
     change = await db.find_one("v_document_change", id=result["change_id"])
-    return ChangeSuccess(change=change)
+    return ApplyOperationSuccess(change=change)
 
 
 @fraiseql.mutation
@@ -743,10 +743,10 @@ const DOCUMENT = gql`
 const APPLY_OPERATION = gql`
   mutation ApplyOperation($input: ApplyOperationInput!) {
     applyOperation(input: $input) {
-      ... on ChangeSuccess {
+      ... on ApplyOperationSuccess {
         change { id operation createdAt }
       }
-      ... on ChangeError {
+      ... on ApplyOperationError {
         message
         code
       }

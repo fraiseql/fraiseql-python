@@ -293,7 +293,7 @@ See [Filter Operators Reference](../advanced/filter-operators.md) for complete l
 
 ## Step 4: Mutation Migration (2-3 days)
 
-> **Field names:** these examples show each mutation under its class name (`CreatePost` → `createPost`). In fraiseql 1.x, a class whose `function=` differs from its name, such as `fn_create_post`, is still served under the function's name (`fnCreatePost`), and the schema build emits a `FutureWarning`. Pass `name="createPost"` to get the names shown here now. See [Mutation field names](../reference/decorators.md#mutation-field-names).
+> **Field names:** these examples pass `name=` so each mutation is served under its class name (`CreatePost` → `createPost`). Without it, fraiseql 1.x serves a class whose `function=` differs from its name, such as `fn_create_post`, under the function's name (`fnCreatePost`) and the schema build emits a `FutureWarning`; from fraiseql 2.0 the class name is used. See [Mutation field names](../reference/decorators.md#mutation-field-names).
 
 ### 4.1 Simple Mutations
 
@@ -319,7 +319,7 @@ class Mutation(graphene.ObjectType):
 **After (FraiseQL):**
 
 ```python
-@fraiseql.mutation(function="fn_create_user")
+@fraiseql.mutation(function="fn_create_user", name="createUser")
 class CreateUser:
     """Create a new user"""
     email: str
@@ -370,6 +370,7 @@ class CreatePost(graphene.Mutation):
 ```python
 @fraiseql.mutation(
     function="fn_create_post",
+    name="createPost",
     enable_cascade=True  # Automatic cache invalidation!
 )
 class CreatePost:

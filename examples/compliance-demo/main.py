@@ -257,7 +257,7 @@ class Query:
 # ============================================================================
 
 
-@fraiseql.mutation(function="fn_create_document", enable_cascade=True)
+@fraiseql.mutation(name="createDocument", function="fn_create_document", enable_cascade=True)
 class CreateDocument:
     """Create document with automatic audit trail.
 
@@ -270,7 +270,7 @@ class CreateDocument:
     created_by: str
 
 
-@fraiseql.mutation(function="fn_record_slsa_provenance")
+@fraiseql.mutation(name="recordSLSAProvenance", function="fn_record_slsa_provenance")
 class RecordSLSAProvenance:
     """Record SLSA provenance attestation."""
 

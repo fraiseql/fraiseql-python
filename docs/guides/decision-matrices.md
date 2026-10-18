@@ -341,7 +341,7 @@ query {
 | Pattern | Best For | Success/Error Handling | Complexity | Example |
 |---------|----------|----------------------|------------|---------|
 | **Function-Based** | Simple mutations | Returns type directly | Low | `async def create_user(...) -> User` |
-| **Class-Based** | Complex mutations | Explicit success/failure types | Medium | `class CreateUser: success: UserCreated; failure: ValidationError` |
+| **Class-Based** | Complex mutations | Explicit success/failure types | Medium | `class CreateUser: success: CreateUserSuccess; failure: ValidationError` |
 
 **Function-based pattern (simple):**
 
@@ -371,7 +371,7 @@ from fraiseql import mutation
 class CreateUser:
     """Mutation with explicit success/failure handling."""
     input: CreateUserInput
-    success: UserCreated  # Success type
+    success: CreateUserSuccess  # Success type
     failure: ValidationError  # Failure type
 
     async def resolve(self, info):
@@ -383,7 +383,7 @@ class CreateUser:
 
         if result["success"]:
             user = await db.find_one(User, id=result["user_id"])
-            return UserCreated(
+            return CreateUserSuccess(
                 user=user,
                 message=result.get("message", "User created")
             )

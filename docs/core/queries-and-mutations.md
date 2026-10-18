@@ -742,13 +742,15 @@ Mutation with custom PostgreSQL function:
 ```python
 import fraiseql
 
-@fraiseql.mutation(function="register_new_user", schema="auth")
+@fraiseql.mutation(function="register_new_user", schema="auth", name="registerUser")
 class RegisterUser:
     input: RegistrationInput
-    success: RegistrationSuccess
-    failure: RegistrationError
+    success: RegisterUserSuccess
+    failure: RegisterUserError
 
 # Calls: auth.register_new_user(input) instead of default name
+# (name= sets the GraphQL field to "registerUser"; without it, fraiseql 1.x names
+# the field after the function, "registerNewUser", and warns)
 ```
 
 Mutation with context parameters:
@@ -881,8 +883,8 @@ class NetworkConfigInput:
 @fraiseql.mutation
 class CreateNetworkConfig:
     input: NetworkConfigInput
-    success: NetworkConfigSuccess
-    failure: NetworkConfigError
+    success: CreateNetworkConfigSuccess
+    failure: CreateNetworkConfigError
 
     @staticmethod
     def prepare_input(input_data: dict) -> dict:

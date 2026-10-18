@@ -368,8 +368,8 @@ class AddressError:
 
 
 @fraiseql.success
-class ReviewSuccess:
-    """Successful review operation."""
+class CreateReviewSuccess:
+    """Successful review creation."""
 
     review: Review
     message: str

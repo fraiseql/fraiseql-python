@@ -34,7 +34,7 @@ from .models import (
 # Organization Management Mutations
 
 
-@fraiseql.mutation(function="app.create_organization")
+@fraiseql.mutation(function="create_organization", schema="app")
 class CreateOrganization:
     """Create organization with enterprise validation.
 
@@ -55,7 +55,7 @@ class CreateOrganization:
 # User Management Mutations
 
 
-@fraiseql.mutation(function="app.create_user")
+@fraiseql.mutation(function="create_user", schema="app")
 class CreateUser:
     """Create user with comprehensive onboarding.
 
@@ -80,7 +80,7 @@ class CreateUser:
 # Project Management Mutations
 
 
-@fraiseql.mutation(function="app.create_project")
+@fraiseql.mutation(function="create_project", schema="app")
 @requires_auth
 class CreateProject:
     """Create project with team coordination.
@@ -105,7 +105,7 @@ class CreateProject:
     noop: CreateProjectNoop
 
 
-@fraiseql.mutation(function="app.update_project")
+@fraiseql.mutation(function="update_project", schema="app")
 @requires_auth
 class UpdateProject:
     """Update project with change management.
@@ -134,7 +134,7 @@ class UpdateProject:
 # Task Management Mutations
 
 
-@fraiseql.mutation(function="app.create_task")
+@fraiseql.mutation(function="create_task", schema="app")
 @requires_auth
 class CreateTask:
     """Create task with dependency management.
@@ -168,7 +168,7 @@ class CreateTask:
 # Administrative Mutations
 
 
-@fraiseql.mutation(function="app.archive_organization")
+@fraiseql.mutation(function="archive_organization", schema="app")
 @requires_permission("admin")
 class ArchiveOrganization:
     """Archive organization with cascade handling.
@@ -198,7 +198,7 @@ class ArchiveOrganization:
 # Bulk Operations
 
 
-@fraiseql.mutation(function="app.bulk_create_users")
+@fraiseql.mutation(function="bulk_create_users", schema="app")
 @requires_permission("user_admin")
 class BulkCreateUsers:
     """Bulk user creation with transaction handling.
@@ -229,7 +229,7 @@ class BulkCreateUsers:
 # Cross-Entity Operations
 
 
-@fraiseql.mutation(function="app.transfer_project")
+@fraiseql.mutation(function="transfer_project", schema="app")
 @requires_permission("project_admin")
 class TransferProject:
     """Transfer project between organizations.

@@ -364,7 +364,7 @@ import fraiseql
 
 # Function-based
 @fraiseql.mutation
-async def create_user(info, input: CreateUserInput) -> User:
+async def create_user_account(info, input: CreateUserInput) -> User:
     db = info.context["db"]
     return await db.create_one("v_user", data=input.__dict__)
 
@@ -375,12 +375,13 @@ class CreateUser:
     success: CreateUserSuccess
     failure: CreateUserError
 
-# With custom function
-@fraiseql.mutation(function="register_new_user", schema="auth")
+# With custom function (name= sets the field to "registerUser"; without it,
+# fraiseql 1.x names the field after the function, "registerNewUser", and warns)
+@fraiseql.mutation(function="register_new_user", schema="auth", name="registerUser")
 class RegisterUser:
     input: RegistrationInput
-    success: RegistrationSuccess
-    failure: RegistrationError
+    success: RegisterUserSuccess
+    failure: RegisterUserError
 
 # With context parameters - maps context to PostgreSQL function params
 @fraiseql.mutation(
