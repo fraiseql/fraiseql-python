@@ -45,6 +45,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   composite type. The class is now made an input type the way `@fraiseql.input`
   does it, and descriptions from the composite type's column comments reach the
   schema.
+- **A mutation entity behind an interface got the interface's name as its
+  `__typename`.** For a nested field typed as an interface (`owner: Node`), the
+  Rust pipeline filled `__typename` from the schema, so the response said
+  `"__typename": "Node"`, which is not a type an object can have. It now comes only
+  from the data. Responses from the Rust pipeline keep including `__typename` on
+  objects of a known type even when it was not selected; this is now documented
+  as deliberate (see "Python ↔ Rust Integration").
 
 ### Deprecated
 
