@@ -3,11 +3,22 @@
 from __future__ import annotations
 
 import logging
+import os
 import warnings
 from collections import Counter
 from dataclasses import dataclass
+from pathlib import Path
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Callable, cast, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Callable,
+    cast,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from graphql import (
     GraphQLArgument,
@@ -24,8 +35,9 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_input,
     convert_type_to_graphql_output,
 )
-from fraiseql.mutations.decorators import resolve_union_annotation
+from fraiseql.mutations.decorators import FraiseUnion, resolve_union_annotation
 from fraiseql.mutations.mutation_decorator import _camel_to_snake
+from fraiseql.mutations.result_names import legacy_result_union_name, result_union_name
 from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
 from fraiseql.utils.naming import snake_to_camel
@@ -56,17 +68,33 @@ def _warn_filters_ignored_on_mutation(
 
 
 @dataclass(frozen=True)
-class _FieldNameCandidates:
-    """The names a registered mutation could get, before clashes are settled."""
+class _NameCandidates:
+    """The names a mutation's field or result union could get, before clashes are settled."""
 
     owner: str  # the class or function, for error messages
-    explicit: str | None  # from name=, used as given
-    legacy: str  # the 1.x name, from function=
-    new: str  # the fraiseql 2.0.0 name, from the class
+    owner_path: str  # module-qualified owner, when two owners share a name
+    explicit: str | None  # from name= / result_name=, used as given
+    legacy: str  # the 1.x name
+    new: str  # the fraiseql 2.0.0 name
     from_comment: bool  # auto-discovered: the new name comes from its SQL comment
 
 
-def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _FieldNameCandidates:
+@dataclass(frozen=True)
+class _ResultUnion:
+    members: Any  # the Success | Error union type
+    names: _NameCandidates
+
+
+@dataclass(frozen=True)
+class _Rename:
+    kind: str  # "field" or "result union"
+    old: str
+    new: str
+    from_comment: bool
+
+
+def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _NameCandidates:
+    """Field names: the 1.x name comes from function=, the 2.0.0 name from the class."""
     camel = SchemaConfig.get_instance().camel_case_fields
 
     def graphql_name(snake: str) -> str:
@@ -74,16 +102,19 @@ def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _FieldNameCandid
 
     definition = getattr(fn, "__fraiseql_mutation__", None)
     if hasattr(definition, "mutation_class"):
-        return _FieldNameCandidates(
+        cls = definition.mutation_class
+        return _NameCandidates(
             owner=definition.name,
+            owner_path=f"{cls.__module__}.{cls.__qualname__}",
             explicit=definition.graphql_name,
             legacy=graphql_name(definition.function_name),
             new=definition.default_graphql_name or graphql_name(_camel_to_snake(definition.name)),
             from_comment=definition.default_graphql_name is not None,
         )
     name = graphql_name(key)
-    return _FieldNameCandidates(
+    return _NameCandidates(
         owner=fn.__name__,
+        owner_path=f"{fn.__module__}.{fn.__qualname__}",
         explicit=getattr(fn, "__fraiseql_graphql_name__", None),
         legacy=name,
         new=name,
@@ -91,19 +122,111 @@ def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _FieldNameCandid
     )
 
 
-def _warn_renames(renames: list[tuple[str, str]], from_comment: bool) -> None:
+def _result_union(fn: Callable[..., Any], field: _NameCandidates) -> _ResultUnion | None:
+    """A mutation's result union and its names, or None if it doesn't return one.
+
+    The 1.x name comes from the success type; the 2.0.0 name from the field the
+    mutation will have in 2.0.0 (``name=`` if given).
+    """
+    new = result_union_name(field.explicit or field.new)
+    definition = getattr(fn, "__fraiseql_mutation__", None)
+    if hasattr(definition, "mutation_class"):
+        success, error = definition.success_type, definition.error_type
+        if not success or not error or success is error:
+            return None
+        names = _NameCandidates(
+            owner=field.owner,
+            owner_path=field.owner_path,
+            explicit=definition.result_name,
+            legacy=legacy_result_union_name(success),
+            new=new,
+            from_comment=field.from_comment,
+        )
+        return _ResultUnion(success | error, names)
+
+    resolved = resolve_union_annotation(get_type_hints(fn, include_extras=True).get("return"))
+    if get_origin(resolved) is not Annotated:
+        return None
+    members, *metadata = get_args(resolved)
+    union = next((m for m in metadata if isinstance(m, FraiseUnion)), None)
+    if union is None:
+        return None
+    # A name derived from the success type (result(), a plain Success | Error) follows
+    # the naming rule; one chosen explicitly (e.g. generate_mutation_schema) is kept.
+    explicit = getattr(fn, "__fraiseql_result_name__", None)
+    if explicit is None and not union.derived:
+        explicit = union.name
+    names = _NameCandidates(
+        owner=field.owner,
+        owner_path=field.owner_path,
+        explicit=explicit,
+        legacy=union.name,
+        new=new,
+        from_comment=False,
+    )
+    return _ResultUnion(members, names)
+
+
+def _choose_names(
+    candidates: dict[str, _NameCandidates], kind: str, option: str, renames: list[_Rename]
+) -> dict[str, str]:
+    """Pick one name per mutation: explicit, else the 1.x name, else the 2.0.0 name.
+
+    A mutation keeps its 1.x name unless another mutation would get the same one,
+    which is broken today; then it gets the 2.0.0 name. A kept name that will change
+    is appended to ``renames``.
+
+    Raises:
+        ValueError: If two mutations end up with the same name.
+    """
+    legacy_counts = Counter(c.legacy for c in candidates.values() if c.explicit is None)
+
+    names: dict[str, str] = {}
+    owners: dict[str, _NameCandidates] = {}
+    for key, c in candidates.items():
+        if c.explicit is not None:
+            name = c.explicit
+        elif legacy_counts[c.legacy] == 1:
+            name = c.legacy
+            if c.legacy != c.new:
+                renames.append(_Rename(kind, c.legacy, c.new, c.from_comment))
+        else:
+            name = c.new
+
+        if name in owners:
+            first, second = owners[name].owner, c.owner
+            if first == second:
+                first, second = owners[name].owner_path, c.owner_path
+            msg = (
+                f"Mutations {first} and {second} both resolve to the GraphQL "
+                f"{kind} '{name}'. Pass {option}=\"...\" to @mutation on one of them."
+            )
+            raise ValueError(msg)
+        owners[name] = c
+        names[key] = name
+    return names
+
+
+# The fraiseql package directory: warnings skip its frames and point at the app's code.
+_FRAISEQL_DIR = str(Path(__file__).parents[2]) + os.sep
+
+
+def _warn_renames(renames: list[_Rename]) -> None:
     """Emit one FutureWarning listing every mutation name that changes in 2.0.0."""
-    lines = [f"  field '{old}' -> '{new}'" for old, new in renames]
-    hint = 'To keep a name, pass name="..." to @mutation.'
-    if from_comment:
-        hint += " For an auto-discovered mutation, set name: in its @fraiseql:mutation comment."
+    lines = [f"  {r.kind} '{r.old}' -> '{r.new}'" for r in renames]
+    hint = 'To keep a name, pass name="..." (field) or result_name="..." (union) to @mutation.'
+    if any(r.from_comment for r in renames):
+        hint += (
+            " For an auto-discovered mutation, set name: (field) or result_name: (union)"
+            " in its @fraiseql:mutation comment."
+        )
     warnings.warn(
         "These mutation names will change in the next major release of fraiseql (2.0.0):\n"
         + "\n".join(lines)
         + "\n"
         + hint,
         FutureWarning,
-        stacklevel=3,
+        skip_file_prefixes=(_FRAISEQL_DIR,),
     )
 
 
@@ -125,7 +248,7 @@ class MutationTypeBuilder:
             The Mutation GraphQLObjectType.
         """
         fields = {}
-        field_names = self._field_names()
+        field_names, unions, union_names = self._names()
 
         for name, fn in self.registry.mutations.items():
             # Use include_extras=True to preserve Annotated metadata (like FraiseUnion)
@@ -135,8 +258,11 @@ class MutationTypeBuilder:
                 msg = f"Mutation resolver '{name}' is missing a return type annotation."
                 raise TypeError(msg)
 
-            # Normalize return annotation (e.g., Annotated[Union[A, B], ...])
-            resolved = resolve_union_annotation(hints["return"])
+            # A result union gets the name chosen for this mutation in _names()
+            if name in unions:
+                resolved = Annotated[unions[name].members, FraiseUnion(union_names[name])]
+            else:
+                resolved = hints["return"]
             fn.__annotations__["return"] = resolved  # override with resolved union
 
             # Use convert_type_to_graphql_output for the return type
@@ -203,49 +329,37 @@ class MutationTypeBuilder:
 
         return GraphQLObjectType(name="Mutation", fields=MappingProxyType(fields))
 
-    def _field_names(self) -> dict[str, str]:
-        """Pick each mutation's GraphQL field name, keyed like ``registry.mutations``.
+    def _names(self) -> tuple[dict[str, str], dict[str, _ResultUnion], dict[str, str]]:
+        """Pick every mutation's field name and result union name, in one place.
 
-        ``name=`` wins. Otherwise a mutation keeps its 1.x name (from ``function=``)
-        unless another mutation would get the same one, which is broken today; then it
-        gets the 2.0.0 name (from the class). A kept name that will change is listed in
-        one FutureWarning.
+        Returns:
+            The field names, the result unions and their names, each keyed like
+            ``registry.mutations``. Mutations without a result union are absent from
+            the last two.
 
         Raises:
-            ValueError: If two mutations end up with the same field name.
+            ValueError: If two mutations end up with the same field or union name.
         """
-        candidates = {
+        fields = {
             key: _field_name_candidates(key, fn) for key, fn in self.registry.mutations.items()
         }
-        legacy_counts = Counter(c.legacy for c in candidates.values() if c.explicit is None)
+        unions = {
+            key: union
+            for key, fn in self.registry.mutations.items()
+            if (union := _result_union(fn, fields[key])) is not None
+        }
 
-        names: dict[str, str] = {}
-        owners: dict[str, str] = {}
-        renames: list[tuple[str, str]] = []
-        renames_from_comment = False
-        for key, c in candidates.items():
-            if c.explicit is not None:
-                name = c.explicit
-            elif legacy_counts[c.legacy] == 1:
-                name = c.legacy
-                if c.legacy != c.new:
-                    renames.append((c.legacy, c.new))
-                    renames_from_comment |= c.from_comment
-            else:
-                name = c.new
-
-            if name in owners:
-                msg = (
-                    f"Mutations {owners[name]} and {c.owner} both resolve to the GraphQL "
-                    f"field '{name}'. Pass name=\"...\" to @mutation on one of them."
-                )
-                raise ValueError(msg)
-            owners[name] = c.owner
-            names[key] = name
-
+        renames: list[_Rename] = []
+        field_names = _choose_names(fields, "field", "name", renames)
+        union_names = _choose_names(
+            {key: union.names for key, union in unions.items()},
+            "result union",
+            "result_name",
+            renames,
+        )
         if renames:
-            _warn_renames(renames, renames_from_comment)
-        return names
+            _warn_renames(renames)
+        return field_names, unions, union_names
 
     def _wrap_mutation_resolver(
         self, fn: Callable[..., Any], arg_name_mapping: dict[str, str] | None = None

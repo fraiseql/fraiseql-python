@@ -144,8 +144,8 @@ class CreateUserError:
     code: str = "VALIDATION_ERROR"
 ```
 
-`@fraiseql.result(success_cls, error_cls)` builds a combined result type if you prefer that
-over a union return annotation.
+`fraiseql.result(success_cls, error_cls)` builds a combined result type. It is deprecated
+since 1.29 and removed in fraiseql 2.0.0; annotate `Success | Error` instead.
 
 ### `@fraiseql.query`
 

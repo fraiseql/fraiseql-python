@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **`@mutation(name=...)` sets a mutation's GraphQL field name.** The name is
   used as given. It works on class and function mutations.
+- **`@mutation(result_name=...)` sets the name of a mutation's result union.**
+  An auto-discovered mutation takes `result_name:` in its `@fraiseql:mutation`
+  comment.
 
 ### Fixed
 
@@ -21,6 +24,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   after the class (`createThing`, `createThingEnriched`), and both call the
   shared function. Two mutations that end up with the same field name make the
   schema build raise a `ValueError` naming both.
+- **Two mutations sharing a success type failed the schema build.** The result
+  union was named after the success type, so both got `CreateThingResult` and
+  graphql-core raised `Schema must contain uniquely named types but contains
+  multiple types named 'CreateThingResult'`. Each mutation now gets its own union,
+  named after its field (`CreateThingResult`, `CreateThingAgainResult`), with the
+  same or different error types. Two mutations with the same union name make the
+  schema build raise a `ValueError` naming both. A success type shared by a
+  cascade mutation and a non-cascade one shows the `cascade` field on both
+  (`null` on the latter).
 
 ### Deprecated
 
@@ -31,6 +43,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   field that will be renamed. Pass `name=` to keep the current name or adopt the
   new one now. For an auto-discovered mutation, the new name is the `name:` in
   its `@fraiseql:mutation` comment, which was ignored until now.
+- **Result union names taken from the success type.** A mutation's union is
+  named after its field: `updatePostTitle` -> `UpdatePostTitleResult`. Until
+  fraiseql 2.0.0, a working mutation whose union was named after its success type
+  (`PostSuccess` -> `PostResult`) keeps that name and is listed in the same
+  `FutureWarning`. Pass `result_name=` to keep the current name or adopt the new
+  one now. The warning is reported at your `build_fraiseql_schema()` or
+  `create_fraiseql_app()` call, not inside fraiseql, so you can filter it by
+  module.
+- **`fraiseql.result()`.** It emits a `DeprecationWarning` and is removed in
+  fraiseql 2.0.0. Annotate `Success | Error` instead. Its type stub now has the
+  real signature, `result(success_cls, error_cls)`, and is marked `@deprecated`,
+  so type checkers flag calls too.
 
 ## [1.28.0] - 2026-10-17
 

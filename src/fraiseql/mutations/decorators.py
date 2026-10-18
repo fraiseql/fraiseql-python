@@ -1,6 +1,7 @@
 """FraideQL decorators for mutation result classes and input types."""
 
 import types
+import warnings
 from collections.abc import Callable
 from typing import (
     Annotated,
@@ -16,20 +17,19 @@ from typing import (
 
 from fraiseql.fields import fraise_field
 from fraiseql.mutations.registry import register_result
+from fraiseql.mutations.result_names import legacy_result_union_name
 from fraiseql.utils.fields import patch_missing_field_types
 
 T = TypeVar("T", bound=type[Any])
 
 _success_registry: dict[str, type] = {}
 _error_registry: dict[str, type] = {}
-_union_registry: dict[str, object] = {}
 
 
 def clear_mutation_registries() -> None:
     """Clear all mutation decorator registries and SchemaRegistry mutations."""
     _success_registry.clear()
     _error_registry.clear()
-    _union_registry.clear()
 
     # Also clear the SchemaRegistry mutations to prevent test pollution
     try:
@@ -44,13 +44,25 @@ def clear_mutation_registries() -> None:
 class FraiseUnion:
     """Metadata wrapper for union result types."""
 
-    def __init__(self, name: str) -> None:
-        """Missing docstring."""
+    def __init__(self, name: str, *, derived: bool = False) -> None:
+        """Name a union type.
+
+        Args:
+            name: The GraphQL union name.
+            derived: True when the name was derived from the success type (the 1.x
+                rule) rather than chosen. On a mutation, the schema builder may then
+                replace it with the mutation's own result union name.
+        """
         self.name = name
+        self.derived = derived
 
 
 def resolve_union_annotation(annotation: object) -> object:
-    """Resolve `Success | Error` into an Annotated union result."""
+    """Resolve `Success | Error` into an Annotated union result.
+
+    The union gets the 1.x name derived from the success type, marked ``derived``:
+    on a mutation, the schema builder chooses the final name.
+    """
     origin = get_origin(annotation)
     if origin not in (Union, types.UnionType):
         return annotation
@@ -62,13 +74,12 @@ def resolve_union_annotation(annotation: object) -> object:
     if not success or not error:
         return annotation
 
-    base_name = success.__name__.removesuffix("Success")
-    union_name = f"{base_name}Result"
+    return _derived_union(success, error)
 
-    if union_name not in _union_registry:
-        _union_registry[union_name] = Annotated[success | error, FraiseUnion(union_name)]
 
-    return _union_registry[union_name]
+def _derived_union(success_cls: type, error_cls: type) -> object:
+    name = legacy_result_union_name(success_cls)
+    return Annotated[success_cls | error_cls, FraiseUnion(name, derived=True)]
 
 
 # ------------------------
@@ -257,43 +268,29 @@ def error(_cls: T | None = None) -> T | Callable[[T], T]:
 
 
 def _maybe_register_union(_: str) -> None:
+    """Pair ``XSuccess`` with ``XError`` in the result registry once both exist."""
     for success_name, success_cls in _success_registry.items():
         error_name = f"{success_name.removesuffix('Success')}Error"
         if error_name in _error_registry:
-            error_cls = _error_registry[error_name]
-            union_name = f"{success_name}Result"
-            if union_name not in _union_registry:
-                register_result(success_cls, error_cls)
-                _union_registry[union_name] = Annotated[
-                    success_cls | error_cls,
-                    FraiseUnion(union_name),
-                ]
-
-    for error_name, error_cls in _error_registry.items():
-        success_name = f"{error_name.removesuffix('Error')}Success"
-        if success_name in _success_registry:
-            success_cls = _success_registry[success_name]
-            union_name = f"{success_name}Result"
-            if union_name not in _union_registry:
-                register_result(success_cls, error_cls)
-                _union_registry[union_name] = Annotated[
-                    success_cls | error_cls,
-                    FraiseUnion(union_name),
-                ]
+            register_result(success_cls, _error_registry[error_name])
 
 
 def result(success_cls: type, error_cls: type) -> type:
-    """Manually register a success+error result union type."""
-    base_name = success_cls.__name__.removesuffix("Success")
-    union_name = f"{base_name}Result"
+    """Build a success+error result union type.
 
-    if union_name in _union_registry:
-        return cast("type", _union_registry[union_name])
-
+    .. deprecated:: 1.29.0
+        Annotate ``Success | Error`` instead. On a mutation, the schema build names
+        the union after the mutation (``result_name=`` overrides it). Removed in
+        fraiseql 2.0.0.
+    """
+    warnings.warn(
+        "fraiseql.result() is deprecated and will be removed in fraiseql 2.0.0; "
+        "annotate the mutation's return type as Success | Error instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     register_result(success_cls, error_cls)
-    union = Annotated[success_cls | error_cls, FraiseUnion(union_name)]
-    _union_registry[union_name] = union
-    return cast("type", union)
+    return cast("type", _derived_union(success_cls, error_cls))
 
 
 def _get_auto_field_description(field_name: str) -> str:

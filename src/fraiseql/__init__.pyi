@@ -1,4 +1,5 @@
 from typing import Any, Callable, Type, TypeVar, dataclass_transform, overload
+from warnings import deprecated
 
 from .mutations.error_config import MutationErrorConfig as MutationErrorConfig
 
@@ -54,7 +55,11 @@ def fraise_input_decorator(
 def success(cls: Type[_T]) -> Type[_T]: ...
 @dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 def error(cls: Type[_T]) -> Type[_T]: ...
-def result(cls: Type[_T]) -> Type[_T]: ...
+@deprecated(
+    "fraiseql.result() is deprecated and will be removed in fraiseql 2.0.0; "
+    "annotate the mutation's return type as Success | Error instead."
+)
+def result(success_cls: Type[Any], error_cls: Type[Any]) -> Type[Any]: ...
 def enum(cls: Type[_T]) -> Type[_T]: ...
 @dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 def interface(cls: Type[_T]) -> Type[_T]: ...
@@ -111,6 +116,7 @@ def mutation(
     enable_cascade: bool = False,
     authorizer: Any | None = None,
     name: str | None = None,
+    result_name: str | None = None,
 ) -> Callable[[_T], _T]: ...
 def mutation(
     _cls: _T | None = None,
@@ -122,6 +128,7 @@ def mutation(
     enable_cascade: bool = False,
     authorizer: Any | None = None,
     name: str | None = None,
+    result_name: str | None = None,
 ) -> _T | Callable[[_T], _T]: ...
 
 # Subscription decorator

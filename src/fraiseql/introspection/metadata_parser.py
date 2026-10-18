@@ -32,6 +32,7 @@ class MutationAnnotation:
     description: Optional[str] = None
     input_type: Optional[str] = None
     context_params: Optional[list[str]] = None  # NEW: Explicit context params
+    result_name: Optional[str] = None  # GraphQL name of the result union
 
 
 @dataclass
@@ -121,6 +122,7 @@ class MetadataParser:
             success_type: Contact
             error_type: ContactError
             context_params: [auth_tenant_id, auth_user_id]  # NEW
+            result_name: CreateContactResult  # optional: the result union's name
         """
         if not comment or "@fraiseql:mutation" not in comment:
             return None
@@ -161,6 +163,7 @@ class MetadataParser:
             description = data.get("description")
             input_type = data.get("input_type")
             context_params = data.get("context_params")  # NEW: Parse context_params array
+            result_name = data.get("result_name")
 
             return MutationAnnotation(
                 name=name,
@@ -169,6 +172,7 @@ class MetadataParser:
                 error_type=error_type,
                 input_type=input_type,
                 context_params=context_params,  # NEW
+                result_name=result_name,
             )
         except Exception as e:
             import logging

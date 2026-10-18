@@ -246,7 +246,7 @@ async def test_async_prepare_input_with_info_reaches_function(cascade_http_clien
     mutation_query = """
     mutation CreatePostEnriched($input: CreatePostInput!) {
         createPostEnriched(input: $input) {
-            ... on CreatePostEnrichedSuccess {
+            ... on CreatePostWithEntitySuccess {
                 post { title }
                 cascade { updated { __typename operation } }
             }
