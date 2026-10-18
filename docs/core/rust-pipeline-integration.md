@@ -108,6 +108,12 @@ one of several types. FraiseQL never guesses the type from the schema there:
 `__typename` is included only when the data provides it (a `__typename` key in
 the JSONB).
 
+In a mutation entity, fragments under an interface or union field
+(`owner { ... on Person { name } ... on Org { title } }`) select the union of
+their fields for every object: a `Person` owner keeps `title` too if its data has
+one. Per-type filtering, which would keep only `name` for a `Person`, isn't done
+yet.
+
 ## Code Example
 
 ### Python Side

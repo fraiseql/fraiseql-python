@@ -56,6 +56,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `location { ...LocationFields }` returned only `__typename`, and a fragment
   spread inside `... on XSuccess` dropped the entity. The spread's name was read
   as a field name. Spreads are now expanded.
+- **Fields selected through fragments under a nested interface or union field
+  were ignored.** With `owner { ... on Person { name } }` in a mutation entity,
+  the nested object came back with every column of its view, so a mutation could
+  return fields nobody selected; with `owner { id ... on Person { name } }`,
+  `name` was dropped. They are now selected, and `owner { __typename }` returns
+  only `__typename`. Responses get stricter: a client that read an unselected
+  field there no longer gets it. Until per-type filtering lands, each object keeps
+  the fields of every fragment under that field.
 
 ### Deprecated
 
