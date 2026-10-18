@@ -15,6 +15,8 @@ from typing import Any, Callable
 
 from graphql import GraphQLResolveInfo
 
+from fraiseql.utils.paths import format_path
+
 logger = logging.getLogger(__name__)
 
 
@@ -163,7 +165,8 @@ class N1QueryDetector:
         async with self._lock:
             # Build pattern key
             parent_type = info.parent_type.name if info.parent_type else "Unknown"
-            field_path = ".".join(str(p) for p in info.path)
+            # List indices dropped: the pattern is the field, not one list item
+            field_path = format_path(info.path, keep_indices=False)
             pattern_key = f"{parent_type}.{field_name}"
 
             # Get or create pattern

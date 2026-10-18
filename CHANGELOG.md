@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Diagnostics showed a field's response path as a `Path(prev=...)` repr.**
+  The N+1 detector joined the fields of graphql-core's `Path` tuple instead of
+  its keys, so a pattern's `field_path` read
+  `Path(prev=..., key=0, typename=None).author.Post` rather than
+  `posts.author`, and a missing path raised `TypeError`. Pattern paths now
+  drop list indices, since a pattern names a field repeated across list items.
+  `profile_resolver` logs and `ResolverError.query_context` now give the path
+  as a list (`["posts", 0, "author"]`, the GraphQL `path` format), and
+  `debug_graphql_info` prints `Path: posts.0.author`.
+
 ## [1.28.0] - 2026-10-17
 
 ### Added
