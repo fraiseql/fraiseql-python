@@ -243,7 +243,7 @@ async def mark_review_helpful(
 # These demonstrate complex validation and cross-entity patterns
 
 
-@fraiseql.mutation(function="app.process_order")
+@fraiseql.mutation(name="processOrder", function="process_order", schema="app")
 class ProcessOrderEnterprise:
     """Process order with comprehensive validation.
 
@@ -261,7 +261,7 @@ class ProcessOrderEnterprise:
     noop: ProcessOrderNoop  # For inventory/business rule issues
 
 
-@fraiseql.mutation(function="app.update_inventory")
+@fraiseql.mutation(name="updateInventory", function="update_inventory", schema="app")
 class UpdateInventoryEnterprise:
     """Update inventory with business rules.
 
@@ -283,7 +283,7 @@ class UpdateInventoryEnterprise:
     noop: UpdateInventoryNoop  # For no-change scenarios
 
 
-@fraiseql.mutation(function="app.apply_discount")
+@fraiseql.mutation(name="applyDiscount", function="apply_discount", schema="app")
 class ApplyDiscountEnterprise:
     """Apply discount with eligibility validation.
 

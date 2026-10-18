@@ -168,7 +168,7 @@ $$ LANGUAGE plpgsql;
 ```python
 # Simple preference update - no cascade needed
 @mutation  # Not enable_cascade=True
-class UpdateUserPreferences:
+class UpdatePreferences:
     input: UpdatePreferencesInput
     success: UpdatePreferencesSuccess
     error: UpdatePreferencesError
@@ -246,7 +246,7 @@ $$ LANGUAGE plpgsql;
 from fraiseql import mutation
 
 @mutation  # Note: enable_cascade=False by default
-class UpdateUserPreference:
+class UpdatePreference:
     """Simple preference update - no side effects"""
     input: UpdatePreferenceInput
     success: UpdatePreferenceSuccess

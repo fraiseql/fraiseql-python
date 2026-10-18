@@ -7,7 +7,7 @@ FraiseQL provides `@success` and `@error` decorators for defining mutation respo
 Mutations in FraiseQL return **union types** with success and error cases:
 
 ```python
-@fraiseql.mutation
+@fraiseql.mutation(result_name="CreateUserResult")
 class CreateUser:
     input: CreateUserInput
     success: UserCreated      # Success case
@@ -152,7 +152,7 @@ class ValidationError:
     field: str | None = None
 
 # Mutation definition
-@fraiseql.mutation
+@fraiseql.mutation(result_name="CreateUserResult")
 class CreateUser:
     input: CreateUserInput
     success: UserCreated
@@ -391,7 +391,7 @@ class AuthorizationError:
     message: str
     code: str = "UNAUTHORIZED"
 
-@fraiseql.mutation
+@fraiseql.mutation(result_name="UpdateUserResult")
 class UpdateUser:
     input: UpdateUserInput
     success: UserUpdated

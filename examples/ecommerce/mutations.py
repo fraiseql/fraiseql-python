@@ -15,13 +15,13 @@ from .models import (
     CheckoutInput,
     CreateAddressInput,
     CreateReviewInput,
+    CreateReviewSuccess,
     LoginInput,
     OrderError,
     OrderSuccess,
     # Inputs
     RegisterInput,
     ReviewError,
-    ReviewSuccess,
     UpdateCartItemInput,
 )
 
@@ -143,7 +143,7 @@ class CreateReview:
     """Create a product review."""
 
     input: CreateReviewInput
-    success: ReviewSuccess
+    success: CreateReviewSuccess
     error: ReviewError
 
 

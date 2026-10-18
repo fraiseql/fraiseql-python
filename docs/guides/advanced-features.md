@@ -353,7 +353,7 @@ GraphQL Cascade tracks mutation side effects and automatically invalidates affec
 @fraiseql.mutation
 class CreatePost:
     input: CreatePostInput
-    success: PostCreated
+    success: CreatePostSuccess
     failure: ValidationError
 
     # Declare cascade effects
@@ -362,7 +362,7 @@ class CreatePost:
         "user.posts",      # Invalidate user's posts field
     ]
 
-    async def resolve(self, info) -> PostCreated | ValidationError:
+    async def resolve(self, info) -> CreatePostSuccess | ValidationError:
         db = info.context["db"]
 
         result = await db.execute_function("fn_create_post", {
@@ -373,7 +373,7 @@ class CreatePost:
         post = await db.find_one("v_post", id=result["id"])
 
         # Cascade automatically invalidates affected queries!
-        return PostCreated(post=post)
+        return CreatePostSuccess(post=post)
 ```
 
 **Result**: Client's `posts` query cache is automatically invalidated and refetched.
@@ -384,7 +384,7 @@ class CreatePost:
 @fraiseql.mutation
 class UpdateUser:
     input: UpdateUserInput
-    success: UserUpdated
+    success: UpdateUserSuccess
     failure: ValidationError
 
     # Cascade with parameters

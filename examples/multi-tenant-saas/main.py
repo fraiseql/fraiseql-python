@@ -312,7 +312,7 @@ class Query:
 # ============================================================================
 
 
-@fraiseql.mutation(function="fn_create_project", enable_cascade=True)
+@fraiseql.mutation(name="createProject", function="fn_create_project", enable_cascade=True)
 class CreateProject:
     """Create a new project.
 
@@ -325,7 +325,7 @@ class CreateProject:
     description: str | None
 
 
-@fraiseql.mutation(function="fn_create_task", enable_cascade=True)
+@fraiseql.mutation(name="createTask", function="fn_create_task", enable_cascade=True)
 class CreateTask:
     """Create a new task.
 
@@ -341,7 +341,7 @@ class CreateTask:
     due_date: datetime | None
 
 
-@fraiseql.mutation(function="fn_update_task_status", enable_cascade=True)
+@fraiseql.mutation(name="updateTaskStatus", function="fn_update_task_status", enable_cascade=True)
 class UpdateTaskStatus:
     """Update task status.
 
@@ -352,7 +352,7 @@ class UpdateTaskStatus:
     status: str
 
 
-@fraiseql.mutation(function="fn_invite_user")
+@fraiseql.mutation(name="inviteUser", function="fn_invite_user")
 class InviteUser:
     """Invite a new user to the organization."""
 

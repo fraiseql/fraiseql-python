@@ -628,7 +628,7 @@ class User:
 
 
 @fraiseql.success
-class UploadSuccess:
+class UploadUserAvatarSuccess:
     user: User
 
 
@@ -646,7 +646,7 @@ ALLOWED_MIME = {"image/jpeg", "image/png", "image/webp"}
 
 
 @fraiseql.mutation
-async def upload_user_avatar(info, user_id: ID, file: File) -> UploadSuccess | UploadError:
+async def upload_user_avatar(info, user_id: ID, file: File) -> UploadUserAvatarSuccess | UploadError:
     if len(file.content) > MAX_AVATAR_BYTES:
         return UploadError(message="File size exceeds 5MB limit")
     if file.mimetype not in ALLOWED_MIME:
@@ -665,7 +665,7 @@ async def upload_user_avatar(info, user_id: ID, file: File) -> UploadSuccess | U
     )
     if not result.get("success"):
         return UploadError(message=result.get("message", "Failed to update avatar"))
-    return UploadSuccess(user=User(**result["user"]))
+    return UploadUserAvatarSuccess(user=User(**result["user"]))
 ```
 
 ### Client Usage
@@ -673,7 +673,7 @@ async def upload_user_avatar(info, user_id: ID, file: File) -> UploadSuccess | U
 ```graphql
 mutation UploadAvatar($userId: ID!, $file: File!) {
   uploadUserAvatar(userId: $userId, file: $file) {
-    ... on UploadSuccess {
+    ... on UploadUserAvatarSuccess {
       user { id name avatarUrl }
     }
     ... on UploadError { message }

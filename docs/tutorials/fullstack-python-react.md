@@ -531,12 +531,12 @@ class PostSuccess:
 
 
 @fraiseql.success
-class CommentSuccess:
+class CreateCommentSuccess:
     comment: Comment
 
 
 @fraiseql.success
-class DeleteSuccess:
+class DeletePostSuccess:
     deleted_id: ID
 
 
@@ -644,16 +644,16 @@ async def update_post(info, input: UpdatePostInput) -> PostSuccess | MutationErr
 
 
 @fraiseql.mutation
-async def delete_post(info, id: ID) -> DeleteSuccess | MutationError:
+async def delete_post(info, id: ID) -> DeletePostSuccess | MutationError:
     db = info.context["db"]
     result = await db.execute_function("fn_delete_post", {"id": str(id)})
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not delete post"))
-    return DeleteSuccess(deleted_id=result["id"])
+    return DeletePostSuccess(deleted_id=result["id"])
 
 
 @fraiseql.mutation
-async def create_comment(info, input: CreateCommentInput) -> CommentSuccess | MutationError:
+async def create_comment(info, input: CreateCommentInput) -> CreateCommentSuccess | MutationError:
     db = info.context["db"]
     result = await db.execute_function(
         "fn_create_comment",
@@ -667,7 +667,7 @@ async def create_comment(info, input: CreateCommentInput) -> CommentSuccess | Mu
         return MutationError(message=result.get("message", "Could not create comment"))
 
     created = await db.find_one("v_comment", "comment", info, id=result["id"])
-    return CommentSuccess(comment=created)
+    return CreateCommentSuccess(comment=created)
 
 
 @fraiseql.mutation
@@ -905,7 +905,7 @@ export const CREATE_POST = gql`
 export const CREATE_COMMENT = gql`
   mutation CreateComment($input: CreateCommentInput!) {
     createComment(input: $input) {
-      ... on CommentSuccess {
+      ... on CreateCommentSuccess {
         comment {
           id
           content
