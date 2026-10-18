@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.29.0] - 2026-10-18
+
+### Upgrading
+
+- **Mutation names.** A class mutation is named after its class
+  (`CreatePost` -> `createPost`), and its result union after its field
+  (`updatePostTitle` -> `UpdatePostTitleResult`). In 1.x, a mutation that works
+  today keeps its current names, so nothing is renamed by upgrading. Where a
+  name will change in fraiseql 2.0.0 (`function="fn_create_post"`, or a union
+  named after its success type such as `PostResult`), the schema build emits
+  one `FutureWarning` listing every rename:
+
+  ```text
+  These mutation names will change in the next major release of fraiseql (2.0.0):
+    field 'fnCreatePost' -> 'createPost'
+    union 'PostResult' -> 'UpdatePostTitleResult'
+  To keep a name, pass name="..." (field) or result_name="..." (union) to @mutation.
+  ```
+
+  Pass `name=` / `result_name=` with the current name to keep it, or with the
+  new one to switch now; either removes the mutation from the warning. The
+  warning points at your `build_fraiseql_schema()` / `create_fraiseql_app()`
+  call, so it can be filtered by module. fraiseql 2.0.0 is the next major
+  release of this package, not the separate FraiseQL v2 product.
+- **Mutations that clashed** (two classes sharing `function=`, or two mutations
+  sharing a success type) used to lose a field or fail the build. They get the
+  new names straight away, with no warning.
+- **`fraiseql.result()`** is deprecated; annotate `Success | Error` instead.
+- **Rust-built mutation responses are stricter.** Nested entities under an
+  interface or union field are filtered to the fields their fragments select,
+  and `"__typename": "Entity"` becomes the real type name or is left out. See
+  Fixed below.
+
 ### Added
 
 - **`@mutation(name=...)` sets a mutation's GraphQL field name.** The name is
@@ -97,8 +130,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 - **Examples `compliance-demo`, `multi-tenant-saas`, `ecommerce_api`, `admin-panel`
-  and `real_time_chat`.** They were written against APIs fraiseql doesn't have;
-  see `saas-starter` and `ecommerce`.
+  and `real_time_chat`.** They were written against APIs fraiseql doesn't have.
+  `blog_api` and `context_parameters` build on the current API;
+  `saas-starter` and `ecommerce` are being fixed (#565). For subscriptions, see
+  `websocket_fastapi.py`.
 
 ## [1.28.0] - 2026-10-17
 
