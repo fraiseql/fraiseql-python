@@ -412,17 +412,6 @@ async def db_connection_committed(
                 pass
 
 
-@pytest.fixture
-def clear_registry() -> Generator[None]:
-    """Clear FraiseQL global registries before and after each test.
-
-    This ensures no type or schema registry pollution between tests.
-    """
-    _clear_all_fraiseql_state()
-    yield
-    _clear_all_fraiseql_state()
-
-
 @pytest.fixture(scope="class")
 def clear_registry_class() -> Generator[None]:
     """Clear FraiseQL global registries before and after each test class.

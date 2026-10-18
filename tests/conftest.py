@@ -6,10 +6,10 @@ import pytest
 # Import chaos database fixtures plugin (must be at top level)
 # Use full module path for plugin import
 try:
-    pytest_plugins = ["tests.chaos.database_fixtures"]
+    pytest_plugins = ["tests.chaos.database_fixtures", "tests.plugins.registry_guard", "pytester"]
 except ImportError:
     # Skip if chaos fixtures not available
-    pytest_plugins = []
+    pytest_plugins = ["tests.plugins.registry_guard", "pytester"]
 
 # Check if Rust extension should be skipped for performance optimization
 SKIP_RUST = os.getenv("FRAISEQL_SKIP_RUST") == "1"
