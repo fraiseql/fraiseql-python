@@ -7,9 +7,19 @@ objects in mutation responses.
 Related to GitHub issue #525.
 """
 
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from graphql import FieldNode, InlineFragmentNode, NamedTypeNode, NameNode, SelectionSetNode
+from graphql import (
+    FieldNode,
+    InlineFragmentNode,
+    NamedTypeNode,
+    NameNode,
+    OperationDefinitionNode,
+    SelectionSetNode,
+    build_schema,
+    parse,
+)
 
 from fraiseql.mutations.mutation_decorator import _extract_entity_field_selections
 
@@ -370,3 +380,66 @@ class TestEntityFieldExtraction:
         assert result is not None
         assert "__typename" not in result["fields"]
         assert set(result["fields"]) == {"id", "name"}
+
+
+_TYPED_SCHEMA = build_schema("""
+    interface Node { id: ID! }
+    type Address { city: String }
+    type Person implements Node { id: ID! name: String }
+    type Location implements Node {
+        id: ID!
+        address: Address
+        owner: Node
+    }
+    type CreateLocationSuccess { location: Location node: Node }
+    type Query { ping: String }
+    type Mutation { createLocation: CreateLocationSuccess }
+""")
+
+
+def _typed_info(query: str) -> SimpleNamespace:
+    """An info-like object for a parsed mutation, against _TYPED_SCHEMA."""
+    operation = parse(query).definitions[0]
+    assert isinstance(operation, OperationDefinitionNode)
+    return SimpleNamespace(
+        schema=_TYPED_SCHEMA, field_nodes=list(operation.selection_set.selections), fragments={}
+    )
+
+
+class TestTypeNameFromSchema:
+    """__type tells Rust which __typename to add; only a concrete type has one."""
+
+    def test_object_type_gets_its_name(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { id address { city } }
+            } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["__type"] == "Location"
+        assert result["address"]["__type"] == "Address"
+
+    def test_nested_interface_field_gets_no_type_name(self):
+        """An object behind an interface is one of several types; its data says which."""
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { id owner { id } }
+            } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["owner"] == {"fields": ["id"]}
+
+    def test_interface_entity_gets_no_type_name(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess { node { id } } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "node")
+
+        assert result == {"fields": ["id"]}

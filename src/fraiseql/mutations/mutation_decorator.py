@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable
 from typing import Any, TypeVar, get_type_hints
 
-from graphql import GraphQLResolveInfo
+from graphql import GraphQLResolveInfo, is_abstract_type
 
 from fraiseql.mutations.error_config import MutationErrorConfig
 from fraiseql.types.definitions import UNSET
@@ -167,8 +167,9 @@ def _extract_nested_selections(
                             field_type = next_type
                             unwrap_count += 1
 
-                        # Get the type name
-                        if hasattr(field_type, "name"):
+                        # Get the type name. An abstract type has none to give: the
+                        # object behind it is one of several types, and its data says which.
+                        if hasattr(field_type, "name") and not is_abstract_type(field_type):
                             field_type_name = field_type.name
 
             # Recursively extract nested selections with type context
@@ -282,8 +283,8 @@ def _extract_entity_field_selections(
                     entity_field_type = next_type
                     unwrap_count += 1
 
-                # Get the type name
-                if hasattr(entity_field_type, "name"):
+                # Get the type name, unless it is abstract (see _extract_nested_selections)
+                if hasattr(entity_field_type, "name") and not is_abstract_type(entity_field_type):
                     entity_type_name = entity_field_type.name
 
     # Look through field nodes (mutation field)

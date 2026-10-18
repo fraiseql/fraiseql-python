@@ -90,6 +90,24 @@ sequenceDiagram
 - Inject __typename
 - Return UTF-8 bytes directly for HTTP
 
+### `__typename` is always included
+
+Responses built by the Rust pipeline include `__typename` on every object whose
+type is known, whether or not the query selected it. This applies to query
+results and to mutation results, including nested entities and cascade data.
+For example, a mutation selecting `post { id title }` returns
+`{"__typename": "Post", "id": ..., "title": ...}`.
+
+This is deliberate, and it differs from the GraphQL spec, which returns only
+selected fields. The response skips graphql-core on the HTTP path, so it isn't
+filtered afterwards. Clients that normalize by type, such as Apollo Client's
+cache, need `__typename` anyway and usually add it to every selection.
+
+For a field whose type is an interface or a union, the object behind it can be
+one of several types. FraiseQL never guesses the type from the schema there:
+`__typename` is included only when the data provides it (a `__typename` key in
+the JSONB).
+
 ## Code Example
 
 ### Python Side
