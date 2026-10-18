@@ -357,11 +357,12 @@ class TestEntityFieldExtraction:
         assert new_result is not None
         assert set(new_result["fields"]) == {"id", "name"}
 
-    def test_typename_excluded_from_selections(self):
-        """Test that __typename is excluded from field selections.
+    def test_typename_kept_in_selections(self):
+        """__typename stays in the field selections.
 
-        __typename is a GraphQL introspection field that should not
-        be included in entity field filtering.
+        The Rust filter doesn't look it up as a column: it keeps the data's
+        __typename, or the one from __type. Keeping it means a selection of
+        only __typename filters the object down to it.
         """
         info = MagicMock()
 
@@ -380,21 +381,22 @@ class TestEntityFieldExtraction:
 
         result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
 
-        # __typename should be excluded
         assert result is not None
-        assert "__typename" not in result["fields"]
-        assert set(result["fields"]) == {"id", "name"}
+        assert result["fields"] == ["__typename", "id", "name"]
 
 
 _TYPED_SCHEMA = build_schema("""
     interface Node { id: ID! }
     type Address { city: String }
     type Person implements Node { id: ID! name: String }
+    type Org implements Node { id: ID! title: String }
+    union Owner = Person | Org
     type Location implements Node {
         id: ID!
         name: String
         address: Address
         owner: Node
+        ownerU: Owner
         manager: Person
     }
     type CreateLocationSuccess { message: String location: Location node: Node }
@@ -523,3 +525,72 @@ class TestNamedFragmentSpreads:
 
         assert result is not None
         assert result["fields"] == ["id", "name"]
+
+
+class TestFragmentsUnderAbstractFields:
+    """Under an interface or union field, every fragment's fields are selected.
+
+    The object's type is only known from its data, so the selection is the union of
+    the fields of every fragment, whatever its type condition.
+    """
+
+    def test_inline_fragment_under_interface_field(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { id owner { ... on Person { name } } }
+            } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["owner"] == {"fields": ["name"]}
+
+    def test_field_and_inline_fragment_under_interface_field(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { owner { id ... on Person { name } } }
+            } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["owner"] == {"fields": ["id", "name"]}
+
+    def test_fragments_for_each_union_member(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { ownerU { __typename ... on Person { name } ... on Org { title } } }
+            } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["ownerU"] == {"fields": ["__typename", "name", "title"]}
+
+    def test_named_fragment_under_interface_field(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { owner { ...PersonFields } }
+            } } }
+            fragment PersonFields on Person { name }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["owner"] == {"fields": ["name"]}
+
+    def test_typename_only(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { owner { __typename } }
+            } } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["owner"] == {"fields": ["__typename"]}

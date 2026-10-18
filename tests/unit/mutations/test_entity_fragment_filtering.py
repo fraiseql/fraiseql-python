@@ -115,4 +115,47 @@ def test_named_fragment_under_interface_field_keeps_its_fields(fraiseql_rs: Any)
         fragment PersonFields on Person { name }""",
     )
 
-    assert data["location"]["owner"]["name"] == "Ada"
+    assert data["location"]["owner"] == {"__typename": "Person", "name": "Ada"}
+
+
+def test_inline_fragment_under_interface_field_selects_its_fields(fraiseql_rs: Any) -> None:
+    data = _respond(
+        fraiseql_rs,
+        """mutation { updateLocation { ... on UpdateLocationSuccess {
+            location { id owner { ... on Person { name } } } } } }""",
+    )
+
+    assert data["location"]["owner"] == {"__typename": "Person", "name": "Ada"}
+
+
+def test_field_and_inline_fragment_under_interface_field(fraiseql_rs: Any) -> None:
+    data = _respond(
+        fraiseql_rs,
+        """mutation { updateLocation { ... on UpdateLocationSuccess {
+            location { id owner { id ... on Person { name } } } } } }""",
+    )
+
+    assert data["location"]["owner"] == {"__typename": "Person", "id": "p1", "name": "Ada"}
+
+
+def test_fragments_under_union_field_leak_nothing(fraiseql_rs: Any) -> None:
+    data = _respond(
+        fraiseql_rs,
+        """mutation { updateLocation { ... on UpdateLocationSuccess {
+            location { ownerU { __typename ... on Person { name } ... on Org { title } } } } } }""",
+    )
+
+    assert data["location"] == {
+        "__typename": "Location",
+        "ownerU": {"__typename": "Org", "title": "ACME"},
+    }
+
+
+def test_typename_only_under_interface_field(fraiseql_rs: Any) -> None:
+    data = _respond(
+        fraiseql_rs,
+        """mutation { updateLocation { ... on UpdateLocationSuccess {
+            location { id owner { __typename } } } } }""",
+    )
+
+    assert data["location"]["owner"] == {"__typename": "Person"}

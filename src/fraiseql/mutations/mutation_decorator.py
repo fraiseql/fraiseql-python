@@ -9,10 +9,12 @@ from typing import Any, TypeVar, get_type_hints
 
 from graphql import (
     FragmentSpreadNode,
+    GraphQLNamedType,
     GraphQLObjectType,
     GraphQLResolveInfo,
     InlineFragmentNode,
     SelectionSetNode,
+    get_named_type,
     is_abstract_type,
 )
 
@@ -39,18 +41,38 @@ def _concrete_type_name(graphql_type: Any) -> str | None:
     return name
 
 
+def _graphql_named_type(schema: Any, parent_type: Any, field_name: str) -> GraphQLNamedType | None:
+    """The named type of parent_type's field_name in schema, unwrapped from lists and non-null.
+
+    parent_type is a GraphQL type or a type name. Returns None when there is no schema
+    or no such field. The type may be abstract: see _concrete_type_name.
+    """
+    type_map = getattr(schema, "type_map", None)
+    if not isinstance(type_map, dict):
+        return None
+    if isinstance(parent_type, str):
+        parent_type = type_map.get(parent_type)
+    fields = getattr(parent_type, "fields", None)
+    if not isinstance(fields, dict):
+        return None
+    field_def = fields.get(field_name)
+    return get_named_type(field_def.type) if field_def is not None else None
+
+
 def _fragment_applies(type_condition: Any, type_name: str | None, schema: Any) -> bool:
     """Whether a fragment with this type condition applies to an object of type_name.
 
     A fragment applies when it has no type condition, when the condition is the type
-    itself, or when it is an interface or union the type belongs to. When the object's
-    type isn't known (no schema, or a field typed as an interface or union), only a
-    fragment without a type condition applies.
+    itself, or when it is an interface or union the type belongs to.
+
+    When the object's type isn't known (no schema, or a field typed as an interface or
+    union), every fragment applies: the selection is the union of the fields of every
+    fragment, whatever its type condition. That never filters out a field the object's
+    own type selects; it may keep one selected for a sibling type. Choosing per object
+    would need its __typename from the data, at filtering time in Rust.
     """
-    if type_condition is None:
+    if type_condition is None or type_name is None:
         return True
-    if type_name is None:
-        return False
     condition = type_condition.name.value
     if condition == type_name:
         return True
@@ -251,13 +273,10 @@ def _extract_nested_selections(
     for field_selection in _iter_selected_fields(
         selection_set, fragments, _concrete_type_name(parent_type), schema
     ):
-        field_name = field_selection.name.value
-
-        # Skip __typename introspection field
-        if field_name == "__typename":
-            continue
-
-        field_nodes.setdefault(field_name, []).append(field_selection)
+        # __typename is kept. Rust skips it when copying fields and keeps the data's
+        # __typename (or __type's), so an object selecting only __typename is filtered
+        # down to it rather than passed through whole.
+        field_nodes.setdefault(field_selection.name.value, []).append(field_selection)
 
     fields = list(field_nodes)
     nested = {}
@@ -266,34 +285,10 @@ def _extract_nested_selections(
         # Check if this field has sub-selections
         sub_selection_set = _merged_selection_set(nodes)
         if sub_selection_set:
-            # Get the field type from schema if available
-            field_type = None
-            field_type_name = None
-
-            if schema and parent_type and hasattr(parent_type, "fields"):
-                # Validate parent_type.fields is a real dict, not a mock
-                fields_attr = getattr(parent_type, "fields", None)
-                if isinstance(fields_attr, dict):
-                    # Look up the field definition in the parent type
-                    field_def = fields_attr.get(field_name)
-                    if field_def:
-                        # Unwrap NonNull and List wrappers to get the actual type
-                        field_type = field_def.type
-                        # Safety: limit unwrapping to prevent infinite loops with mocks
-                        max_unwrap = 10
-                        unwrap_count = 0
-                        while hasattr(field_type, "of_type") and unwrap_count < max_unwrap:
-                            next_type = field_type.of_type
-                            # Prevent infinite loop if mock returns itself
-                            if next_type is field_type:
-                                break
-                            field_type = next_type
-                            unwrap_count += 1
-
-                        # Get the type name. An abstract type has none to give: the
-                        # object behind it is one of several types, and its data says which.
-                        if hasattr(field_type, "name") and not is_abstract_type(field_type):
-                            field_type_name = field_type.name
+            # Get the field type from schema if available. An abstract type has no name
+            # to give: the object behind it is one of several types, and its data says which.
+            field_type = _graphql_named_type(schema, parent_type, field_name)
+            field_type_name = _concrete_type_name(field_type)
 
             # Recursively extract nested selections with type context
             sub_selections = _extract_nested_selections(
@@ -404,31 +399,9 @@ def _extract_entity_field_selections(
         # Fallback to basic extraction without type info
         return _extract_entity_field_selections_basic(info, type_name, entity_field_name)
 
-    # Get entity field type definition
-    entity_field_type = None
-    entity_type_name = None
-    if hasattr(parent_type, "fields"):
-        # Validate parent_type.fields is a real dict, not a mock
-        fields_attr = getattr(parent_type, "fields", None)
-        if isinstance(fields_attr, dict):
-            entity_field_def = fields_attr.get(entity_field_name)
-            if entity_field_def:
-                # Unwrap NonNull and List wrappers
-                entity_field_type = entity_field_def.type
-                # Safety: limit unwrapping to prevent infinite loops with mocks
-                max_unwrap = 10
-                unwrap_count = 0
-                while hasattr(entity_field_type, "of_type") and unwrap_count < max_unwrap:
-                    next_type = entity_field_type.of_type
-                    # Prevent infinite loop if mock returns itself
-                    if next_type is entity_field_type:
-                        break
-                    entity_field_type = next_type
-                    unwrap_count += 1
-
-                # Get the type name, unless it is abstract (see _extract_nested_selections)
-                if hasattr(entity_field_type, "name") and not is_abstract_type(entity_field_type):
-                    entity_type_name = entity_field_type.name
+    # Get the entity field's type, and its name unless it is abstract
+    entity_field_type = _graphql_named_type(schema, parent_type, entity_field_name)
+    entity_type_name = _concrete_type_name(entity_field_type)
 
     selection_set = _entity_selection_set(info, type_name, entity_field_name, schema)
     if selection_set is None:
