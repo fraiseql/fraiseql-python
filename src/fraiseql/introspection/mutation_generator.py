@@ -160,6 +160,9 @@ class MutationGenerator:
             schema=function_metadata.schema_name,
             context_params=context_params,  # ADD THIS
         )
+        # The comment's name: is the field name from fraiseql 2.0.0. Until then the
+        # field keeps the name taken from the function, with a FutureWarning.
+        decorated_mutation.__fraiseql_mutation__.default_graphql_name = annotation.name
 
         return decorated_mutation
 

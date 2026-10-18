@@ -293,6 +293,8 @@ See [Filter Operators Reference](../advanced/filter-operators.md) for complete l
 
 ## Step 4: Mutation Migration (2-3 days)
 
+> **Field names:** these examples show each mutation under its class name (`CreatePost` → `createPost`). In fraiseql 1.x, a class whose `function=` differs from its name, such as `fn_create_post`, is still served under the function's name (`fnCreatePost`), and the schema build emits a `FutureWarning`. Pass `name="createPost"` to get the names shown here now. See [Mutation field names](../reference/decorators.md#mutation-field-names).
+
 ### 4.1 Simple Mutations
 
 **Before (Graphene):**

@@ -238,6 +238,8 @@ class CreatePost:
     author_id: ID
 ```
 
+> **Field names:** these examples show each mutation under its class name (`CreatePost` → `createPost`). In fraiseql 1.x, a class whose `function=` differs from its name, such as `fn_create_post`, is still served under the function's name (`fnCreatePost`), and the schema build emits a `FutureWarning`. Pass `name="createPost"` to get the names shown here now. See [Mutation field names](../reference/decorators.md#mutation-field-names).
+
 ```graphql
 # CASCADE automatically returns updated User with new post
 mutation {
