@@ -12,6 +12,46 @@ from fraiseql.utils.casing import dict_keys_to_snake_case
 
 logger = logging.getLogger(__name__)
 
+# Statuses the Rust pipeline answers with the error type (MutationStatus::from_str)
+_ERROR_STATUS_PREFIXES = (
+    "failed:",
+    "validation:",
+    "unauthorized:",
+    "forbidden:",
+    "not_found:",
+    "conflict:",
+    "timeout:",
+    "noop:",
+)
+
+# SQL functions _warn_if_untyped_entity has warned about, once each per process
+_warned_untyped_entity: set[str] = set()
+
+
+def _warn_if_untyped_entity(function_name: str, result: dict[str, Any]) -> None:
+    """Warn once per SQL function about a success entity that gets no __typename.
+
+    Called when the caller had no entity type to pass (the entity field is an interface
+    or union, or unknown). Rust then names the entity after the result's entity_type, or
+    keeps a __typename from its data; with neither, the entity has no __typename.
+    """
+    if function_name in _warned_untyped_entity:
+        return
+    if "status" in result:
+        status = str(result["status"]).lower()
+        if status.startswith(_ERROR_STATUS_PREFIXES) or result.get("entity_type"):
+            return
+        entity = result.get("entity")
+    else:
+        entity = result  # Simple format: the result is the entity
+    if not isinstance(entity, dict) or "__typename" in entity:
+        return
+    _warned_untyped_entity.add(function_name)
+    logger.warning(
+        "SQL function %s returned an entity without entity_type; __typename left out",
+        function_name,
+    )
+
 
 def _get_fraiseql_rs():
     """Lazy-load Rust extension."""
@@ -56,7 +96,8 @@ async def execute_mutation_rust(
         success_type: GraphQL success type name
         error_type: GraphQL error type name
         entity_field_name: Field name for entity (e.g., "user")
-        entity_type: Entity type for __typename (e.g., "User") - REQUIRED for simple format
+        entity_type: Entity type for __typename (e.g., "User") when the result's
+            entity_type is NULL; None for an entity field typed as an interface or union
         context_args: Optional context arguments
         cascade_selections: Optional cascade selections JSON
         config: Optional FraiseQLConfig instance. If None, uses global config.
@@ -165,6 +206,8 @@ async def execute_mutation_rust(
                 "cascade": None,
             }
 
+        if entity_type is None:
+            _warn_if_untyped_entity(function_name, mutation_result)
         mutation_json = json.dumps(mutation_result, separators=(",", ":"), default=str)
     elif isinstance(mutation_result, tuple):
         # psycopg returned a tuple from composite type
@@ -196,6 +239,8 @@ async def execute_mutation_rust(
             # Extract entity_type from metadata if present
             if composite_dict["metadata"] and isinstance(composite_dict["metadata"], dict):
                 composite_dict["entity_type"] = composite_dict["metadata"].get("entity")
+        if entity_type is None:
+            _warn_if_untyped_entity(function_name, composite_dict)
         mutation_json = json.dumps(composite_dict, separators=(",", ":"), default=str)
     elif isinstance(mutation_result, str):
         # Already a JSON string

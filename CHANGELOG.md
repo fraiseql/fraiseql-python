@@ -64,6 +64,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only `__typename`. Responses get stricter: a client that read an unselected
   field there no longer gets it. Until per-type filtering lands, each object keeps
   the fields of every fragment under that field.
+- **A mutation entity whose SQL function returned no `entity_type` was given
+  `"__typename": "Entity"`**, a type not in the schema. It is now named after the
+  success type's entity field (`Location`), or left without `__typename` when that
+  field is an interface or union and the data has none; a warning names the SQL
+  function, once. The 8-field `mutation_response` path now uses the type Python
+  passes, which it used to drop. Response bytes change: a client that keyed on
+  `"Entity"` gets the real type name, or no `__typename`.
 
 ### Deprecated
 

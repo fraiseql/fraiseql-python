@@ -86,23 +86,23 @@ impl PostgresMutationResponse {
     /// wrapper level (not nested in the entity).
     ///
     /// # Arguments
-    /// * `_entity_type_fallback` - Unused (kept for API compatibility) In 8-field format,
-    ///   entity_type always comes from Position 4
+    /// * `entity_type_fallback` - The entity's type when Position 4 (entity_type) is NULL: the
+    ///   type of the success type's entity field, passed by Python
     ///
     /// # Returns
     /// Internal `MutationResult` ready for GraphQL response building
-    pub fn to_mutation_result(self, _entity_type_fallback: Option<&str>) -> MutationResult {
+    pub fn to_mutation_result(self, entity_type_fallback: Option<&str>) -> MutationResult {
         // CASCADE is already at Position 7 - just filter out nulls
         let cascade = self.cascade.filter(|c| !c.is_null());
 
-        // entity_type comes from Position 4 (always available in 8-field format)
-        let entity_type = self.entity_type;
+        // entity_type comes from Position 4, or from the caller when the function left it NULL
+        let entity_type = self.entity_type.or_else(|| entity_type_fallback.map(String::from));
 
         MutationResult {
             status: MutationStatus::from_str(&self.status),
             message: self.message,
             entity_id: self.entity_id,
-            entity_type,               // From Position 4
+            entity_type,               // From Position 4, or the fallback
             entity: Some(self.entity), // From Position 5
             updated_fields: self.updated_fields,
             cascade, // From Position 7

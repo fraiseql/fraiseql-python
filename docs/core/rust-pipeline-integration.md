@@ -103,6 +103,11 @@ selected fields. The response skips graphql-core on the HTTP path, so it isn't
 filtered afterwards. Clients that normalize by type, such as Apollo Client's
 cache, need `__typename` anyway and usually add it to every selection.
 
+A mutation entity's `__typename` comes from the SQL function's `entity_type`, a
+`__typename` key in the entity's data, or the schema type of the success type's
+entity field when that type is concrete (`location: Location`). When none of these
+applies, `__typename` is left out, and a warning names the SQL function once.
+
 For a field whose type is an interface or a union, the object behind it can be
 one of several types. FraiseQL never guesses the type from the schema there:
 `__typename` is included only when the data provides it (a `__typename` key in

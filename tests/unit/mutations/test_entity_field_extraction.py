@@ -10,6 +10,7 @@ Related to GitHub issue #525.
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
 from graphql import (
     FieldNode,
     FragmentDefinitionNode,
@@ -22,9 +23,11 @@ from graphql import (
     parse,
 )
 
+import fraiseql
 from fraiseql.mutations.mutation_decorator import (
     _extract_entity_field_selections,
     _extract_mutation_selected_fields,
+    _request_entity_type,
 )
 
 
@@ -399,7 +402,12 @@ _TYPED_SCHEMA = build_schema("""
         ownerU: Owner
         manager: Person
     }
-    type CreateLocationSuccess { message: String location: Location node: Node }
+    type CreateLocationSuccess {
+        message: String
+        location: Location
+        mainLocation: Location
+        node: Node
+    }
     type Query { ping: String }
     type Mutation { createLocation: CreateLocationSuccess }
 """)
@@ -594,3 +602,70 @@ class TestFragmentsUnderAbstractFields:
 
         assert result is not None
         assert result["owner"] == {"fields": ["__typename"]}
+
+
+class TestRequestEntityType:
+    """The entity's __typename sent to Rust: the entity field's concrete schema type."""
+
+    _QUERY = "mutation { createLocation { ... on CreateLocationSuccess { location { id } } } }"
+
+    def test_concrete_entity_field(self):
+        info = _typed_info(self._QUERY)
+
+        assert _request_entity_type(info, "CreateLocationSuccess", "location", None) == "Location"
+
+    def test_snake_case_entity_field_name(self):
+        info = _typed_info(self._QUERY)
+
+        name = _request_entity_type(info, "CreateLocationSuccess", "main_location", None)
+
+        assert name == "Location"
+
+    def test_interface_entity_field_gets_none(self):
+        """Never an interface's name, even if the annotation would give one."""
+        info = _typed_info(self._QUERY)
+
+        assert _request_entity_type(info, "CreateLocationSuccess", "node", "Node") is None
+
+    def test_annotation_without_schema(self):
+        info = SimpleNamespace(schema=None, field_nodes=[], fragments={})
+
+        name = _request_entity_type(info, "CreateLocationSuccess", "location", "Location")
+
+        assert name == "Location"
+
+
+@pytest.mark.usefixtures("clear_registry")
+def test_interface_annotation_gives_no_entity_type():
+    """An entity field annotated with an interface has no type name to give."""
+
+    @fraiseql.interface
+    class Node:
+        id: str
+
+    @fraiseql.type(implements=[Node])
+    class Place:
+        id: str
+
+    @fraiseql.input
+    class MovePlaceInput:
+        id: str
+
+    @fraiseql.success
+    class MovePlaceSuccess:
+        message: str
+        node: Node
+
+    @fraiseql.error
+    class MovePlaceError:
+        message: str
+
+    @fraiseql.mutation
+    class MovePlace:
+        input: MovePlaceInput
+        success: MovePlaceSuccess
+        error: MovePlaceError
+
+    definition = MovePlace.__fraiseql_mutation__
+    assert definition.entity_field_name == "node"
+    assert definition.entity_type is None

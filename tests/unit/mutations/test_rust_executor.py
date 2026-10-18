@@ -230,3 +230,74 @@ async def test_execute_mutation_error_format():
     assert params[0] == "user-456"
     assert params[1] == "org-123"
     assert '"name":"Test"' in params[2]  # JSON input
+
+
+def _conn_returning(row: dict) -> MagicMock:
+    """A connection whose cursor returns one row holding the mutation result."""
+    mock_cursor = AsyncMock()
+    mock_cursor.fetchone.return_value = (row,)
+    mock_cursor_ctx = AsyncMock()
+    mock_cursor_ctx.__aenter__.return_value = mock_cursor
+    mock_cursor_ctx.__aexit__.return_value = None
+    mock_conn = MagicMock()
+    mock_conn.cursor.return_value = mock_cursor_ctx
+    return mock_conn
+
+
+_UNTYPED_RESULT = {
+    "status": "updated",
+    "message": "ok",
+    "entity_id": "l1",
+    "entity_type": None,
+    "entity": {"id": "l1", "name": "HQ"},
+    "updated_fields": None,
+    "cascade": None,
+    "metadata": None,
+}
+
+
+async def _run_untyped(function_name: str, entity_type: str | None, row: dict) -> None:
+    from fraiseql.mutations.rust_executor import execute_mutation_rust
+
+    await execute_mutation_rust(
+        conn=_conn_returning(row),
+        function_name=function_name,
+        input_data={"id": "l1"},
+        field_name="updateLocation",
+        success_type="UpdateLocationSuccess",
+        error_type="UpdateLocationError",
+        entity_field_name="location",
+        entity_type=entity_type,
+    )
+
+
+@pytest.mark.asyncio
+async def test_untyped_entity_warns_once_per_function(
+    caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+):
+    """A success entity with no type from SQL, the data or the schema logs one warning."""
+    from fraiseql.mutations import rust_executor
+
+    monkeypatch.setattr(rust_executor, "_warned_untyped_entity", set())
+    with caplog.at_level("WARNING", logger="fraiseql.mutations.rust_executor"):
+        await _run_untyped("app.update_location_untyped", None, _UNTYPED_RESULT)
+        await _run_untyped("app.update_location_untyped", None, _UNTYPED_RESULT)
+
+    warnings = [r.getMessage() for r in caplog.records if r.levelname == "WARNING"]
+    assert warnings == [
+        "SQL function app.update_location_untyped returned an entity without entity_type; "
+        "__typename left out"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_typed_entity_does_not_warn(caplog: pytest.LogCaptureFixture):
+    typed_in_data = {**_UNTYPED_RESULT, "entity": {"__typename": "Location", "id": "l1"}}
+    failed = {**_UNTYPED_RESULT, "status": "failed:validation"}
+    with caplog.at_level("WARNING", logger="fraiseql.mutations.rust_executor"):
+        await _run_untyped("app.typed_by_schema", "Location", _UNTYPED_RESULT)
+        await _run_untyped("app.typed_by_sql", None, {**_UNTYPED_RESULT, "entity_type": "Location"})
+        await _run_untyped("app.typed_by_data", None, typed_in_data)
+        await _run_untyped("app.failed", None, failed)
+
+    assert [r for r in caplog.records if r.levelname == "WARNING"] == []
