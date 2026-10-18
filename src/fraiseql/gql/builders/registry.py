@@ -18,6 +18,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+def _mutation_owner(resolver_fn: Callable[..., Any]) -> str:
+    """What a mutation's resolver belongs to: its class name, or the function itself."""
+    definition = getattr(resolver_fn, "__fraiseql_mutation__", None)
+    if hasattr(definition, "mutation_class"):
+        return definition.name
+    return f"{resolver_fn.__module__}.{resolver_fn.__qualname__}"
+
+
 class SchemaRegistry:
     """Singleton registry for GraphQL query types and mutation resolvers."""
 
@@ -262,13 +270,13 @@ class SchemaRegistry:
                 and mutation_or_fn.__fraiseql_resolver__ is mutation_or_fn
             ):
                 # It's a function-based mutation decorated with @mutation
-                self._mutations[mutation_or_fn.__name__] = mutation_or_fn
+                self._mutations[self._mutation_key(mutation_or_fn)] = mutation_or_fn
             else:
                 # It's a @mutation decorated class
                 # Register the resolver function
                 resolver_fn = mutation_or_fn.__fraiseql_resolver__
                 definition = mutation_or_fn.__fraiseql_mutation__
-                self._mutations[self._class_mutation_key(resolver_fn, definition)] = resolver_fn
+                self._mutations[self._mutation_key(resolver_fn)] = resolver_fn
                 # Also register the success and error types
                 if hasattr(definition, "success_type") and definition.success_type:
                     self.register_type(definition.success_type)
@@ -276,23 +284,25 @@ class SchemaRegistry:
                     self.register_type(definition.error_type)
         else:
             # Legacy: direct resolver function
-            self._mutations[mutation_or_fn.__name__] = mutation_or_fn
+            self._mutations[self._mutation_key(mutation_or_fn)] = mutation_or_fn
 
-    def _class_mutation_key(self, resolver_fn: Callable[..., Any], definition: Any) -> str:
-        """Pick the registry key for a ``@mutation`` class.
+    def _mutation_key(self, resolver_fn: Callable[..., Any]) -> str:
+        """Pick the registry key for a mutation's resolver.
 
-        The key is the SQL function name, as before. Classes may share a function,
-        so a key held by a different class falls back to ``<function>:<Class>``
-        instead of replacing it. A class with the same name and function replaces
-        the old one (a redefinition). The schema builder names class mutations
-        from their definitions, so the key never becomes a field name.
+        The key is the resolver's name: the SQL function name for a ``@mutation``
+        class, the function's own name otherwise. Mutations may share it (two
+        classes calling one function, or a class and a function of that name), so
+        a key held by a different mutation falls back to ``<key>:<owner>`` instead
+        of replacing it. The same mutation registered again replaces the old one
+        (a redefinition). The schema builder names mutations from their
+        definitions and functions, so the key never becomes a field name.
         """
         key = resolver_fn.__name__
-        existing_def = getattr(self._mutations.get(key), "__fraiseql_mutation__", None)
-        existing_class = getattr(existing_def, "name", None)
-        if existing_class is None or existing_class == definition.name:
+        existing = self._mutations.get(key)
+        owner = _mutation_owner(resolver_fn)
+        if existing is None or _mutation_owner(existing) == owner:
             return key
-        return f"{key}:{definition.name}"
+        return f"{key}:{owner}"
 
     def register_query(self, query_fn: Callable[..., Any]) -> None:
         """Register a query function as a GraphQL field."""

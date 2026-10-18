@@ -94,7 +94,12 @@ class _Rename:
 
 
 def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _NameCandidates:
-    """Field names: the 1.x name comes from function=, the 2.0.0 name from the class."""
+    """Field names: the 1.x name comes from function=, the 2.0.0 name from the class.
+
+    A function mutation is named after its registry key, which is the function's
+    name unless code replaced the registry entry. The ``:<owner>`` suffix the
+    registry adds when two mutations share a name is never part of the field name.
+    """
     camel = SchemaConfig.get_instance().camel_case_fields
 
     def graphql_name(snake: str) -> str:
@@ -111,7 +116,7 @@ def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _NameCandidates:
             new=definition.default_graphql_name or graphql_name(_camel_to_snake(definition.name)),
             from_comment=definition.default_graphql_name is not None,
         )
-    name = graphql_name(key)
+    name = graphql_name(key.partition(":")[0])
     return _NameCandidates(
         owner=fn.__name__,
         owner_path=f"{fn.__module__}.{fn.__qualname__}",
