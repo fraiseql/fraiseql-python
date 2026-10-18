@@ -21,7 +21,6 @@ A comprehensive example of integrating FraiseQL applications with modern observa
 **Next steps:**
 
 - `../enterprise_patterns/` - Production monitoring patterns
-- `../compliance-demo/` - Audit logging and compliance monitoring
 
 ## Overview
 

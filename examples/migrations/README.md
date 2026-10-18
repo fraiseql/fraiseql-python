@@ -19,7 +19,6 @@ A comprehensive example of PostgreSQL database migrations for FraiseQL applicati
 **Next steps:**
 
 - `../enterprise_patterns/` - Advanced database patterns
-- `../compliance-demo/` - Production compliance features
 
 ## Overview
 

@@ -46,8 +46,6 @@ Enterprise-grade examples showcasing advanced patterns, scalability, and product
 | [`blog_enterprise/`](blog_enterprise/README.md) | Enterprise blog with DDD | Domain-driven design, event sourcing | 40 min |
 | [`complete_cqrs_blog/`](complete_cqrs_blog/README.md) | Full CQRS implementation | Command-query separation, Docker, migrations | 35 min |
 | [`analytics_dashboard/`](analytics_dashboard/README.md) | Business intelligence platform | TimescaleDB, complex analytics, dashboards | 40 min |
-| [`admin-panel/`](admin-panel/README.md) | Administrative interface | CRUD operations, user management | 30 min |
-| [`real_time_chat/`](real_time_chat/README.md) | Real-time messaging system | WebSockets, presence tracking, subscriptions | 45 min |
 | [`saas-starter/`](saas-starter/README.md) | Multi-tenant SaaS foundation | Tenant isolation, billing, user management | 50 min |
 
 ### 🔴 Specialized (Domain Specific)
@@ -92,8 +90,6 @@ Examples for specific use cases and integrations.
 ### 🏢 Enterprise Patterns
 
 - [`enterprise_patterns/`](enterprise_patterns/README.md) - All enterprise patterns
-- [`admin-panel/`](admin-panel/README.md) - Administrative interfaces
-- [`real_time_chat/`](real_time_chat/README.md) - Real-time applications
 
 ---
 
@@ -125,7 +121,6 @@ Examples for specific use cases and integrations.
 1. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
 2. **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
 3. **[`complete_cqrs_blog/`](complete_cqrs_blog/README.md)** - CQRS implementation
-4. **[`real_time_chat/`](real_time_chat/README.md)** - Event-driven architecture
 
 ---
 

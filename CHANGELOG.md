@@ -94,6 +94,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   real signature, `result(success_cls, error_cls)`, and is marked `@deprecated`,
   so type checkers flag calls too.
 
+### Removed
+
+- **Examples `compliance-demo`, `multi-tenant-saas`, `ecommerce_api`, `admin-panel`
+  and `real_time_chat`.** They were written against APIs fraiseql doesn't have;
+  see `saas-starter` and `ecommerce`.
+
 ## [1.28.0] - 2026-10-17
 
 ### Added

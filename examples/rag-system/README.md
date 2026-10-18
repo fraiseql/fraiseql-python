@@ -332,7 +332,6 @@ CMD ["python", "app.py"]
 
 - **Vector Search**: `/examples/vector_search` - Advanced vector operations
 - **Blog API**: `/examples/blog_api` - GraphQL patterns
-- **E-commerce**: `/examples/ecommerce_api` - Complex schemas
 
 ## 📖 Further Reading
 

@@ -108,10 +108,9 @@ Complete overview of all FraiseQL capabilities.
 
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
-| **GraphQL Subscriptions** | ✅ Stable | See examples | [real_time_chat](../../examples/real_time_chat/) |
-| **WebSocket Support** | ✅ Stable | See examples | [real_time_chat](../../examples/real_time_chat/) |
-| **Presence Tracking** | ✅ Stable | See examples | [real_time_chat](../../examples/real_time_chat/) |
-| **LISTEN/NOTIFY (PostgreSQL)** | ✅ Stable | [Database Patterns](../advanced/database-patterns.md) | [real_time_chat](../../examples/real_time_chat/) |
+| **GraphQL Subscriptions** | ✅ Stable | [Subscriptions](../architecture/realtime/subscriptions.md) | — |
+| **WebSocket Support** | ✅ Stable | [Subscriptions](../architecture/realtime/subscriptions.md) | — |
+| **LISTEN/NOTIFY (PostgreSQL)** | ✅ Stable | [Database Patterns](../advanced/database-patterns.md) | — |
 
 ---
 

@@ -566,7 +566,7 @@ examples/blog_api/db/
 ### Example 3: E-commerce API (L - 4-digit)
 
 ```
-examples/ecommerce_api/db/schema/
+db/schema/
 ├── 00_common/
 │   ├── 000_security/
 │   │   └── 0001_extensions.sql

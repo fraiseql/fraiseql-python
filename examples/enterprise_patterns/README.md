@@ -21,7 +21,7 @@ This example demonstrates all FraiseQL enterprise patterns in a single, comprehe
 
 **Next steps:**
 
-- `../real_time_chat/` - Add real-time features
+- [Subscriptions](../../docs/architecture/realtime/subscriptions.md) - Add real-time features
 - `../analytics_dashboard/` - High-performance analytics
 - `../saas-starter/` - Multi-tenant SaaS foundation
 
