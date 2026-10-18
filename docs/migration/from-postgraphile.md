@@ -225,6 +225,8 @@ query {
 
 ## Step 4: Mutations (1 day)
 
+> **Field names:** these examples show each mutation under its class name (`CreatePost` → `createPost`). In fraiseql 1.x, a class whose `function=` differs from its name, such as `fn_create_post`, is still served under the function's name (`fnCreatePost`), and the schema build emits a `FutureWarning`. Pass `name="createPost"` to get the names shown here now. See [Mutation field names](../reference/decorators.md#mutation-field-names).
+
 ### 4.1 Database Function Mutations
 
 **Before (PostGraphile):**

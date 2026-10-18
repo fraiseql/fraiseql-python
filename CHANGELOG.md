@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`@mutation(name=...)` sets a mutation's GraphQL field name.** The name is
+  used as given. It works on class and function mutations.
+
+### Fixed
+
+- **Two class mutations with the same `function=` left one field.** The field
+  was named after the SQL function, so `CreateThing` and `CreateThingEnriched`,
+  both with `function="create_thing"`, gave one `createThing` field served by
+  whichever class was registered last. Each class now gets its own field, named
+  after the class (`createThing`, `createThingEnriched`), and both call the
+  shared function. Two mutations that end up with the same field name make the
+  schema build raise a `ValueError` naming both.
+
+### Deprecated
+
+- **Mutation field names taken from `function=`.** A class mutation is named
+  after its class: `CreatePost` -> `createPost`. Until fraiseql 2.0.0, one whose
+  `function=` differs (`fn_create_post`) keeps the name it has today
+  (`fnCreatePost`), and the schema build emits one `FutureWarning` listing every
+  field that will be renamed. Pass `name=` to keep the current name or adopt the
+  new one now. For an auto-discovered mutation, the new name is the `name:` in
+  its `@fraiseql:mutation` comment, which was ignored until now.
+
 ## [1.28.0] - 2026-10-17
 
 ### Added

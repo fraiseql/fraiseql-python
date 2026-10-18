@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+import warnings
+from collections import Counter
+from dataclasses import dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Callable, cast, get_type_hints
 
@@ -22,6 +25,7 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_output,
 )
 from fraiseql.mutations.decorators import resolve_union_annotation
+from fraiseql.mutations.mutation_decorator import _camel_to_snake
 from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
 from fraiseql.utils.naming import snake_to_camel
@@ -51,6 +55,58 @@ def _warn_filters_ignored_on_mutation(
         )
 
 
+@dataclass(frozen=True)
+class _FieldNameCandidates:
+    """The names a registered mutation could get, before clashes are settled."""
+
+    owner: str  # the class or function, for error messages
+    explicit: str | None  # from name=, used as given
+    legacy: str  # the 1.x name, from function=
+    new: str  # the fraiseql 2.0.0 name, from the class
+    from_comment: bool  # auto-discovered: the new name comes from its SQL comment
+
+
+def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _FieldNameCandidates:
+    camel = SchemaConfig.get_instance().camel_case_fields
+
+    def graphql_name(snake: str) -> str:
+        return snake_to_camel(snake) if camel else snake
+
+    definition = getattr(fn, "__fraiseql_mutation__", None)
+    if hasattr(definition, "mutation_class"):
+        return _FieldNameCandidates(
+            owner=definition.name,
+            explicit=definition.graphql_name,
+            legacy=graphql_name(definition.function_name),
+            new=definition.default_graphql_name or graphql_name(_camel_to_snake(definition.name)),
+            from_comment=definition.default_graphql_name is not None,
+        )
+    name = graphql_name(key)
+    return _FieldNameCandidates(
+        owner=fn.__name__,
+        explicit=getattr(fn, "__fraiseql_graphql_name__", None),
+        legacy=name,
+        new=name,
+        from_comment=False,
+    )
+
+
+def _warn_renames(renames: list[tuple[str, str]], from_comment: bool) -> None:
+    """Emit one FutureWarning listing every mutation name that changes in 2.0.0."""
+    lines = [f"  field '{old}' -> '{new}'" for old, new in renames]
+    hint = 'To keep a name, pass name="..." to @mutation.'
+    if from_comment:
+        hint += " For an auto-discovered mutation, set name: in its @fraiseql:mutation comment."
+    warnings.warn(
+        "These mutation names will change in the next major release of fraiseql (2.0.0):\n"
+        + "\n".join(lines)
+        + "\n"
+        + hint,
+        FutureWarning,
+        stacklevel=3,
+    )
+
+
 class MutationTypeBuilder:
     """Builds the Mutation type from registered mutation resolvers."""
 
@@ -69,6 +125,7 @@ class MutationTypeBuilder:
             The Mutation GraphQLObjectType.
         """
         fields = {}
+        field_names = self._field_names()
 
         for name, fn in self.registry.mutations.items():
             # Use include_extras=True to preserve Annotated metadata (like FraiseUnion)
@@ -111,9 +168,7 @@ class MutationTypeBuilder:
 
             resolver = self._wrap_mutation_resolver(fn, arg_name_mapping)
 
-            # Convert field name to camelCase if configured
-            config = SchemaConfig.get_instance()
-            graphql_field_name = snake_to_camel(name) if config.camel_case_fields else name
+            graphql_field_name = field_names[name]
 
             description = None
             if hasattr(fn, "__fraiseql_mutation__") and hasattr(
@@ -147,6 +202,50 @@ class MutationTypeBuilder:
             )
 
         return GraphQLObjectType(name="Mutation", fields=MappingProxyType(fields))
+
+    def _field_names(self) -> dict[str, str]:
+        """Pick each mutation's GraphQL field name, keyed like ``registry.mutations``.
+
+        ``name=`` wins. Otherwise a mutation keeps its 1.x name (from ``function=``)
+        unless another mutation would get the same one, which is broken today; then it
+        gets the 2.0.0 name (from the class). A kept name that will change is listed in
+        one FutureWarning.
+
+        Raises:
+            ValueError: If two mutations end up with the same field name.
+        """
+        candidates = {
+            key: _field_name_candidates(key, fn) for key, fn in self.registry.mutations.items()
+        }
+        legacy_counts = Counter(c.legacy for c in candidates.values() if c.explicit is None)
+
+        names: dict[str, str] = {}
+        owners: dict[str, str] = {}
+        renames: list[tuple[str, str]] = []
+        renames_from_comment = False
+        for key, c in candidates.items():
+            if c.explicit is not None:
+                name = c.explicit
+            elif legacy_counts[c.legacy] == 1:
+                name = c.legacy
+                if c.legacy != c.new:
+                    renames.append((c.legacy, c.new))
+                    renames_from_comment |= c.from_comment
+            else:
+                name = c.new
+
+            if name in owners:
+                msg = (
+                    f"Mutations {owners[name]} and {c.owner} both resolve to the GraphQL "
+                    f"field '{name}'. Pass name=\"...\" to @mutation on one of them."
+                )
+                raise ValueError(msg)
+            owners[name] = c.owner
+            names[key] = name
+
+        if renames:
+            _warn_renames(renames, renames_from_comment)
+        return names
 
     def _wrap_mutation_resolver(
         self, fn: Callable[..., Any], arg_name_mapping: dict[str, str] | None = None

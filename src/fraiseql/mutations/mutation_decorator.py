@@ -468,9 +468,18 @@ class MutationDefinition:
         context_params: dict[str, str] | None = None,
         error_config: MutationErrorConfig | None = None,
         enable_cascade: bool = False,
+        graphql_name: str | None = None,
     ) -> None:
         self.mutation_class = mutation_class
         self.name = mutation_class.__name__
+
+        # GraphQL field name chosen with name=, used as given. When None, the schema
+        # builder derives it from the class name (see MutationTypeBuilder).
+        self.graphql_name = graphql_name
+        # The name the field will get by default in fraiseql 2.0.0, used as given, when
+        # it doesn't come from the class name (auto-discovery sets it from the
+        # @fraiseql:mutation comment). None means the class-derived name.
+        self.default_graphql_name: str | None = None
 
         # Store the provided schema for lazy resolution
         self._provided_schema = schema
@@ -932,6 +941,7 @@ def mutation(
     error_config: MutationErrorConfig | None = None,
     enable_cascade: bool = False,
     authorizer: Any | None = None,
+    name: str | None = None,
 ) -> type[T] | Callable[[type[T]], type[T]] | Callable[..., Any]:
     """Decorator to define GraphQL mutations with PostgreSQL function backing.
 
@@ -941,7 +951,8 @@ def mutation(
 
     Args:
         _cls: The mutation function or class to decorate (when used without parentheses)
-        function: PostgreSQL function name (defaults to snake_case of class name)
+        function: PostgreSQL function name (defaults to snake_case of class name).
+            It only picks the SQL function: any number of mutations may share one.
         schema: PostgreSQL schema containing the function (defaults to "graphql")
         context_params: Maps GraphQL context keys to PostgreSQL function parameter names
         error_config: Optional configuration for error detection behavior
@@ -949,6 +960,12 @@ def mutation(
         authorizer: Optional per-operation :class:`~fraiseql.security.Authorizer`
             override (issue #362). It takes precedence over the global default
             authorizer for this mutation only.
+        name: GraphQL field name, used as given. By default a class mutation is
+            named after its class (``CreatePost`` -> ``createPost``) and a function
+            mutation after the function. Until fraiseql 2.0.0, a class mutation whose
+            ``function=`` differs from its class name keeps the name taken from
+            ``function=`` and the schema build emits a ``FutureWarning``; pass
+            ``name=`` to keep that name or choose another.
 
     Returns:
         Decorated mutation with automatic PostgreSQL function integration
@@ -1310,6 +1327,7 @@ def mutation(
             fn.__fraiseql_resolver__ = fn
             # Per-operation authorizer override (issue #362).
             fn.__fraiseql_authorizer__ = authorizer
+            fn.__fraiseql_graphql_name__ = name
 
             # Auto-register with schema
             registry.register_mutation(fn)
@@ -1320,7 +1338,7 @@ def mutation(
         cls = cls_or_fn
         # Create mutation definition
         definition = MutationDefinition(
-            cls, function, schema, context_params, error_config, enable_cascade
+            cls, function, schema, context_params, error_config, enable_cascade, name
         )
 
         # Store definition on the class

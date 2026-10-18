@@ -110,6 +110,7 @@ def mutation(
     error_config: MutationErrorConfig | None = None,
     enable_cascade: bool = False,
     authorizer: Any | None = None,
+    name: str | None = None,
 ) -> Callable[[_T], _T]: ...
 def mutation(
     _cls: _T | None = None,
@@ -120,6 +121,7 @@ def mutation(
     error_config: MutationErrorConfig | None = None,
     enable_cascade: bool = False,
     authorizer: Any | None = None,
+    name: str | None = None,
 ) -> _T | Callable[[_T], _T]: ...
 
 # Subscription decorator
