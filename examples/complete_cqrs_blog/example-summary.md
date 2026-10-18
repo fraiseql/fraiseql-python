@@ -302,7 +302,7 @@ See the files in this directory for a working demo.
 
 Update `docs/quickstart.md` to reference this example:
 
-```markdown
+````markdown
 ## See It In Action
 
 Want to see FraiseQL in action? Check out our complete blog example:
@@ -321,7 +321,7 @@ In 30 seconds, you'll have:
 
 Learn more: [Complete CQRS Example](./)
 
-```
+````
 
 ---
 

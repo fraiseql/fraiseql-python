@@ -525,7 +525,7 @@ $$ LANGUAGE plpgsql;
 1. Link to the canonical example first
 2. Show only the difference:
 
-   ```markdown
+   ````markdown
    Based on the [canonical User table](../examples/canonical-examples.md#user-table),
    add a `role` column:
 
@@ -533,7 +533,7 @@ $$ LANGUAGE plpgsql;
    ALTER TABLE tb_user ADD COLUMN role TEXT DEFAULT 'user';
    ```
 
-   ```
+   ````
 
 ---
 
