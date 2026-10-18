@@ -152,7 +152,9 @@ pub fn build_success_response(
 
     // Add entity with __typename and camelCase keys ONLY if selected
     if let Some(entity) = &result.entity {
-        let entity_type = result.entity_type.as_deref().unwrap_or("Entity");
+        // Without a type from SQL or from the caller, the entity gets no __typename (unless
+        // its data has one): there is no type name to give that the schema would know.
+        let entity_type = result.entity_type.as_deref();
 
         // Determine the field name for the entity in the response
         let field_name = entity_field_name
@@ -164,13 +166,11 @@ pub fn build_success_response(
                     name.to_string()
                 }
             })
-            .unwrap_or_else(|| {
+            .unwrap_or_else(|| match entity_type {
                 // No entity_field_name provided, derive from type
-                if auto_camel_case {
-                    to_camel_case(&entity_type.to_lowercase())
-                } else {
-                    entity_type.to_lowercase()
-                }
+                Some(entity_type) if auto_camel_case => to_camel_case(&entity_type.to_lowercase()),
+                Some(entity_type) => entity_type.to_lowercase(),
+                None => "entity".to_string(),
             });
 
         // Only add entity if the field is selected
@@ -475,14 +475,16 @@ pub fn extract_identifier_from_status(status: &MutationStatus) -> String {
     }
 }
 
-/// Transform entity: add __typename and convert keys to camelCase
-fn transform_entity(entity: &Value, entity_type: &str, auto_camel_case: bool) -> Value {
+/// Transform entity: add __typename (when the type is known) and convert keys to camelCase
+fn transform_entity(entity: &Value, entity_type: Option<&str>, auto_camel_case: bool) -> Value {
     match entity {
         Value::Object(map) => {
             let mut result = Map::with_capacity(map.len() + 1);
 
-            // Add __typename first
-            result.insert("__typename".to_string(), json!(entity_type));
+            // Add __typename first; a __typename in the data replaces it below
+            if let Some(entity_type) = entity_type {
+                result.insert("__typename".to_string(), json!(entity_type));
+            }
 
             // Transform each field to camelCase
             for (key, val) in map {

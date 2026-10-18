@@ -20,7 +20,7 @@ from graphql import (
 
 from fraiseql.mutations.error_config import MutationErrorConfig
 from fraiseql.types.definitions import UNSET
-from fraiseql.utils.casing import to_snake_case
+from fraiseql.utils.casing import to_camel_case, to_snake_case
 
 T = TypeVar("T")
 
@@ -57,6 +57,30 @@ def _graphql_named_type(schema: Any, parent_type: Any, field_name: str) -> Graph
         return None
     field_def = fields.get(field_name)
     return get_named_type(field_def.type) if field_def is not None else None
+
+
+def _request_entity_type(
+    info: GraphQLResolveInfo | None,
+    success_type_name: str,
+    entity_field_name: str,
+    annotated_type: str | None,
+) -> str | None:
+    """The type name Rust gives the entity when its SQL function returns no entity_type.
+
+    It is the concrete type of the success type's entity field in the request's schema
+    (the field is looked up as named and in camelCase). A field typed as an interface or
+    union has none: the object is one of several types, and only its data can say which.
+    Without a schema, it is the annotation's type name, which _derive_entity_info gives
+    only for a concrete type.
+    """
+    schema = getattr(info, "schema", None)
+    if not isinstance(getattr(schema, "type_map", None), dict):
+        return annotated_type
+    for field_name in dict.fromkeys((entity_field_name, to_camel_case(entity_field_name))):
+        field_type = _graphql_named_type(schema, success_type_name, field_name)
+        if field_type is not None:
+            return _concrete_type_name(field_type)
+    return annotated_type
 
 
 def _fragment_applies(type_condition: Any, type_name: str | None, schema: Any) -> bool:
@@ -451,6 +475,14 @@ def _extract_entity_field_selections_basic(
     return _extract_nested_selections(selection_set, fragments=_info_fragments(info))
 
 
+def _object_type_name(annotation: Any) -> str | None:
+    """The name of an entity annotation, or None for an interface (it names no object)."""
+    definition = getattr(annotation, "__fraiseql_definition__", None)
+    if getattr(definition, "kind", None) == "interface":
+        return None
+    return annotation.__name__
+
+
 def _hook_accepts_info(hook: Callable) -> bool:
     """Return whether a prepare_input hook takes info as a second positional argument."""
     try:
@@ -557,7 +589,7 @@ class MutationDefinition:
                 # Get the type name (e.g., "User" from <class 'User'>)
                 type_name = getattr(field_type, "__name__", None)
                 if type_name:
-                    return field_name, type_name
+                    return field_name, _object_type_name(field_type)
 
         # Fallback: try to find any field that looks like an entity
         for field_name, field_type in success_hints.items():
@@ -567,8 +599,7 @@ class MutationDefinition:
 
             # If it's a type (class), assume it's the entity
             if hasattr(field_type, "__name__"):
-                type_name = field_type.__name__
-                return field_name, type_name
+                return field_name, _object_type_name(field_type)
 
         return None, None
 
@@ -840,7 +871,11 @@ class MutationDefinition:
                         success_type=success_type_name,
                         error_type=error_type_name,
                         entity_field_name=self.entity_field_name,
-                        entity_type=self.entity_type,
+                        entity_type=_request_entity_type(
+                            info, success_type_name, self.entity_field_name, self.entity_type
+                        )
+                        if self.entity_field_name
+                        else None,
                         context_args=context_args or None,
                         cascade_selections=cascade_selections_json,
                         success_type_class=self.success_type,
