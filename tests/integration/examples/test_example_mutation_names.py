@@ -46,9 +46,14 @@ print(json.dumps({"mutations": len(SchemaRegistry.get_instance().mutations)}))
 _BUILDABLE = [
     "examples.authorization.app",
     "examples.auto_field_descriptions",
+    "examples.blog_api.mutations",
     "examples.blog_simple.models",
+    "examples.context_parameters.mutations",
+    "examples.documented_api",
     "examples.graphql-cascade.main",
+    "examples.hybrid_tables",
     "examples.mutations_demo.demo",
+    "examples.native_auth_app",
     "examples.quickstart_5min",
     "examples.todo_quickstart",
     "examples.where_input_filtering_example",
@@ -57,20 +62,15 @@ _BUILDABLE = [
 # Examples with mutations that don't build on the current API. Their mutation
 # names are already 2.0.0-clean; move one to _BUILDABLE once it builds.
 _BROKEN = {
-    "examples.admin-panel.mutations": "imports fraiseql.Info, which no longer exists",
-    "examples.blog_api.mutations": "Post refers to Comment before it is defined",
-    "examples.compliance-demo.main": "imports fraiseql.FraiseQL, which no longer exists",
-    "examples.context_parameters.mutations": "success types are not FraiseQL types",
-    "examples.documented_api": "imports fraiseql.Info, which no longer exists",
+    "examples.admin-panel.mutations": "imports fraiseql.Info, which fraiseql doesn't have",
+    "examples.compliance-demo.main": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples.ecommerce.mutations": "decorates a function where a class is expected",
-    "examples.ecommerce_api.mutations": "imports fraiseql.QueryType, which no longer exists",
+    "examples.ecommerce_api.mutations": "imports fraiseql.QueryType, which fraiseql doesn't have",
     "examples.enterprise_patterns.mutations": "uses a pydantic FieldInfo as a type",
-    "examples.hybrid_tables": "imports fraiseql.Info, which no longer exists",
-    "examples.multi-tenant-saas.main": "imports fraiseql.FraiseQL, which no longer exists",
-    "examples.native_auth_app": "uses pydantic EmailStr as a GraphQL output type",
-    "examples.real_time_chat.mutations": "imports fraiseql.QueryType, which no longer exists",
-    "examples.saas-starter.main": "imports fraiseql.Info, which no longer exists",
-    "examples.security.secure_graphql_api": "uses fraiseql.union, which no longer exists",
+    "examples.multi-tenant-saas.main": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
+    "examples.real_time_chat.mutations": "imports fraiseql.QueryType, which fraiseql doesn't have",
+    "examples.saas-starter.main": "imports fraiseql.Info, which fraiseql doesn't have",
+    "examples.security.secure_graphql_api": "uses fraiseql.union, which fraiseql doesn't have",
 }
 
 

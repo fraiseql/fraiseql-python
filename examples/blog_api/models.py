@@ -39,6 +39,31 @@ class User:
 
 
 @fraiseql.type
+class Comment:
+    """Comment on a blog post.
+
+    Fields:
+        id: Unique identifier for the comment
+        post_id: ID of the post this comment belongs to
+        author_id: ID of the user who wrote the comment
+        content: Comment text content
+        created_at: When the comment was created
+        updated_at: When the comment was last updated
+        is_approved: Whether the comment has been approved for display
+        parent_comment_id: ID of parent comment (for nested replies)
+    """
+
+    id: ID
+    post_id: ID
+    author_id: ID
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    is_approved: bool = True
+    parent_comment_id: ID | None = None  # For nested comments
+
+
+@fraiseql.type
 class Post:
     """Blog post type.
 
@@ -71,31 +96,6 @@ class Post:
     is_published: bool = False
     view_count: int = 0
     comments: list["Comment"] = []
-
-
-@fraiseql.type
-class Comment:
-    """Comment on a blog post.
-
-    Fields:
-        id: Unique identifier for the comment
-        post_id: ID of the post this comment belongs to
-        author_id: ID of the user who wrote the comment
-        content: Comment text content
-        created_at: When the comment was created
-        updated_at: When the comment was last updated
-        is_approved: Whether the comment has been approved for display
-        parent_comment_id: ID of parent comment (for nested replies)
-    """
-
-    id: ID
-    post_id: ID
-    author_id: ID
-    content: str
-    created_at: datetime
-    updated_at: datetime
-    is_approved: bool = True
-    parent_comment_id: ID | None = None  # For nested comments
 
 
 # Enterprise Pattern Types

@@ -2,10 +2,12 @@
 
 from uuid import UUID
 
+import fraiseql
 from fraiseql.mutations import mutation
 from fraiseql.types import ID
 
 
+@fraiseql.input
 class CreateLocationInput:
     """Input for creating a new location."""
 
@@ -23,20 +25,20 @@ class CreateLocationInput:
         }
 
 
+@fraiseql.success
 class CreateLocationSuccess:
     """Success response for location creation."""
 
-    def __init__(self, location_id: ID, message: str = "Location created successfully"):
-        self.location_id = location_id
-        self.message = message
+    location_id: ID
+    message: str = "Location created successfully"
 
 
+@fraiseql.error
 class CreateLocationError:
     """Error response for location creation."""
 
-    def __init__(self, message: str, code: str):
-        self.message = message
-        self.code = code
+    message: str
+    code: str
 
 
 @mutation(
@@ -52,9 +54,10 @@ class CreateLocation:
 
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 
 
+@fraiseql.input
 class UpdateLocationInput:
     """Input for updating a location."""
 
@@ -77,26 +80,21 @@ class UpdateLocationInput:
         return data
 
 
+@fraiseql.success
 class UpdateLocationSuccess:
     """Success response for location update."""
 
-    def __init__(
-        self,
-        location_id: ID,
-        updated_fields: list[str],
-        message: str = "Location updated successfully",
-    ):
-        self.location_id = location_id
-        self.updated_fields = updated_fields
-        self.message = message
+    location_id: ID
+    updated_fields: list[str]
+    message: str = "Location updated successfully"
 
 
+@fraiseql.error
 class UpdateLocationError:
     """Error response for location update."""
 
-    def __init__(self, message: str, code: str):
-        self.message = message
-        self.code = code
+    message: str
+    code: str
 
 
 @mutation(
@@ -109,9 +107,10 @@ class UpdateLocation:
 
     input: UpdateLocationInput
     success: UpdateLocationSuccess
-    failure: UpdateLocationError
+    error: UpdateLocationError
 
 
+@fraiseql.input
 class DeleteLocationInput:
     """Input for deleting a location."""
 
@@ -121,20 +120,20 @@ class DeleteLocationInput:
         return {"id": str(self.id)}
 
 
+@fraiseql.success
 class DeleteLocationSuccess:
     """Success response for location deletion."""
 
-    def __init__(self, location_id: ID, message: str = "Location deleted successfully"):
-        self.location_id = location_id
-        self.message = message
+    location_id: ID
+    message: str = "Location deleted successfully"
 
 
+@fraiseql.error
 class DeleteLocationError:
     """Error response for location deletion."""
 
-    def __init__(self, message: str, code: str):
-        self.message = message
-        self.code = code
+    message: str
+    code: str
 
 
 @mutation(
@@ -147,10 +146,11 @@ class DeleteLocation:
 
     input: DeleteLocationInput
     success: DeleteLocationSuccess
-    failure: DeleteLocationError
+    error: DeleteLocationError
 
 
 # Example of mutation without context parameters (legacy style)
+@fraiseql.input
 class CreateCategoryInput:
     """Input for creating a category (legacy single-parameter style)."""
 
@@ -168,20 +168,20 @@ class CreateCategoryInput:
         }
 
 
+@fraiseql.success
 class CreateCategorySuccess:
     """Success response for category creation."""
 
-    def __init__(self, category_id: ID, message: str = "Category created successfully"):
-        self.category_id = category_id
-        self.message = message
+    category_id: ID
+    message: str = "Category created successfully"
 
 
+@fraiseql.error
 class CreateCategoryError:
     """Error response for category creation."""
 
-    def __init__(self, message: str, code: str):
-        self.message = message
-        self.code = code
+    message: str
+    code: str
 
 
 @mutation(
@@ -194,4 +194,4 @@ class CreateCategory:
 
     input: CreateCategoryInput
     success: CreateCategorySuccess
-    failure: CreateCategoryError
+    error: CreateCategoryError
