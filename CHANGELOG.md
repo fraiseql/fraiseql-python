@@ -52,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   from the data. Responses from the Rust pipeline keep including `__typename` on
   objects of a known type even when it was not selected; this is now documented
   as deliberate (see "Python ↔ Rust Integration").
+- **A mutation entity selected through a named fragment came back empty.**
+  `location { ...LocationFields }` returned only `__typename`, and a fragment
+  spread inside `... on XSuccess` dropped the entity. The spread's name was read
+  as a field name. Spreads are now expanded.
 
 ### Deprecated
 

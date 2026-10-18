@@ -4,10 +4,17 @@ import inspect
 import json
 import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any, TypeVar, get_type_hints
 
-from graphql import GraphQLResolveInfo, is_abstract_type
+from graphql import (
+    FragmentSpreadNode,
+    GraphQLObjectType,
+    GraphQLResolveInfo,
+    InlineFragmentNode,
+    SelectionSetNode,
+    is_abstract_type,
+)
 
 from fraiseql.mutations.error_config import MutationErrorConfig
 from fraiseql.types.definitions import UNSET
@@ -18,19 +25,149 @@ T = TypeVar("T")
 logger = logging.getLogger(__name__)
 
 
-def _extract_fields_from_selection_set(selection_set: Any, field_set: set[str]) -> None:
-    """Helper to extract field names from selection set recursively."""
-    for field_selection in selection_set.selections:
-        if hasattr(field_selection, "name"):
-            field_name = field_selection.name.value
-            if field_name != "__typename":
-                field_set.add(field_name)
+def _info_fragments(info: Any) -> dict[str, Any]:
+    """The query's named fragments, or {} when info carries none."""
+    fragments = getattr(info, "fragments", None)
+    return fragments if isinstance(fragments, dict) else {}
+
+
+def _concrete_type_name(graphql_type: Any) -> str | None:
+    """The name of a GraphQL object type, or None for an abstract or unknown type."""
+    name = getattr(graphql_type, "name", None)
+    if not isinstance(name, str) or is_abstract_type(graphql_type):
+        return None
+    return name
+
+
+def _fragment_applies(type_condition: Any, type_name: str | None, schema: Any) -> bool:
+    """Whether a fragment with this type condition applies to an object of type_name.
+
+    A fragment applies when it has no type condition, when the condition is the type
+    itself, or when it is an interface or union the type belongs to. When the object's
+    type isn't known (no schema, or a field typed as an interface or union), only a
+    fragment without a type condition applies.
+    """
+    if type_condition is None:
+        return True
+    if type_name is None:
+        return False
+    condition = type_condition.name.value
+    if condition == type_name:
+        return True
+    type_map = getattr(schema, "type_map", None)
+    if not isinstance(type_map, dict):
+        return False
+    condition_type = type_map.get(condition)
+    object_type = type_map.get(type_name)
+    return (
+        is_abstract_type(condition_type)
+        and isinstance(object_type, GraphQLObjectType)
+        and schema.is_sub_type(condition_type, object_type)
+    )
+
+
+def _iter_selected_fields(
+    selection_set: Any,
+    fragments: dict[str, Any],
+    type_name: str | None,
+    schema: Any = None,
+    _expanding: frozenset[str] = frozenset(),
+) -> Iterator[Any]:
+    """Yield the fields of a selection set, with the fragments that apply expanded.
+
+    A named spread (``...LocationFields``) is replaced by its fragment's fields, and an
+    inline fragment (``... on Location``) by its own, when the fragment applies to an
+    object of type_name (see _fragment_applies). Anything else with a name is a field.
+
+    A spread of a fragment that isn't in fragments, or that is already being expanded,
+    is skipped: graphql-core validation rejects both queries before execution.
+    """
+    if not selection_set or not hasattr(selection_set, "selections"):
+        return
+    for selection in selection_set.selections:
+        if isinstance(selection, FragmentSpreadNode):
+            name = selection.name.value
+            fragment = fragments.get(name)
+            if (
+                fragment is not None
+                and name not in _expanding
+                and _fragment_applies(fragment.type_condition, type_name, schema)
+            ):
+                yield from _iter_selected_fields(
+                    fragment.selection_set, fragments, type_name, schema, _expanding | {name}
+                )
+        elif isinstance(selection, InlineFragmentNode):
+            if _fragment_applies(selection.type_condition, type_name, schema):
+                yield from _iter_selected_fields(
+                    selection.selection_set, fragments, type_name, schema, _expanding
+                )
+        elif hasattr(selection, "name"):
+            yield selection
+
+
+def _merged_selection_set(field_nodes: list[Any]) -> Any:
+    """The selection set of a field selected one or more times, merged as GraphQL does.
+
+    Returns None when no node has a sub-selection.
+    """
+    selection_sets = [node.selection_set for node in field_nodes if node.selection_set]
+    if len(selection_sets) <= 1:
+        return selection_sets[0] if selection_sets else None
+    return SelectionSetNode(
+        selections=tuple(selection for s in selection_sets for selection in s.selections)
+    )
+
+
+def _extract_fields_from_selection_set(
+    selection_set: Any,
+    field_set: set[str],
+    fragments: dict[str, Any] | None = None,
+    type_name: str | None = None,
+    schema: Any = None,
+) -> None:
+    """Helper to extract field names from selection set, expanding fragments."""
+    for field_selection in _iter_selected_fields(selection_set, fragments or {}, type_name, schema):
+        field_name = field_selection.name.value
+        if field_name != "__typename":
+            field_set.add(field_name)
+
+
+def _type_fragment_selection_sets(
+    info: GraphQLResolveInfo, type_name: str, fragments: dict[str, Any]
+) -> Iterator[Any]:
+    """Yield the selection sets of the mutation field's fragments on type_name.
+
+    Covers inline fragments (``... on CreateMachineSuccess``) and named fragment
+    spreads (``...MachineFields``) whose fragment is on type_name.
+    """
+    # Mutations typically have one field_node (the mutation field)
+    for field_node in info.field_nodes:
+        if not field_node.selection_set:
+            continue
+
+        for selection in field_node.selection_set.selections:
+            # InlineFragment with type condition (e.g., "... on CreateMachineSuccess")
+            if hasattr(selection, "type_condition") and selection.type_condition:
+                if selection.type_condition.name.value == type_name and selection.selection_set:
+                    yield selection.selection_set
+
+            # Named fragment spread (e.g., "...FragmentName")
+            elif hasattr(selection, "name"):
+                fragment = fragments.get(selection.name.value)
+                if (
+                    fragment
+                    and hasattr(fragment, "type_condition")
+                    and fragment.type_condition.name.value == type_name
+                    and fragment.selection_set
+                ):
+                    yield fragment.selection_set
 
 
 def _extract_mutation_selected_fields(info: GraphQLResolveInfo, type_name: str) -> list[str] | None:
     """Extract fields selected on a mutation response type from GraphQL query.
 
-    Supports both inline fragments (... on Type) and named fragments (...FragmentName).
+    Supports both inline fragments (... on Type) and named fragments (...FragmentName),
+    including fragments spread inside them.
 
     For mutations with union types, looks for fragments on the specific type.
     Returns None if no specific selection found (= return all fields for backward compat).
@@ -61,53 +198,36 @@ def _extract_mutation_selected_fields(info: GraphQLResolveInfo, type_name: str) 
     if info is None or not info.field_nodes:
         return None
 
-    selected_fields = set()
-
-    # Mutations typically have one field_node (the mutation field)
-    for field_node in info.field_nodes:
-        if not field_node.selection_set:
-            continue
-
-        # Look through selections for fragments matching our type
-        for selection in field_node.selection_set.selections:
-            # InlineFragment with type condition (e.g., "... on CreateMachineSuccess")
-            if hasattr(selection, "type_condition") and selection.type_condition:
-                fragment_type = selection.type_condition.name.value
-
-                if fragment_type == type_name and selection.selection_set:
-                    # Extract fields from this inline fragment
-                    _extract_fields_from_selection_set(selection.selection_set, selected_fields)
-
-            # Named fragment spread (e.g., "...FragmentName")
-            elif hasattr(selection, "name") and hasattr(info, "fragments"):
-                fragment_name = selection.name.value
-                fragment = info.fragments.get(fragment_name)
-
-                if fragment and hasattr(fragment, "type_condition"):
-                    fragment_type = fragment.type_condition.name.value
-
-                    if fragment_type == type_name:
-                        # Extract fields from this named fragment
-                        _extract_fields_from_selection_set(fragment.selection_set, selected_fields)
+    fragments = _info_fragments(info)
+    schema = getattr(info, "schema", None)
+    selected_fields: set[str] = set()
+    for selection_set in _type_fragment_selection_sets(info, type_name, fragments):
+        _extract_fields_from_selection_set(
+            selection_set, selected_fields, fragments, type_name, schema
+        )
 
     if not selected_fields:
         return None
 
-    result = list(selected_fields)
-    return result
+    return list(selected_fields)
 
 
 def _extract_nested_selections(
     selection_set: Any,
     schema: Any = None,
     parent_type: Any = None,
+    fragments: dict[str, Any] | None = None,
 ) -> dict[str, Any] | None:
     """Recursively extract nested field selections with type information.
+
+    Fragments that apply to parent_type are expanded (see _iter_selected_fields), and
+    a field selected more than once gets its sub-selections merged.
 
     Args:
         selection_set: GraphQL SelectionSet to parse
         schema: GraphQL schema for type lookup (optional, for __type injection)
         parent_type: Parent GraphQL type definition (optional, for __type injection)
+        fragments: The query's named fragments, by name (optional)
 
     Returns:
         Dict with "fields" list, optional "__type", and nested dicts for sub-selections.
@@ -126,23 +246,26 @@ def _extract_nested_selections(
     if not selection_set or not hasattr(selection_set, "selections"):
         return None
 
-    fields = []
-    nested = {}
-
-    for field_selection in selection_set.selections:
-        if not hasattr(field_selection, "name"):
-            continue
-
+    fragments = fragments or {}
+    field_nodes: dict[str, list[Any]] = {}
+    for field_selection in _iter_selected_fields(
+        selection_set, fragments, _concrete_type_name(parent_type), schema
+    ):
         field_name = field_selection.name.value
 
         # Skip __typename introspection field
         if field_name == "__typename":
             continue
 
-        fields.append(field_name)
+        field_nodes.setdefault(field_name, []).append(field_selection)
 
+    fields = list(field_nodes)
+    nested = {}
+
+    for field_name, nodes in field_nodes.items():
         # Check if this field has sub-selections
-        if hasattr(field_selection, "selection_set") and field_selection.selection_set:
+        sub_selection_set = _merged_selection_set(nodes)
+        if sub_selection_set:
             # Get the field type from schema if available
             field_type = None
             field_type_name = None
@@ -174,9 +297,10 @@ def _extract_nested_selections(
 
             # Recursively extract nested selections with type context
             sub_selections = _extract_nested_selections(
-                field_selection.selection_set,
+                sub_selection_set,
                 schema=schema,
                 parent_type=field_type,  # Pass the field type as parent for recursion
+                fragments=fragments,
             )
             if sub_selections:
                 # Add __type to nested selections if we have type information
@@ -191,6 +315,25 @@ def _extract_nested_selections(
     result = {"fields": fields}
     result.update(nested)
     return result
+
+
+def _entity_selection_set(
+    info: GraphQLResolveInfo, type_name: str, entity_field_name: str, schema: Any = None
+) -> Any:
+    """The merged selection set of the entity field on type_name, or None if not selected.
+
+    The entity field can be selected in the mutation's fragment on type_name, or in a
+    fragment spread inside it.
+    """
+    fragments = _info_fragments(info)
+    return _merged_selection_set(
+        [
+            field
+            for selection_set in _type_fragment_selection_sets(info, type_name, fragments)
+            for field in _iter_selected_fields(selection_set, fragments, type_name, schema)
+            if field.name.value == entity_field_name
+        ]
+    )
 
 
 def _extract_entity_field_selections(
@@ -287,83 +430,24 @@ def _extract_entity_field_selections(
                 if hasattr(entity_field_type, "name") and not is_abstract_type(entity_field_type):
                     entity_type_name = entity_field_type.name
 
-    # Look through field nodes (mutation field)
-    for field_node in info.field_nodes:
-        if not field_node.selection_set:
-            continue
+    selection_set = _entity_selection_set(info, type_name, entity_field_name, schema)
+    if selection_set is None:
+        # Entity field not selected, or empty selection {} (don't filter)
+        return None
 
-        # Look for fragments matching our type (Success or Error)
-        for selection in field_node.selection_set.selections:
-            # Handle inline fragments: ... on CreateLocationSuccess
-            if hasattr(selection, "type_condition") and selection.type_condition:
-                fragment_type = selection.type_condition.name.value
+    # Recursively extract nested selections with type context
+    result = _extract_nested_selections(
+        selection_set,
+        schema=schema,
+        parent_type=entity_field_type,
+        fragments=_info_fragments(info),
+    )
 
-                if fragment_type == type_name and selection.selection_set:
-                    # Found matching fragment, look for entity field
-                    for field_sel in selection.selection_set.selections:
-                        if hasattr(field_sel, "name"):
-                            field_name = field_sel.name.value
+    # Add __type to top-level entity if we have type info
+    if result and entity_type_name:
+        result["__type"] = entity_type_name
 
-                            if field_name == entity_field_name:
-                                # Found entity field - extract its selections
-                                if (
-                                    not hasattr(field_sel, "selection_set")
-                                    or not field_sel.selection_set
-                                ):
-                                    # Empty selection {} - return None (don't filter)
-                                    return None
-
-                                # Recursively extract nested selections with type context
-                                result = _extract_nested_selections(
-                                    field_sel.selection_set,
-                                    schema=schema,
-                                    parent_type=entity_field_type,
-                                )
-
-                                # Add __type to top-level entity if we have type info
-                                if result and entity_type_name:
-                                    result["__type"] = entity_type_name
-
-                                return result
-
-            # Handle named fragments: ...FragmentName
-            elif hasattr(selection, "name") and hasattr(info, "fragments"):
-                fragment_name = selection.name.value
-                fragment = info.fragments.get(fragment_name)
-
-                if fragment and hasattr(fragment, "type_condition"):
-                    fragment_type = fragment.type_condition.name.value
-
-                    if fragment_type == type_name and fragment.selection_set:
-                        # Found matching fragment, look for entity field
-                        for field_sel in fragment.selection_set.selections:
-                            if hasattr(field_sel, "name"):
-                                field_name = field_sel.name.value
-
-                                if field_name == entity_field_name:
-                                    # Found entity field - extract its selections
-                                    if (
-                                        not hasattr(field_sel, "selection_set")
-                                        or not field_sel.selection_set
-                                    ):
-                                        # Empty selection - return None
-                                        return None
-
-                                    # Recursively extract nested selections with type context
-                                    result = _extract_nested_selections(
-                                        field_sel.selection_set,
-                                        schema=schema,
-                                        parent_type=entity_field_type,
-                                    )
-
-                                    # Add __type to top-level entity if we have type info
-                                    if result and entity_type_name:
-                                        result["__type"] = entity_type_name
-
-                                    return result
-
-    # Entity field not selected
-    return None
+    return result
 
 
 def _extract_entity_field_selections_basic(
@@ -385,63 +469,13 @@ def _extract_entity_field_selections_basic(
     if not info or not info.field_nodes:
         return None
 
-    # Look through field nodes (mutation field)
-    for field_node in info.field_nodes:
-        if not field_node.selection_set:
-            continue
+    selection_set = _entity_selection_set(info, type_name, entity_field_name)
+    if selection_set is None:
+        # Entity field not selected, or empty selection {} (don't filter)
+        return None
 
-        # Look for fragments matching our type (Success or Error)
-        for selection in field_node.selection_set.selections:
-            # Handle inline fragments: ... on CreateLocationSuccess
-            if hasattr(selection, "type_condition") and selection.type_condition:
-                fragment_type = selection.type_condition.name.value
-
-                if fragment_type == type_name and selection.selection_set:
-                    # Found matching fragment, look for entity field
-                    for field_sel in selection.selection_set.selections:
-                        if hasattr(field_sel, "name"):
-                            field_name = field_sel.name.value
-
-                            if field_name == entity_field_name:
-                                # Found entity field - extract its selections
-                                if (
-                                    not hasattr(field_sel, "selection_set")
-                                    or not field_sel.selection_set
-                                ):
-                                    # Empty selection {} - return None (don't filter)
-                                    return None
-
-                                # Basic extraction without type info
-                                return _extract_nested_selections(field_sel.selection_set)
-
-            # Handle named fragments: ...FragmentName
-            elif hasattr(selection, "name") and hasattr(info, "fragments"):
-                fragment_name = selection.name.value
-                fragment = info.fragments.get(fragment_name)
-
-                if fragment and hasattr(fragment, "type_condition"):
-                    fragment_type = fragment.type_condition.name.value
-
-                    if fragment_type == type_name and fragment.selection_set:
-                        # Found matching fragment, look for entity field
-                        for field_sel in fragment.selection_set.selections:
-                            if hasattr(field_sel, "name"):
-                                field_name = field_sel.name.value
-
-                                if field_name == entity_field_name:
-                                    # Found entity field - extract its selections
-                                    if (
-                                        not hasattr(field_sel, "selection_set")
-                                        or not field_sel.selection_set
-                                    ):
-                                        # Empty selection - return None
-                                        return None
-
-                                    # Basic extraction without type info
-                                    return _extract_nested_selections(field_sel.selection_set)
-
-    # Entity field not selected
-    return None
+    # Basic extraction without type info
+    return _extract_nested_selections(selection_set, fragments=_info_fragments(info))
 
 
 def _hook_accepts_info(hook: Callable) -> bool:

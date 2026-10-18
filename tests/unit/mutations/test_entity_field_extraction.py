@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 from graphql import (
     FieldNode,
+    FragmentDefinitionNode,
     InlineFragmentNode,
     NamedTypeNode,
     NameNode,
@@ -21,7 +22,10 @@ from graphql import (
     parse,
 )
 
-from fraiseql.mutations.mutation_decorator import _extract_entity_field_selections
+from fraiseql.mutations.mutation_decorator import (
+    _extract_entity_field_selections,
+    _extract_mutation_selected_fields,
+)
 
 
 def create_field_node(name: str, selections: list | None = None) -> FieldNode:
@@ -388,21 +392,27 @@ _TYPED_SCHEMA = build_schema("""
     type Person implements Node { id: ID! name: String }
     type Location implements Node {
         id: ID!
+        name: String
         address: Address
         owner: Node
+        manager: Person
     }
-    type CreateLocationSuccess { location: Location node: Node }
+    type CreateLocationSuccess { message: String location: Location node: Node }
     type Query { ping: String }
     type Mutation { createLocation: CreateLocationSuccess }
 """)
 
 
 def _typed_info(query: str) -> SimpleNamespace:
-    """An info-like object for a parsed mutation, against _TYPED_SCHEMA."""
-    operation = parse(query).definitions[0]
+    """An info-like object for a parsed mutation and its fragments, against _TYPED_SCHEMA."""
+    definitions = parse(query).definitions
+    operation = definitions[0]
     assert isinstance(operation, OperationDefinitionNode)
+    fragments = {d.name.value: d for d in definitions if isinstance(d, FragmentDefinitionNode)}
     return SimpleNamespace(
-        schema=_TYPED_SCHEMA, field_nodes=list(operation.selection_set.selections), fragments={}
+        schema=_TYPED_SCHEMA,
+        field_nodes=list(operation.selection_set.selections),
+        fragments=fragments,
     )
 
 
@@ -443,3 +453,73 @@ class TestTypeNameFromSchema:
         result = _extract_entity_field_selections(info, "CreateLocationSuccess", "node")
 
         assert result == {"fields": ["id"]}
+
+
+class TestNamedFragmentSpreads:
+    """A spread selects its fragment's fields; it is not a field named after the fragment."""
+
+    def test_named_fragment_on_entity_expands(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { ...LocFields }
+            } } }
+            fragment LocFields on Location { id name }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result == {"fields": ["id", "name"], "__type": "Location"}
+
+    def test_named_fragment_inside_success_fragment(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess { ...SF } } }
+            fragment SF on CreateLocationSuccess { message location { id } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        success_fields = _extract_mutation_selected_fields(info, "CreateLocationSuccess")
+
+        assert result == {"fields": ["id"], "__type": "Location"}
+        assert success_fields is not None
+        assert sorted(success_fields) == ["location", "message"]
+
+    def test_named_fragment_under_nested_concrete_field(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { id manager { ...PersonFields } }
+            } } }
+            fragment PersonFields on Person { name }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["manager"] == {"fields": ["name"], "__type": "Person"}
+
+    def test_spread_and_field_merge(self):
+        """The same field selected directly and through a spread gives one entry."""
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { id address { city } ...LocFields }
+            } } }
+            fragment LocFields on Location { id name address { city } }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["fields"] == ["id", "address", "name"]
+        assert result["address"] == {"fields": ["city"], "__type": "Address"}
+
+    def test_fragment_on_implemented_interface_applies(self):
+        info = _typed_info("""
+            mutation { createLocation { ... on CreateLocationSuccess {
+                location { ...NodeFields name }
+            } } }
+            fragment NodeFields on Node { id }
+        """)
+
+        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+
+        assert result is not None
+        assert result["fields"] == ["id", "name"]
