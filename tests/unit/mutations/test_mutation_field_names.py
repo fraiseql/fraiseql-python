@@ -468,11 +468,7 @@ class TestAutoDiscoveredMutations:
 
         t = _types()
 
-        class InputFromTypes(InputGenerator):
-            async def generate_input_type(self, *args: Any, **kwargs: Any) -> type:
-                return t.In
-
-        generator = MutationGenerator(InputFromTypes(TypeMapper()))
+        generator = MutationGenerator(InputGenerator(TypeMapper()))
         generated = await generator.generate_mutation_for_function(
             FunctionMetadata(
                 schema_name="public",
