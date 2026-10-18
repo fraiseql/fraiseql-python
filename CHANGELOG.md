@@ -38,6 +38,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `MakeThing` with `function="create_thing"` shared a registry entry, so the one
   registered last was the only one in the schema. Both are kept now:
   `createThing` (the function) and `makeThing` (the class).
+- **A schema with auto-discovered mutations failed to build.** The input class
+  generated for a discovered function was a plain class, so the build raised
+  `Invalid type passed to convert_type_to_graphql_input`. This hit both kinds of
+  function: plain `p_` parameters and an `input_payload JSONB` described by a
+  composite type. The class is now made an input type the way `@fraiseql.input`
+  does it, and descriptions from the composite type's column comments reach the
+  schema.
 
 ### Deprecated
 
