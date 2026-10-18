@@ -45,7 +45,7 @@ FraiseQL Router
   └─ [Store Result Cache] (Optional) Cache query result if enabled
   ↓
 Return Result (from cache or freshly computed)
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -82,7 +82,7 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="optional"
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
@@ -107,7 +107,7 @@ config = FraiseQLConfig(
   },
   "query": "query { users { id name } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Subsequent request - hash only*:
@@ -122,7 +122,7 @@ config = FraiseQLConfig(
     }
   }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Use Cases**:
@@ -143,7 +143,7 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="required"
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
@@ -169,7 +169,7 @@ config = FraiseQLConfig(
   },
   "query": "query { products { id name price } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Subsequent request (hash only)*:
@@ -184,7 +184,7 @@ config = FraiseQLConfig(
     }
   }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Arbitrary query (REJECTED)*:
@@ -194,7 +194,7 @@ config = FraiseQLConfig(
 {
   "query": "query { __schema { types { name } } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Response to Rejected Request**:
@@ -212,7 +212,7 @@ config = FraiseQLConfig(
     }
   ]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Use Cases**:
@@ -234,7 +234,7 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="disabled"
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
@@ -253,7 +253,7 @@ config = FraiseQLConfig(
 {
   "query": "query { articles { id title content } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *APQ request with hash (treated as regular, hash ignored)*:
@@ -269,7 +269,7 @@ config = FraiseQLConfig(
   },
   "query": "query { articles { id title content } }"
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *APQ hash-only request (FAILS - no query)*:
@@ -284,7 +284,7 @@ config = FraiseQLConfig(
     }
   }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Response to Hash-Only Request**:
@@ -299,7 +299,7 @@ config = FraiseQLConfig(
     }
   ]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Use Cases**:
@@ -323,7 +323,7 @@ import hashlib
 def compute_query_hash(query: str) -> str:
     """Compute SHA-256 hash of a GraphQL query."""
     return hashlib.sha256(query.encode("utf-8")).hexdigest()
-```text
+```
 <!-- Code example in TEXT -->
 
 **Properties**:
@@ -355,7 +355,7 @@ def compute_response_cache_key(
     var_json = json.dumps(variables, sort_keys=True, separators=(",", ":"))
     combined = f"{query_hash}:{var_json}"
     return hashlib.sha256(combined.encode()).hexdigest()
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Security Example: Preventing Data Leakage
@@ -377,7 +377,7 @@ cache_key_b = compute_response_cache_key(query_hash, variables_b)
 assert cache_key_a != cache_key_b
 # Result: cache_key_a = "hash:{"userId":"alice-123"}" (SHA-256)
 # Result: cache_key_b = "hash:{"userId":"bob-456"}" (SHA-256)
-```text
+```
 <!-- Code example in TEXT -->
 
 Without variable-aware cache keys, both users would receive the same cached response containing Alice's data.
@@ -398,7 +398,7 @@ function computeAPQHash(query) {
 }
 
 const hash = computeAPQHash(query);
-```text
+```
 <!-- Code example in TEXT -->
 
 **Python Client**:
@@ -409,7 +409,7 @@ import hashlib
 
 def compute_apq_hash(query: str) -> str:
     return hashlib.sha256(query.encode()).hexdigest()
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -428,7 +428,7 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_storage_backend="memory",  # Default for local development
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Characteristics**:
@@ -449,7 +449,7 @@ _query_storage = {
     "e4c7e8f5...": "query { users { id name } }",
     "a1b2c3d4...": "query { products { id price } }",
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Purpose**:
@@ -482,7 +482,7 @@ config = FraiseQLConfig(
         "connection_timeout": 30,
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Database Tables**:
@@ -500,7 +500,7 @@ CREATE TABLE apq_queries (
 
 -- Index for efficient storage
 CREATE INDEX idx_apq_queries_created ON apq_queries (created_at);
-```text
+```
 <!-- Code example in TEXT -->
 
 **Columns**:
@@ -544,7 +544,7 @@ SELECT
     pg_size_pretty(pg_total_relation_size('apq_queries')) as table_size,
     count(*) as query_count
 FROM apq_queries;
-```text
+```
 <!-- Code example in TEXT -->
 
 Clean up unused queries (optional):
@@ -559,7 +559,7 @@ ORDER BY created_at DESC;
 -- Delete very old queries if needed (careful: clients may still reference)
 DELETE FROM apq_queries
 WHERE created_at < CURRENT_TIMESTAMP - INTERVAL '30 days';
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -581,7 +581,7 @@ config = FraiseQLConfig(
         "ttl": 3600,  # 1 hour
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Custom Backend Interface**:
@@ -627,7 +627,7 @@ src/
 │   └── mutations/
 │       ├── createUser.graphql
 │       └── updateProduct.graphql
-```text
+```
 <!-- Code example in TEXT -->
 
 **Configuration**:
@@ -640,7 +640,7 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",
     apq_queries_dir="./src/graphql",  # Auto-load at startup
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Behavior**:
@@ -673,7 +673,7 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",
     # No apq_queries_dir - start empty
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Registration Flow**:
@@ -694,7 +694,7 @@ POST /graphql HTTP/1.1
   "query": "query GetUser($id: ID!) { user(id: $id) { id name email } }",
   "variables": {"id": "user-123"}
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Server processes*:
@@ -720,7 +720,7 @@ POST /graphql HTTP/1.1
   },
   "variables": {"id": "user-456"}
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 *Server processes*:
@@ -766,7 +766,7 @@ Layer 2: GraphQL Execution
 Store in Response Cache
   ↓
 Return Response
-```text
+```
 <!-- Code example in TEXT -->
 
 **Performance Impact**:
@@ -788,7 +788,7 @@ config = FraiseQLConfig(
     cache_default_ttl=300,              # 5 minutes default
     cache_include_complexity=True,
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Note**: Query result caching is configured separately from APQ. See the Caching Specification for complete configuration options including TTL, backends, and complexity-aware settings.
@@ -807,7 +807,7 @@ When query result caching is enabled, the cache key includes:
 ```text
 <!-- Code example in TEXT -->
 cache_key = sha256(query_hash + ":" + sorted_variables_json + ":" + tenant_id + ":" + complexity)
-```text
+```
 <!-- Code example in TEXT -->
 
 **Security Property**:
@@ -857,7 +857,7 @@ Response before filtering:
 ```json
 <!-- Code example in JSON -->
 {"data": {"user": {"id": "123", "name": "Alice", "email": "alice@example.com", "ssn": "123-45-6789"}}}
-```text
+```
 <!-- Code example in TEXT -->
 
 Response after field selection filtering:
@@ -865,7 +865,7 @@ Response after field selection filtering:
 ```json
 <!-- Code example in JSON -->
 {"data": {"user": {"id": "123", "name": "Alice"}}}
-```text
+```
 <!-- Code example in TEXT -->
 
 **Benefits**:
@@ -899,7 +899,7 @@ config = FraiseQLConfig(
     apq_cache_responses=True,               # Optimization
     apq_response_cache_ttl=300,             # 5 minutes
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Environment Variables**:
@@ -912,7 +912,7 @@ FRAISEQL_APQ_STORAGE_BACKEND=memory
 FRAISEQL_APQ_CACHE_RESPONSES=true
 FRAISEQL_APQ_RESPONSE_CACHE_TTL=300
 FRAISEQL_APQ_QUERIES_DIR=./src/graphql
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Staging Environment
@@ -929,7 +929,7 @@ config = FraiseQLConfig(
         "auto_create_tables": True,
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Production Environment
@@ -949,7 +949,7 @@ config = FraiseQLConfig(
         "connection_timeout": 30,
     }
 )
-```text
+```
 <!-- Code example in TEXT -->
 
 **Environment Variables**:
@@ -962,7 +962,7 @@ FRAISEQL_APQ_STORAGE_BACKEND=database
 FRAISEQL_APQ_CACHE_RESPONSES=true
 FRAISEQL_APQ_RESPONSE_CACHE_TTL=1800
 FRAISEQL_APQ_QUERIES_DIR=/app/dist/graphql
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -1009,7 +1009,7 @@ fraiseql_apq_response_cache_hits_total
 fraiseql_apq_response_cache_misses_total
 fraiseql_apq_stored_queries_count
 fraiseql_apq_response_cache_size_bytes
-```text
+```
 <!-- Code example in TEXT -->
 
 **Health Check Endpoint**:
@@ -1026,7 +1026,7 @@ fraiseql_apq_response_cache_size_bytes
         "cached_responses_count": 15234
     }
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Dashboard Recommendations
@@ -1186,7 +1186,7 @@ variables = {"userId": "bob"}
 cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
 
 # assert cache_key_a != cache_key_b  ✅ Prevents data leakage
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Multi-Tenant Isolation
@@ -1199,7 +1199,7 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
 # Tenant A: caches response with tenant_id="tenant-123"
 # Tenant B: caches response with tenant_id="tenant-456"
 # Never mixed
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Sensitive Data in Error Responses
@@ -1214,7 +1214,7 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
     "extensions": {"code": "PERSISTED_QUERY_NOT_FOUND"}
   }]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 **Unsafe** (avoid):
@@ -1227,7 +1227,7 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
     "extensions": {"provided_query": "SELECT * FROM users"}
   }]
 }
-```text
+```
 <!-- Code example in TEXT -->
 
 ---
@@ -1294,7 +1294,7 @@ const client = new ApolloClient({
   ),
   cache: new InMemoryCache(),
 });
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Relay (JavaScript)
@@ -1317,7 +1317,7 @@ const network = createRelayNetworkLayer(
   ],
   { disableBatching: false }
 );
-```text
+```
 <!-- Code example in TEXT -->
 
 ### Python Client
@@ -1331,7 +1331,7 @@ transport = HttpTransport(
     apq_enabled=True,
 )
 client = Client(transport=transport)
-```text
+```
 <!-- Code example in TEXT -->
 
 The client library automatically:

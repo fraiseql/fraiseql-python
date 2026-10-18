@@ -341,8 +341,6 @@ Verify your implementation follows the checklist in the "Manual Verification" se
 
 Note: Automated verification tools are available in development environments.
 
-```
-
 ### Manual Verification
 
 **Tables**:

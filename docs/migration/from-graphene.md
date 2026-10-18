@@ -330,6 +330,8 @@ class CreateUser:
 # for the complete implementation with validation and error handling.
 
 # Simple version for migration reference:
+```
+
 ```sql
 CREATE OR REPLACE FUNCTION fn_create_user(p_email TEXT, p_name TEXT)
 RETURNS UUID AS $$
