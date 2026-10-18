@@ -339,61 +339,76 @@ app = create_fraiseql_app(
 
 ### Automatic Cache Invalidation and Side Effects
 
-GraphQL Cascade tracks mutation side effects and automatically invalidates affected queries.
+GraphQL Cascade sends a mutation's side effects to the client with its result, so the
+client can update or invalidate its cache without refetching.
 
 ### How It Works
 
-1. **Mutation declares side effects**: What data changed
-2. **Cascade tracks dependencies**: Which queries depend on that data
-3. **Automatic invalidation**: Client cache updated automatically
+1. **The SQL function returns the side effects**: the entities it created, updated or
+   deleted, and the queries to invalidate, in the `cascade` field of its result
+2. **FraiseQL passes them on**: with `@mutation(enable_cascade=True)`, the success type
+   gets a `cascade` field
+3. **The client applies them**: Apollo or Relay update or invalidate the cached queries
 
 ### Example
 
 ```python
-@fraiseql.mutation
+import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.type
+class Post:
+    id: ID
+    title: str
+    content: str
+
+
+@fraiseql.input
+class CreatePostInput:
+    title: str
+    content: str
+    author_id: ID
+
+
+@fraiseql.success
+class CreatePostSuccess:
+    message: str
+    post: Post
+
+
+@fraiseql.error
+class CreatePostError:
+    message: str
+    code: str
+
+
+@fraiseql.mutation(enable_cascade=True)
 class CreatePost:
     input: CreatePostInput
     success: CreatePostSuccess
-    failure: ValidationError
-
-    # Declare cascade effects
-    cascade_effects = [
-        "posts",           # Invalidate posts query
-        "user.posts",      # Invalidate user's posts field
-    ]
-
-    async def resolve(self, info) -> CreatePostSuccess | ValidationError:
-        db = info.context["db"]
-
-        result = await db.execute_function("fn_create_post", {
-            "title": self.input.title,
-            "author_id": self.input.author_id,
-        })
-
-        post = await db.find_one("v_post", id=result["id"])
-
-        # Cascade automatically invalidates affected queries!
-        return CreatePostSuccess(post=post)
+    error: CreatePostError
 ```
 
-**Result**: Client's `posts` query cache is automatically invalidated and refetched.
+The SQL function `create_post(input jsonb)` declares the effects with the cascade helpers:
 
-### Advanced Cascade Patterns
-
-```python
-@fraiseql.mutation
-class UpdateUser:
-    input: UpdateUserInput
-    success: UpdateUserSuccess
-    failure: ValidationError
-
-    # Cascade with parameters
-    cascade_effects = [
-        "user",                          # Invalidate user query
-        "users",                         # Invalidate users list
-        lambda self: f"user:{self.id}",  # Dynamic cascade
-    ]
+```sql
+RETURN mutation_created(
+    'Post created',
+    v_post_data,
+    'Post',
+    cascade_merge(
+        cascade_entity_created('Post', v_post_id, v_post_data),
+        cascade_invalidate_cache(ARRAY['posts', 'user_posts'], 'INVALIDATE')
+    )
+);
 ```
+
+**Result**: the response's `cascade` lists the new `Post` and tells the client to
+invalidate its `posts` and `user_posts` queries.
+
+See [GraphQL Cascade](../features/graphql-cascade.md) for the full function, the cascade
+structure and client integration.
 
 ---
 
@@ -635,12 +650,9 @@ CREATE INDEX ON tb_post USING hnsw (embedding vector_cosine_ops);
 
 ### 4. Batch Cascade Invalidations
 
-```python
-cascade_effects = [
-    "posts",
-    "users",
-    "comments",
-]  # All invalidated in single operation
+```sql
+-- All invalidated in a single operation
+cascade_invalidate_cache(ARRAY['posts', 'users', 'comments'], 'INVALIDATE')
 ```
 
 ---

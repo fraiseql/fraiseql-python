@@ -16,14 +16,11 @@ async def create_user(info, input: CreateUserInput) -> User:
 **Enterprise Pattern (blog_api/):**
 
 ```python
-class CreateUser(
-    FraiseQLMutation,  # Clean default pattern
-    function="app.create_user"
-):
+@fraiseql.mutation(function="create_user", schema="app")
+class CreateUser:
     input: CreateUserInput
-    success: CreateUserSuccess  # With metadata - auto-decorated
-    failure: CreateUserError    # With context - auto-decorated
-    noop: CreateUserNoop       # For edge cases - auto-decorated
+    success: CreateUserSuccess  # With metadata
+    error: CreateUserError      # With context; a "noop:" status also returns it
 ```
 
 ### Function Architecture
@@ -92,35 +89,34 @@ async def create_user(info, input: CreateUserInput) -> User:
 
 ```python
 # Add success/error structure
-class CreateUser(FraiseQLMutation):
+@fraiseql.mutation
+class CreateUser:
     input: CreateUserInput
-    success: CreateUserSuccess  # Auto-decorated
-    failure: CreateUserError    # Auto-decorated
+    success: CreateUserSuccess  # @fraiseql.success
+    error: CreateUserError      # @fraiseql.error
 ```
 
 ### Stage 3: Business Logic Handling
 
 ```python
-# Add NOOP for business rules
-class CreateUser(FraiseQLMutation):
+# Add NOOP for business rules: the SQL function returns a "noop:..." status,
+# which comes back as CreateUserError
+@fraiseql.mutation
+class CreateUser:
     input: CreateUserInput
-    success: CreateUserSuccess  # Auto-decorated
-    failure: CreateUserError    # Auto-decorated
-    noop: CreateUserNoop       # Auto-decorated
+    success: CreateUserSuccess  # @fraiseql.success
+    error: CreateUserError      # @fraiseql.error
 ```
 
 ### Stage 4: Full Enterprise
 
 ```python
 # Complete audit, validation, and error handling
-class CreateUser(
-    FraiseQLMutation,  # Clean default pattern
-    function="app.create_user"  # app/core split
-):
+@fraiseql.mutation(function="create_user", schema="app")  # app/core split
+class CreateUser:
     input: CreateUserInput            # With validation
-    success: CreateUserSuccess        # With audit trail - auto-decorated
-    failure: CreateUserError          # With field errors - auto-decorated
-    noop: CreateUserNoop             # With business context - auto-decorated
+    success: CreateUserSuccess        # With audit trail
+    error: CreateUserError            # With field errors and "noop:" business context
 ```
 
 ## Code Comparison Examples

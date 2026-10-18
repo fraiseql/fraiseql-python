@@ -319,11 +319,30 @@ class Mutation(graphene.ObjectType):
 **After (FraiseQL):**
 
 ```python
+@fraiseql.input
+class CreateUserInput:
+    email: str
+    name: str
+
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+    message: str
+
+
+@fraiseql.error
+class CreateUserError:
+    message: str
+    code: str
+
+
 @fraiseql.mutation(function="fn_create_user", name="createUser")
 class CreateUser:
     """Create a new user"""
-    email: str
-    name: str
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: CreateUserError
 
 # Database function:
 # See [canonical fn_create_user()](../examples/canonical-examples.md#create-user-function)
