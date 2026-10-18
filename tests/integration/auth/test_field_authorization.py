@@ -18,7 +18,7 @@ from fraiseql.security.field_auth import (
     combine_permissions,
 )
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clear_registry")]
 
 
 @pytest.mark.security

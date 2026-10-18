@@ -8,7 +8,7 @@ from fraiseql.types import ID
 
 
 @pytest.fixture
-async def schema_with_id(class_db_pool):
+async def schema_with_id(class_db_pool, clear_registry):
     """Create schema with ID type."""
 
     @fraiseql.type

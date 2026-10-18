@@ -1,6 +1,6 @@
 import pytest
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.usefixtures("clear_registry")]
 
 """Test that authentication is properly enforced when configured."""
 

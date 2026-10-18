@@ -10,7 +10,11 @@ from graphql import GraphQLResolveInfo, graphql
 from fraiseql import build_fraiseql_schema, query
 from fraiseql import type as fraiseql_type
 
-pytestmark = [pytest.mark.integration, pytest.mark.database]
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.database,
+    pytest.mark.usefixtures("clear_registry"),
+]
 
 
 @fraiseql_type(sql_source="organizations")

@@ -280,7 +280,7 @@ class TestRequestContextReachesRepository:
         }
 
     @pytest.fixture
-    def app(self) -> Iterator[FastAPI]:
+    def app(self, clear_registry: None) -> Iterator[FastAPI]:
         config = FraiseQLConfig(
             database_url="postgresql://test:test@localhost:5432/test",
             environment="development",
