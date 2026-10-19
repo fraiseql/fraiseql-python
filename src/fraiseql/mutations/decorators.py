@@ -280,11 +280,11 @@ def result(success_cls: type, error_cls: type) -> type:
 
     .. deprecated:: 1.29.0
         Annotate ``Success | Error`` instead. On a mutation, the schema build names
-        the union after the mutation (``result_name=`` overrides it). Removed in
-        fraiseql 2.0.0.
+        the union after the mutation (``result_name=`` overrides it). fraiseql 1.x
+        keeps it working.
     """
     warnings.warn(
-        "fraiseql.result() is deprecated and will be removed in fraiseql 2.0.0; "
+        "fraiseql.result() is deprecated; "
         "annotate the mutation's return type as Success | Error instead.",
         DeprecationWarning,
         stacklevel=2,

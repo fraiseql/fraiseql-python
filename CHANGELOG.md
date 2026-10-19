@@ -7,33 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **The mutation naming warnings promised renames in a 2.0.0 release.** That
+  version exists on PyPI: fraiseql 2.x is the separate FraiseQL v2 project, so
+  there is no 1.x major release to rename in. fraiseql 1.x keeps the names it
+  has. The `FutureWarning` now lists each mutation still named after its
+  `function=` or success type with its preferred name, and promises no rename:
+
+  ```text
+  These mutations are named by fraiseql's legacy rule (a field after its function=, a result union after its success type):
+    field 'fnCreatePost' (preferred: 'createPost')
+    result union 'PostResult' (preferred: 'UpdatePostTitleResult')
+  fraiseql 1.x keeps these names. To choose a name and silence this warning, pass name="..." (field) or result_name="..." (union) to @mutation.
+  ```
+
+  `fraiseql.result()` stays deprecated, with no removal version. The docs, the
+  decorator docstrings and the 1.29.0 notes below are corrected the same way.
+  A `warnings.filterwarnings(message="These mutation names will change")` written
+  for 1.29.0 no longer matches; filter on the new text, or on `FutureWarning`
+  and your module. Filters on the category or module alone are unaffected.
+
 ## [1.29.0] - 2026-10-18
+
+Corrected in 1.29.1: these notes first said the legacy names would change in a
+2.0.0 release. fraiseql 2.x is the separate FraiseQL v2 project; 1.x keeps the
+names.
 
 ### Upgrading
 
 - **Mutation names.** A class mutation is named after its class
   (`CreatePost` -> `createPost`), and its result union after its field
-  (`updatePostTitle` -> `UpdatePostTitleResult`). In 1.x, a mutation that works
-  today keeps its current names, so nothing is renamed by upgrading. Where a
-  name will change in fraiseql 2.0.0 (`function="fn_create_post"`, or a union
-  named after its success type such as `PostResult`), the schema build emits
-  one `FutureWarning` listing every rename:
-
-  ```text
-  These mutation names will change in the next major release of fraiseql (2.0.0):
-    field 'fnCreatePost' -> 'createPost'
-    union 'PostResult' -> 'UpdatePostTitleResult'
-  To keep a name, pass name="..." (field) or result_name="..." (union) to @mutation.
-  ```
+  (`updatePostTitle` -> `UpdatePostTitleResult`). fraiseql 1.x keeps the
+  current names of a mutation that works today, so nothing is renamed by
+  upgrading. Where a name comes from the legacy rule (`function="fn_create_post"`,
+  or a union named after its success type such as `PostResult`), the schema
+  build emits one `FutureWarning` listing each one with its preferred name (the
+  1.29.1 wording is shown under 1.29.1 above).
 
   Pass `name=` / `result_name=` with the current name to keep it, or with the
-  new one to switch now; either removes the mutation from the warning. The
+  preferred one to switch; either removes the mutation from the warning. The
   warning points at your `build_fraiseql_schema()` / `create_fraiseql_app()`
-  call, so it can be filtered by module. fraiseql 2.0.0 is the next major
-  release of this package, not the separate FraiseQL v2 product.
+  call, so it can be filtered by module.
 - **Mutations that clashed** (two classes sharing `function=`, or two mutations
   sharing a success type) used to lose a field or fail the build. They get the
-  new names straight away, with no warning.
+  preferred names straight away, with no warning.
 - **`fraiseql.result()`** is deprecated; annotate `Success | Error` instead.
 - **Rust-built mutation responses are stricter.** Nested entities under an
   interface or union field are filtered to the fields their fragments select,
@@ -108,22 +126,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - **Mutation field names taken from `function=`.** A class mutation is named
-  after its class: `CreatePost` -> `createPost`. Until fraiseql 2.0.0, one whose
+  after its class: `CreatePost` -> `createPost`. In fraiseql 1.x, one whose
   `function=` differs (`fn_create_post`) keeps the name it has today
   (`fnCreatePost`), and the schema build emits one `FutureWarning` listing every
-  field that will be renamed. Pass `name=` to keep the current name or adopt the
-  new one now. For an auto-discovered mutation, the new name is the `name:` in
+  such field. Pass `name=` to keep the current name or switch to the preferred
+  one. For an auto-discovered mutation, the preferred name is the `name:` in
   its `@fraiseql:mutation` comment, which was ignored until now.
 - **Result union names taken from the success type.** A mutation's union is
-  named after its field: `updatePostTitle` -> `UpdatePostTitleResult`. Until
-  fraiseql 2.0.0, a working mutation whose union was named after its success type
+  named after its field: `updatePostTitle` -> `UpdatePostTitleResult`. In
+  fraiseql 1.x, a working mutation whose union was named after its success type
   (`PostSuccess` -> `PostResult`) keeps that name and is listed in the same
-  `FutureWarning`. Pass `result_name=` to keep the current name or adopt the new
-  one now. The warning is reported at your `build_fraiseql_schema()` or
+  `FutureWarning`. Pass `result_name=` to keep the current name or switch to the
+  preferred one. The warning is reported at your `build_fraiseql_schema()` or
   `create_fraiseql_app()` call, not inside fraiseql, so you can filter it by
   module.
-- **`fraiseql.result()`.** It emits a `DeprecationWarning` and is removed in
-  fraiseql 2.0.0. Annotate `Success | Error` instead. Its type stub now has the
+- **`fraiseql.result()`.** It emits a `DeprecationWarning` and keeps working in
+  fraiseql 1.x. Annotate `Success | Error` instead. Its type stub now has the
   real signature, `result(success_cls, error_cls)`, and is marked `@deprecated`,
   so type checkers flag calls too.
 

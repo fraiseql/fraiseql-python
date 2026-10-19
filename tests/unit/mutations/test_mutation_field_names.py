@@ -1,12 +1,13 @@
 """Mutation field names come from the mutation, not its SQL function.
 
 A class mutation is named after its class (``CreateThing`` -> ``createThing``),
-``name=`` overrides it, and ``function=`` only picks the SQL function. Until the
-next major release, a mutation that works today keeps its old name and the schema
-build emits one ``FutureWarning`` listing every field that will be renamed.
+``name=`` overrides it, and ``function=`` only picks the SQL function. In 1.x, a
+mutation that works today keeps its old name, and the schema build emits one
+``FutureWarning`` listing every field still named after its ``function=``.
 """
 
 import json
+import re
 import warnings
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
@@ -69,6 +70,10 @@ def _build(mutations: list[Any], **kwargs: Any) -> tuple[GraphQLSchema, list[str
         warnings.simplefilter("always")
         schema = build_fraiseql_schema(query_types=[ping], mutation_resolvers=mutations, **kwargs)
     return schema, [str(w.message) for w in caught if issubclass(w.category, FutureWarning)]
+
+
+# A version number or a promised rename/removal: the warning must promise neither.
+_NAMES_A_RELEASE = re.compile(r"\b\d+\.\d+\.\d+\b|next major|will (?:change|be removed)")
 
 
 def _field_renames(future: list[str]) -> list[str]:
@@ -353,11 +358,11 @@ class TestDeprecatedFunctionName:
 
         assert _fields(schema) == ["fnCreateThing"]
         assert len(future) == 1
-        assert "'fnCreateThing' -> 'createThing'" in future[0]
+        assert "field 'fnCreateThing' (preferred: 'createThing')" in future[0]
         assert "name=" in future[0]
-        assert "2.0.0" in future[0]
-        assert "FraiseQL 2.0" not in future[0]
-        assert "FraiseQL v2" not in future[0]
+        assert "fraiseql 1.x keeps these names" in future[0]
+        # fraiseql 2.x on PyPI is the separate v2 product: 1.x names no release to rename in.
+        assert not _NAMES_A_RELEASE.search(future[0])
 
     def test_one_warning_lists_every_rename(self) -> None:
         t = _types()
@@ -394,7 +399,7 @@ class TestDeprecatedFunctionName:
             ("fnUpdateThing", "updateThing"),
             ("fnDeleteThing", "deleteThing"),
         ]:
-            assert f"'{old}' -> '{new}'" in future[0]
+            assert f"field '{old}' (preferred: '{new}')" in future[0]
 
     def test_function_matching_the_class_does_not_warn(self) -> None:
         t = _types()
@@ -423,7 +428,7 @@ class TestDeprecatedFunctionName:
 
         assert _fields(schema) == ["fn_create_thing"]
         assert len(future) == 1
-        assert "'fn_create_thing' -> 'create_thing'" in future[0]
+        assert "field 'fn_create_thing' (preferred: 'create_thing')" in future[0]
 
 
 class TestFunctionResolvers:
@@ -452,7 +457,7 @@ class TestFunctionResolvers:
 
 
 class TestAutoDiscoveredMutations:
-    """The ``name:`` in a ``@fraiseql:mutation`` comment is the 2.0.0 field name."""
+    """The ``name:`` in a ``@fraiseql:mutation`` comment is the preferred field name."""
 
     @staticmethod
     async def _generate(comment_name: str, result_name: str | None = None) -> Any:
@@ -500,7 +505,7 @@ class TestAutoDiscoveredMutations:
 
         assert _fields(schema) == ["fnCreateThing"]
         assert len(future) == 1
-        assert "'fnCreateThing' -> 'makeThing'" in future[0]
+        assert "field 'fnCreateThing' (preferred: 'makeThing')" in future[0]
         assert "@fraiseql:mutation comment" in future[0]
 
     @pytest.mark.asyncio

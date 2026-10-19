@@ -517,9 +517,9 @@ class MutationDefinition:
         # GraphQL field name chosen with name=, used as given. When None, the schema
         # builder derives it from the class name (see MutationTypeBuilder).
         self.graphql_name = graphql_name
-        # The name the field will get by default in fraiseql 2.0.0, used as given, when
-        # it doesn't come from the class name (auto-discovery sets it from the
-        # @fraiseql:mutation comment). None means the class-derived name.
+        # The preferred field name, used as given, when it doesn't come from the
+        # class name (auto-discovery sets it from the @fraiseql:mutation comment).
+        # None means the class-derived name.
         self.default_graphql_name: str | None = None
         # Result union name chosen with result_name=, used as given. When None, the
         # schema builder names the union after the field (see MutationTypeBuilder).
@@ -998,14 +998,14 @@ def mutation(
             authorizer for this mutation only.
         name: GraphQL field name, used as given. By default a class mutation is
             named after its class (``CreatePost`` -> ``createPost``) and a function
-            mutation after the function. Until fraiseql 2.0.0, a class mutation whose
+            mutation after the function. In fraiseql 1.x, a class mutation whose
             ``function=`` differs from its class name keeps the name taken from
             ``function=`` and the schema build emits a ``FutureWarning``; pass
             ``name=`` to keep that name or choose another.
         result_name: GraphQL name of the result union (``success | error``), used as
             given. By default it is the field name plus ``Result``
-            (``createPost`` -> ``CreatePostResult``), one union per mutation. Until
-            fraiseql 2.0.0, a mutation whose union was named after its success type
+            (``createPost`` -> ``CreatePostResult``), one union per mutation. In
+            fraiseql 1.x, a mutation whose union was named after its success type
             (``PostSuccess`` -> ``PostResult``) keeps that name and the schema build
             emits a ``FutureWarning``; pass ``result_name=`` to keep it or choose
             another. Ignored when there is no union (same success and error type).

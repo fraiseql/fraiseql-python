@@ -2,8 +2,8 @@
 
 A mutation's result union is named after its GraphQL field: ``createPost`` ->
 ``CreatePostResult``. Up to fraiseql 1.28 it was named after the success type
-(``PostSuccess`` -> ``PostResult``); that rule is kept for mutations that work
-with it until fraiseql 2.0.0 (see ``MutationTypeBuilder``).
+(``PostSuccess`` -> ``PostResult``); fraiseql 1.x keeps that rule for mutations
+that work with it (see ``MutationTypeBuilder``).
 """
 
 
@@ -17,8 +17,5 @@ def result_union_name(field_name: str) -> str:
 
 
 def legacy_result_union_name(success_type: type) -> str:
-    """Return the 1.x result union name: ``CreatePostSuccess`` -> ``CreatePostResult``.
-
-    Deleted in fraiseql 2.0.0.
-    """
+    """Return the legacy result union name: ``CreatePostSuccess`` -> ``CreatePostResult``."""
     return f"{success_type.__name__.removesuffix('Success')}Result"

@@ -75,7 +75,7 @@ class _NameCandidates:
     owner_path: str  # module-qualified owner, when two owners share a name
     explicit: str | None  # from name= / result_name=, used as given
     legacy: str  # the 1.x name
-    new: str  # the fraiseql 2.0.0 name
+    new: str  # the preferred name: from the class (field) or the field (union)
     from_comment: bool  # auto-discovered: the new name comes from its SQL comment
 
 
@@ -94,7 +94,7 @@ class _Rename:
 
 
 def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _NameCandidates:
-    """Field names: the 1.x name comes from function=, the 2.0.0 name from the class.
+    """Field names: the legacy name comes from function=, the preferred one from the class.
 
     A function mutation is named after its registry key, which is the function's
     name unless code replaced the registry entry. The ``:<owner>`` suffix the
@@ -130,8 +130,8 @@ def _field_name_candidates(key: str, fn: Callable[..., Any]) -> _NameCandidates:
 def _result_union(fn: Callable[..., Any], field: _NameCandidates) -> _ResultUnion | None:
     """A mutation's result union and its names, or None if it doesn't return one.
 
-    The 1.x name comes from the success type; the 2.0.0 name from the field the
-    mutation will have in 2.0.0 (``name=`` if given).
+    The legacy name comes from the success type; the preferred one from the
+    mutation's preferred field name (``name=`` if given).
     """
     new = result_union_name(field.explicit or field.new)
     definition = getattr(fn, "__fraiseql_mutation__", None)
@@ -175,11 +175,12 @@ def _result_union(fn: Callable[..., Any], field: _NameCandidates) -> _ResultUnio
 def _choose_names(
     candidates: dict[str, _NameCandidates], kind: str, option: str, renames: list[_Rename]
 ) -> dict[str, str]:
-    """Pick one name per mutation: explicit, else the 1.x name, else the 2.0.0 name.
+    """Pick one name per mutation: explicit, else the legacy name, else the preferred one.
 
-    A mutation keeps its 1.x name unless another mutation would get the same one,
-    which is broken today; then it gets the 2.0.0 name. A kept name that will change
-    is appended to ``renames``.
+    A mutation keeps its legacy name unless another mutation would get the same one,
+    which is broken; then it gets the preferred name. fraiseql 1.x never renames a
+    kept legacy name; one that differs from the preferred name is appended to
+    ``renames`` so the warning can list it.
 
     Raises:
         ValueError: If two mutations end up with the same name.
@@ -217,19 +218,24 @@ _FRAISEQL_DIR = str(Path(__file__).parents[2]) + os.sep
 
 
 def _warn_renames(renames: list[_Rename]) -> None:
-    """Emit one FutureWarning listing every mutation name that changes in 2.0.0."""
-    lines = [f"  {r.kind} '{r.old}' -> '{r.new}'" for r in renames]
-    hint = 'To keep a name, pass name="..." (field) or result_name="..." (union) to @mutation.'
+    """Emit one FutureWarning listing every mutation still named by the legacy rule.
+
+    It promises no rename: fraiseql 2.x on PyPI is the separate FraiseQL v2 product,
+    and 1.x keeps these names. Passing ``name=`` / ``result_name=`` silences it.
+    """
+    lines = [f"  {r.kind} '{r.old}' (preferred: '{r.new}')" for r in renames]
+    hint = (
+        "fraiseql 1.x keeps these names. To choose a name and silence this warning, "
+        'pass name="..." (field) or result_name="..." (union) to @mutation.'
+    )
     if any(r.from_comment for r in renames):
         hint += (
             " For an auto-discovered mutation, set name: (field) or result_name: (union)"
             " in its @fraiseql:mutation comment."
         )
     warnings.warn(
-        "These mutation names will change in the next major release of fraiseql (2.0.0):\n"
-        + "\n".join(lines)
-        + "\n"
-        + hint,
+        "These mutations are named by fraiseql's legacy rule (a field after its "
+        "function=, a result union after its success type):\n" + "\n".join(lines) + "\n" + hint,
         FutureWarning,
         skip_file_prefixes=(_FRAISEQL_DIR,),
     )

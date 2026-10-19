@@ -274,27 +274,28 @@ mutation is named after the function. `name=` sets the field name directly.
 Two mutations with the same field name make the schema build raise a
 `ValueError` that names both. Give one of them a different `name=`.
 
-!!! warning "Names taken from `function=` until 2.0.0"
+!!! warning "Names taken from `function=`"
     Up to fraiseql 1.28, a class mutation was named after its `function=`:
     `RegisterUser` with `function="register_new_user"` was served as
-    `registerNewUser`. In 1.x, such a mutation keeps that name, and the schema
-    build emits one `FutureWarning` listing every field whose name changes in
-    fraiseql 2.0.0:
+    `registerNewUser`. fraiseql 1.x keeps that name, so upgrading renames
+    nothing, and the schema build emits one `FutureWarning` listing every field
+    still named this way, with its preferred name:
 
     ```text
-    These mutation names will change in the next major release of fraiseql (2.0.0):
-      field 'registerNewUser' -> 'registerUser'
-    To keep a name, pass name="..." (field) or result_name="..." (union) to @mutation.
+    These mutations are named by fraiseql's legacy rule (a field after its function=, a result union after its success type):
+      field 'registerNewUser' (preferred: 'registerUser')
+    fraiseql 1.x keeps these names. To choose a name and silence this warning, pass name="..." (field) or result_name="..." (union) to @mutation.
     ```
 
     To keep the current name, pass it: `@fraiseql.mutation(function="register_new_user", name="registerNewUser")`.
-    To adopt the new one now, pass `name="registerUser"`. Either removes the
-    mutation from the warning.
+    To switch to the preferred name, pass `name="registerUser"`. Either removes
+    the mutation from the warning. (fraiseql 2.x on PyPI is the separate
+    FraiseQL v2 project; it is not a later version of these names.)
 
     Mutations that shared a `function=` lost a field before 1.29. They get the
     class-derived names straight away, with no warning.
 
-    For an auto-discovered mutation, the new name is the `name:` in its
+    For an auto-discovered mutation, the preferred name is the `name:` in its
     `@fraiseql:mutation` comment; set it to the current name to keep it.
 
 #### Mutation result union names
@@ -309,20 +310,21 @@ When the success and error types are the same class, there is no union and
 Two mutations with the same union name make the schema build raise a
 `ValueError` that names both. Give one of them a different `result_name=`.
 
-!!! warning "Names taken from the success type until 2.0.0"
+!!! warning "Names taken from the success type"
     Up to fraiseql 1.28, the union was named after the success type:
     `UpdatePostTitle` with `success: PostSuccess` returned `PostResult`, and two
     mutations sharing a success type failed the schema build with
-    `multiple types named '...Result'`. In 1.x, a mutation that works keeps its
-    union name, and the same `FutureWarning` as for field names lists it:
+    `multiple types named '...Result'`. fraiseql 1.x keeps the union name of a
+    mutation that works, and the same `FutureWarning` as for field names lists it:
 
     ```text
-      result union 'PostResult' -> 'UpdatePostTitleResult'
+      result union 'PostResult' (preferred: 'UpdatePostTitleResult')
     ```
 
     Pass `result_name="PostResult"` to keep the current name, or
-    `result_name="UpdatePostTitleResult"` to adopt the new one now. Mutations
-    that shared a success type get the new names straight away, with no warning.
+    `result_name="UpdatePostTitleResult"` to switch to the preferred one.
+    Mutations that shared a success type get the preferred names straight away,
+    with no warning.
     An auto-discovered mutation takes `result_name:` in its `@fraiseql:mutation`
     comment.
 
@@ -504,8 +506,8 @@ async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | Creat
 
 !!! warning "`result()` is deprecated"
     `fraiseql.result(success_cls, error_cls)` builds a union type from a success
-    and an error class. It is deprecated since 1.29 and removed in fraiseql 2.0.0:
-    annotate `Success | Error` instead, and the mutation's union is named as
+    and an error class. It is deprecated since 1.29 and keeps working in
+    fraiseql 1.x: annotate `Success | Error` instead, and the mutation's union is named as
     described in [Result union names](#mutation-result-union-names).
 
 ## Field Decorators
