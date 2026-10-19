@@ -85,7 +85,7 @@ different architecture. Both are actively maintained.
 
 | | **v1 — this repo** | **v2 — [fraiseql/fraiseql](https://github.com/fraiseql/fraiseql)** |
 |---|---|---|
-| Status | Stable (1.29.0) | Active (2.16.0; breaking changes ship in minor releases) |
+| Status | Stable (1.29.1) | Active (2.16.0; breaking changes ship in minor releases) |
 | Engine | Python + Rust pipeline | Compiled Rust engine |
 | Schema authoring | Python decorators | 16+ languages |
 | Databases | **PostgreSQL only** | PostgreSQL, MySQL, SQLite, SQL Server |
