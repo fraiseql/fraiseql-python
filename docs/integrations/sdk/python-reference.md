@@ -145,7 +145,7 @@ class CreateUserError:
 ```
 
 `fraiseql.result(success_cls, error_cls)` builds a combined result type. It is deprecated
-since 1.29 and removed in fraiseql 2.0.0; annotate `Success | Error` instead.
+since 1.29 (it keeps working in fraiseql 1.x); annotate `Success | Error` instead.
 
 ### `@fraiseql.query`
 

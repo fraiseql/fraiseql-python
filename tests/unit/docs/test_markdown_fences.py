@@ -147,3 +147,39 @@ def test_no_dangling_example_links() -> None:
             for match in pattern.finditer(line)
         )
     assert hits == []
+
+
+# fraiseql 2.x on PyPI is the separate FraiseQL v2 product, so a 1.x deprecation can't
+# promise a change "in fraiseql 2.0.0": that release exists and is a different framework.
+_V1_RELEASE_2_0_0 = re.compile(
+    r"fraiseql \(?2\.0\.0|\b(?:until|in|from) (?:fraiseql )?2\.0\.0|2\.0\.0[- ](?:name|clean)"
+)
+
+
+def _v1_release_scan_files() -> list[str]:
+    if not _FILES:
+        return []
+    out = subprocess.run(
+        ["git", "ls-files", "src/**.py", "src/**.pyi", "examples/**.py", "tests/**.py"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    own = str(Path(__file__).relative_to(REPO_ROOT))
+    return [*_FILES, "CHANGELOG.md", *(p for p in out.splitlines() if p and p != own)]
+
+
+@pytest.mark.skipif(not _FILES, reason="needs a git checkout to list the files")
+def test_no_v1_release_named_2_0_0() -> None:
+    hits = []
+    for path in _v1_release_scan_files():
+        if path.startswith(_ADR_PREFIX):
+            continue
+        text = (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace")
+        hits.extend(
+            f"{path}:{lineno}: {line.strip()}"
+            for lineno, line in enumerate(text.splitlines(), 1)
+            if _V1_RELEASE_2_0_0.search(line)
+        )
+    assert hits == []

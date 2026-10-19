@@ -1,7 +1,8 @@
 """Examples build without the mutation rename warning.
 
-Users copy the examples, so an example whose mutation names change in fraiseql
-2.0.0 teaches them code that warns on first run. Each example is imported and
+Users copy the examples, so an example whose mutations are named by the legacy
+rule (after ``function=`` or the success type) teaches them code that warns on
+first run. Each example is imported and
 built in its own process: examples register types and mutations at import, and
 importing several into one registry would mix their schemas.
 """
@@ -27,7 +28,7 @@ example_dir = root / Path(*module.split(".")[:-1])
 sys.path[:0] = [str(example_dir), str(root)]
 
 warnings.filterwarnings(
-    "error", message="These mutation names will change", category=FutureWarning
+    "error", message="These mutations are named by fraiseql's legacy rule", category=FutureWarning
 )
 importlib.import_module(module)
 
@@ -60,7 +61,7 @@ _BUILDABLE = [
 ]
 
 # Examples with mutations that don't build on the current API. Their mutation
-# names are already 2.0.0-clean; move one to _BUILDABLE once it builds.
+# names already follow the preferred rule; move one to _BUILDABLE once it builds.
 _BROKEN = {
     "examples.ecommerce.mutations": "decorates a function where a class is expected",
     "examples.enterprise_patterns.mutations": "uses a pydantic FieldInfo as a type",

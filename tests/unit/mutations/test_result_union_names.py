@@ -2,11 +2,12 @@
 
 The union is ``<FieldName>Result`` (``createThing`` -> ``CreateThingResult``),
 ``result_name=`` overrides it, and two mutations may share success and error
-types. Until the next major release, a mutation that works today keeps its old
-union name (``<success type without "Success">Result``), and the schema build
-emits one ``FutureWarning`` listing every union that will be renamed.
+types. In 1.x, a mutation that works today keeps its old union name
+(``<success type without "Success">Result``), and the schema build emits one
+``FutureWarning`` listing every union still named after its success type.
 """
 
+import re
 import warnings
 from types import SimpleNamespace
 from typing import Any, get_args
@@ -183,6 +184,15 @@ class TestResultHelper:
 
         assert set(get_args(get_args(union)[0])) == {t.S, t.E2}
 
+    def test_deprecation_names_no_removal_release(self) -> None:
+        """fraiseql 2.x on PyPI is the separate v2 product, so 1.x can't promise a removal there."""
+        t = _types()
+        with pytest.warns(DeprecationWarning, match=_RESULT_DEPRECATED) as record:
+            fraiseql.result(t.S, t.E)
+
+        message = str(record[0].message)
+        assert not re.search(r"\b\d+\.\d+\.\d+\b|will be removed", message)
+
 
 class TestResultName:
     def test_result_name_is_used(self) -> None:
@@ -254,7 +264,7 @@ class TestDeprecatedUnionName:
 
         assert _field_union(schema, "updatePostTitle")[0] == "PostResult"
         assert len(future) == 1
-        assert "result union 'PostResult' -> 'UpdatePostTitleResult'" in future[0]
+        assert "result union 'PostResult' (preferred: 'UpdatePostTitleResult')" in future[0]
         assert "result_name=" in future[0]
 
     def test_field_and_union_renames_share_one_warning(self) -> None:
@@ -275,8 +285,8 @@ class TestDeprecatedUnionName:
 
         assert _field_union(schema, "fnUpdatePostTitle")[0] == "PostResult"
         assert len(future) == 1
-        assert "field 'fnUpdatePostTitle' -> 'updatePostTitle'" in future[0]
-        assert "result union 'PostResult' -> 'UpdatePostTitleResult'" in future[0]
+        assert "field 'fnUpdatePostTitle' (preferred: 'updatePostTitle')" in future[0]
+        assert "result union 'PostResult' (preferred: 'UpdatePostTitleResult')" in future[0]
 
     def test_warning_points_at_the_caller(self) -> None:
         """The warning is attributed to the code that builds the schema, not to fraiseql."""
