@@ -30,7 +30,7 @@ Complete overview of all FraiseQL capabilities.
 | **Success/Failure Responses** | ✅ Stable | [Mutations Guide](../core/queries-and-mutations.md#success-failure-pattern) | [mutations_demo](../../examples/mutations_demo/) |
 | **Nested Relations** | ✅ Stable | [Database API](../core/database-api.md#nested-relations) | [blog_api](../../examples/blog_api/) |
 | **Pagination** | ✅ Stable | [Database API](../core/database-api.md) | [ecommerce](../../examples/ecommerce/) |
-| **Filtering (Where Input)** | ✅ Stable | [Where Input Guide](../advanced/where-input-types.md) | [filtering](../../examples/filtering/) |
+| **Filtering (Where Input)** | ✅ Stable | [Where Input Guide](../advanced/where-input-types.md) | [where_input_filtering_example.py](../../examples/where_input_filtering_example.py) |
 
 ---
 
@@ -51,11 +51,11 @@ Complete overview of all FraiseQL capabilities.
 
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
-| **Nested Array Filtering** | ✅ Stable | [Nested Arrays](../guides/nested-array-filtering.md) | [specialized_types](../../examples/specialized_types/) |
-| **Logical Operators (AND/OR/NOT)** | ✅ Stable | [Where Input Types](../advanced/where-input-types.md#logical-operators) | [filtering](../../examples/filtering/) |
-| **Network Types (IPv4/IPv6/CIDR)** | ✅ Stable | [Specialized Types](../advanced/where-input-types.md#network-types) | [specialized_types](../../examples/specialized_types/) |
+| **Nested Array Filtering** | ✅ Stable | [Nested Arrays](../guides/nested-array-filtering.md) | [nested_array_filtering.py](../../examples/nested_array_filtering.py) |
+| **Logical Operators (AND/OR/NOT)** | ✅ Stable | [Where Input Types](../advanced/where-input-types.md#logical-operators) | [nested_array_filtering.py](../../examples/nested_array_filtering.py) |
+| **Network Types (IPv4/IPv6/CIDR)** | ✅ Stable | [Specialized Types](../advanced/where-input-types.md#network-types) | — |
 | **Hierarchical Data (ltree)** | ✅ Stable | [Hierarchical Guide](../advanced/database-patterns.md#ltree) | [ltree-hierarchical-data](../../examples/ltree-hierarchical-data/) |
-| **Date/Time Ranges** | ✅ Stable | [Range Types](../advanced/where-input-types.md#range-types) | [specialized_types](../../examples/specialized_types/) |
+| **Date/Time Ranges** | ✅ Stable | [Range Types](../advanced/where-input-types.md#range-types) | — |
 | **Full-Text Search** | ✅ Stable | [Search Guide](../advanced/database-patterns.md#full-text-search) | [ecommerce](../../examples/ecommerce/) |
 | **Geospatial Queries (PostGIS)** | 🚧 Beta | Coming soon | - |
 
@@ -69,7 +69,7 @@ Complete overview of all FraiseQL capabilities.
 | **Zero N+1 Queries** | ✅ Stable | [Performance Guide](../performance/index.md#n-plus-one-prevention) | [blog_api](../../examples/blog_api/) |
 | **Automatic Persisted Queries (APQ)** | ✅ Stable | [APQ Guide](../performance/apq-optimization-guide.md) | [apq_multi_tenant](../../examples/apq_multi_tenant/) |
 | **PostgreSQL Caching** | ✅ Stable | [Caching Guide](../performance/index.md#postgresql-caching) | [ecommerce](../../examples/ecommerce/) |
-| **Query Batching** | ✅ Stable | [Database API](../core/database-api.md#batching) | [turborouter](../../examples/turborouter/) |
+| **Query Batching** | ✅ Stable | [Database API](../core/database-api.md#batching) | — |
 | **Connection Pooling** | ✅ Stable | [Database API](../core/database-api.md#connection-pool) | All examples |
 
 ---
@@ -134,7 +134,7 @@ Complete overview of all FraiseQL capabilities.
 | **FastAPI Integration** | ✅ Stable | See examples | [fastapi](../../examples/fastapi/) |
 | **Starlette Integration** | ✅ Stable | See examples | [fastapi](../../examples/fastapi/) |
 | **ASGI Applications** | ✅ Stable | Built-in | All examples |
-| **TypeScript Client Generation** | ✅ Stable | See examples | [documented_api](../../examples/documented_api/) |
+| **TypeScript Client Generation** | ✅ Stable | See examples | — |
 
 ---
 

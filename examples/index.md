@@ -33,7 +33,7 @@ These examples demonstrate real-world patterns and integrations for production a
 | [`apq_multi_tenant/`](apq_multi_tenant/README.md) | Multi-tenant APQ caching | SaaS patterns, performance optimization | 20 min |
 | [`caching_example.py`](caching_example.py) | PostgreSQL-native caching | Performance, Redis alternatives | 15 min |
 | [`security/`](security/README.md) | Authentication & security patterns | JWT, role-based access, validation | 25 min |
-| [`turborouter/`](turborouter/README.md) | Pre-compiled query routing | Performance optimization, query planning | 20 min |
+| [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) | Pre-compiled query routing | Performance optimization, query planning | 20 min |
 | [`complex_nested_where_clauses.py`](complex_nested_where_clauses.py) | Advanced query patterns | Complex filtering, nested conditions | 15 min |
 
 ### 🟠 Advanced (Production Ready)
@@ -55,7 +55,7 @@ Examples for specific use cases and integrations.
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
 | [`native-auth-app/`](native-auth-app/README.md) | Vue.js authentication app | Frontend integration, JWT handling | 25 min |
-| [`hybrid_tables/`](hybrid_tables/README.md) | Hybrid relational/document patterns | Flexible schemas, JSONB usage | 20 min |
+| [`hybrid_tables.py`](hybrid_tables.py) | Hybrid relational/document patterns | Flexible schemas, JSONB usage | 20 min |
 | [`token_revocation_example.py`](token_revocation_example.py) | Advanced auth patterns | Token management, revocation strategies | 15 min |
 | [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) | Complex routing scenarios | Advanced query optimization | 25 min |
 
@@ -85,7 +85,7 @@ Examples for specific use cases and integrations.
 
 - [`apq_multi_tenant/`](apq_multi_tenant/README.md) - Multi-tenant query caching
 - [`caching_example.py`](caching_example.py) - PostgreSQL caching
-- [`turborouter/`](turborouter/README.md) - Query pre-compilation
+- [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) - Query pre-compilation
 
 ### 🏢 Enterprise Patterns
 
@@ -112,7 +112,7 @@ Examples for specific use cases and integrations.
 ### 🔧 Performance Specialist Path
 
 1. **[`caching_example.py`](caching_example.py)** - Caching fundamentals
-2. **[`turborouter/`](turborouter/README.md)** - Query optimization
+2. **[`turbo_router_with_complexity.py`](turbo_router_with_complexity.py)** - Query optimization
 3. **[`apq_multi_tenant/`](apq_multi_tenant/README.md)** - Advanced caching
 4. **[`analytics_dashboard/`](analytics_dashboard/README.md)** - High-performance analytics
 

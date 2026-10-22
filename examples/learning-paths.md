@@ -133,7 +133,7 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Scalable database design
 - ✅ Production deployment patterns
 
-**[`turborouter/`](turborouter/README.md)** - Query optimization
+**[`turbo_router_with_complexity.py`](turbo_router_with_complexity.py)** - Query optimization
 
 - ✅ Pre-compiled query routing
 - ✅ Performance monitoring
@@ -180,7 +180,7 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 2: Query Optimization (45 minutes)
 
-**[`turborouter/`](turborouter/README.md)** - Pre-compiled routing
+**[`turbo_router_with_complexity.py`](turbo_router_with_complexity.py)** - Pre-compiled routing
 
 - ✅ Query pre-compilation
 - ✅ Routing optimization

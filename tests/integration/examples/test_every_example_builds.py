@@ -24,8 +24,8 @@ _ROOT = Path(__file__).resolve().parents[3]
 
 # Import the example, then build a schema from everything it registered. A module
 # is imported by its dotted name (examples use relative imports), unless a sibling
-# module shadows its package (examples/documented_api.py next to
-# examples/documented_api/main.py): then it is loaded from its path.
+# module shadows its package (examples/foo.py next to examples/foo/main.py):
+# then it is loaded from its path.
 _BUILD = """
 import importlib, importlib.util, sys
 from pathlib import Path
@@ -58,7 +58,6 @@ _KNOWN_FAILURES = {
     "examples/complete_cqrs_blog/schema.py": "written with Strawberry",
     "examples/complete_cqrs_blog/sync.py": "needs asyncpg",
     "examples/complex_nested_where_clauses.py": "passes the SQL where type as an argument",
-    "examples/documented_api/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples/ecommerce/app.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/models.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",
@@ -94,14 +93,10 @@ _KNOWN_FAILURES = {
     "examples/federation/saga-basic/orders-service/server.py": "Flask, not fraiseql",
     "examples/federation/saga-basic/users-service/server.py": "Flask, not fraiseql",
     "examples/federation/saga-manual-compensation/bank-service/server.py": "Flask, not fraiseql",
-    "examples/filtering/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
-    "examples/hybrid_tables/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples/python/fraiseql_client.py": "an Arrow Flight client; v1 has no Flight server",
     "examples/python/test_arrow_flight.py": "an Arrow Flight client; v1 has no Flight server",
     "examples/security/secure_graphql_api.py": "uses fraiseql.union, which fraiseql doesn't have",
-    "examples/specialized_types/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples/token_revocation_example.py": "needs redis",
-    "examples/turborouter/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
 }
 
 

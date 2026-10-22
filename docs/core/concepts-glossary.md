@@ -451,7 +451,7 @@ CREATE TABLE tb_user (
 );
 ```
 
-See [Projection Tables Example](../../examples/hybrid_tables/)
+See [Projection Tables Example](../../examples/hybrid_tables.py)
 
 ## GraphQL Concepts
 

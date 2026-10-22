@@ -19,7 +19,7 @@ Production-ready example demonstrating FraiseQL's built-in tenant-aware APQ cach
 **Next steps:**
 
 - `../caching_example.py` - Alternative caching approaches
-- `../turborouter/` - Pre-compiled query routing
+- `../turbo_router_with_complexity.py` - Pre-compiled query routing
 - `../saas-starter/` - Complete SaaS foundation
 
 ## What is APQ?
@@ -557,7 +557,7 @@ pytest tests/integration/test_apq_multi_tenant.py -v
 
 ## Related Examples
 
-- [`../turborouter/`](../turborouter/README.md) - Pre-compiled queries for even better performance
+- [`../turbo_router_with_complexity.py`](../turbo_router_with_complexity.py) - Pre-compiled queries for even better performance
 - [`../fastapi/`](../fastapi/README.md) - Complete FastAPI integration with APQ
 - [`../security/`](../security/README.md) - JWT authentication patterns
 

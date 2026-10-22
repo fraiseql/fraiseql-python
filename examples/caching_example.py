@@ -22,7 +22,7 @@ PREREQUISITES:
 
 NEXT STEPS:
 - ../apq_multi_tenant/ - Query-level caching
-- ../turborouter/ - Pre-compiled query routing
+- ../turbo_router_with_complexity.py - Pre-compiled query routing
 - ../analytics_dashboard/ - High-performance analytics
 """
 

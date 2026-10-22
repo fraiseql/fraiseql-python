@@ -501,7 +501,7 @@ JOIN tb_customers c ON ...
 ## Related Examples
 
 - [`../../fastapi/`](../../fastapi/) - Basic FastAPI integration
-- [`../../turborouter/`](../../turborouter/) - High-performance queries
+- [`../../turbo_router_with_complexity.py`](../../turbo_router_with_complexity.py) - High-performance queries
 - [`../../hybrid_tables.py`](../../hybrid_tables.py) - Hybrid table patterns
 
 ## References
