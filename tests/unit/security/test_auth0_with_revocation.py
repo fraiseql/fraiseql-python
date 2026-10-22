@@ -88,3 +88,12 @@ async def test_without_a_revocation_service_it_is_auth0_alone(
     )
 
     assert await provider.validate_token("alice-1") == _PAYLOADS["alice-1"]
+
+
+@pytest.mark.asyncio
+async def test_logout_all_sessions_rejects_the_users_other_tokens(provider) -> None:
+    await provider.logout_all_sessions("alice")
+
+    for token in ("alice-1", "alice-2"):
+        with pytest.raises(InvalidTokenError, match="revoked"):
+            await provider.validate_token(token)

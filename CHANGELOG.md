@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`revoke_all_user_tokens(user_id)` (and `logout_all_sessions`) revokes every
+  token of the user issued before the call.** Both revocation stores record when
+  it happened, and `TokenRevocationService.is_token_revoked` rejects a token
+  whose `sub` is that user and whose `iat` is earlier, whether or not its `jti`
+  was ever seen. After such a call, that user's tokens without an `iat` claim are
+  rejected too, and so are tokens without a `jti`, which `is_token_revoked` used
+  to accept unchecked. The cutoff lasts 24 hours, like a single revocation.
+  Stores gain `revoked_before(user_id)`; a custom store without it gets token-id
+  checks only. `PostgreSQLRevocationStore` keeps its table: the cutoff is the
+  `revoked_at` of the user's `__all__<user_id>` row.
+
+### Changed
+
 - **`CSRFProtectionMiddleware` classifies a GraphQL request by parsing its
   document.** It used to look at how the query text starts. Now a document that
   contains a mutation needs a token whatever precedes the mutation and whichever

@@ -385,8 +385,15 @@ from fraiseql.auth import (
 | `TokenRevocationMixin` | Mix into a provider to check revocation during `validate_token` (used by `Auth0ProviderWithRevocation`). |
 
 Both stores implement the same async interface: `revoke_token(token_id, user_id)`,
-`is_revoked(token_id)`, `revoke_all_user_tokens(user_id)`, `cleanup_expired()`,
-and `get_revoked_count()`.
+`is_revoked(token_id)`, `revoke_all_user_tokens(user_id)`, `revoked_before(user_id)`,
+`cleanup_expired()`, and `get_revoked_count()`.
+
+`revoke_all_user_tokens(user_id)` revokes every token of that user issued before
+the call: `is_token_revoked` compares the token's `iat` with the time
+`revoked_before(user_id)` returns, for the user named by `sub`. Once a user's
+tokens were all revoked, that user's tokens without an `iat` claim are rejected
+too. Like a single revocation, it lasts 24 hours. A custom store without
+`revoked_before` gets token-id checks only.
 
 ```python
 store = PostgreSQLRevocationStore(pool)

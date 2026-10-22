@@ -831,6 +831,10 @@ async def logout_user(token_payload, user_id: str):
     await auth_provider.logout_all_sessions(user_id)
 ```
 
+`logout_all_sessions(user_id)` revokes every token whose `sub` is `user_id` and
+whose `iat` is before the call; tokens issued afterwards (a new login) are
+accepted. A token of that user without `iat` is rejected from then on.
+
 ### Logout Endpoint
 
 ```python
