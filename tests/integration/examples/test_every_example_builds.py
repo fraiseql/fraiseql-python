@@ -51,13 +51,7 @@ async def example_ping(info) -> str:
 fraiseql.build_fraiseql_schema()
 """
 
-_KNOWN_FAILURES = {
-    "examples/ecommerce/app.py": "Decimal fields: builds with #575's Decimal scalar",
-    "examples/ecommerce/models.py": "Decimal fields: builds with #575's Decimal scalar",
-    "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",
-    "examples/ecommerce/queries.py": "Decimal fields: builds with #575's Decimal scalar",
-    "examples/existing_complex_where_syntax.py": "Decimal fields (#575)",
-}
+_KNOWN_FAILURES = {}
 
 
 def _example_files() -> list[str]:

@@ -49,6 +49,7 @@ _BUILDABLE = [
     "examples.auto_field_descriptions",
     "examples.blog_simple.models",
     "examples.context_parameters.mutations",
+    "examples.ecommerce.mutations",
     "examples.graphql-cascade.main",
     "examples.mutations_demo.demo",
     "examples.native_auth_app",
@@ -61,9 +62,7 @@ _BUILDABLE = [
 
 # Examples with mutations that don't build on the current API. Their mutation
 # names already follow the preferred rule; move one to _BUILDABLE once it builds.
-_BROKEN = {
-    "examples.ecommerce.mutations": "Decimal fields: builds with #575's Decimal scalar",
-}
+_BROKEN = {}
 
 
 @pytest.mark.parametrize(

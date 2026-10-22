@@ -396,7 +396,9 @@ async def test_blog_simple_post_lifecycle(blog_simple_graphql_client) -> None:
         }
     """
     forbidden = await client.execute(
-        update, variables={"input": {"id": post["id"], "title": "x"}}, headers={"X-User-ID": JANEDOE}
+        update,
+        variables={"input": {"id": post["id"], "title": "x"}},
+        headers={"X-User-ID": JANEDOE},
     )
     assert forbidden["data"]["updatePost"]["__typename"] == "BlogError"
     assert forbidden["data"]["updatePost"]["code"] == 403
