@@ -393,33 +393,13 @@ class CreatePostError:
     message: str
     code: str
 
+# fraiseql calls the SQL function create_post with the input as one jsonb, and
+# turns the mutation_response it returns into CreatePostSuccess or CreatePostError
 @fraiseql.mutation
-async def create_post(
-    info: GraphQLResolveInfo, input: CreatePostInput
-) -> CreatePostSuccess | CreatePostError:
-    db = info.context["db"]
-    user_id = info.context["user_id"]
-
-    try:
-        # The SQL function maps the user's UUID to its pk and inserts the post
-        result = await db.execute_function(
-            "create_post",
-            {
-                "input_user_id": str(user_id),
-                "input_payload": {
-                    "title": input.title,
-                    "content": input.content,
-                    "excerpt": input.excerpt,
-                },
-            },
-        )
-
-        # Fetch created post
-        post = await db.find_one("v_posts", id=result["id"])
-        return CreatePostSuccess(post=post)
-
-    except Exception as e:
-        return CreatePostError(message=str(e), code="CREATE_FAILED")
+class CreatePost:
+    input: CreatePostInput
+    success: CreatePostSuccess
+    error: CreatePostError
 ```
 
 ## 🧪 Testing

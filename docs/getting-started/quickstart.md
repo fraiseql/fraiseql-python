@@ -60,9 +60,17 @@ SELECT
     ) AS data
 FROM tb_note;
 
--- SQL function for creating notes (CQRS pattern)
-CREATE OR REPLACE FUNCTION fn_create_note(input jsonb)
-RETURNS jsonb AS $$
+-- What a mutation function returns: fraiseql reads these 8 fields
+-- (migrations/trinity/005_add_mutation_response.sql defines it too, with helpers)
+CREATE TYPE mutation_response AS (
+    status text, message text, entity_id text, entity_type text,
+    entity jsonb, updated_fields text[], cascade jsonb, metadata jsonb
+);
+
+-- SQL function for creating notes (CQRS pattern): the CreateNote mutation calls it
+-- with the input as one jsonb
+CREATE OR REPLACE FUNCTION create_note(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     new_id uuid;
 BEGIN
@@ -70,7 +78,9 @@ BEGIN
     VALUES (input->>'title', input->>'content')
     RETURNING id INTO new_id;
 
-    RETURN jsonb_build_object('success', true, 'id', new_id);
+    RETURN ROW('new', 'Note created', new_id::text, 'Note',
+               (SELECT data FROM v_note WHERE id = new_id),
+               NULL, NULL, NULL)::mutation_response;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -147,35 +157,22 @@ async def note(info, id: ID) -> Note | None:
     """Get a single note by ID."""
     db = info.context["db"]
     # field_name auto-inferred from function name "note"
-    return await db.find_one("v_note", id=id)
+    return await db.find_one("v_note", mandatory_filters={"id": id})
 
-# Mutations
+# Mutations: fraiseql calls the SQL function create_note with the input as one
+# jsonb, and turns the mutation_response it returns into CreateNoteSuccess or
+# ValidationError
 @fraiseql.mutation
-async def create_note(info, input: CreateNoteInput) -> CreateNoteSuccess | ValidationError:
+class CreateNote:
     """Create a new note."""
-    db = info.context["db"]
-
-    try:
-        # Call SQL function (CQRS pattern)
-        result = await db.execute_function("fn_create_note", {
-            "title": input.title,
-            "content": input.content,
-        })
-
-        if not result.get("success"):
-            return ValidationError(message="Failed to create note")
-
-        # Fetch the created note via Rust pipeline
-        note = await db.find_one("v_note", id=result["id"])
-        return CreateNoteSuccess(note=note)
-
-    except Exception as e:
-        return ValidationError(message=f"Failed to create note: {e!s}")
+    input: CreateNoteInput
+    success: CreateNoteSuccess
+    error: ValidationError
 
 # Create the app
 QUICKSTART_TYPES = [Note]
 QUICKSTART_QUERIES = [notes, note]
-QUICKSTART_MUTATIONS = [create_note]
+QUICKSTART_MUTATIONS = [CreateNote]
 
 if __name__ == "__main__":
     import os
