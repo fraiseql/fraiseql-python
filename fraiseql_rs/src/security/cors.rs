@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn test_cors_add_headers() {
         let handler = CORSHandler::new(CORSConfig::default());
-        let mut headers = vec![("Content-Type".to_string(), "application/json".to_string())];
+        let headers = vec![("Content-Type".to_string(), "application/json".to_string())];
 
         let new_headers = handler.add_cors_headers(Some("http://localhost:3000"), headers);
 

@@ -34,6 +34,7 @@ use fraiseql_rs::{json_transform::transform_with_selections, schema_registry::Sc
 use serde_json::{Value, json};
 
 /// Helper to create a test schema registry
+#[allow(clippy::expect_used)] // test fixture: a bad schema should fail the test
 fn create_test_schema() -> SchemaRegistry {
     let schema_ir = r#"{
         "version": "1.0",

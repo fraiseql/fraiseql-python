@@ -102,15 +102,3 @@ impl<'a> Drop for Transaction<'a> {
         // But for this phase, we'll keep it simple
     }
 }
-
-#[cfg(test)]
-mod tests {
-    #[tokio::test]
-    async fn test_transaction_lifecycle() {
-        // This is a mock test - real transaction testing requires database setup
-        // which will be implemented in Phase 2 integration tests
-
-        // Test that the transaction API compiles and the types work
-        assert!(true);
-    }
-}

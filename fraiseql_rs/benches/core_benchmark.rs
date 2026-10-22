@@ -3,7 +3,9 @@
 //! This benchmark tests the zero-copy transformation engine performance
 //! without PyO3 overhead, focusing on the raw transformation speed.
 
-use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, Throughput, criterion_group, criterion_main};
 use fraiseql_rs::core::transform::{ByteBuf, TransformConfig, ZeroCopyTransformer};
 
 /// Generate small workload: 10 objects, 5 fields each (~1KB total)

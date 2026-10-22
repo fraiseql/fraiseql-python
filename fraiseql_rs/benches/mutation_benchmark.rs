@@ -1,6 +1,8 @@
 //! Benchmarks for mutation pipeline performance
 
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use std::hint::black_box;
+
+use criterion::{Criterion, criterion_group, criterion_main};
 use fraiseql_rs::mutation::build_mutation_response;
 
 fn benchmark_simple_format(c: &mut Criterion) {

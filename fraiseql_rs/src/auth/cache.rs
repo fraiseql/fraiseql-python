@@ -99,7 +99,7 @@ mod tests {
             exp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() + 3600,
         };
 
-        cache.put("token123", context.clone());
+        cache.put("token123", context);
 
         let cached = cache.get("token123");
         assert!(cached.is_some());

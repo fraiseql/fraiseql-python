@@ -3,9 +3,10 @@
 //! Note: These benchmarks simulate query operations.
 //! Real query execution benchmarks will be added in Phase 2.
 
+use std::hint::black_box;
 use std::time::Duration;
 
-use criterion::{BenchmarkId, Criterion, black_box, criterion_group, criterion_main};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 
 /// Benchmark SQL query parsing
 fn bench_sql_parsing(c: &mut Criterion) {

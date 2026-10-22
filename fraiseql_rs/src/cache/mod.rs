@@ -127,7 +127,7 @@ mod tests {
             hit_count: 0,
         };
 
-        cache.put("test_query".to_string(), plan.clone()).unwrap();
+        cache.put("test_query".to_string(), plan).unwrap();
         let retrieved = cache.get("test_query").unwrap().unwrap();
 
         assert_eq!(retrieved.signature, "test_query");
