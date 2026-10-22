@@ -322,7 +322,7 @@ See each project's CONTRIBUTING.md for guidelines.
 - [Migrations Guide](./migrations.md) - confiture usage
 - [CASCADE Best Practices](../guides/cascade-best-practices.md) - Cascade patterns
 - [Explicit Sync](./explicit-sync.md) - jsonb_ivm integration
-- [Complete CQRS Example](../../examples/complete_cqrs_blog/) - All components working together
+- [CQRS Example](../../examples/blog_api/) - Blog with tb_/tv_ tables and sync functions
 
 ---
 

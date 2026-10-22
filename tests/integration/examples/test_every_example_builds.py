@@ -53,48 +53,21 @@ fraiseql.build_fraiseql_schema()
 
 _KNOWN_FAILURES = {
     "examples/blog_api/app.py": "opens a connection pool at import",
-    "examples/complete_cqrs_blog/app.py": "written with Strawberry and asyncpg",
-    "examples/complete_cqrs_blog/migrations/run_migrations.py": "needs asyncpg",
-    "examples/complete_cqrs_blog/schema.py": "written with Strawberry",
-    "examples/complete_cqrs_blog/sync.py": "needs asyncpg",
     "examples/complex_nested_where_clauses.py": "passes the SQL where type as an argument",
     "examples/ecommerce/app.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/models.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/queries.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/enhanced_where_clauses.py": "passes the SQL where type as an argument",
-    "examples/enterprise_patterns/cqrs/main.py": "its types.py is shadowed by the stdlib",
-    "examples/enterprise_patterns/cqrs/mutations.py": "its types.py is shadowed by the stdlib",
-    "examples/enterprise_patterns/cqrs/queries.py": "its types.py is shadowed by the stdlib",
+    "examples/enterprise_patterns/cqrs/main.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
+    "examples/enterprise_patterns/cqrs/mutations.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
+    "examples/enterprise_patterns/cqrs/queries.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
     "examples/enterprise_patterns/models.py": "uses a pydantic FieldInfo as a type",
     "examples/enterprise_patterns/mutations.py": "uses a pydantic FieldInfo as a type",
     "examples/existing_complex_where_syntax.py": "Decimal fields (#575)",
-    "examples/fastapi/main.py": "its types.py is shadowed by the stdlib",
-    "examples/fastapi/mutations.py": "its types.py is shadowed by the stdlib",
-    "examples/fastapi/queries.py": "its types.py is shadowed by the stdlib",
-    "examples/federation/basic/orders-service/schema.py": "Apollo Federation, which v1 doesn't have",
-    "examples/federation/basic/users-service/schema.py": "Apollo Federation, which v1 doesn't have",
-    "examples/federation/composite-keys/orders-service/schema.py": (
-        "Apollo Federation, which v1 doesn't have"
-    ),
-    "examples/federation/composite-keys/users-service/schema.py": (
-        "Apollo Federation, which v1 doesn't have"
-    ),
-    "examples/federation/multi-cloud/orders-service/schema.py": (
-        "Apollo Federation, which v1 doesn't have"
-    ),
-    "examples/federation/multi-cloud/products-service/schema.py": (
-        "Apollo Federation, which v1 doesn't have"
-    ),
-    "examples/federation/multi-cloud/users-service/schema.py": (
-        "Apollo Federation, which v1 doesn't have"
-    ),
-    "examples/federation/saga-basic/inventory-service/server.py": "Flask, not fraiseql",
-    "examples/federation/saga-basic/orders-service/server.py": "Flask, not fraiseql",
-    "examples/federation/saga-basic/users-service/server.py": "Flask, not fraiseql",
-    "examples/federation/saga-manual-compensation/bank-service/server.py": "Flask, not fraiseql",
-    "examples/python/fraiseql_client.py": "an Arrow Flight client; v1 has no Flight server",
-    "examples/python/test_arrow_flight.py": "an Arrow Flight client; v1 has no Flight server",
+    "examples/fastapi/main.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
+    "examples/fastapi/mutations.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
+    "examples/fastapi/queries.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
     "examples/security/secure_graphql_api.py": "uses fraiseql.union, which fraiseql doesn't have",
     "examples/token_revocation_example.py": "needs redis",
 }

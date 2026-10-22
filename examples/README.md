@@ -91,41 +91,6 @@ See `.docker-phase4-status.md` for comprehensive Phase 4 documentation.
 
 Production-ready clients demonstrating zero-copy columnar data delivery via Apache Arrow Flight:
 
-### Python Client (`python/`)
-
-PyArrow + Polars integration for data science workflows.
-
-```bash
-cd python
-pip install -r requirements.txt
-python fraiseql_client.py query "{ users { id name } }"
-python fraiseql_client.py events Order --limit 10000 --output events.parquet
-```
-
-**Features**: GraphQL queries, event streaming, batch processing, CSV/Parquet export
-
-### R Client (`r/`)
-
-Arrow R package for statistical analysis and data manipulation.
-
-```bash
-cd r
-Rscript -e "source('fraiseql_client.R'); client <- connect_fraiseql(); print(query_graphql(client, '{ users { id } }'))"
-```
-
-**Features**: Native data.frame integration, dplyr compatibility, batch processing
-
-### Rust Flight Client (`rust/flight_client/`)
-
-Native Rust client with async/await and direct Arrow Flight protocol support.
-
-```bash
-cd rust/flight_client
-cargo run --release
-```
-
-**Features**: Type-safe client, Tokio async, direct RecordBatch consumption, 100k+ rows/sec throughput
-
 ### ClickHouse Integration (`clickhouse/`)
 
 SQL analytics on Arrow events ingested via Phase 9.4's ClickHouseSink.

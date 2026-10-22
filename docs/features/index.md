@@ -39,7 +39,7 @@ Complete overview of all FraiseQL capabilities.
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
 | **JSONB Views (v_*)** | ✅ Stable | [Core Concepts](../core/concepts-glossary.md#jsonb-views) | [blog_simple](../../examples/blog_simple/) |
-| **Table Views (tv_*)** | ✅ Stable | [Explicit Sync](../core/explicit-sync.md) | [complete_cqrs_blog](../../examples/complete_cqrs_blog/) |
+| **Table Views (tv_*)** | ✅ Stable | [Explicit Sync](../core/explicit-sync.md) | [blog_api](../../examples/blog_api/) |
 | **PostgreSQL Functions** | ✅ Stable | [Database API](../core/database-api.md#calling-functions) | [blog_api](../../examples/blog_api/) |
 | **Connection Pooling** | ✅ Stable | [Database API](../core/database-api.md#connection-pool) | All examples |
 | **Transaction Support** | ✅ Stable | [Database API](../core/database-api.md#transactions) | [enterprise_patterns](../../examples/enterprise_patterns/) |
@@ -97,7 +97,7 @@ Complete overview of all FraiseQL capabilities.
 |---------|--------|---------------|---------|
 | **Multi-Tenancy** | ✅ Stable | [Multi-Tenancy Guide](../advanced/multi-tenancy.md) | [saas-starter](../../examples/saas-starter/) |
 | **Bounded Contexts** | ✅ Stable | [Bounded Contexts](../advanced/bounded-contexts.md) | [blog_enterprise](../../examples/blog_enterprise/) |
-| **Event Sourcing** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md) | [complete_cqrs_blog](../../examples/complete_cqrs_blog/) |
+| **Event Sourcing** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md) | — |
 | **Domain Events** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md#domain-events) | [blog_enterprise](../../examples/blog_enterprise/) |
 | **CQRS Architecture** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
 | **Compliance (GDPR/SOC2/HIPAA)** | ✅ Stable | [Enterprise Guide](../enterprise/README.md) | — |
@@ -192,7 +192,7 @@ Complete overview of all FraiseQL capabilities.
 
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
-| **CASCADE Invalidation** | ✅ Stable | [Cascade Guide](graphql-cascade.md) | [complete_cqrs_blog](../../examples/complete_cqrs_blog/) |
+| **CASCADE Invalidation** | ✅ Stable | [Cascade Guide](graphql-cascade.md) | [graphql-cascade](../../examples/graphql-cascade/) |
 | **PostgreSQL Function Pattern** | ✅ Stable | [PostgreSQL Pattern](graphql-cascade.md#postgresql-function-pattern) | - |
 | **Cascade Structure** | ✅ Stable | [Cascade Structure](graphql-cascade.md#cascade-structure) | - |
 | **Apollo Client Integration** | ✅ Stable | [Client Integration](graphql-cascade.md#apollo-client) | - |

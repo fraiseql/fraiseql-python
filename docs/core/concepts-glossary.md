@@ -59,7 +59,7 @@ flowchart TB
 
 **See Also**:
 
-- [CQRS Implementation](../../examples/complete_cqrs_blog/) - Complete CQRS blog example
+- [CQRS Implementation](../../examples/blog_api/) - Blog with tb_/tv_ tables and sync functions
 - [Enterprise Patterns](../../examples/blog_api/) - Production CQRS with audit trails
 - Independent scaling of reads and writes
 

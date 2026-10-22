@@ -636,7 +636,6 @@ async def setup_ivm():
 
 ## See Also
 
-- Complete CQRS Example (../../examples/complete_cqrs_blog/)
 - [CASCADE Best Practices](../guides/cascade-best-practices.md)
 - [Explicit Sync Guide](./explicit-sync.md)
 - [Database Patterns](../advanced/database-patterns.md)

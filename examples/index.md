@@ -44,7 +44,6 @@ Enterprise-grade examples showcasing advanced patterns, scalability, and product
 |---------|-------------|--------------|------|
 | [`enterprise_patterns/`](enterprise_patterns/README.md) | **ALL PATTERNS** - Complete enterprise reference | Audit trails, multi-tenancy, validation layers | 45 min |
 | [`blog_enterprise/`](blog_enterprise/README.md) | Enterprise blog with DDD | Domain-driven design, event sourcing | 40 min |
-| [`complete_cqrs_blog/`](complete_cqrs_blog/README.md) | Full CQRS implementation | Command-query separation, Docker, migrations | 35 min |
 | [`analytics_dashboard/`](analytics_dashboard/README.md) | Business intelligence platform | TimescaleDB, complex analytics, dashboards | 40 min |
 | [`saas-starter/`](saas-starter/README.md) | Multi-tenant SaaS foundation | Tenant isolation, billing, user management | 50 min |
 
@@ -73,7 +72,6 @@ Examples for specific use cases and integrations.
 
 - [`blog_api/`](blog_api/README.md) - Enterprise content system
 - [`blog_enterprise/`](blog_enterprise/README.md) - Advanced blogging platform
-- [`complete_cqrs_blog/`](complete_cqrs_blog/README.md) - CQRS blog implementation
 
 ### 🔐 Authentication & Security
 
@@ -120,7 +118,7 @@ Examples for specific use cases and integrations.
 
 1. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
 2. **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
-3. **[`complete_cqrs_blog/`](complete_cqrs_blog/README.md)** - CQRS implementation
+3. **[`blog_api/`](blog_api/README.md)** - CQRS implementation
 
 ---
 
