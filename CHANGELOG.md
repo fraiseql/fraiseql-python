@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`SchemaRegistry.clear()` now clears registered scalars** (#589). It left
+  them in place, so a schema built after `clear()` (or after
+  `fraiseql.testing.clear_fraiseql_state()`) still held every scalar registered
+  before it, and a later type with the same name, such as an enum called `Color`,
+  failed with `Schema must contain uniquely named types`. Types registered after
+  `clear()` register the scalars they use again, as they do on first
+  registration. A scalar you registered by hand with `register_scalar()` must be
+  registered again after `clear()`.
+
 ## [1.29.1] - 2026-10-19
 
 ### Fixed

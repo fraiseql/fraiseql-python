@@ -19,6 +19,11 @@ except:
 - objects the test module imports itself
 - tests marked ``@pytest.mark.shares_schema_types``
 
+Scalars are usually fraiseql's own, defined outside ``tests/``, so the guard
+also wraps ``SchemaRegistry.register_scalar`` and attributes each scalar to the
+test file whose test registered it. A scalar registered outside a test, at
+import, is treated like a shared one.
+
 The fix is to clear the registry: the ``clear_registry`` or
 ``clear_registry_class`` fixture.
 """
@@ -34,7 +39,15 @@ import pytest
 
 _SHARED_DIRS = ("utils", "helpers")
 
-_state: dict[str, Any] = {"item": None, "tests_dir": None, "original": None, "installs": 0}
+_state: dict[str, Any] = {
+    "item": None,
+    "tests_dir": None,
+    "original": None,
+    "original_register_scalar": None,
+    "installs": 0,
+}
+# Scalar name -> test file whose test registered it (None: registered outside a test).
+_scalar_owners: dict[str, Path | None] = {}
 
 
 def _file_of(module_name: str) -> Path | None:
@@ -64,19 +77,27 @@ def _registered_objects(registry: Any) -> Iterator[tuple[str, Any]]:
         yield "mutation", getattr(definition, "mutation_class", None) or resolver
 
 
+def _owner_path(kind: str, obj: Any, files: dict[str, Path | None]) -> Path | None:
+    if kind == "scalar":
+        return _scalar_owners.get(obj.name)
+    module_name = getattr(obj, "__module__", None)
+    if not module_name:
+        return None
+    if module_name not in files:
+        files[module_name] = _file_of(module_name)
+    return files[module_name]
+
+
 def _foreign_objects(registry: Any, item: pytest.Item, tests_dir: Path) -> list[str]:
     test_file = Path(item.path).resolve()
     test_module = getattr(item, "module", None)
     imported = {id(value) for value in vars(test_module).values()} if test_module else set()
     files: dict[str, Path | None] = {}
     foreign = []
-    for kind, obj in _registered_objects(registry):
-        module_name = getattr(obj, "__module__", None)
-        if not module_name:
-            continue
-        if module_name not in files:
-            files[module_name] = _file_of(module_name)
-        path = files[module_name]
+    objects = [*_registered_objects(registry)]
+    objects += [("scalar", scalar) for scalar in list(registry._scalars.values())]
+    for kind, obj in objects:
+        path = _owner_path(kind, obj, files)
         if (
             path is None
             or path == test_file
@@ -85,7 +106,7 @@ def _foreign_objects(registry: Any, item: pytest.Item, tests_dir: Path) -> list[
             or id(obj) in imported
         ):
             continue
-        name = getattr(obj, "__qualname__", repr(obj))
+        name = getattr(obj, "__qualname__", None) or getattr(obj, "name", repr(obj))
         foreign.append(f"  {kind} {name} — {path.relative_to(tests_dir.parent)}")
     return foreign
 
@@ -106,6 +127,7 @@ def _check(registry: Any) -> None:
 
 
 def pytest_configure(config: pytest.Config) -> None:
+    from fraiseql.gql.builders.registry import SchemaRegistry
     from fraiseql.gql.builders.schema_composer import SchemaComposer
 
     # A pytester run in the same process configures the plugin again: wrap once.
@@ -114,21 +136,31 @@ def pytest_configure(config: pytest.Config) -> None:
         return
     original = SchemaComposer.__init__
     _state["original"] = original
+    original_register_scalar = SchemaRegistry.register_scalar
+    _state["original_register_scalar"] = original_register_scalar
 
     def init(self: SchemaComposer, registry: Any) -> None:
         original(self, registry)
         _check(registry)
 
+    def register_scalar(self: SchemaRegistry, scalar_class: Any) -> None:
+        original_register_scalar(self, scalar_class)
+        item = _state["item"]
+        _scalar_owners[scalar_class.name] = Path(item.path).resolve() if item else None
+
     SchemaComposer.__init__ = init  # type: ignore[method-assign]
+    SchemaRegistry.register_scalar = register_scalar  # type: ignore[method-assign]
 
 
 def pytest_unconfigure(config: pytest.Config) -> None:
+    from fraiseql.gql.builders.registry import SchemaRegistry
     from fraiseql.gql.builders.schema_composer import SchemaComposer
 
     _state["installs"] -= 1
     if _state["installs"] == 0 and _state["original"] is not None:
         SchemaComposer.__init__ = _state["original"]  # type: ignore[method-assign]
-        _state["original"] = None
+        SchemaRegistry.register_scalar = _state["original_register_scalar"]  # type: ignore[method-assign]
+        _state["original"] = _state["original_register_scalar"] = None
 
 
 @pytest.hookimpl(hookwrapper=True)

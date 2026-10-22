@@ -95,6 +95,41 @@ def test_leak_is_reported(pytester: pytest.Pytester) -> None:
     )
 
 
+def test_leaked_scalar_is_reported(pytester: pytest.Pytester) -> None:
+    # A built-in scalar is defined outside tests/: the guard attributes it to the
+    # test module that registered it.
+    test_a = """
+from fraiseql.gql.builders.registry import SchemaRegistry
+from fraiseql.types.scalars import ColorScalar
+
+
+def test_a():
+    SchemaRegistry.get_instance().register_scalar(ColorScalar)
+"""
+    result = _run(pytester, test_a=test_a, test_b=_TEST_B.format(fixture=""))
+
+    result.assert_outcomes(passed=1, failed=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*tests/test_b.py::test_b built a schema holding objects from another test module:",
+            "  scalar Color — tests/test_a.py",
+        ]
+    )
+
+
+def test_own_scalar_allowed(pytester: pytest.Pytester) -> None:
+    test_b = _TEST_B.format(fixture="").replace(
+        "    build_fraiseql_schema(",
+        "    from fraiseql.gql.builders.registry import SchemaRegistry\n"
+        "    from fraiseql.types.scalars import ColorScalar\n\n"
+        "    SchemaRegistry.get_instance().register_scalar(ColorScalar)\n"
+        "    build_fraiseql_schema(",
+    )
+    result = _run(pytester, test_b=test_b)
+
+    result.assert_outcomes(passed=1)
+
+
 def test_cleared_module_passes(pytester: pytest.Pytester) -> None:
     result = _run(pytester, test_a=_TEST_A, test_b=_TEST_B.format(fixture="clear_registry"))
 

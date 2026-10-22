@@ -66,6 +66,7 @@ class SchemaRegistry:
         - SchemaRegistry's internal types and mutations
         - SchemaConfig settings
         - Registered enums
+        - Registered scalars (types registered afterwards discover theirs again)
         - Mutation decorator registries
         - GraphQL type caches
         """
@@ -77,6 +78,7 @@ class SchemaRegistry:
         self._subscriptions.clear()
         self._enums.clear()
         self._interfaces.clear()
+        self._scalars.clear()
         self._type_map.clear()
         self.config = None
         self._default_authorizer = None
