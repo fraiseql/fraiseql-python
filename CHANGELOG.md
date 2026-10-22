@@ -171,6 +171,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   then rejects a revoked token with `InvalidTokenError`. The class docstring
   showed `RedisRevocationStore`, which fraiseql doesn't have; it shows
   `PostgreSQLRevocationStore`.
+### Fixed
+
+- **Auth decorators work when a query has several root fields.** A query
+  selecting two or more root fields (`{ me { id } projects { id } }`) runs on
+  fraiseql's multi-field path, which passes each resolver its own resolve info
+  rather than graphql-core's `GraphQLResolveInfo`. `requires_auth`,
+  `requires_role`, `requires_permission`, `requires_any_role` and
+  `requires_any_permission` checked the class and answered every decorated field
+  in such a query with "First argument must be GraphQLResolveInfo", although
+  each field queried alone worked. They now accept either; the checks they make
+  on the user are unchanged.
 
 ## [1.29.1] - 2026-10-19
 
