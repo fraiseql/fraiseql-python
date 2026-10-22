@@ -451,7 +451,7 @@ CREATE TABLE tb_user (
 );
 ```
 
-See [Projection Tables Example](../../examples/hybrid_tables.py)
+See [rag-system](../../examples/rag-system/) for a projection table (`tv_document_embedding`) kept in sync by SQL functions.
 
 ## GraphQL Concepts
 

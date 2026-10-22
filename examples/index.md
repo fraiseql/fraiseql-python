@@ -53,7 +53,6 @@ Examples for specific use cases and integrations.
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
 | [`native-auth-app/`](native-auth-app/README.md) | Vue.js authentication app | Frontend integration, JWT handling | 25 min |
-| [`hybrid_tables.py`](hybrid_tables.py) | Hybrid relational/document patterns | Flexible schemas, JSONB usage | 20 min |
 | [`token_revocation_example.py`](token_revocation_example.py) | Advanced auth patterns | Token management, revocation strategies | 15 min |
 | [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) | Complex routing scenarios | Advanced query optimization | 25 min |
 
