@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.30.0] - 2026-10-22
+
 ### Added
 
 - **A `Decimal` scalar for `decimal.Decimal`** (#575). A `decimal.Decimal`
