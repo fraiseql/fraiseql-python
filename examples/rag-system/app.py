@@ -1,56 +1,227 @@
-"""RAG System Example - Retrieval-Augmented Generation with FraiseQL + LangChain"""
+"""RAG System Example - Retrieval-Augmented Generation with FraiseQL and pgvector.
+
+GraphQL (fraiseql) serves the documents. REST endpoints add documents with their
+embedding, search them semantically, and answer questions from them with an
+OpenAI-compatible chat model (OpenAI, or a local vLLM server).
+"""
 
 import asyncio
+import inspect
 import os
-from typing import List, Optional
-from uuid import UUID
+from datetime import datetime
 
+import psycopg
 import uvicorn
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException
+from psycopg.types.json import Jsonb
 from pydantic import BaseModel
 
-# FraiseQL imports - CORRECTED
 import fraiseql
-from fraiseql.types import ID
-from fraiseql import fraise_field, fraise_type
-from fraiseql.types.scalars import UUID as FraiseUUID
+from fraiseql.db import register_type_for_view
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.types import ID, JSON
 
-# LangChain imports - UPDATED to langchain_openai
-try:
-    from langchain.chains import RetrievalQA
-    from langchain.docstore.document import Document
-    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-except ImportError:
-    print("⚠️  LangChain not installed. Install with: pip install langchain langchain-openai")
-    OpenAIEmbeddings = None
-    ChatOpenAI = None
-    RetrievalQA = None
-    Document = None
-
-# Direct database access for vector operations
-import psycopg
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost:5432/ragdb")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-ada-002")
 
 
-# Pydantic models for API
-class DocumentCreate(BaseModel):
-    title: str
-    content: str
-    source: Optional[str] = None
-    metadata: Optional[dict] = {}
+# ============================================================================
+# GRAPHQL
+# ============================================================================
 
 
-class DocumentResponse(BaseModel):
+@fraiseql.type(sql_source="v_document", jsonb_column=None)
+class Document:
+    """A document of the knowledge base."""
+
     id: ID
     title: str
     content: str
-    source: Optional[str]
-    metadata: dict
-    created_at: str
+    source: str | None
+    metadata: JSON
+    created_at: datetime
+    updated_at: datetime
 
 
-class EmbeddingUpdate(BaseModel):
-    embedding: List[float]
-    model: str = "text-embedding-ada-002"
+# v_document has plain columns, no JSONB data column. column_mapping makes
+# ordering use the created_at column too (filters already use table_columns).
+register_type_for_view(
+    "v_document",
+    Document,
+    table_columns={"id", "title", "content", "source", "metadata", "created_at", "updated_at"},
+    has_jsonb_data=False,
+    column_mapping={"created_at": "created_at"},
+)
+
+
+@fraiseql.query
+async def documents(info, source: str | None = None, limit: int = 50) -> list[Document]:
+    """List documents, newest first, optionally from one source."""
+    db = info.context["db"]
+    return await db.find(
+        "v_document",
+        "documents",
+        info,
+        where={"source": {"eq": source}} if source else None,
+        order_by=[{"created_at": "desc"}],
+        limit=limit,
+    )
+
+
+@fraiseql.query
+async def document(info, id: ID) -> Document | None:
+    """Get a document by ID."""
+    db = info.context["db"]
+    return await db.find_one("v_document", "document", info, mandatory_filters={"id": id})
+
+
+# ============================================================================
+# RAG SERVICE
+# ============================================================================
+
+
+class RAGService:
+    """Embeds, searches and answers, with OpenAI or local models."""
+
+    def __init__(
+        self,
+        database_url: str,
+        openai_api_key: str | None = None,
+        use_local_models: bool = False,
+        local_model_url: str = "http://localhost:8000/v1",
+        llm_model: str | None = None,
+    ):
+        self.database_url = database_url
+
+        try:
+            from local_embeddings import get_embedding_provider
+
+            self.embeddings = get_embedding_provider(
+                provider="local" if use_local_models else "auto",
+                openai_api_key=openai_api_key,
+            )
+        except Exception as e:
+            print(f"⚠️  No embedding provider: {e}")
+            self.embeddings = None
+
+        # Both OpenAI and vLLM speak the OpenAI chat API
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            print("⚠️  openai not installed: pip install openai")
+            self.llm = None
+        else:
+            if use_local_models or not openai_api_key:
+                self.llm = AsyncOpenAI(base_url=local_model_url, api_key="not-needed-for-local")
+            else:
+                self.llm = AsyncOpenAI(api_key=openai_api_key)
+        self.llm_model = llm_model or ("local-model" if use_local_models else "gpt-4o-mini")
+
+    async def embed(self, text: str) -> list[float]:
+        """Embed a text with whichever provider is configured."""
+        if self.embeddings is None:
+            raise HTTPException(status_code=503, detail="Embeddings not available")
+        if hasattr(self.embeddings, "aembed_query"):
+            return await self.embeddings.aembed_query(text)
+        if inspect.iscoroutinefunction(self.embeddings.embed_query):
+            return await self.embeddings.embed_query(text)
+        return await asyncio.to_thread(self.embeddings.embed_query, text)
+
+    async def semantic_search(
+        self, query: str, limit: int = 5, similarity_threshold: float = 0.7
+    ) -> list[dict]:
+        """Find the documents closest to query with search_documents_by_embedding."""
+        embedding = await self.embed(query)
+        async with await psycopg.AsyncConnection.connect(self.database_url) as conn:
+            cur = await conn.execute(
+                "SELECT id, title, content, source, metadata, similarity"
+                " FROM search_documents_by_embedding(%s::vector, %s::integer, %s::real)",
+                (embedding, limit, similarity_threshold),
+            )
+            columns = [c.name for c in cur.description]
+            return [dict(zip(columns, row, strict=True)) for row in await cur.fetchall()]
+
+    async def add_document_with_embedding(
+        self, title: str, content: str, source: str | None = None, metadata: dict | None = None
+    ) -> str:
+        """Store a document and its embedding with create_document_with_embedding."""
+        embedding = await self.embed(content)
+        async with await psycopg.AsyncConnection.connect(self.database_url) as conn:
+            cur = await conn.execute(
+                "SELECT create_document_with_embedding(%s, %s, %s, %s, %s::vector, %s)",
+                (title, content, source, Jsonb(metadata or {}), embedding, EMBEDDING_MODEL),
+            )
+            (doc_id,) = await cur.fetchone()
+            return str(doc_id)
+
+    async def answer_question(
+        self, question: str, context_limit: int = 3, similarity_threshold: float = 0.7
+    ) -> dict:
+        """Answer question from the closest documents."""
+        if self.llm is None:
+            raise HTTPException(status_code=503, detail="LLM not available")
+
+        sources = await self.semantic_search(
+            question, limit=context_limit, similarity_threshold=similarity_threshold
+        )
+        context = "\n\n".join(f"Document: {doc['title']}\n{doc['content']}" for doc in sources)
+        response = await self.llm.chat.completions.create(
+            model=self.llm_model,
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Answer the question from the context only. "
+                    "If the context doesn't say, answer that you don't know.",
+                },
+                {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"},
+            ],
+        )
+
+        return {
+            "question": question,
+            "answer": response.choices[0].message.content,
+            "sources": [
+                {"id": str(doc["id"]), "title": doc["title"], "similarity": doc["similarity"]}
+                for doc in sources
+            ],
+        }
+
+
+_rag_service: RAGService | None = None
+
+
+def rag_service() -> RAGService:
+    """Build the RAG service on first use, from the environment."""
+    global _rag_service
+    if _rag_service is None:
+        _rag_service = RAGService(
+            database_url=DATABASE_URL,
+            openai_api_key=os.getenv("OPENAI_API_KEY"),
+            use_local_models=os.getenv("USE_LOCAL_EMBEDDINGS", "false").lower()
+            in ("true", "1", "yes"),
+            local_model_url=os.getenv("LOCAL_MODEL_URL", "http://localhost:8000/v1"),
+            llm_model=os.getenv("LLM_MODEL"),
+        )
+    return _rag_service
+
+
+# ============================================================================
+# APP
+# ============================================================================
+
+app = create_fraiseql_app(
+    database_url=DATABASE_URL,
+    types=[Document],
+    queries=[documents, document],
+    title="RAG System API",
+)
+
+
+class DocumentCreate(BaseModel):
+    title: str
+    content: str
+    source: str | None = None
+    metadata: dict = {}
 
 
 class SearchQuery(BaseModel):
@@ -62,393 +233,48 @@ class SearchQuery(BaseModel):
 class RAGQuery(BaseModel):
     question: str
     context_limit: int = 3
+    similarity_threshold: float = 0.7
 
 
-# FraiseQL types
-@fraise_type
-class TBDocument:
-    """Document table type following trinity pattern."""
-
-    id: ID
-    title: str
-    content: str
-    source: Optional[str]
-    metadata: dict
-    created_at: str
-    updated_at: str
-
-
-@fraise_type
-class TVDocumentEmbedding:
-    """Document embedding table view type."""
-
-    id: ID
-    document_id: ID
-    embedding: List[float]
-    embedding_model: str
-    created_at: str
-
-
-# ✅ CORRECT PATTERN - Class-based resolvers
-@fraise_type
-class QueryRoot:
-    """Root query type for RAG system."""
-
-    documents: List[TBDocument] = fraise_field(
-        description="Get documents with optional source filtering"
-    )
-
-    async def resolve_documents(
-        self, info, limit: int = 50, source: Optional[str] = None
-    ) -> List[TBDocument]:
-        """Get documents with optional source filtering."""
-        repo = info.context["repo"]
-
-        where = {}
-        if source:
-            where["source"] = {"eq": source}
-
-        results = await repo.find(
-            "v_document",  # Use VIEW not table
-            where=where,
-            orderBy={"created_at": "DESC"},
-            limit=limit,
-        )
-
-        return [TBDocument(**doc) for doc in results]
-
-
-@fraise_type
-class MutationRoot:
-    """Root mutation type for RAG system."""
-
-    create_document: TBDocument = fraise_field(description="Create a new document")
-
-    update_document_embedding: bool = fraise_field(description="Update document embedding")
-
-    async def resolve_create_document(
-        self,
-        info,
-        title: str,
-        content: str,
-        source: Optional[str] = None,
-        metadata: Optional[dict] = None,
-    ) -> TBDocument:
-        """Create a new document."""
-        repo = info.context["repo"]
-
-        if metadata is None:
-            metadata = {}
-
-        # Call the PostgreSQL function from schema.sql
-        doc_id = await repo.call_function(
-            "create_document_with_embedding",
-            p_title=title,
-            p_content=content,
-            p_source=source,
-            p_metadata=metadata,
-            p_embedding=None,  # Will be added separately via REST endpoint
-        )
-
-        # Fetch the created document
-        result = await repo.find_one("v_document", where={"id": doc_id})
-        return TBDocument(**result)
-
-    async def resolve_update_document_embedding(
-        self,
-        info,
-        document_id: ID,
-        embedding: List[float],
-        embedding_model: str = "text-embedding-ada-002",
-    ) -> bool:
-        """Update document embedding."""
-        repo = info.context["repo"]
-
-        # Call the PostgreSQL function from schema.sql
-        result = await repo.call_function(
-            "update_document_embedding",
-            p_document_id=document_id,
-            p_embedding=embedding,
-            p_embedding_model=embedding_model,
-        )
-
-        return bool(result)
-
-
-# RAG Service class - FIXED with local model support
-class RAGService:
-    """Service for RAG operations with support for OpenAI or local models."""
-
-    def __init__(
-        self,
-        database_url: str,
-        openai_api_key: Optional[str] = None,
-        use_local_embeddings: bool = False,
-        local_model_url: str = "http://localhost:8000/v1",
-    ):
-        self.database_url = database_url
-        self.openai_api_key = openai_api_key
-        self.use_local_embeddings = use_local_embeddings
-
-        # Initialize embeddings and LLM
-        if use_local_embeddings or not openai_api_key:
-            print("ℹ️  Using local embedding model...")
-            try:
-                from local_embeddings import get_embedding_provider
-
-                self.embeddings = get_embedding_provider(
-                    provider="local" if use_local_embeddings else "auto",
-                    openai_api_key=openai_api_key,
-                )
-                print(f"✓ Embeddings: Local (dimensions: {self.embeddings.dimensions})")
-
-                # For LLM, use local vLLM server if available
-                try:
-                    from openai import AsyncOpenAI
-
-                    self.llm = AsyncOpenAI(
-                        base_url=local_model_url, api_key="not-needed-for-local"
-                    )
-                    print(f"✓ LLM: Local vLLM ({local_model_url})")
-                except ImportError:
-                    print("⚠️  openai package not installed for local LLM")
-                    self.llm = None
-
-            except Exception as e:
-                print(f"⚠️  Failed to initialize local models: {e}")
-                self.embeddings = None
-                self.llm = None
-        else:
-            print("ℹ️  Using OpenAI models...")
-            try:
-                from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-
-                self.embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-                self.llm = ChatOpenAI(openai_api_key=openai_api_key)
-                print("✓ Embeddings: OpenAI (text-embedding-ada-002)")
-                print("✓ LLM: OpenAI (gpt-3.5-turbo)")
-            except ImportError:
-                print(
-                    "⚠️  langchain-openai not installed. Install with: pip install langchain-openai"
-                )
-                self.embeddings = None
-                self.llm = None
-
-    async def semantic_search(self, query: str, limit: int = 5) -> List[dict]:
-        """Perform semantic search using raw SQL."""
-        if not self.embeddings:
-            raise HTTPException(status_code=500, detail="Embeddings not available")
-
-        # Generate query embedding (works with both OpenAI and local)
-        if hasattr(self.embeddings, "aembed_query"):
-            # Local embeddings with async support
-            query_embedding = await self.embeddings.aembed_query(query)
-        else:
-            # OpenAI embeddings (sync, run in thread)
-            query_embedding = await asyncio.to_thread(self.embeddings.embed_query, query)
-
-        # Use psycopg directly for vector search
-
-        conn = await psycopg.AsyncConnection.connect(self.database_url)
-        try:
-            async with conn.cursor() as cur:
-                await cur.execute(
-                    """
-                    SELECT
-                        d.id,
-                        d.title,
-                        d.content,
-                        d.source,
-                        d.metadata,
-                        (1 - (e.embedding <=> %s::vector))::REAL as similarity
-                    FROM tb_document d
-                    JOIN tv_document_embedding e ON d.id = e.document_id
-                    WHERE (1 - (e.embedding <=> %s::vector)) >= 0.7
-                    ORDER BY (e.embedding <=> %s::vector)
-                    LIMIT %s
-                    """,
-                    (query_embedding, query_embedding, query_embedding, limit),
-                )
-                results = await cur.fetchall()
-                return [
-                    {
-                        "id": row[0],
-                        "title": row[1],
-                        "content": row[2],
-                        "source": row[3],
-                        "metadata": row[4],
-                        "similarity": row[5],
-                    }
-                    for row in results
-                ]
-        finally:
-            await conn.close()
-
-    async def add_document_with_embedding(
-        self,
-        title: str,
-        content: str,
-        source: Optional[str] = None,
-        metadata: Optional[dict] = None,
-    ) -> UUID:
-        """Add document and generate embedding."""
-        if not self.embeddings:
-            raise HTTPException(status_code=500, detail="Embeddings not available")
-
-        # Generate embedding (works with both OpenAI and local)
-        if hasattr(self.embeddings, "aembed_query"):
-            # Local embeddings with async support
-            embedding = await self.embeddings.aembed_query(content)
-        else:
-            # OpenAI embeddings (sync, run in thread)
-            embedding = await asyncio.to_thread(self.embeddings.embed_query, content)
-
-        # Use psycopg to call the function
-
-        conn = await psycopg.AsyncConnection.connect(self.database_url)
-        try:
-            async with conn.cursor() as cur:
-                await cur.execute(
-                    """
-                    SELECT create_document_with_embedding(
-                        %s, %s, %s, %s, %s::vector, %s
-                    )
-                    """,
-                    (title, content, source, metadata or {}, embedding, "text-embedding-ada-002"),
-                )
-                result = await cur.fetchone()
-                return result[0]
-        finally:
-            await conn.close()
-
-    async def answer_question(self, question: str, context_limit: int = 3) -> dict:
-        """Answer question using RAG."""
-        if not self.llm:
-            raise HTTPException(status_code=500, detail="LLM not available")
-
-        # Get relevant documents
-        search_results = await self.semantic_search(question, limit=context_limit)
-
-        # Format context
-        context = "\n\n".join(
-            [f"Document: {doc['title']}\n{doc['content']}" for doc in search_results]
-        )
-
-        # Generate answer using LangChain
-        from langchain.chains import RetrievalQA
-        from langchain.docstore.document import Document
-
-        # Create documents for LangChain
-        docs = [
-            Document(
-                page_content=doc["content"], metadata={"title": doc["title"], "id": str(doc["id"])}
-            )
-            for doc in search_results
-        ]
-
-        # Simple QA chain
-        from langchain.chains.question_answering import load_qa_chain
-
-        chain = load_qa_chain(self.llm, chain_type="stuff")
-
-        response = await chain.arun(input_documents=docs, question=question)
-
-        return {
-            "question": question,
-            "answer": response,
-            "sources": [
-                {"id": doc["id"], "title": doc["title"], "similarity": doc["similarity"]}
-                for doc in search_results
-            ],
-        }
-
-
-# ✅ CORRECT - Use create_fraiseql_app
-app = fraiseql.create_fraiseql_app(
-    queries=[QueryRoot],
-    mutations=[MutationRoot],
-    database_url=os.getenv("DATABASE_URL", "postgresql://localhost:5432/ragdb"),
-)
-
-# RAG service instance
-rag_service = None
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Initialize RAG service."""
-    global rag_service
-    database_url = os.getenv("DATABASE_URL", "postgresql://localhost:5432/ragdb")
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    use_local = os.getenv("USE_LOCAL_EMBEDDINGS", "false").lower() in ("true", "1", "yes")
-    local_model_url = os.getenv("LOCAL_MODEL_URL", "http://localhost:8000/v1")
-
-    print("\n" + "=" * 50)
-    print("Initializing RAG Service")
-    print("=" * 50)
-
-    try:
-        rag_service = RAGService(
-            database_url=database_url,
-            openai_api_key=openai_api_key,
-            use_local_embeddings=use_local,
-            local_model_url=local_model_url,
-        )
-        print("=" * 50 + "\n")
-    except Exception as e:
-        print(f"⚠️  Failed to initialize RAG service: {e}")
-        print(
-            "Note: You can still use GraphQL operations, but embedding features won't work."
-        )
-        print("=" * 50 + "\n")
-        rag_service = None
-
-
-# Additional REST endpoints for RAG operations
 @app.post("/api/documents/search")
 async def search_endpoint(search_query: SearchQuery):
     """Search documents semantically."""
-    if not rag_service:
-        raise HTTPException(status_code=500, detail="RAG service not available")
-
-    results = await rag_service.semantic_search(search_query.query, limit=search_query.limit)
-
+    results = await rag_service().semantic_search(
+        search_query.query,
+        limit=search_query.limit,
+        similarity_threshold=search_query.similarity_threshold,
+    )
     return {"query": search_query.query, "results": results}
 
 
 @app.post("/api/rag/ask")
 async def ask_endpoint(rag_query: RAGQuery):
-    """Ask question using RAG."""
-    if not rag_service:
-        raise HTTPException(status_code=500, detail="RAG service not available")
-
-    response = await rag_service.answer_question(
-        rag_query.question, context_limit=rag_query.context_limit
+    """Answer a question from the documents."""
+    return await rag_service().answer_question(
+        rag_query.question,
+        context_limit=rag_query.context_limit,
+        similarity_threshold=rag_query.similarity_threshold,
     )
-
-    return response
 
 
 @app.post("/api/documents/embed")
 async def embed_document(doc: DocumentCreate):
-    """Create document with embedding."""
-    if not rag_service:
-        raise HTTPException(status_code=500, detail="RAG service not available")
-
-    doc_id = await rag_service.add_document_with_embedding(
+    """Create a document with its embedding."""
+    doc_id = await rag_service().add_document_with_embedding(
         doc.title, doc.content, source=doc.source, metadata=doc.metadata
     )
-
     return {"id": doc_id, "message": "Document created with embedding"}
 
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint for Docker."""
+# fraiseql serves /health itself (used by the Dockerfile); this reports the models
+@app.get("/api/rag/status")
+async def rag_status():
+    """Report whether embeddings and the LLM are available."""
+    service = rag_service()
     return {
         "status": "healthy",
-        "rag_service": "available" if rag_service else "unavailable",
-        "openai_configured": rag_service.embeddings is not None if rag_service else False,
+        "embeddings": "available" if service.embeddings is not None else "unavailable",
+        "llm": "available" if service.llm is not None else "unavailable",
     }
 
 
@@ -456,22 +282,18 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
 
     print("🚀 RAG System Example")
-    print("📚 Features:")
-    print("   • Document storage with trinity pattern")
-    print("   • Vector embeddings with pgvector")
-    print("   • Semantic search via GraphQL")
-    print("   • RAG question answering")
-    print("   • Support for OpenAI or local embeddings")
     print(f"\n📝 GraphQL endpoint: http://localhost:{port}/graphql")
     print("🔍 REST endpoints:")
     print("   • POST /api/documents/search - Semantic search")
     print("   • POST /api/rag/ask - RAG question answering")
     print("   • POST /api/documents/embed - Create with embedding")
+    print("   • GET /api/rag/status - Embeddings and LLM availability")
     print("   • GET /health - Health check")
     print("\n⚙️  Environment variables:")
     print("   • DATABASE_URL - PostgreSQL connection")
-    print("   • OPENAI_API_KEY - For OpenAI embeddings (optional)")
-    print("   • USE_LOCAL_EMBEDDINGS - Set to 'true' for local models")
+    print("   • OPENAI_API_KEY - For OpenAI embeddings and answers")
+    print("   • USE_LOCAL_EMBEDDINGS - 'true' for sentence-transformers and a local vLLM")
     print("   • LOCAL_MODEL_URL - vLLM server URL (default: http://localhost:8000/v1)")
+    print("   • LLM_MODEL - chat model name (default: gpt-4o-mini, or local-model)")
 
     uvicorn.run(app, host="0.0.0.0", port=port)

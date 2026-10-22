@@ -1,349 +1,114 @@
 # RAG System Example
 
-A complete Retrieval-Augmented Generation (RAG) system built with FraiseQL, LangChain, and PostgreSQL pgvector. This example demonstrates how to build production-ready RAG applications with semantic search, document management, and question-answering capabilities.
+Retrieval-augmented generation with FraiseQL and PostgreSQL pgvector: store
+documents with their embeddings, find the ones closest to a question, and answer
+from them with a chat model.
 
-## 🏗️ Architecture
+- **GraphQL** (fraiseql) serves the documents: `documents(source, limit)` and
+  `document(id)`.
+- **REST** endpoints do the model work: embed and store a document, search
+  semantically, answer a question.
+- Models: OpenAI, or local ones (sentence-transformers for embeddings, a vLLM
+  server for answers). Both answer through the OpenAI chat API.
 
-This example follows the **Trinity Pattern** for database design:
+## Database
 
-- **`tb_document`** - Command table for document storage
-- **`v_document`** - Read view for document access
-- **`tv_document_embedding`** - Table view with vector embeddings for semantic search
+`schema.sql` follows the trinity pattern:
 
-## 🚀 Features
+- `tb_document`: the documents (command side)
+- `v_document`: the view fraiseql reads (query side)
+- `tv_document_embedding`: one embedding per document, with an HNSW index
+- `create_document_with_embedding`, `update_document_embedding` and
+  `search_documents_by_embedding`: the SQL functions the REST endpoints call
 
-- **Document Management**: Create, store, and manage documents with metadata
-- **Vector Embeddings**: Automatic embedding generation using OpenAI or local models
-- **Semantic Search**: Find similar documents using cosine similarity
-- **RAG Question Answering**: Answer questions using retrieved context
-- **GraphQL API**: Full GraphQL schema for all operations
-- **REST Endpoints**: Additional REST endpoints for RAG-specific operations
-- **Performance Optimized**: HNSW indexes for fast vector search
+The embedding column is `vector(1536)`, the size of OpenAI's
+`text-embedding-ada-002`. With another model, change it to that model's size
+(384 for the default local model, `all-MiniLM-L6-v2`) before loading the schema.
 
-## 📋 Prerequisites
-
-- PostgreSQL 14+ with pgvector extension
-- Python 3.8+
-- OpenAI API key (or local embedding model)
-
-## 🛠️ Setup
-
-### 1. Install Dependencies
+## Running it
 
 ```bash
-pip install -r requirements.txt
-```
-
-### 2. Database Setup
-
-```bash
-# Create database
 createdb ragdb
+psql ragdb -f schema.sql
 
-# Enable pgvector extension
-psql ragdb -c "CREATE EXTENSION vector;"
-
-# Load schema
-psql ragdb < schema.sql
-```
-
-### 3. Environment Configuration
-
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit with your configuration
-nano .env
-```
-
-Required environment variables:
-
-```bash
-DATABASE_URL=postgresql://localhost:5432/ragdb
-OPENAI_API_KEY=your_openai_api_key_here
-```
-
-### 4. Run the Application
-
-```bash
+pip install -r requirements.txt
+export DATABASE_URL=postgresql://localhost:5432/ragdb
+export OPENAI_API_KEY=...          # or USE_LOCAL_EMBEDDINGS=true, see local-models.md
 python app.py
 ```
 
-The application will be available at:
+Or with Docker, see [docker.md](docker.md).
 
-- **GraphQL Playground**: http://localhost:8000/graphql
-- **REST API**: http://localhost:8000/api
+| Variable | Default | Use |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://localhost:5432/ragdb` | PostgreSQL with pgvector |
+| `OPENAI_API_KEY` | — | OpenAI embeddings and answers |
+| `USE_LOCAL_EMBEDDINGS` | `false` | `true` for sentence-transformers and a local vLLM |
+| `LOCAL_MODEL_URL` | `http://localhost:8000/v1` | the vLLM server |
+| `LLM_MODEL` | `gpt-4o-mini`, or `local-model` | chat model name |
+| `EMBEDDING_MODEL` | `text-embedding-ada-002` | recorded with each embedding |
 
-## 📚 Usage Examples
+## Using it
 
-### GraphQL Operations
+Add a document; the app embeds its content:
 
-#### Create Document
-
-```graphql
-mutation CreateDocument {
-  createDocument(
-    title: "Introduction to RAG"
-    content: "Retrieval-Augmented Generation combines vector search with language models..."
-    source: "documentation"
-    metadata: {category: "ai-ml", difficulty: "intermediate"}
-  ) {
-    id
-    title
-    createdAt
-  }
-}
+```bash
+curl -X POST http://localhost:8000/api/documents/embed \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Sourdough", "content": "Sourdough bread needs a starter and a long rise.",
+       "source": "kitchen", "metadata": {"tags": ["bread"]}}'
 ```
 
-#### List Documents
+Search by meaning (`similarity_threshold` defaults to 0.7):
+
+```bash
+curl -X POST http://localhost:8000/api/documents/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "How does FraiseQL improve performance?", "limit": 3}'
+```
+
+Ask a question; the answer comes with the documents it used:
+
+```bash
+curl -X POST http://localhost:8000/api/rag/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question": "How does FraiseQL achieve better performance?", "context_limit": 3}'
+```
+
+Read documents with GraphQL at `http://localhost:8000/graphql`:
 
 ```graphql
-query GetDocuments {
-  documents(limit: 10) {
+{
+  documents(source: "documentation", limit: 5) {
     id
     title
-    source
     metadata
     createdAt
   }
 }
 ```
 
-#### Semantic Search
+`GET /api/rag/status` says whether embeddings and the LLM are available;
+`GET /health` is fraiseql's own health check.
 
-```graphql
-query SearchDocuments {
-  searchDocuments(
-    queryEmbedding: [0.1, 0.2, 0.3, ...],  # Your query embedding
-    limit: 5,
-    similarityThreshold: 0.7
-  ) {
-    id
-    title
-    content
-    similarity
-  }
-}
-```
+## How the GraphQL side works
 
-### REST API Operations
+`v_document` has plain columns rather than a JSONB `data` column, so `Document`
+is declared with `jsonb_column=None` and registered with
+`register_type_for_view(..., table_columns=..., has_jsonb_data=False)`. The
+`column_mapping` entry lets `order_by` use the `created_at` column as well.
 
-#### Semantic Search
+## Files
 
-```bash
-curl -X POST "http://localhost:8000/api/documents/search" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "How does RAG work?",
-    "limit": 5
-  }'
-```
+- `app.py`: the GraphQL types and queries, the RAG service and the REST endpoints
+- `local_embeddings.py`: embedding providers (OpenAI, sentence-transformers,
+  OpenAI-compatible servers)
+- `schema.sql`: tables, view, functions and sample documents
+- `docker-compose.yml`, `Dockerfile`, [docker.md](docker.md): running with Docker
+- [local-models.md](local-models.md): running without OpenAI
+- `test-rag-system.sh`: an end-to-end check against the Docker setup
 
-#### RAG Question Answering
+## Further reading
 
-```bash
-curl -X POST "http://localhost:8000/api/rag/ask" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "question": "What are the benefits of using RAG systems?",
-    "context_limit": 3
-  }'
-```
-
-#### Create Document with Embedding
-
-```bash
-curl -X POST "http://localhost:8000/api/documents/embed" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Vector Databases",
-    "content": "Vector databases store high-dimensional vectors for similarity search...",
-    "source": "blog",
-    "metadata": {"category": "database", "author": "AI Engineer"}
-  }'
-```
-
-## 🔧 Python Client Usage
-
-```python
-import asyncio
-from app import RAGService
-
-async def main():
-    # Initialize RAG service
-    rag = RAGService(
-        database_url="postgresql://localhost:5432/ragdb",
-        openai_api_key="your-api-key"
-    )
-
-    # Add document with embedding
-    doc_id = await rag.add_document_with_embedding(
-        title="FraiseQL Guide",
-        content="FraiseQL automatically generates GraphQL APIs from PostgreSQL...",
-        source="docs"
-    )
-    print(f"Created document: {doc_id}")
-
-    # Semantic search
-    results = await rag.semantic_search("GraphQL generation", limit=3)
-    for doc in results:
-        print(f"{doc['title']}: {doc['similarity']:.3f}")
-
-    # RAG question answering
-    answer = await rag.answer_question("How does FraiseQL work?")
-    print(f"Answer: {answer['answer']}")
-    print(f"Sources: {[s['title'] for s in answer['sources']]}")
-
-asyncio.run(main())
-```
-
-## 🎯 Key Concepts
-
-### Trinity Pattern
-
-The database schema follows the Trinity Pattern:
-
-1. **`tb_document`** - Transaction table for writes (commands)
-2. **`v_document`** - View for reads (queries)
-3. **`tv_document_embedding`** - Table view with computed columns (vectors)
-
-This pattern provides:
-
-- Clear separation of concerns
-- Optimized read/write performance
-- Consistent naming conventions
-
-### Vector Similarity Search
-
-The system uses cosine similarity for semantic search:
-
-```sql
--- Similarity calculation (0 = identical, 2 = opposite)
-similarity = 1 - (embedding <=> query_embedding)
-
--- HNSW index for fast approximate search
-CREATE INDEX ON tv_document_embedding
-USING hnsw (embedding vector_cosine_ops);
-```
-
-### RAG Pipeline
-
-1. **Document Processing**: Chunk and embed documents
-2. **Vector Storage**: Store embeddings in PostgreSQL
-3. **Retrieval**: Find relevant documents via similarity search
-4. **Generation**: Use retrieved context in LLM prompts
-
-## 📊 Performance Considerations
-
-### Vector Search Optimization
-
-- **HNSW Indexes**: Use for production workloads
-- **Dimensionality**: Match embedding model dimensions (1536 for ada-002)
-- **Similarity Threshold**: Filter out low-similarity results
-- **Batch Operations**: Process multiple documents efficiently
-
-### Database Indexes
-
-```sql
--- Essential indexes for performance
-CREATE INDEX ON tb_document (created_at);
-CREATE INDEX ON tb_document (source);
-CREATE INDEX ON tv_document_embedding (document_id);
-CREATE INDEX ON tv_document_embedding USING hnsw (embedding vector_cosine_ops);
-```
-
-## 🔍 Monitoring
-
-### Query Performance
-
-```sql
--- Check index usage
-EXPLAIN (ANALYZE, BUFFERS)
-SELECT d.title, (1 - (e.embedding <=> query_embedding)) as similarity
-FROM tb_document d
-JOIN tv_document_embedding e ON d.id = e.document_id
-ORDER BY (e.embedding <=> query_embedding)
-LIMIT 10;
-```
-
-### Vector Statistics
-
-```sql
--- Embedding statistics
-SELECT
-  COUNT(*) as total_documents,
-  COUNT(DISTINCT embedding_model) as models_used,
-  AVG(ARRAY_LENGTH(embedding, 1)) as avg_dimensions
-FROM tv_document_embedding;
-```
-
-## 🧪 Testing
-
-```bash
-# Test database connection
-python -c "from app import app; print('✅ App loads successfully')"
-
-# Test GraphQL schema
-curl http://localhost:8000/graphql -H "Content-Type: application/json" -d '{"query":"{ __schema { types { name } } }"}'
-
-# Test semantic search
-curl -X POST "http://localhost:8000/api/documents/search" \
-  -H "Content-Type: application/json" \
-  -d '{"query": "test query", "limit": 3}'
-```
-
-## 🚀 Production Deployment
-
-### Environment Variables
-
-```bash
-# Production settings
-DATABASE_URL=postgresql://user:pass@host:5432/ragdb
-OPENAI_API_KEY=prod-api-key
-EMBEDDING_MODEL=text-embedding-ada-002
-SIMILARITY_THRESHOLD=0.7
-MAX_CONTEXT_DOCUMENTS=5
-```
-
-### Docker Deployment
-
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install -r requirements.txt
-
-COPY . .
-EXPOSE 8000
-
-CMD ["python", "app.py"]
-```
-
-### Scaling Considerations
-
-- **Connection Pooling**: Use PgBouncer for database connections
-- **Caching**: Cache frequent queries and embeddings
-- **Batch Processing**: Process documents in batches
-- **Monitoring**: Track query performance and vector index health
-
-## 🔗 Related Examples
-
-- **Vector Search**: `/examples/vector_search` - Advanced vector operations
-- **Blog API**: `/examples/blog_api` - GraphQL patterns
-
-## 📖 Further Reading
-
-- [FraiseQL Documentation](https://fraiseql.com/docs)
-- [pgvector Documentation](https://github.com/pgvector/pgvector)
-- [LangChain RAG Guide](https://python.langchain.com/docs/use_cases/question_answering)
-- [Trinity Pattern Guide](../../docs/core/trinity-pattern.md)
-
-## 🤝 Contributing
-
-Contributions welcome! Please read the contributing guidelines and submit pull requests.
-
-## 📄 License
-
-MIT License - see LICENSE file for details.
+- [RAG tutorial](../../docs/ai-ml/rag-tutorial.md)
+- [pgvector](https://github.com/pgvector/pgvector)

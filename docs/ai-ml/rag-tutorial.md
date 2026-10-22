@@ -130,18 +130,14 @@ You should see:
 
 ```
 🚀 RAG System Example
-📚 Features:
-   • Document storage with trinity pattern
-   • Vector embeddings with pgvector
-   • Semantic search via GraphQL
-   • RAG question answering
-   • LangChain integration
 
 📝 GraphQL endpoint: http://localhost:8000/graphql
 🔍 REST endpoints:
    • POST /api/documents/search - Semantic search
    • POST /api/rag/ask - RAG question answering
    • POST /api/documents/embed - Create with embedding
+   • GET /api/rag/status - Embeddings and LLM availability
+   • GET /health - Health check
 ```
 
 Visit http://localhost:8000/graphql to open the GraphQL playground.
@@ -150,52 +146,10 @@ Visit http://localhost:8000/graphql to open the GraphQL playground.
 
 ## Step 3: Add Documents
 
-### Using GraphQL Mutations
+### Using the REST API
 
-Open the GraphQL playground and create your first document:
-
-```graphql
-mutation CreateFirstDocument {
-  createDocument(
-    title: "What is FraiseQL?"
-    content: "FraiseQL is a PostgreSQL-first GraphQL framework for the LLM era. It uses a Rust pipeline to transform PostgreSQL JSONB directly to HTTP responses, eliminating Python serialization overhead. The framework follows database-first principles with JSONB views, automatic session variable injection for security, and built-in caching, monitoring, and error tracking - all within PostgreSQL."
-    source: "documentation"
-    metadata: {
-      category: "technical"
-      difficulty: "beginner"
-      tags: ["introduction", "architecture"]
-    }
-  ) {
-    id
-    title
-    createdAt
-  }
-}
-```
-
-### Add More Sample Documents
-
-```graphql
-mutation AddMoreDocuments {
-  createDocument(
-    title: "FraiseQL Performance Benefits"
-    content: "FraiseQL delivers 10-100x performance improvements through its Rust pipeline that bypasses Python object serialization. Traditional frameworks: PostgreSQL → Rows → ORM → Python objects → GraphQL serialize → JSON. FraiseQL: PostgreSQL → JSONB → Rust field selection → HTTP Response. This eliminates the Python bottleneck while maintaining full GraphQL capabilities."
-    source: "documentation"
-    metadata: {
-      category: "performance"
-      difficulty: "intermediate"
-      tags: ["performance", "rust", "optimization"]
-    }
-  ) {
-    id
-    title
-  }
-}
-```
-
-### Using REST API
-
-Alternatively, use the REST endpoint to create documents with automatic embeddings:
+Documents are added through the REST endpoint, which embeds their content. (The
+GraphQL API reads documents: `documents` and `document`.)
 
 ```bash
 curl -X POST "http://localhost:8000/api/documents/embed" \
@@ -246,11 +200,7 @@ The application automatically generates embeddings when you use the `/api/docume
 
 Now for the magic! Search documents by meaning, not just keywords.
 
-### Using GraphQL for Semantic Search
-
-First, you need a query embedding. You can generate one using Python:
-
-### Using the REST API (Recommended)
+### Using the REST API
 
 The REST API handles embedding generation automatically:
 
@@ -273,73 +223,6 @@ Expected response:
       "id": "123e4567-e89b-12d3-a456-426614174000",
       "title": "FraiseQL Performance Benefits",
       "content": "FraiseQL delivers 10-100x performance improvements...",
-      "similarity": 0.92,
-      "source": "documentation"
-    }
-  ]
-}
-```
-
-### Understanding Similarity Scores
-
-- **0.9 - 1.0**: Very similar (exact meaning match)
-- **0.7 - 0.9**: Similar (related concepts)
-- **0.5 - 0.7**: Somewhat related (loose connection)
-- **0.0 - 0.5**: Not similar (different topics)
-
-### Advanced: Using GraphQL (Optional)
-
-If you need GraphQL for semantic search, you'll need to generate embeddings separately:
-
-```python
-# Generate embedding first
-from langchain_openai import OpenAIEmbeddings
-
-embeddings = OpenAIEmbeddings(openai_api_key="your-key")
-query_embedding = embeddings.embed_query("your search query")
-print(query_embedding)  # Copy this
-```
-
-Then use in GraphQL (note: this is cumbersome, prefer REST API):
-
-```graphql
-query SemanticSearch {
-  searchDocuments(
-    queryEmbedding: [0.01, -0.02, ...]  # Paste your 1536-dim embedding
-    limit: 5
-  ) {
-    id
-    title
-    similarity
-  }
-}
-```
-
-**For most use cases, stick with the REST API** - it's simpler and more practical.
-
-### Using REST API for Semantic Search
-
-The REST API handles embedding generation automatically:
-
-```bash
-curl -X POST "http://localhost:8000/api/documents/search" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "query": "How does FraiseQL improve GraphQL performance?",
-    "limit": 5
-  }'
-```
-
-Expected response:
-
-```json
-{
-  "query": "How does FraiseQL improve GraphQL performance?",
-  "results": [
-    {
-      "id": "123e4567-e89b-12d3-a456-426614174000",
-      "title": "FraiseQL Performance Benefits",
-      "content": "FraiseQL delivers 10-100x performance improvements through its Rust pipeline...",
       "similarity": 0.92,
       "source": "documentation"
     }
@@ -428,19 +311,11 @@ asyncio.run(rag_demo())
 
 ### Filtering with Metadata
 
-Combine semantic search with metadata filters:
+List the documents from one source with GraphQL:
 
 ```graphql
-query FilteredSearch {
-  documents(
-    where: {
-      metadata: {
-        path: "category"
-        equals: "technical"
-      }
-    }
-    limit: 10
-  ) {
+query DocumentationSources {
+  documents(source: "documentation", limit: 10) {
     id
     title
     metadata
@@ -833,13 +708,13 @@ You've successfully:
 ✅ **Created** a Trinity Pattern schema for documents and embeddings
 ✅ **Built** a GraphQL API with FraiseQL
 ✅ **Implemented** semantic search with vector similarity
-✅ **Developed** RAG question answering with LangChain
+✅ **Developed** RAG question answering with an OpenAI-compatible chat model
 ✅ **Optimized** performance with proper indexing
 ✅ **Deployed** a production-ready RAG system
 
 Your RAG system is now ready for production use! You can:
 
-- Add documents via GraphQL mutations or REST API
+- Add documents through the REST API and read them with GraphQL
 - Perform semantic search to find relevant content
 - Answer questions using retrieved context
 - Scale to thousands of documents with proper indexing
