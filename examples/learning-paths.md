@@ -187,7 +187,7 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Performance benchmarking
 - ✅ High-throughput patterns
 
-**[`complex_nested_where_clauses.py`](complex_nested_where_clauses.py)** - Advanced queries
+**[`nested_array_filtering.py`](nested_array_filtering.py)** - Advanced queries
 
 - ✅ Complex filtering patterns
 - ✅ Nested query optimization

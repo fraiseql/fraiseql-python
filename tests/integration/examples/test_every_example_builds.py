@@ -53,12 +53,10 @@ fraiseql.build_fraiseql_schema()
 
 _KNOWN_FAILURES = {
     "examples/blog_api/app.py": "opens a connection pool at import",
-    "examples/complex_nested_where_clauses.py": "passes the SQL where type as an argument",
     "examples/ecommerce/app.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/models.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/queries.py": "Decimal fields: builds with #575's Decimal scalar",
-    "examples/enhanced_where_clauses.py": "passes the SQL where type as an argument",
     "examples/enterprise_patterns/cqrs/main.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
     "examples/enterprise_patterns/cqrs/mutations.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",
     "examples/enterprise_patterns/cqrs/queries.py": "its types.py is shadowed by the stdlib; then imports fraiseql.FraiseQL",

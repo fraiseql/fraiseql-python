@@ -34,7 +34,7 @@ These examples demonstrate real-world patterns and integrations for production a
 | [`caching_example.py`](caching_example.py) | PostgreSQL-native caching | Performance, Redis alternatives | 15 min |
 | [`security/`](security/README.md) | Authentication & security patterns | JWT, role-based access, validation | 25 min |
 | [`turbo_router_with_complexity.py`](turbo_router_with_complexity.py) | Pre-compiled query routing | Performance optimization, query planning | 20 min |
-| [`complex_nested_where_clauses.py`](complex_nested_where_clauses.py) | Advanced query patterns | Complex filtering, nested conditions | 15 min |
+| [`nested_array_filtering.py`](nested_array_filtering.py) | Advanced query patterns | Complex filtering, AND/OR/NOT, nested arrays | 15 min |
 
 ### 🟠 Advanced (Production Ready)
 
