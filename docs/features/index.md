@@ -131,8 +131,8 @@ Complete overview of all FraiseQL capabilities.
 
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
-| **FastAPI Integration** | ✅ Stable | See examples | [fastapi](../../examples/fastapi/) |
-| **Starlette Integration** | ✅ Stable | See examples | [fastapi](../../examples/fastapi/) |
+| **FastAPI Integration** | ✅ Stable | See examples | [blog_simple](../../examples/blog_simple/) |
+| **Starlette Integration** | ✅ Stable | See examples | — |
 | **ASGI Applications** | ✅ Stable | Built-in | All examples |
 | **TypeScript Client Generation** | ✅ Stable | See examples | — |
 

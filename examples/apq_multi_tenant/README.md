@@ -558,7 +558,6 @@ pytest tests/integration/test_apq_multi_tenant.py -v
 ## Related Examples
 
 - [`../turbo_router_with_complexity.py`](../turbo_router_with_complexity.py) - Pre-compiled queries for even better performance
-- [`../fastapi/`](../fastapi/README.md) - Complete FastAPI integration with APQ
 - [`../security/`](../security/README.md) - JWT authentication patterns
 
 ## References
