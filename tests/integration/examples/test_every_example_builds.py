@@ -57,7 +57,6 @@ _KNOWN_FAILURES = {
     "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/queries.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/existing_complex_where_syntax.py": "Decimal fields (#575)",
-    "examples/token_revocation_example.py": "needs redis",
 }
 
 

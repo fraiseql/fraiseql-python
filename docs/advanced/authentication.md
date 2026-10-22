@@ -773,41 +773,42 @@ revocation_service = TokenRevocationService(
     )
 )
 
-# Start cleanup task in application lifecycle
-@app.on_event("startup")
-async def startup():
-    await revocation_service.start()
+# Start the cleanup task with the app. Pass lifespan= to create_fraiseql_app:
+# FastAPI doesn't run @app.on_event handlers on an app that has a lifespan.
+from contextlib import asynccontextmanager
 
-@app.on_event("shutdown")
-async def shutdown():
+
+@asynccontextmanager
+async def lifespan(app):
+    await revocation_service.start()
+    yield
+    await revocation_service.stop()
+
+
+app = create_fraiseql_app(..., lifespan=lifespan)
+```
+
+### PostgreSQL Store (Production)
+
+The in-memory store is per process. `PostgreSQLRevocationStore` keeps revocations
+in a table (`tb_token_revocation`, created on first use) that every worker shares.
+It takes a psycopg `AsyncConnectionPool`, such as the one fraiseql opens before
+your lifespan runs:
+
+```python
+from fraiseql.auth import PostgreSQLRevocationStore
+from fraiseql.fastapi.dependencies import get_db_pool
+
+
+@asynccontextmanager
+async def lifespan(app):
+    revocation_service.store = PostgreSQLRevocationStore(get_db_pool())
+    await revocation_service.start()
+    yield
     await revocation_service.stop()
 ```
 
-### Redis Store (Production)
-
-```python
-from fraiseql.auth import RedisRevocationStore, TokenRevocationService
-import redis.asyncio as redis
-
-# Create Redis client
-redis_client = redis.from_url("redis://localhost:6379/0")
-
-# Create revocation store
-revocation_store = RedisRevocationStore(
-    redis_client=redis_client,
-    ttl=86400  # 24 hours
-)
-
-# Create revocation service
-revocation_service = TokenRevocationService(
-    store=revocation_store,
-    config=RevocationConfig(
-        enabled=True,
-        check_revocation=True,
-        ttl=86400
-    )
-)
-```
+See `examples/token_revocation_example.py` for both stores with an Auth0 provider.
 
 ### Integration with Auth Provider
 
