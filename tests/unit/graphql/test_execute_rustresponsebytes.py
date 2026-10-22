@@ -125,12 +125,11 @@ async def test_execute_graphql_normal_execution_unchanged() -> None:
 
 @pytest.mark.asyncio
 async def test_execute_graphql_handles_resolver_errors_with_rustresponsebytes() -> None:
-    """Test that resolver errors are handled properly with RustResponseBytes.
+    """A field's error isn't lost when another root field returns RustResponseBytes.
 
-    🔴 RED Phase (Cycle 1.2): Test that if a resolver throws an error but also
-    has RustResponseBytes in play, we handle it gracefully.
-
-    This ensures we don't break error handling when RustResponseBytes is present.
+    One field's RustResponseBytes holds that field only, so it can't be the whole
+    response of an operation with two root fields: it used to be returned as is,
+    and the other field and its error were dropped. The result now carries both.
     """
     # Track if resolver was called
     call_count = {"count": 0}
@@ -181,12 +180,7 @@ async def test_execute_graphql_handles_resolver_errors_with_rustresponsebytes() 
         source=query,
     )
 
-    # 🎯 ASSERTION: Even with errors, RustResponseBytes should be returned
-    # The middleware should have captured RustResponseBytes from the first field
-    assert isinstance(result, RustResponseBytes), (
-        f"Expected RustResponseBytes even with errors in other fields, got {type(result)}. "
-        "RustResponseBytes pass-through should work even when other fields have errors."
-    )
-
-    # Verify the bytes match
-    assert bytes(result) == mock_response
+    assert not isinstance(result, RustResponseBytes)
+    assert result.data == {"products": [{"id": "1", "name": "Test"}], "otherField": None}
+    assert [error.path for error in result.errors] == [["otherField"]]
+    assert "Simulated resolver error" in result.errors[0].message

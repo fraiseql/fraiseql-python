@@ -200,6 +200,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `native_dimensions`. Top-level sort fields on such a view now sort on the
   column, `t."field"`. A `column_mapping={"field": "field"}` added as a
   workaround still works and can be removed.
+### Fixed
+
+- **An operation with several mutations answers each of them.** In HTTP mode
+  `mutation { a: createTag(...) {...} b: createTag(...) {...} }` ran both
+  mutations but returned one result, the last, under the field's name rather
+  than its alias: fraiseql passed the response Rust built for one field through
+  as the whole HTTP body. The fields' results are now merged into one response,
+  each under its response key, with the errors of any field that failed. An
+  operation with one root field still gets Rust's response as is.
 
 ## [1.29.1] - 2026-10-19
 
