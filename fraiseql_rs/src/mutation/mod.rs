@@ -397,21 +397,23 @@ impl MutationStatus {
             MutationStatus::Noop(_) => 422, // Validation/business rule
             MutationStatus::Error(reason) => {
                 let reason_lower = reason.to_lowercase();
+                // "failed:<reason>", what the trinity helpers return
+                // (failed:validation, failed:not_found, failed:duplicate), is read
+                // like "<reason>:"; any other "failed:" status is a server error
+                let (category, failed) = match reason_lower.strip_prefix("failed:") {
+                    Some(rest) => (rest.split(':').next().unwrap_or(""), true),
+                    None => (reason_lower.split(':').next().unwrap_or(""), false),
+                };
                 // Map error reasons to HTTP-like codes
-                if reason_lower.starts_with("not_found:") {
-                    404
-                } else if reason_lower.starts_with("validation:") {
-                    422
-                } else if reason_lower.starts_with("unauthorized:") {
-                    401
-                } else if reason_lower.starts_with("forbidden:") {
-                    403
-                } else if reason_lower.starts_with("conflict:") {
-                    409
-                } else if reason_lower.starts_with("timeout:") {
-                    408
-                } else {
-                    500
+                match category {
+                    "not_found" => 404,
+                    "validation" => 422,
+                    "unauthorized" => 401,
+                    "forbidden" => 403,
+                    "conflict" => 409,
+                    "duplicate" if failed => 409,
+                    "timeout" => 408,
+                    _ => 500,
                 }
             },
         }

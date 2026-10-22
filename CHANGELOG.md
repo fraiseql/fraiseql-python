@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`failed:validation`, `failed:not_found` and `failed:duplicate` get the error
+  codes 422, 404 and 409.** The trinity helpers in
+  `migrations/trinity/005_add_mutation_response.sql` (`mutation_validation_error`,
+  `mutation_not_found`, `mutation_conflict`) return these statuses, and the error
+  type's `code` (and each `errors[].code`) was 500 for all of them: only the
+  `validation:`, `not_found:` and `conflict:` prefixes had their codes. A
+  `failed:<reason>` status is now read like `<reason>:` (`unauthorized`,
+  `forbidden`, `timeout` too; `duplicate` is a conflict); any other `failed:`
+  status stays 500. The `status` string is unchanged.
+  `MutationErrorConfig.get_error_code` maps the same way, and now gives
+  `validation:*` 422 as well.
+
+### Fixed
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

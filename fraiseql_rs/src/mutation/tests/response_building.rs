@@ -230,7 +230,7 @@ fn test_build_full_error_response() {
 
     let data = &response["data"]["createUser"];
     assert_eq!(data["__typename"], "CreateUserError");
-    assert_eq!(data["code"], 500); // failed:* (validation:* would be 422)
+    assert_eq!(data["code"], 422); // failed:validation, like validation:*
     assert_eq!(data["message"], "Email already exists");
 }
 
@@ -1276,6 +1276,6 @@ fn test_error_response_field_filtering() {
 
     // errors is filtered out; this builder always writes code (the selection
     // document of build_mutation_response_selected leaves it out unless selected)
-    assert_eq!(data["code"], 500);
+    assert_eq!(data["code"], 422);
     assert!(!data.as_object().unwrap().contains_key("errors"));
 }

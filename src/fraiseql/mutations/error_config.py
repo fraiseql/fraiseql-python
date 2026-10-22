@@ -137,32 +137,25 @@ class MutationErrorConfig:
         if status_lower.startswith(("noop:", "blocked:", "skipped:", "ignored:")):
             return 422  # Unprocessable Entity
 
-        # Resource not found
-        if status_lower.startswith("not_found:"):
-            return 404  # Not Found
-
-        # Authentication failures
-        if status_lower.startswith("unauthorized:"):
-            return 401  # Unauthorized
-
-        # Permission failures
-        if status_lower.startswith("forbidden:"):
-            return 403  # Forbidden
-
-        # Resource conflicts
-        if status_lower.startswith("conflict:"):
+        # "failed:<reason>", what the trinity helpers return (failed:validation,
+        # failed:not_found, failed:duplicate), is read like "<reason>:"; any other
+        # "failed:" status is a system failure
+        failed = status_lower.startswith("failed:")
+        category = status_lower.removeprefix("failed:").split(":", 1)[0]
+        if failed and category == "duplicate":
             return 409  # Conflict
+        return _ERROR_CODES.get(category, 500)
 
-        # Timeouts
-        if status_lower.startswith("timeout:"):
-            return 408  # Request Timeout
 
-        # System failures
-        if status_lower.startswith("failed:"):
-            return 500  # Internal Server Error
-
-        # Unknown errors
-        return 500
+# Codes of the error status prefixes, as the Rust response builder maps them
+_ERROR_CODES = {
+    "validation": 422,  # Unprocessable Entity
+    "not_found": 404,  # Not Found
+    "unauthorized": 401,  # Unauthorized
+    "forbidden": 403,  # Forbidden
+    "conflict": 409,  # Conflict
+    "timeout": 408,  # Request Timeout
+}
 
 
 # Updated default configuration
