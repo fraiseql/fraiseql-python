@@ -4,10 +4,7 @@
 //! without PyO3 overhead, focusing on the raw transformation speed.
 
 use criterion::{Criterion, Throughput, black_box, criterion_group, criterion_main};
-use fraiseql_rs::core::{
-    arena::Arena,
-    transform::{ByteBuf, TransformConfig, ZeroCopyTransformer},
-};
+use fraiseql_rs::core::transform::{ByteBuf, TransformConfig, ZeroCopyTransformer};
 
 /// Generate small workload: 10 objects, 5 fields each (~1KB total)
 fn generate_small_workload() -> Vec<String> {
@@ -45,7 +42,6 @@ fn benchmark_zero_copy_small(c: &mut Criterion) {
 
     group.bench_function("transform_10_objects", |b| {
         b.iter(|| {
-            let arena = Arena::with_capacity(8192);
             let config = TransformConfig {
                 add_typename: true,
                 camel_case: true,
@@ -54,7 +50,7 @@ fn benchmark_zero_copy_small(c: &mut Criterion) {
                 max_depth: 64,
             };
 
-            let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
+            let mut transformer = ZeroCopyTransformer::new(config, Some("User"), None);
 
             for json_str in &workload {
                 let mut output = ByteBuf::with_estimated_capacity(json_str.len(), &config);
@@ -75,7 +71,6 @@ fn benchmark_zero_copy_medium(c: &mut Criterion) {
 
     group.bench_function("transform_100_objects", |b| {
         b.iter(|| {
-            let arena = Arena::with_capacity(65536);
             let config = TransformConfig {
                 add_typename: true,
                 camel_case: true,
@@ -84,7 +79,7 @@ fn benchmark_zero_copy_medium(c: &mut Criterion) {
                 max_depth: 64,
             };
 
-            let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
+            let mut transformer = ZeroCopyTransformer::new(config, Some("User"), None);
 
             for json_str in &workload {
                 let mut output = ByteBuf::with_estimated_capacity(json_str.len(), &config);
@@ -106,7 +101,6 @@ fn benchmark_zero_copy_large(c: &mut Criterion) {
 
     group.bench_function("transform_10000_objects", |b| {
         b.iter(|| {
-            let arena = Arena::with_capacity(524288); // 512KB arena
             let config = TransformConfig {
                 add_typename: true,
                 camel_case: true,
@@ -115,7 +109,7 @@ fn benchmark_zero_copy_large(c: &mut Criterion) {
                 max_depth: 64,
             };
 
-            let mut transformer = ZeroCopyTransformer::new(&arena, config, Some("User"), None);
+            let mut transformer = ZeroCopyTransformer::new(config, Some("User"), None);
 
             for json_str in &workload {
                 let mut output = ByteBuf::with_estimated_capacity(json_str.len(), &config);
@@ -132,13 +126,6 @@ fn benchmark_components(c: &mut Criterion) {
 
     let mut group = c.benchmark_group("components");
 
-    group.bench_function("arena_allocation", |b| {
-        b.iter(|| {
-            let arena = Arena::with_capacity(1024);
-            black_box(arena.alloc_bytes(256));
-        })
-    });
-
     group.bench_function("byte_reader_parsing", |b| {
         b.iter(|| {
             use fraiseql_rs::core::transform::ByteReader;
@@ -152,9 +139,9 @@ fn benchmark_components(c: &mut Criterion) {
 
     group.bench_function("snake_to_camel", |b| {
         let input = b"user_name_field";
+        let mut scratch = Vec::with_capacity(64);
         b.iter(|| {
-            let arena = Arena::with_capacity(1024);
-            black_box(fraiseql_rs::core::camel::snake_to_camel(input, &arena));
+            black_box(fraiseql_rs::core::camel::snake_to_camel(input, &mut scratch).len());
         })
     });
 

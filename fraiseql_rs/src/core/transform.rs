@@ -17,7 +17,6 @@
 //! - Need streaming/zero-copy (80% less memory)
 //! - High volume (> 1000 req/sec)
 //! - Field projection required
-//! - Arena allocator available
 //!
 //! ❌ **Use `crate::json_transform` instead when**:
 //! - Called from Python via PyO3
@@ -29,10 +28,7 @@
 
 use pyo3::PyErr;
 
-use crate::{
-    core::{arena::Arena, camel::snake_to_camel},
-    pipeline::projection::FieldSet,
-};
+use crate::{core::camel::snake_to_camel, pipeline::projection::FieldSet};
 
 /// Maximum JSON nesting depth to prevent stack overflow
 ///
@@ -85,38 +81,38 @@ impl Default for TransformConfig {
 /// PERFORMANCE CHARACTERISTICS:
 /// - Single-pass: Reads input once, writes output once
 /// - Zero-copy keys: Keys transformed in-place when possible
-/// - Arena allocation: All intermediate data uses bump allocator
+/// - Keys: camelCase keys go through one reused scratch buffer
 /// - SIMD: Vectorized operations for escaping and case conversion
 ///
 /// Memory layout:
 /// ┌─────────────────────────────────────────────────┐
 /// │ Input Buffer (read-only)                        │ ← PostgreSQL result
 /// ├─────────────────────────────────────────────────┤
-/// │ Arena (bump allocator)                          │ ← Temporary keys/values
+/// │ Key scratch buffer (reused)                     │ ← camelCase keys
 /// ├─────────────────────────────────────────────────┤
 /// │ Output Buffer (write-only, pre-sized)           │ → HTTP response
 /// └─────────────────────────────────────────────────┘
 pub struct ZeroCopyTransformer<'a> {
-    arena: &'a Arena,
     config: TransformConfig,
     typename: Option<&'a str>,
     field_projection: Option<&'a FieldSet>,
     current_depth: usize,
+    /// Reused for each camelCase key, which is copied to the output right away
+    key_scratch: Vec<u8>,
 }
 
 impl<'a> ZeroCopyTransformer<'a> {
     pub fn new(
-        arena: &'a Arena,
         config: TransformConfig,
         typename: Option<&'a str>,
         field_projection: Option<&'a FieldSet>,
     ) -> Self {
         ZeroCopyTransformer {
-            arena,
             config,
             typename,
             field_projection,
             current_depth: 0,
+            key_scratch: Vec::new(),
         }
     }
 
@@ -127,7 +123,7 @@ impl<'a> ZeroCopyTransformer<'a> {
     /// # Performance
     /// - Time complexity: O(n) where n = input size
     /// - Space complexity: O(k) where k = output size (pre-allocated)
-    /// - Allocations: 1 (output buffer), rest uses arena
+    /// - Allocations: the output buffer, and the key scratch buffer as it grows
     pub fn transform_bytes(
         &mut self,
         input: &[u8],
@@ -217,8 +213,7 @@ impl<'a> ZeroCopyTransformer<'a> {
 
             // Transform key (camelCase if needed)
             if self.config.camel_case {
-                // Multi-architecture optimized snake_to_camel (safe API)
-                let camel_key = snake_to_camel(key_bytes, self.arena);
+                let camel_key = snake_to_camel(key_bytes, &mut self.key_scratch);
                 writer.write_key(camel_key)?;
             } else {
                 writer.write_key(key_bytes)?;

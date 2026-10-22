@@ -27,8 +27,7 @@ impl FieldSet {
     ///
     /// # Arguments
     /// * `paths` - Field paths like [["id"], ["firstName"], ["posts", "title"]]
-    /// * `_arena` - Arena for allocations (not used in bitmap implementation)
-    pub fn from_paths(paths: &[Vec<String>], _arena: &crate::core::arena::Arena) -> Self {
+    pub fn from_paths(paths: &[Vec<String>]) -> Self {
         let mut field_set = FieldSet {
             bitmap: 0,
             bitmap_ext: 0,
@@ -98,18 +97,16 @@ fn field_hash(bytes: &[u8]) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::arena::Arena;
 
     #[test]
     fn test_field_set_basic() {
-        let arena = Arena::with_capacity(1024);
         let paths = vec![
             vec!["id".to_string()],
             vec!["firstName".to_string()],
             vec!["email".to_string()],
         ];
 
-        let field_set = FieldSet::from_paths(&paths, &arena);
+        let field_set = FieldSet::from_paths(&paths);
 
         assert!(field_set.contains(b"id"));
         assert!(field_set.contains(b"firstName"));
@@ -120,13 +117,12 @@ mod tests {
 
     #[test]
     fn test_field_set_nested_paths() {
-        let arena = Arena::with_capacity(1024);
         let paths = vec![
             vec!["user".to_string(), "id".to_string()],
             vec!["posts".to_string(), "title".to_string()],
         ];
 
-        let field_set = FieldSet::from_paths(&paths, &arena);
+        let field_set = FieldSet::from_paths(&paths);
 
         // Should contain the first field of each path
         assert!(field_set.contains(b"user"));
@@ -149,10 +145,9 @@ mod tests {
 
     #[test]
     fn test_empty_field_set() {
-        let arena = Arena::with_capacity(1024);
         let paths: Vec<Vec<String>> = vec![];
 
-        let field_set = FieldSet::from_paths(&paths, &arena);
+        let field_set = FieldSet::from_paths(&paths);
 
         assert!(!field_set.contains(b"id"));
         assert!(!field_set.contains(b"name"));

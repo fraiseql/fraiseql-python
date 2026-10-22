@@ -123,6 +123,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with a `RuntimeError` asking to rebuild it. `execute_mutation_rust` takes
   `selections=` in place of `success_type_fields=`, `error_type_fields=` and
   `entity_selections=`; without it, the response is unfiltered.
+### Changed
+
+- **The Rust extension no longer exports `Arena` or `test_snake_to_camel`**
+  (#579). They were test helpers registered in the production module. The
+  zero-copy response path (used when there is no schema registry or type name)
+  converts keys into a buffer it reuses instead of a bump arena, which also
+  removes the arena's `unsafe` code. Its `core_benchmark` transforms run 8 to
+  14% faster.
+
+### Fixed
+
+- **On CPUs without AVX2 (ARM64 included), the zero-copy path upper-cased the
+  letter after a digit that follows an underscore** (#579): `a_1b` became `a1B`.
+  It is now `a1b` everywhere, as with AVX2 and in the other camelCase paths.
 
 ## [1.29.1] - 2026-10-19
 

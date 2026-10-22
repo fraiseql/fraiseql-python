@@ -7,10 +7,7 @@ use pyo3::prelude::*;
 use serde_json::{Value, json};
 
 use crate::{
-    core::{
-        arena::Arena,
-        transform::{ByteBuf, MAX_JSON_DEPTH, TransformConfig, ZeroCopyTransformer},
-    },
+    core::transform::{ByteBuf, MAX_JSON_DEPTH, TransformConfig, ZeroCopyTransformer},
     json_transform,
     pipeline::projection::FieldSet,
     schema_registry,
@@ -43,12 +40,6 @@ type MultiFieldDef = (String, String, Vec<String>, Option<String>, Option<bool>)
 /// ┌──────────────┐
 /// │ PostgreSQL   │ → JSON strings (already in memory)
 /// │ json_rows    │
-/// └──────┬───────┘
-///        │
-///        ▼
-/// ┌──────────────┐
-/// │ Arena        │ → Allocate scratch space
-/// │ Setup        │
 /// └──────┬───────┘
 ///        │
 ///        ▼
@@ -196,8 +187,6 @@ fn build_zero_copy(
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
 ) -> PyResult<Vec<u8>> {
-    let arena = Arena::with_capacity(estimate_arena_size(&json_rows));
-
     let config = TransformConfig {
         add_typename: type_name.is_some(),
         camel_case: true,
@@ -206,9 +195,9 @@ fn build_zero_copy(
         max_depth: MAX_JSON_DEPTH,
     };
 
-    let field_set = field_paths.map(|paths| FieldSet::from_paths(&paths, &arena));
+    let field_set = field_paths.map(|paths| FieldSet::from_paths(&paths));
 
-    let mut transformer = ZeroCopyTransformer::new(&arena, config, type_name, field_set.as_ref());
+    let mut transformer = ZeroCopyTransformer::new(config, type_name, field_set.as_ref());
 
     let total_input_size: usize = json_rows.iter().map(|s| s.len()).sum();
 
@@ -291,11 +280,6 @@ fn build_zero_copy(
     result.push(b'}');
 
     Ok(result)
-}
-
-fn estimate_arena_size(json_rows: &[String]) -> usize {
-    let total_input_size: usize = json_rows.iter().map(|s| s.len()).sum();
-    (total_input_size / 4).clamp(8192, 65536)
 }
 
 /// Build complete multi-field GraphQL response from PostgreSQL JSON rows
