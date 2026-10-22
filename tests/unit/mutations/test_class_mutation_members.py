@@ -161,3 +161,33 @@ def test_success_only_and_error_only_still_build() -> None:
         error: ThingError
 
     _build()
+
+
+@fraiseql.error
+class OtherError:
+    message: str
+
+
+def test_union_error_type_is_reported_at_build() -> None:
+    # Decorating it raised AttributeError: 'types.UnionType' object has no attribute '__name__'
+    @fraiseql.mutation
+    class SaveThing:
+        input: ThingInput
+        success: ThingSuccess
+        error: ThingError | OtherError
+
+    with pytest.raises(
+        TypeError, match=r"Mutation SaveThing has `error: ThingError \| OtherError`"
+    ):
+        _build()
+
+
+def test_union_success_type_is_reported_at_build() -> None:
+    @fraiseql.mutation
+    class SaveThing:
+        input: ThingInput
+        success: ThingSuccess | ThingError
+        error: ThingError
+
+    with pytest.raises(TypeError, match=r"Mutation SaveThing has `success: "):
+        _build()

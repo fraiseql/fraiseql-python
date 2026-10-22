@@ -279,11 +279,15 @@ class SchemaRegistry:
                 resolver_fn = mutation_or_fn.__fraiseql_resolver__
                 definition = mutation_or_fn.__fraiseql_mutation__
                 self._mutations[self._mutation_key(resolver_fn)] = resolver_fn
-                # Also register the success and error types
-                if hasattr(definition, "success_type") and definition.success_type:
-                    self.register_type(definition.success_type)
-                if hasattr(definition, "error_type") and definition.error_type:
-                    self.register_type(definition.error_type)
+                # Also register the success and error types. Anything but a class
+                # (error: A | B) is reported when the schema is built, with the
+                # mutation's other problems (MutationDefinition.member_problems).
+                for result_type in (
+                    getattr(definition, "success_type", None),
+                    getattr(definition, "error_type", None),
+                ):
+                    if isinstance(result_type, type):
+                        self.register_type(result_type)
         else:
             # Legacy: direct resolver function
             self._mutations[self._mutation_key(mutation_or_fn)] = mutation_or_fn

@@ -4,8 +4,9 @@ import inspect
 import json
 import logging
 import re
+import types
 from collections.abc import Callable, Iterator
-from typing import Any, TypeVar, get_type_hints
+from typing import Any, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from graphql import (
     FragmentSpreadNode,
@@ -404,6 +405,14 @@ class MutationDefinition:
                 f"Mutation {self.name} has neither `success:` nor `error:`: annotate "
                 "its success type and error type."
             )
+        for member, annotation in (("success", self.success_type), ("error", self.error_type)):
+            if annotation is not None and not isinstance(annotation, type):
+                problems.append(
+                    f"Mutation {self.name} has `{member}: {_type_display(annotation)}`: a "
+                    f"class mutation has one {member} type, a @fraiseql.{member} class. "
+                    "The function's status picks the success or the error type; tell "
+                    "errors apart by their `status` and `code`."
+                )
         members = set(self._annotated_members)
         for klass in self.mutation_class.__mro__:
             if klass is not object:
@@ -433,7 +442,8 @@ class MutationDefinition:
         Returns:
             Tuple of (entity_field_name, entity_type)
         """
-        if not self.success_type:
+        if not isinstance(self.success_type, type):
+            # None, or an annotation member_problems reports (success: A | B)
             return None, None
 
         # Get annotations from the success type
@@ -1278,6 +1288,14 @@ def mutation(
     if _cls is None:
         return decorator
     return decorator(_cls)
+
+
+def _type_display(annotation: Any) -> str:
+    """An annotation as written: ``NotFound | Conflict``, ``list[Item]``."""
+    args = get_args(annotation)
+    if args and get_origin(annotation) in (Union, types.UnionType):
+        return " | ".join(_type_display(arg) for arg in args)
+    return getattr(annotation, "__name__", None) or repr(annotation)
 
 
 def _camel_to_snake(name: str) -> str:

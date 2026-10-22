@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`error: NotFound | Conflict` on a class mutation is reported at schema
+  build.** Decorating it raised
+  `AttributeError: 'types.UnionType' object has no attribute '__name__'` (and a
+  union `success:` a `TypeError` from `get_type_hints`). A class mutation has
+  one success type and one error type; the schema build now names the mutation
+  and the annotation, with its other problems, as for the other member checks
+  (#576).
+
+### Fixed
+
 - **The ltree filters `index_eq`, `index_gte` and `lca` work.** They rendered
   invalid SQL (`"path" index = %s`, `"path" lca %s`), on a column and on a JSONB
   field. `index_eq` / `index_gte` take a label and a position and compare
