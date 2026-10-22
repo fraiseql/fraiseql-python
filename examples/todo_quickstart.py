@@ -12,7 +12,7 @@ LEARNING OUTCOMES:
 - Type-safe database operations
 
 NEXT STEPS:
-- blog_api/ - Enterprise patterns
+- blog_simple/ - A blog with SQL-function mutations
 - ecommerce/ - Real business logic
 - enterprise_patterns/ - All advanced patterns
 """

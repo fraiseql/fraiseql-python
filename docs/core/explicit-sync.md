@@ -726,7 +726,7 @@ async def sync_post(self, post_ids: list[UUID]):
 
 ## See Also
 
-- [CQRS Example](../../examples/blog_api/) - See explicit sync in its sync_* functions
+- [rag-system](../../examples/rag-system/) - `tv_document_embedding`, kept in sync by the SQL functions in its `schema.sql`
 - [CASCADE Best Practices](../guides/cascade-best-practices.md) - Cache invalidation with sync
 - [Migrations Guide](./migrations.md) - Setting up tb_/tv_ tables
 - [Database Patterns](../advanced/database-patterns.md) - Advanced sync patterns

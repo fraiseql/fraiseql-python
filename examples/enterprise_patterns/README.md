@@ -17,7 +17,7 @@ This example demonstrates all FraiseQL enterprise patterns in a single, comprehe
 
 - Basic GraphQL knowledge
 - Understanding of CQRS patterns
-- `../blog_api/` - Basic enterprise patterns
+- `../blog_simple/` - Basic patterns
 
 **Next steps:**
 

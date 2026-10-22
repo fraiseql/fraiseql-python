@@ -143,7 +143,7 @@ Prototypes   Apps       Apps      Apps
 - ❌ Don't put business logic in resolvers
 - ❌ Don't skip database migrations
 
-**Example Projects**: [Blog with Auth](../../examples/blog_api/), [E-commerce](../../examples/ecommerce/)
+**Example Projects**: [Blog](../../examples/blog_simple/), [E-commerce](../../examples/ecommerce/)
 
 ### Enterprise Template Best Practices
 

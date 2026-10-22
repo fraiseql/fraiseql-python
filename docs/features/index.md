@@ -23,12 +23,12 @@ Complete overview of all FraiseQL capabilities.
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
 | **GraphQL Types** | ✅ Stable | [Types Guide](../core/types-and-schema.md) | [blog_simple](../../examples/blog_simple/) |
-| **Queries** | ✅ Stable | [Queries Guide](../core/queries-and-mutations.md) | [blog_api](../../examples/blog_api/) |
+| **Queries** | ✅ Stable | [Queries Guide](../core/queries-and-mutations.md) | [blog_simple](../../examples/blog_simple/) |
 | **Mutations** | ✅ Stable | [Mutations Guide](../core/queries-and-mutations.md) | [mutations_demo](../../examples/mutations_demo/) |
 | **Mutation Result Formats** | ✅ Stable | [Result Reference](mutation-result-reference.md) | [mutations_demo](../../examples/mutations_demo/) |
 | **Input Types** | ✅ Stable | [Types Guide](../core/types-and-schema.md#input-types) | [blog_simple](../../examples/blog_simple/) |
 | **Success/Failure Responses** | ✅ Stable | [Mutations Guide](../core/queries-and-mutations.md#success-failure-pattern) | [mutations_demo](../../examples/mutations_demo/) |
-| **Nested Relations** | ✅ Stable | [Database API](../core/database-api.md#nested-relations) | [blog_api](../../examples/blog_api/) |
+| **Nested Relations** | ✅ Stable | [Database API](../core/database-api.md#nested-relations) | [blog_simple](../../examples/blog_simple/) |
 | **Pagination** | ✅ Stable | [Database API](../core/database-api.md) | [ecommerce](../../examples/ecommerce/) |
 | **Filtering (Where Input)** | ✅ Stable | [Where Input Guide](../advanced/where-input-types.md) | [where_input_filtering_example.py](../../examples/where_input_filtering_example.py) |
 
@@ -39,8 +39,8 @@ Complete overview of all FraiseQL capabilities.
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
 | **JSONB Views (v_*)** | ✅ Stable | [Core Concepts](../core/concepts-glossary.md#jsonb-views) | [blog_simple](../../examples/blog_simple/) |
-| **Table Views (tv_*)** | ✅ Stable | [Explicit Sync](../core/explicit-sync.md) | [blog_api](../../examples/blog_api/) |
-| **PostgreSQL Functions** | ✅ Stable | [Database API](../core/database-api.md#calling-functions) | [blog_api](../../examples/blog_api/) |
+| **Table Views (tv_*)** | ✅ Stable | [Explicit Sync](../core/explicit-sync.md) | [rag-system](../../examples/rag-system/) |
+| **PostgreSQL Functions** | ✅ Stable | [Database API](../core/database-api.md#calling-functions) | [blog_simple](../../examples/blog_simple/) |
 | **Connection Pooling** | ✅ Stable | [Database API](../core/database-api.md#connection-pool) | All examples |
 | **Transaction Support** | ✅ Stable | [Database API](../core/database-api.md#transactions) | [enterprise_patterns](../../examples/enterprise_patterns/) |
 | **CQRS Pattern** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
@@ -66,7 +66,7 @@ Complete overview of all FraiseQL capabilities.
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
 | **Rust Pipeline Acceleration** | ✅ Stable | [Rust Pipeline](../performance/rust-pipeline-optimization.md) | All examples (automatic) |
-| **Zero N+1 Queries** | ✅ Stable | [Performance Guide](../performance/index.md#n-plus-one-prevention) | [blog_api](../../examples/blog_api/) |
+| **Zero N+1 Queries** | ✅ Stable | [Performance Guide](../performance/index.md#n-plus-one-prevention) | [blog_simple](../../examples/blog_simple/) |
 | **Automatic Persisted Queries (APQ)** | ✅ Stable | [APQ Guide](../performance/apq-optimization-guide.md) | [apq_multi_tenant](../../examples/apq_multi_tenant/) |
 | **PostgreSQL Caching** | ✅ Stable | [Caching Guide](../performance/index.md#postgresql-caching) | [ecommerce](../../examples/ecommerce/) |
 | **Query Batching** | ✅ Stable | [Database API](../core/database-api.md#batching) | — |

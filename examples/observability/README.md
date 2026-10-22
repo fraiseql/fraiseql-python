@@ -14,7 +14,7 @@ A comprehensive example of integrating FraiseQL applications with modern observa
 
 **Prerequisites:**
 
-- `../blog_api/` - Basic GraphQL API patterns
+- `../blog_simple/` - Basic GraphQL API patterns
 - Docker and Docker Compose knowledge
 - Understanding of monitoring concepts
 

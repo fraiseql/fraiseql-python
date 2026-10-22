@@ -59,8 +59,8 @@ flowchart TB
 
 **See Also**:
 
-- [CQRS Implementation](../../examples/blog_api/) - Blog with tb_/tv_ tables and sync functions
-- [Enterprise Patterns](../../examples/blog_api/) - Production CQRS with audit trails
+- [CQRS Implementation](../../examples/blog_simple/) - Blog with tb_ tables, JSONB views and mutation functions
+- [Enterprise Patterns](../../examples/blog_enterprise/) - Production CQRS with audit trails
 - Independent scaling of reads and writes
 
 ### JSONB View Pattern

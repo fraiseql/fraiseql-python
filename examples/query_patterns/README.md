@@ -18,7 +18,6 @@ A comprehensive demonstration of all three ways to register GraphQL queries in F
 
 **Next steps:**
 
-- `../blog_api/` - Enterprise patterns with mutations
 - `../enterprise_patterns/` - Advanced enterprise features
 
 ## Overview
@@ -237,7 +236,7 @@ For production-like testing, set up PostgreSQL and modify the query functions to
 
 After mastering these patterns:
 
-1. **Add mutations** - See `../blog_api/` for complete CRUD operations
+1. **Add mutations** - See `../blog_simple/` for mutations backed by SQL functions
 2. **Add authentication** - See `../saas-starter/` for user management
 3. **Add enterprise patterns** - See `../enterprise_patterns/` for production features
 4. **Add real database integration** - Replace mock data with actual queries

@@ -536,7 +536,7 @@ examples/blog_simple/db/
 ### Example 2: Blog API (M - 3-digit, CQRS)
 
 ```
-examples/blog_api/db/
+db/
 ├── 0_schema/
 │   ├── 00_common/
 │   │   ├── 001_extensions.sql
@@ -933,7 +933,7 @@ schema/
 - **[confiture: Organizing SQL Files](https://github.com/fraiseql/confiture/blob/main/docs/organizing-sql-files/)** - Original documentation
 - **[FraiseQL Migrations](./migrations.md)** - Migration workflow
 - **[Database Patterns](../advanced/database-patterns.md)** - CQRS and other patterns
-- **[CQRS Example](../../examples/blog_api/)** - Blog with tb_/tv_ tables and sync functions
+- **[tv_ Example](../../examples/rag-system/)** - `tv_document_embedding` and the SQL functions that keep it in sync
 
 ---
 

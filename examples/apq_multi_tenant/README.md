@@ -13,7 +13,7 @@ Production-ready example demonstrating FraiseQL's built-in tenant-aware APQ cach
 
 **Prerequisites:**
 
-- `../blog_api/` - Basic FraiseQL patterns
+- `../blog_simple/` - Basic FraiseQL patterns
 - Understanding of multi-tenant architecture
 
 **Next steps:**

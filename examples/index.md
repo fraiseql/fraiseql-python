@@ -7,7 +7,7 @@ Welcome to the FraiseQL examples collection! This index organizes all 20+ exampl
 **New to FraiseQL? Start here:**
 
 - **[`todo_quickstart.py`](todo_quickstart.py)** - 5-minute introduction to basic GraphQL API
-- **[`blog_api/`](blog_api/README.md)** - Complete content management system with enterprise patterns
+- **[`blog_simple/`](blog_simple/README.md)** - A blog with nested reads and SQL-function mutations
 
 ---
 
@@ -20,7 +20,7 @@ Perfect for learning FraiseQL fundamentals. These examples focus on core concept
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
 | [`todo_quickstart.py`](todo_quickstart.py) | **RECOMMENDED START** - Simple todo app | Basic types, queries, mutations | 5 min |
-| [`blog_api/`](blog_api/README.md) | Content management with enterprise patterns | CQRS, audit trails, mutation results | 15 min |
+| [`blog_simple/`](blog_simple/README.md) | Blog with posts, tags and comments | JSONB views, list arguments, class mutations | 20 min |
 | [`health_check_example.py`](health_check_example.py) | Basic health check endpoints | Simple queries, FastAPI integration | 5 min |
 
 ### 🟡 Intermediate (Build Skills)
@@ -70,7 +70,7 @@ Examples for specific use cases and integrations.
 
 ### 📝 Content Management
 
-- [`blog_api/`](blog_api/README.md) - Enterprise content system
+- [`blog_simple/`](blog_simple/README.md) - Blog with posts, tags and comments
 - [`blog_enterprise/`](blog_enterprise/README.md) - Advanced blogging platform
 
 ### 🔐 Authentication & Security
@@ -96,13 +96,13 @@ Examples for specific use cases and integrations.
 ### 🚀 Complete Beginner Path
 
 1. **[`todo_quickstart.py`](todo_quickstart.py)** - Learn the basics (5 min)
-2. **[`blog_api/`](blog_api/README.md)** - Build a real application (15 min)
+2. **[`blog_simple/`](blog_simple/README.md)** - Build a real application (20 min)
 3. **[`ecommerce/`](ecommerce/README.md)** - Add complexity (30 min)
 4. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - Master advanced patterns (45 min)
 
 ### 🏢 Production Developer Path
 
-1. **[`blog_api/`](blog_api/README.md)** - Enterprise patterns foundation
+1. **[`blog_simple/`](blog_simple/README.md)** - Views, queries and mutations end to end
 2. **[`apq_multi_tenant/`](apq_multi_tenant/README.md)** - Performance optimization
 3. **[`security/`](security/README.md)** - Security implementation
 4. **[`saas-starter/`](saas-starter/README.md)** - Scalable architecture
@@ -118,7 +118,7 @@ Examples for specific use cases and integrations.
 
 1. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
 2. **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
-3. **[`blog_api/`](blog_api/README.md)** - CQRS implementation
+3. **[`blog_simple/`](blog_simple/README.md)** - CQRS: views for reads, functions for writes
 
 ---
 

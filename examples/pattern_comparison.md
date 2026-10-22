@@ -13,7 +13,7 @@ async def create_user(info, input: CreateUserInput) -> User:
     return User.from_dict(result)
 ```
 
-**Enterprise Pattern (blog_api/):**
+**Enterprise Pattern:**
 
 ```python
 @fraiseql.mutation(function="create_user", schema="app")
@@ -65,7 +65,7 @@ CREATE FUNCTION core.create_user(...) RETURNS app.mutation_result;
 | Example | Complexity | Patterns Used | Best For |
 |---------|------------|---------------|----------|
 | `todo_quickstart.py` | Basic | Simple mutations | Learning FraiseQL |
-| `blog_api/` | Intermediate | Mutation results, basic audit | Content management |
+| `blog_simple/` | Intermediate | Class mutations, `mutation_response` | Content management |
 | `enterprise_patterns/` | Full | All patterns | Production systems |
 
 ## Pattern Evolution
@@ -236,11 +236,11 @@ Use this tree to choose the right pattern:
 Is this a learning/prototype project?
 ├─ Yes → Use Basic patterns (todo_quickstart.py)
 └─ No → Do you need audit trails?
-    ├─ No → Use Intermediate patterns (blog_api basic)
+    ├─ No → Use Intermediate patterns (blog_simple)
     └─ Yes → Do you need NOOP handling?
-        ├─ No → Use Advanced patterns (blog_api enterprise)
+        ├─ No → Use Advanced patterns (blog_enterprise)
         └─ Yes → Do you have complex business rules?
-            ├─ No → Use blog_api with NOOP
+            ├─ No → Add NOOP statuses to your functions
             └─ Yes → Use Full Enterprise patterns
 ```
 

@@ -47,7 +47,6 @@ print(json.dumps({"mutations": len(SchemaRegistry.get_instance().mutations)}))
 _BUILDABLE = [
     "examples.authorization.app",
     "examples.auto_field_descriptions",
-    "examples.blog_api.mutations",
     "examples.blog_simple.models",
     "examples.context_parameters.mutations",
     "examples.documented_api",

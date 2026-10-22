@@ -52,7 +52,6 @@ fraiseql.build_fraiseql_schema()
 """
 
 _KNOWN_FAILURES = {
-    "examples/blog_api/app.py": "opens a connection pool at import",
     "examples/ecommerce/app.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/models.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",

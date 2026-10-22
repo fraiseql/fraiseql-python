@@ -17,7 +17,7 @@ LEARNING OUTCOMES:
 - Database-backed caching without Redis
 
 PREREQUISITES:
-- ../blog_api/ - Basic FraiseQL patterns
+- ../blog_simple/ - Basic FraiseQL patterns
 - Understanding of caching concepts
 
 NEXT STEPS:

@@ -51,13 +51,13 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 2: First Real Application (45 minutes)
 
-**[`blog_api/`](blog_api/README.md)** - Complete content management system
+**[`blog_simple/`](blog_simple/README.md)** - A blog with posts, tags and comments
 
-- ✅ Enterprise-grade patterns (audit trails, mutation results)
-- ✅ CQRS architecture with PostgreSQL functions
-- ✅ Authentication and role-based access
-- ✅ Production-ready error handling
-- **Time**: 15 minutes
+- ✅ JSONB views that embed related objects
+- ✅ CQRS: views for reads, PostgreSQL functions for writes
+- ✅ Class mutations with success and error types
+- ✅ The current user passed to SQL functions
+- **Time**: 20 minutes
 
 ### Phase 3: Add Business Logic (45 minutes)
 
@@ -94,12 +94,11 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 1: Enterprise Foundation (45 minutes)
 
-**[`blog_api/`](blog_api/README.md)** - Enterprise patterns foundation
+**[`blog_simple/`](blog_simple/README.md)** - Foundation
 
-- ✅ Mutation result pattern for reliable APIs
-- ✅ Audit trails and change tracking
-- ✅ Role-based permissions
-- ✅ Production error handling
+- ✅ Mutation results from SQL functions (`mutation_response`)
+- ✅ Error statuses mapped to codes (403, 404, 409, 422)
+- ✅ The current user in the GraphQL context
 
 **[`security/`](security/README.md)** - Security implementation
 
@@ -234,7 +233,7 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 2: Advanced Architecture (60 minutes)
 
-**[`blog_api/`](blog_api/README.md)** - CQRS implementation
+**[`blog_simple/`](blog_simple/README.md)** - CQRS implementation
 
 - ✅ Command-Query Responsibility Segregation
 - ✅ Event-driven architecture
@@ -297,10 +296,10 @@ If you need specific patterns, here are the best examples:
 
 | Pattern | Primary Example | Alternative |
 |---------|-----------------|-------------|
-| **Basic CRUD** | [`todo_quickstart.py`](todo_quickstart.py) | [`blog_api/`](blog_api/README.md) |
+| **Basic CRUD** | [`todo_quickstart.py`](todo_quickstart.py) | [`blog_simple/`](blog_simple/README.md) |
 | **Authentication** | [`security/`](security.md) | [`native-auth-app/`](native-auth-app/README.md) |
 | **Caching** | [`caching_example.py`](caching_example.py) | [`apq_multi_tenant/`](apq_multi_tenant/README.md) |
-| **CQRS** | [`blog_api/`](blog_api/README.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
+| **CQRS** | [`blog_simple/`](blog_simple/README.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
 | **Multi-tenant** | [`apq_multi_tenant/`](apq_multi_tenant.md) | [`saas-starter/`](saas-starter/README.md) |
 | **Real-time** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
 | **Enterprise** | [`enterprise_patterns/`](enterprise_patterns.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
@@ -309,7 +308,7 @@ If you need specific patterns, here are the best examples:
 
 | Use Case | Recommended Example | Why |
 |----------|-------------------|-----|
-| **Content Management** | [`blog_api/`](blog_api/README.md) | Enterprise patterns for CMS |
+| **Content Management** | [`blog_simple/`](blog_simple/README.md) | Posts, tags and moderated comments |
 | **E-commerce** | [`ecommerce/`](ecommerce/README.md) | Complete business logic |
 | **SaaS Platform** | [`saas-starter/`](saas-starter/README.md) | Multi-tenant foundation |
 | **Analytics** | [`analytics_dashboard/`](analytics_dashboard/README.md) | High-performance BI |
