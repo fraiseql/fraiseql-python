@@ -419,7 +419,7 @@ class CreateUserInput:
 class CreateUserSuccess:
     user: User                # @success auto-injects status/message/updated_fields/id
 
-@fraiseql.error               # @fraiseql.failure is an accepted alias
+@fraiseql.error
 class CreateUserError:
     message: str
     code: str = "VALIDATION_ERROR"

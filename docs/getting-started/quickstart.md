@@ -151,36 +151,31 @@ async def note(info, id: ID) -> Note | None:
 
 # Mutations
 @fraiseql.mutation
-class CreateNote:
+async def create_note(info, input: CreateNoteInput) -> CreateNoteSuccess | ValidationError:
     """Create a new note."""
-    input: CreateNoteInput
-    success: CreateNoteSuccess
-    failure: ValidationError
+    db = info.context["db"]
 
-    async def resolve(self, info) -> CreateNoteSuccess | ValidationError:
-        db = info.context["db"]
+    try:
+        # Call SQL function (CQRS pattern)
+        result = await db.execute_function("fn_create_note", {
+            "title": input.title,
+            "content": input.content,
+        })
 
-        try:
-            # Call SQL function (CQRS pattern)
-            result = await db.execute_function("fn_create_note", {
-                "title": self.input.title,
-                "content": self.input.content,
-            })
+        if not result.get("success"):
+            return ValidationError(message="Failed to create note")
 
-            if not result.get("success"):
-                return ValidationError(message="Failed to create note")
+        # Fetch the created note via Rust pipeline
+        note = await db.find_one("v_note", id=result["id"])
+        return CreateNoteSuccess(note=note)
 
-            # Fetch the created note via Rust pipeline
-            note = await db.find_one("v_note", id=result["id"])
-            return CreateNoteSuccess(note=note)
-
-        except Exception as e:
-            return ValidationError(message=f"Failed to create note: {e!s}")
+    except Exception as e:
+        return ValidationError(message=f"Failed to create note: {e!s}")
 
 # Create the app
 QUICKSTART_TYPES = [Note]
 QUICKSTART_QUERIES = [notes, note]
-QUICKSTART_MUTATIONS = [CreateNote]
+QUICKSTART_MUTATIONS = [create_note]
 
 if __name__ == "__main__":
     import os

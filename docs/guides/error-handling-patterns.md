@@ -582,7 +582,7 @@ END IF;
 **Before:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError(MutationResultBase):
     field_errors: dict[str, str] = None
 ```
@@ -590,7 +590,7 @@ class CreateUserError(MutationResultBase):
 **After:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     message: str
     # errors array auto-populated
@@ -617,7 +617,7 @@ result.metadata := jsonb_build_object('errors', jsonb_build_array(
 **Before:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class ValidationError:
     validation_errors: list[dict[str, str]] = None
 ```
@@ -625,7 +625,7 @@ class ValidationError:
 **After:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class ValidationError:
     message: str
     # errors auto-populated from metadata.errors
@@ -636,7 +636,7 @@ class ValidationError:
 **Before:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class MyError(MutationResultBase):
     custom_field: str
 ```
@@ -644,7 +644,7 @@ class MyError(MutationResultBase):
 **After:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class MyError:
     message: str
     custom_field: str

@@ -576,63 +576,41 @@ async def create_user(info, input: CreateUserInput) -> User:
     return await db.find_one("v_user", id=result["id"])
 ```
 
-**Class-based pattern (with success/failure):**
+**Class-based pattern (with success/error):**
 
 ```python
-import fraiseql
 import fraiseql
 
 @fraiseql.mutation
 class CreateUser:
-    """Create a new user with explicit success/failure handling."""
+    """Create a new user with explicit success/error handling."""
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: ValidationError
-
-    async def resolve(self, info):
-        db = info.context["db"]
-        # Call PostgreSQL function - all business logic in database
-        result = await db.execute_function("fn_create_user", {
-            "name": self.input.name,
-            "email": self.input.email
-        })
-
-        # PostgreSQL function returns success/error indicator with user ID
-        if result["success"]:
-            user = await db.find_one("v_user", id=result["user_id"])
-            return CreateUserSuccess(
-                user=user,
-                message=result.get("message", "User created")
-            )
-        return ValidationError(
-            message=result["error"],
-            code=result.get("code", "VALIDATION_ERROR")
-        )
+    error: ValidationError
 ```
+
+The class declares types only: fraiseql calls the PostgreSQL function
+`create_user` (the class name in snake_case) with the input as one `jsonb`, and
+turns the `mutation_response` it returns into `CreateUserSuccess` or
+`ValidationError`.
 
 **Corresponding PostgreSQL function:**
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_create_user(
-    p_name TEXT,
-    p_email TEXT
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     v_user_id UUID;
 BEGIN
     -- Validation: Check email format using regex
     -- Pattern: local-part@domain.tld (basic RFC 5322 compliance)
-    IF p_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Invalid email format',
-            'code', 'INVALID_EMAIL'
-        );
+    IF input->>'email' !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+        RETURN mutation_validation_error('Invalid email format', 'email');
     END IF;
 
     -- Insert user
     INSERT INTO tb_user (name, email)
-    VALUES (p_name, p_email)
+    VALUES (input->>'name', input->>'email')
     RETURNING id INTO v_user_id;
 
     -- Audit log
@@ -640,18 +618,21 @@ BEGIN
     VALUES ('user_created', jsonb_build_object('user_id', v_user_id));
 
     -- Return success with user data
-    RETURN jsonb_build_object(
-        'success', true,
-        'user', jsonb_build_object(
+    RETURN mutation_created(
+        'User created successfully',
+        jsonb_build_object(
             'id', v_user_id,
-            'name', p_name,
-            'email', p_email
+            'name', input->>'name',
+            'email', input->>'email'
         ),
-        'message', 'User created successfully'
+        'User'
     );
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+`mutation_response` and the `mutation_*` helpers are defined in
+`migrations/trinity/005_add_mutation_response.sql`.
 
 ### Where Input Types
 

@@ -341,7 +341,7 @@ query {
 | Pattern | Best For | Success/Error Handling | Complexity | Example |
 |---------|----------|----------------------|------------|---------|
 | **Function-Based** | Simple mutations | Returns type directly | Low | `async def create_user(...) -> User` |
-| **Class-Based** | Complex mutations | Explicit success/failure types | Medium | `class CreateUser: success: CreateUserSuccess; failure: ValidationError` |
+| **Class-Based** | Complex mutations | Explicit success/error types | Medium | `class CreateUser: success: CreateUserSuccess; error: ValidationError` |
 
 **Function-based pattern (simple):**
 
@@ -361,7 +361,7 @@ async def create_user(info, name: str, email: str) -> User:
     return await db.find_one(User, id=result["id"])
 ```
 
-**Class-based pattern (with success/failure):**
+**Class-based pattern (with success/error):**
 
 ```python
 import fraiseql
@@ -369,29 +369,16 @@ from fraiseql import mutation
 
 @mutation
 class CreateUser:
-    """Mutation with explicit success/failure handling."""
+    """Mutation with explicit success/error handling."""
     input: CreateUserInput
     success: CreateUserSuccess  # Success type
-    failure: ValidationError  # Failure type
-
-    async def resolve(self, info):
-        db = info.context["db"]
-        result = await db.execute_function("fn_create_user", {
-            "name": self.input.name,
-            "email": self.input.email
-        })
-
-        if result["success"]:
-            user = await db.find_one(User, id=result["user_id"])
-            return CreateUserSuccess(
-                user=user,
-                message=result.get("message", "User created")
-            )
-        return ValidationError(
-            message=result["error"],
-            code=result.get("code", "VALIDATION_ERROR")
-        )
+    error: ValidationError  # Error type
 ```
+
+A class mutation has no resolver body: fraiseql calls the PostgreSQL function
+`create_user(input jsonb)`, which returns a `mutation_response`, and builds
+`CreateUserSuccess` or `ValidationError` from its status. To run Python code,
+use a function mutation that returns `CreateUserSuccess | ValidationError`.
 
 **Decision tree:**
 

@@ -279,7 +279,7 @@ class DeleteNoteSuccess:
     """Successful deletion response."""
     message: str = "Note deleted successfully"
 
-@fraiseql.failure
+@fraiseql.error
 class DeleteNoteError:
     """Deletion error response."""
     message: str

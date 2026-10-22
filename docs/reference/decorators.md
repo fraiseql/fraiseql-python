@@ -250,7 +250,7 @@ import fraiseql
 class MutationName:
     input: InputType
     success: SuccessType
-    failure: FailureType
+    error: ErrorType
 ```
 
 **Parameters (Class-based)**:
@@ -344,7 +344,7 @@ config = FraiseQLConfig(
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 
 # Overrides global default
 @fraiseql.mutation(
@@ -354,7 +354,7 @@ class CreateUser:
 class DeleteUser:
     input: DeleteUserInput
     success: DeleteUserSuccess
-    failure: DeleteUserError
+    error: DeleteUserError
 ```
 
 **See**: [FraiseQLConfig.default_error_config](./config.md#default_error_config) for details.
@@ -375,7 +375,7 @@ async def create_user_account(info, input: CreateUserInput) -> User:
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 
 # With custom function (name= sets the field to "registerUser"; without it,
 # fraiseql 1.x names the field after the function, "registerNewUser", and warns)
@@ -383,7 +383,7 @@ class CreateUser:
 class RegisterUser:
     input: RegistrationInput
     success: RegisterUserSuccess
-    failure: RegisterUserError
+    error: RegisterUserError
 
 # With context parameters - maps context to PostgreSQL function params
 @fraiseql.mutation(
@@ -396,7 +396,7 @@ class RegisterUser:
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 ```
 
 **How context_params Works**:
@@ -417,7 +417,7 @@ import fraiseql
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 
 # PostgreSQL function signature
 # CREATE FUNCTION create_location(
@@ -451,7 +451,7 @@ async def get_context(request: Request) -> dict:
 class CreateOrder:
     input: CreateOrderInput
     success: CreateOrderSuccess
-    failure: CreateOrderFailure
+    error: CreateOrderError
 
 # PostgreSQL function
 # CREATE FUNCTION create_order(

@@ -639,7 +639,7 @@ class CreateUserSuccess:
     user: User
     message: str
 
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     message: str
     # errors array auto-populated
@@ -648,7 +648,7 @@ class CreateUserError:
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 ```
 
 ### Example 2: Update with Validation
@@ -772,7 +772,7 @@ SELECT * FROM create_user('{"name": "Test", "email": "test@example.com"}');
 **Before:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError(MutationResultBase):
     field_errors: dict[str, str] = None
 ```
@@ -780,7 +780,7 @@ class CreateUserError(MutationResultBase):
 **After:**
 
 ```python
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     message: str
     # errors array auto-populated from status strings
@@ -795,7 +795,7 @@ class CreateUserError:
 class CreateUserSuccess(MutationResultBase):
     user: User
 
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError(MutationResultBase):
     pass
 ```
@@ -808,7 +808,7 @@ class CreateUserSuccess:
     user: User
     message: str
 
-@fraiseql.failure
+@fraiseql.error
 class CreateUserError:
     message: str
     # errors auto-populated

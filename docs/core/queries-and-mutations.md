@@ -677,7 +677,7 @@ import fraiseql
 class MutationName:
     input: InputType
     success: SuccessType
-    failure: FailureType  # or error: ErrorType
+    error: ErrorType
 ```
 
 **Parameters (Class-based)**:
@@ -731,7 +731,7 @@ class CreateUserError:
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
 
 # Automatically calls PostgreSQL function: public.create_user(input)
 # and parses result into CreateUserSuccess or CreateUserError
@@ -746,7 +746,7 @@ import fraiseql
 class RegisterUser:
     input: RegistrationInput
     success: RegisterUserSuccess
-    failure: RegisterUserError
+    error: RegisterUserError
 
 # Calls: auth.register_new_user(input) instead of default name
 # (name= sets the GraphQL field to "registerUser"; without it, fraiseql 1.x names
@@ -769,7 +769,7 @@ import fraiseql
 class CreateLocation:
     input: CreateLocationInput
     success: CreateLocationSuccess
-    failure: CreateLocationError
+    error: CreateLocationError
 
 # Calls: app.create_location(tenant_id, user_id, input)
 # Where tenant_id comes from info.context["tenant_id"]
@@ -884,7 +884,7 @@ class NetworkConfigInput:
 class CreateNetworkConfig:
     input: NetworkConfigInput
     success: CreateNetworkConfigSuccess
-    failure: CreateNetworkConfigError
+    error: CreateNetworkConfigError
 
     @staticmethod
     def prepare_input(input_data: dict) -> dict:

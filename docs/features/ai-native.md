@@ -88,68 +88,61 @@ class ProcessOrderResult:
     new_balance: Decimal | None = None
 
 @fraiseql.mutation
-class ProcessOrder:
+async def process_order(info, input: ProcessOrderInput) -> ProcessOrderResult:
     """Process an order payment and update balances."""
+    db = info.context["db"]
 
-    input: ProcessOrderInput
-    result: ProcessOrderResult
-
-    @resolver
-    async def resolve(self, info, input_data):
-        """Complete order processing business logic."""
-        db = info.context["db"]
-
-        # Get order with all relationships (pre-composed in view)
-        order = await db.find_one("order_with_items", where={"id": input_data["order_id"]})
-        if not order:
-            return ProcessOrderResult(
-                success=False,
-                order_id=input_data["order_id"],
-                message="Order not found"
-            )
-
-        # Get user balance (from view)
-        user = await repo.find_one("user_with_balance", where={"id": order["user_id"]})
-        if not user:
-            return ProcessOrderResult(
-                success=False,
-                order_id=input_data["order_id"],
-                message="User not found"
-            )
-
-        # Business logic in clear Python
-        user_balance = Decimal(str(user["balance"]))
-        order_total = Decimal(str(order["total"]))
-
-        if user_balance < order_total:
-            return ProcessOrderResult(
-                success=False,
-                order_id=input_data["order_id"],
-                message=f"Insufficient balance: {user_balance} < {order_total}"
-            )
-
-        # Atomic updates using repository
-        async with repo.transaction():
-            # Update user balance
-            await repo.update(
-                "users",
-                where={"id": order["user_id"]},
-                data={"balance": user_balance - order_total}
-            )
-
-            # Update order status
-            await repo.update(
-                "orders",
-                where={"id": input_data["order_id"]},
-                data={"status": "processed"}
-            )
-
+    # Get order with all relationships (pre-composed in view)
+    order = await db.find_one("order_with_items", where={"id": input.order_id})
+    if not order:
         return ProcessOrderResult(
-            success=True,
-            order_id=input_data["order_id"],
-            message="Order processed successfully",
-            new_balance=user_balance - order_total
+            success=False,
+            order_id=input.order_id,
+            message="Order not found"
         )
+
+    # Get user balance (from view)
+    user = await repo.find_one("user_with_balance", where={"id": order["user_id"]})
+    if not user:
+        return ProcessOrderResult(
+            success=False,
+            order_id=input.order_id,
+            message="User not found"
+        )
+
+    # Business logic in clear Python
+    user_balance = Decimal(str(user["balance"]))
+    order_total = Decimal(str(order["total"]))
+
+    if user_balance < order_total:
+        return ProcessOrderResult(
+            success=False,
+            order_id=input.order_id,
+            message=f"Insufficient balance: {user_balance} < {order_total}"
+        )
+
+    # Atomic updates using repository
+    async with repo.transaction():
+        # Update user balance
+        await repo.update(
+            "users",
+            where={"id": order["user_id"]},
+            data={"balance": user_balance - order_total}
+        )
+
+        # Update order status
+        await repo.update(
+            "orders",
+            where={"id": input.order_id},
+            data={"status": "processed"}
+        )
+
+    return ProcessOrderResult(
+        success=True,
+        order_id=input.order_id,
+        message="Order processed successfully",
+        new_balance=user_balance - order_total
+    )
 ```
 
 **AI models can:**

@@ -918,7 +918,7 @@ config = FraiseQLConfig(
 class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
-    failure: CreateUserError
+    error: CreateUserError
     # Uses DEFAULT_ERROR_CONFIG from config
 
 # Mutation overrides global default
@@ -929,7 +929,7 @@ class CreateUser:
 class DeleteUser:
     input: DeleteUserInput
     success: DeleteUserSuccess
-    failure: DeleteUserError
+    error: DeleteUserError
     # Uses STRICT_STATUS_CONFIG (explicit override)
 ```
 

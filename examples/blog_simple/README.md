@@ -388,44 +388,38 @@ class CreatePostSuccess:
     post: Post
     message: str = "Post created successfully"
 
-@fraiseql.failure
+@fraiseql.error
 class CreatePostError:
     message: str
     code: str
 
 @fraiseql.mutation
-class CreatePost:
-    input: CreatePostInput
-    success: CreatePostSuccess
-    failure: CreatePostError
+async def create_post(
+    info: GraphQLResolveInfo, input: CreatePostInput
+) -> CreatePostSuccess | CreatePostError:
+    db = info.context["db"]
+    user_id = info.context["user_id"]
 
-    async def resolve(self, info: GraphQLResolveInfo) -> Union[CreatePostSuccess, CreatePostError]:
-        db = info.context["db"]
-        user_id = info.context["user_id"]
+    try:
+        # The SQL function maps the user's UUID to its pk and inserts the post
+        result = await db.execute_function(
+            "create_post",
+            {
+                "input_user_id": str(user_id),
+                "input_payload": {
+                    "title": input.title,
+                    "content": input.content,
+                    "excerpt": input.excerpt,
+                },
+            },
+        )
 
-        try:
-            # Create post
-            post_data = {
-                "title": self.input.title,
-                "content": self.input.content,
-                "excerpt": self.input.excerpt,
-                "author_id": user_id,
-                "slug": self.input.title.lower().replace(" ", "-")
-            }
+        # Fetch created post
+        post = await db.find_one("v_posts", id=result["id"])
+        return CreatePostSuccess(post=post)
 
-            post_id = await db.insert("posts", post_data, returning="id")
-
-            # Add tags if provided
-            if self.input.tag_ids:
-                for tag_id in self.input.tag_ids:
-                    await db.insert("post_tags", {"post_id": post_id, "tag_id": tag_id})
-
-            # Fetch created post
-            post = await db.find_one("v_posts", id=post_id)
-            return CreatePostSuccess(post=post)
-
-        except Exception as e:
-            return CreatePostError(message=str(e), code="CREATE_FAILED")
+    except Exception as e:
+        return CreatePostError(message=str(e), code="CREATE_FAILED")
 ```
 
 ## 🧪 Testing

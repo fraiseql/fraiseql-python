@@ -6,6 +6,9 @@ turns the rest of the page, or the next code block, into code.
 Scanned: the git-tracked ``docs/**.md``, ``examples/**.md`` and ``README.md``.
 Not scanned: ``docs/archive/`` and anything outside those paths (``.claude/``,
 ``dev/``).
+
+The same files, plus ``examples/**.py``, are checked for mutation APIs fraiseql
+doesn't have.
 """
 
 import re
@@ -103,14 +106,31 @@ _INVENTED_MUTATION_APIS = {
     "cascade_effects": re.compile(r"\bcascade_effects\b"),
     'function="<schema>.<name>"': re.compile(r"""function=["']\w+\.\w+["']"""),
     "FraiseQLMutation": re.compile(r"\bFraiseQLMutation\b"),
+    # A class mutation reads only input, success, error and prepare_input (#587).
+    "failure: (use error:)": re.compile(r"^\s+failure\s*:|;\s*failure\s*:"),
+    "@fraiseql.failure (use @fraiseql.error)": re.compile(r"@fraiseql\.failure\b"),
+    "resolve() on a class mutation": re.compile(r"\bdef resolve\((\s*self\b|\s*$)"),
 }
 _ADR_PREFIX = "docs/architecture/decisions/"
+
+
+def _invented_api_scan_files() -> list[str]:
+    if not _FILES:
+        return []
+    out = subprocess.run(
+        ["git", "ls-files", "examples/**.py"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout
+    return [*_FILES, *(p for p in out.splitlines() if p)]
 
 
 @pytest.mark.skipif(not _FILES, reason="needs a git checkout to list the docs")
 def test_no_invented_mutation_apis() -> None:
     hits = []
-    for path in _FILES:
+    for path in _invented_api_scan_files():
         if path.startswith(_ADR_PREFIX):
             continue
         text = (REPO_ROOT / path).read_text(encoding="utf-8", errors="replace")

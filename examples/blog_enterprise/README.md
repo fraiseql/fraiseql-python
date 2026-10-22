@@ -299,12 +299,15 @@ async def popular_posts(self, info: GraphQLResolveInfo) -> list[Post]:
 
 ```python
 # Declarative permissions
+from fraiseql.auth import requires_permission
+
 @fraiseql.mutation
-@require_permissions("content.create")
-class CreatePost:
-    async def resolve(self, info: GraphQLResolveInfo):
-        # Only users with content.create permission can execute
-        pass
+@requires_permission("content.create")
+async def create_post(
+    info: GraphQLResolveInfo, input: CreatePostInput
+) -> CreatePostSuccess | CreatePostError:
+    # Only users with content.create permission can execute
+    ...
 
 # Field-level authorization
 @fraiseql.field
