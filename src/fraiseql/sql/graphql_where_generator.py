@@ -355,6 +355,18 @@ class MacAddressFilter:
 
 
 @fraise_input
+class LTreeIndexInput:
+    """A label and its position in a path, for ``indexEq`` / ``indexGte``.
+
+    ``indexEq: {label: "astronomy", position: 1}`` keeps the paths whose first
+    ``astronomy`` label is at position 1 (0-indexed).
+    """
+
+    label: str
+    position: int
+
+
+@fraise_input
 class LTreeFilter:
     """Filter for LTree hierarchical paths with comprehensive operator support.
 
@@ -383,14 +395,10 @@ class LTreeFilter:
     - depth_*: Aliases for nlevel_* (same semantics)
 
     **Path Analysis Operators** (Extract and Find):
-    - index(label): Find position of label in path
-    - index_eq(label, pos): Label at exact position
-    - index_gte(label, pos): Label at or after position
-    - subpath(offset, len): Extract subpath range
-
-    **Path Manipulation Operators**:
-    - concat(path): Concatenate with another path
-    - lca(paths): Lowest common ancestor of multiple paths
+    - index_eq({label, position}): Label at exact position
+    - index_gte({label, position}): Label at or after position
+    - lca(paths): The path is the lowest common ancestor of the paths
+    - index, subpath, concat: rejected; they compute a value, not a condition
 
     **Array Operations**:
     - in_array(paths): Path is in array of allowed paths
@@ -435,12 +443,12 @@ class LTreeFilter:
     depth_neq: int | None = None  # Alias for nlevel_neq
 
     # Path manipulation operators
-    subpath: str | None = None  # subpath(path, offset, len) comparison
-    index: int | None = None  # index(path, item) - position of item
-    index_eq: int | None = None  # index(path, item) = value
-    index_gte: int | None = None  # index(path, item) >= value
-    lca: list[str] | None = None  # Lowest Common Ancestor of paths
-    concat: str | None = None  # path || value - concatenation
+    subpath: str | None = None  # Not a filter: rejected (subpath() computes a path)
+    index: int | None = None  # Not a filter: rejected (use index_eq / index_gte)
+    index_eq: LTreeIndexInput | None = None  # index(path, label) = position
+    index_gte: LTreeIndexInput | None = None  # index(path, label) >= position
+    lca: list[str] | None = None  # path = lca(paths), their lowest common ancestor
+    concat: str | None = None  # Not a filter: rejected (|| computes a path)
 
     # Array operations
     in_array: list[str] | None = None  # <@ - Path is in array of paths

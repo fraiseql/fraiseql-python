@@ -631,8 +631,8 @@ def get_test_params_for_operator(operator):
         "matches_any_lquery": (["*.a.*", "*.b.*"], "path", "getLtrees"),
         "subpath": ("path.to", "path", "getLtrees"),
         "index": (1, "path", "getLtrees"),
-        "index_eq": (1, "path", "getLtrees"),
-        "index_gte": (0, "path", "getLtrees"),
+        "index_eq": ({"label": "to", "position": 1}, "path", "getLtrees"),
+        "index_gte": ({"label": "to", "position": 0}, "path", "getLtrees"),
         "lca": (["a.b.c", "a.b.d"], "path", "getLtrees"),
         "concat": ("additional.path", "path", "getLtrees"),
         # LTree level operators

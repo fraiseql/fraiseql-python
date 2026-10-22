@@ -256,6 +256,21 @@ LTREE_DEPTH_COMPARISONS = {
     "depth_lte": "<=",
 }
 
+# ltree filters on index(path, label): (label, position) -> index(...) <comparison> position
+LTREE_INDEX_COMPARISONS = {
+    "index_eq": "=",
+    "index_gte": ">=",
+}
+
+# ltree operators that compute a path or a number, not a condition
+LTREE_NON_FILTERS = {
+    "subpath": "it computes a path (subpath(path, offset, len))",
+    "index": "it computes a position; filter with index_eq or index_gte: (label, position)",
+    "concat": "it computes a path (path || value)",
+}
+
+LTREE_FUNCTION_FILTERS = {*LTREE_INDEX_COMPARISONS, "lca", *LTREE_NON_FILTERS}
+
 # List operators (fallback)
 LIST_OPERATORS = {
     "notin": "NOT IN",
@@ -431,6 +446,9 @@ class FieldCondition:
             if self.operator in LTREE_DEPTH_COMPARISONS:
                 return self._ltree_depth_sql(Identifier(self.target_column))
 
+            if self.operator in LTREE_FUNCTION_FILTERS:
+                return self._ltree_function_sql(Identifier(self.target_column))
+
             sql_op = ALL_OPERATORS[self.operator]
 
             if self.operator in CONTAINMENT_OPERATORS:
@@ -499,6 +517,9 @@ class FieldCondition:
             if self.operator in LTREE_DEPTH_COMPARISONS:
                 # ->> gives text; nlevel() needs an ltree
                 return self._ltree_depth_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
+
+            if self.operator in LTREE_FUNCTION_FILTERS:
+                return self._ltree_function_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
 
             if self.operator in CONTAINMENT_OPERATORS:
                 # IN/NOT IN: psycopg3 requires individual placeholders
@@ -578,6 +599,9 @@ class FieldCondition:
 
             if self.operator in LTREE_DEPTH_COMPARISONS:
                 return self._ltree_depth_sql(Identifier(self.target_column))
+
+            if self.operator in LTREE_FUNCTION_FILTERS:
+                return self._ltree_function_sql(Identifier(self.target_column))
 
             sql_op = ALL_OPERATORS[self.operator]
 
@@ -833,6 +857,45 @@ class FieldCondition:
         comparison = LTREE_DEPTH_COMPARISONS[self.operator]
         sql = Composed([SQL("nlevel("), path_expr, SQL(f") {comparison} "), SQL("%s")])
         return sql, [int(self.value)]
+
+    def _ltree_function_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """index_eq / index_gte: index(path, label) = position; lca: path = lca(paths).
+
+        Raises:
+            ValueError: For subpath, index and concat, which aren't conditions, and
+                for a value of the wrong shape.
+        """
+        if self.operator in LTREE_NON_FILTERS:
+            raise ValueError(
+                f"ltree operator '{self.operator}' is not a filter: "
+                f"{LTREE_NON_FILTERS[self.operator]}"
+            )
+
+        if self.operator == "lca":
+            paths = self.value
+            if not isinstance(paths, (list, tuple)) or not paths:
+                raise ValueError(
+                    "ltree operator 'lca' takes a non-empty list of paths "
+                    f"(the path equals their lowest common ancestor), got {paths!r}"
+                )
+            placeholders = ", ".join(["%s::ltree"] * len(paths))
+            sql = Composed([path_expr, SQL(f" = lca(ARRAY[{placeholders}])")])
+            return sql, [str(path) for path in paths]
+
+        value = self.value
+        if isinstance(value, dict) and {"label", "position"} <= value.keys():
+            value = (value["label"], value["position"])
+        elif hasattr(value, "label") and hasattr(value, "position"):
+            value = (value.label, value.position)  # LTreeIndexInput
+        if not isinstance(value, (list, tuple)) or len(value) != 2:
+            raise ValueError(
+                f"ltree operator '{self.operator}' takes a label and a position "
+                f"((label, position) or {{label, position}}), got {value!r}"
+            )
+        label, position = value
+        comparison = LTREE_INDEX_COMPARISONS[self.operator]
+        sql = Composed([SQL("index("), path_expr, SQL(f", %s::ltree) {comparison} %s")])
+        return sql, [str(label), int(position)]
 
     def _build_like_pattern(self) -> str:
         """Build LIKE pattern from operator and value."""

@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The ltree filters `index_eq`, `index_gte` and `lca` work.** They rendered
+  invalid SQL (`"path" index = %s`, `"path" lca %s`), on a column and on a JSONB
+  field. `index_eq` / `index_gte` take a label and a position and compare
+  `index(path, label)` with it: `{"index_eq": ("astronomy", 1)}` in Python,
+  `indexEq: {label: "astronomy", position: 1}` in GraphQL, where these fields
+  are now typed `LTreeIndexInput` instead of `Int`. `lca` keeps the rows whose
+  path is the lowest common ancestor of the given paths.
+
+### Changed
+
+- **The ltree operators `subpath`, `index` and `concat` raise `ValueError` in a
+  `where`.** They compute a path or a number, not a condition, and rendered
+  invalid SQL. The error names the operator and what to use instead.
+
+### Fixed
+
 - **A dict `order_by` sorts by vector distance.**
   `db.find(..., order_by={"embedding": {"cosine_distance": [...]}})`, the form
   `docs/features/pgvector.md` shows, was dropped with

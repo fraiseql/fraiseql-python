@@ -10,7 +10,13 @@ import logging
 from dataclasses import replace
 from typing import Any
 
-from fraiseql.where_clause import ALL_OPERATORS, VECTOR_OPERATORS, FieldCondition, WhereClause
+from fraiseql.where_clause import (
+    ALL_OPERATORS,
+    LTREE_INDEX_COMPARISONS,
+    VECTOR_OPERATORS,
+    FieldCondition,
+    WhereClause,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -377,7 +383,11 @@ def _is_nested_object_filter(
     """
     # Check if any keys are vector operators - these should not be treated as nested
     # Example: {"cosine_distance": {"vector": [...], "threshold": 0.5}}
-    if any(k in VECTOR_OPERATORS for k in field_filter):
+    # Same for the ltree operators taking {"label": ..., "position": ...}
+    if any(
+        k in VECTOR_OPERATORS or _normalize_operator(k) in LTREE_INDEX_COMPARISONS
+        for k in field_filter
+    ):
         return False, False
 
     # Check if field_filter has nested operators
