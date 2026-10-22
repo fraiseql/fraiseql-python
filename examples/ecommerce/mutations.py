@@ -1,7 +1,7 @@
 """E-commerce mutations for FraiseQL example."""
 
 import fraiseql
-from fraiseql.mutations import mutation
+from fraiseql.types import ID
 
 from .models import (
     AddressError,
@@ -24,6 +24,46 @@ from .models import (
     ReviewError,
     UpdateCartItemInput,
 )
+
+# Inputs used only by these mutations
+
+
+@fraiseql.input
+class ClearCartInput:
+    """Clear cart input."""
+
+    cart_id: ID
+
+
+@fraiseql.input
+class CancelOrderInput:
+    """Cancel order input."""
+
+    order_id: ID
+    reason: str | None = None
+
+
+@fraiseql.input
+class UpdateAddressInput:
+    """Update address input."""
+
+    address_id: ID
+    label: str | None = None
+    street1: str | None = None
+    street2: str | None = None
+    city: str | None = None
+    state: str | None = None
+    postal_code: str | None = None
+    country: str | None = None
+    is_default: bool | None = None
+
+
+@fraiseql.input
+class DeleteAddressInput:
+    """Delete address input."""
+
+    address_id: ID
+
 
 # Authentication mutations
 
@@ -80,6 +120,7 @@ class RemoveFromCart:
 class ClearCart:
     """Clear all items from cart."""
 
+    input: ClearCartInput
     success: CartSuccess
     error: CartError
 
@@ -100,7 +141,7 @@ class Checkout:
 class CancelOrder:
     """Cancel an order."""
 
-    input: fraiseql.input(lambda: CancelOrderInput)
+    input: CancelOrderInput
     success: OrderSuccess
     error: OrderError
 
@@ -121,7 +162,7 @@ class CreateAddress:
 class UpdateAddress:
     """Update existing address."""
 
-    input: fraiseql.input(lambda: UpdateAddressInput)
+    input: UpdateAddressInput
     success: AddressSuccess
     error: AddressError
 
@@ -130,7 +171,7 @@ class UpdateAddress:
 class DeleteAddress:
     """Delete an address."""
 
-    input: fraiseql.input(lambda: DeleteAddressInput)
+    input: DeleteAddressInput
     success: AddressSuccess
     error: AddressError
 
@@ -145,36 +186,3 @@ class CreateReview:
     input: CreateReviewInput
     success: CreateReviewSuccess
     error: ReviewError
-
-
-# Additional input types referenced above
-
-
-@fraiseql.input
-class CancelOrderInput:
-    """Cancel order input."""
-
-    order_id: fraiseql.UUID
-    reason: fraiseql.str | None = None
-
-
-@fraiseql.input
-class UpdateAddressInput:
-    """Update address input."""
-
-    address_id: fraiseql.UUID
-    label: fraiseql.str | None = None
-    street1: fraiseql.str | None = None
-    street2: fraiseql.str | None = None
-    city: fraiseql.str | None = None
-    state: fraiseql.str | None = None
-    postal_code: fraiseql.str | None = None
-    country: fraiseql.str | None = None
-    is_default: fraiseql.bool | None = None
-
-
-@fraiseql.input
-class DeleteAddressInput:
-    """Delete address input."""
-
-    address_id: fraiseql.UUID

@@ -1,122 +1,56 @@
 # E-Commerce Example
 
-A complete example of FraiseQL v2 with domain-driven schema organization.
+An e-commerce GraphQL API with FraiseQL 1.x: users, addresses, a product catalog,
+carts, orders and reviews.
 
-## Schema Structure
+> **Status: work in progress** (tracked in #574). The Python schema builds, but the
+> example doesn't run end to end yet:
+>
+> - the query resolvers in `queries.py` are placeholders that return nothing;
+> - `functions.sql` and `seed_data.sql` were written for an earlier version of the
+>   schema (tables `products`, `carts`, … instead of `tb_product`, `tb_cart`, …),
+>   and the mutation functions return the older `{"type": …}` JSON instead of a
+>   `mutation_response`;
+> - `RemoveFromCart`, `ClearCart`, `CancelOrder`, `UpdateAddress` and
+>   `DeleteAddress` have no SQL function yet.
+>
+> For a complete, running example, see [`blog_simple`](../blog_simple/) and
+> [`todo_quickstart.py`](../todo_quickstart.py).
 
-This project demonstrates organizing a GraphQL schema across multiple domains:
+## Files
 
-```
-schema/
-├── auth/          # User authentication and sessions
-│   └── types.json
-├── products/      # Product catalog
-│   └── types.json
-├── orders/        # Order management
-│   └── types.json
-└── inventory/     # Stock tracking
-    └── types.json
-```
+| File | What it holds |
+|------|---------------|
+| `models.py` | Types (`Product`, `Cart`, `Order`, …), enums, inputs, success and error types |
+| `queries.py` | Root queries (placeholders) and the connection types they return |
+| `mutations.py` | Class mutations: each calls the PostgreSQL function named after it |
+| `app.py` | The FastAPI app (`create_fraiseql_app`), with CORS, metrics and tracing |
+| `schema.sql` | Tables (`tb_*`) and the JSONB views (`v_*`) the types read from |
+| `functions.sql` | The mutation functions (see the status above) |
+| `seed_data.sql` | Sample data (see the status above) |
 
-## Domains
+Money amounts are `decimal.Decimal`, served as the `Decimal` scalar (a string such
+as `"19.99"`).
 
-### Auth Domain
-
-- **Types**: User, Session
-- **Queries**: getUser, getCurrentUser
-- **Mutations**: login, logout
-
-### Products Domain
-
-- **Types**: Product, Category
-- **Queries**: getProduct, listProducts, getCategory, listCategories
-- **Mutations**: createProduct, updateProduct
-
-### Orders Domain
-
-- **Types**: Order, OrderItem
-- **Queries**: getOrder, getUserOrders, getOrderItems
-- **Mutations**: createOrder, updateOrderStatus
-
-### Inventory Domain
-
-- **Types**: Inventory, Warehouse
-- **Queries**: getInventory, checkGlobalStock, listWarehouses
-- **Mutations**: updateInventory, reserveInventory
-
-## Running the Example
-
-### 1. Compile the Schema
+## Running it
 
 ```bash
-# From this directory
-fraiseql compile fraiseql.toml
+createdb ecommerce
+psql ecommerce -f schema.sql
+
+pip install -r requirements.txt
+cd .. && DATABASE_URL=postgresql://localhost/ecommerce uvicorn ecommerce.app:app --reload
 ```
 
-This will:
+The app is a package module (it uses relative imports), so start it from the
+`examples/` directory as `ecommerce.app:app`. The GraphQL endpoint is
+`http://localhost:8000/graphql`.
 
-- Auto-discover all domains in the `schema/` directory
-- Load `types.json` from each domain (auth, products, orders, inventory)
-- Merge all types, queries, and mutations
-- Generate `schema.compiled.json`
+## How the pieces fit
 
-### 2. View the Compiled Schema
-
-```bash
-cat schema.compiled.json | jq .
-```
-
-## Configuration
-
-The `fraiseql.toml` file uses domain discovery:
-
-```toml
-[domain_discovery]
-enabled = true
-root_dir = "schema"
-```
-
-This tells FraiseQL to:
-
-1. Look in the `schema/` directory
-2. Find all subdirectories (auth, products, orders, inventory)
-3. Load `types.json`, `queries.json`, `mutations.json` from each
-4. Merge everything into a single compiled schema
-
-## Adding a New Domain
-
-1. Create a new directory: `schema/new_domain/`
-2. Add `types.json` with your types, queries, mutations
-3. Run `fraiseql compile fraiseql.toml`
-4. Done! The new domain is automatically discovered
-
-Example:
-
-```bash
-mkdir -p schema/reviews
-# Edit schema/reviews/types.json
-fraiseql compile fraiseql.toml
-```
-
-## Best Practices
-
-1. **One domain per directory** - Keep domains isolated
-2. **Domain owns its types** - Auth domain defines User, not Products
-3. **Consumer owns cross-domain queries** - Orders domain queries Products
-4. **Explicit file structure** - Consistent naming (types.json, queries.json, mutations.json)
-5. **Document your domain** - Add comments explaining domain purpose
-
-## Files Generated
-
-- `schema.compiled.json` - Complete compiled schema ready for runtime
-- Contains merged types, queries, mutations from all domains
-- Includes security configuration from fraiseql.toml
-
-## Next Steps
-
-- Add a `schema/payments/` domain for payment processing
-- Create `schema/reviews/` domain for product reviews
-- Add `schema/shipping/` domain for fulfillment
-- Each new domain is automatically discovered and compiled
-
-See `../../docs/DOMAIN_ORGANIZATION.md` for more details on organizing schemas by domain.
+- A type reads its fields from the `data` JSONB column of its view; see
+  [the JSONB view pattern](../../docs/core/concepts-glossary.md).
+- A class mutation such as `AddToCart` calls the SQL function `add_to_cart` with
+  its input as one `jsonb`, and returns its success or error type from the
+  `mutation_response` the function returns; see
+  [mutations](../../docs/core/queries-and-mutations.md).

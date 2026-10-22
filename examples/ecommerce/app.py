@@ -54,7 +54,6 @@ from .queries import (
     # Connection types
     ProductConnection,
     ProductWithReviews,
-    Query,
     ReviewConnection,
 )
 
@@ -92,8 +91,6 @@ app = create_fraiseql_app(
         OrderWithDetails,
         ProductWithReviews,
         DashboardStats,
-        # Query root
-        Query,
     ],
     # Mutations
     mutations=[
@@ -157,11 +154,6 @@ if is_production:
         export_format=os.getenv("TRACING_FORMAT", "otlp"),
     )
     tracer = setup_tracing(app, tracing_config)
-
-# Add custom middleware for session handling
-from starlette.middleware.sessions import SessionMiddleware
-
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "dev-secret"))
 
 # Add CORS for frontend
 from starlette.middleware.cors import CORSMiddleware

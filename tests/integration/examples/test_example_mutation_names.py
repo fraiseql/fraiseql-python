@@ -63,7 +63,7 @@ _BUILDABLE = [
 # Examples with mutations that don't build on the current API. Their mutation
 # names already follow the preferred rule; move one to _BUILDABLE once it builds.
 _BROKEN = {
-    "examples.ecommerce.mutations": "decorates a function where a class is expected",
+    "examples.ecommerce.mutations": "Decimal fields: builds with #575's Decimal scalar",
     "examples.enterprise_patterns.mutations": "uses a pydantic FieldInfo as a type",
     "examples.saas-starter.main": "imports fraiseql.Info, which fraiseql doesn't have",
     "examples.security.secure_graphql_api": "uses fraiseql.union, which fraiseql doesn't have",
