@@ -284,8 +284,8 @@ async def posts(info: GraphQLResolveInfo) -> list[Post]:
     db = info.context["db"]
     org_id = info.context["organization_id"]
 
-    # All queries automatically filtered by organization
-    return await db.find("posts", organization_id=org_id)
+    # Every query filters by organization
+    return await db.find("posts", mandatory_filters={"organization_id": org_id})
 
 # Tenant-aware caching
 @fraiseql.field

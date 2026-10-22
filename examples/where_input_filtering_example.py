@@ -44,7 +44,7 @@ async def notes(info, where=None) -> list[Note]:  # where: NoteWhereInput | None
 async def notes_by_priority(info, priority: str) -> list[Note]:
     """Get notes by priority (simple parameter approach)."""
     db = info.context["db"]
-    return await db.find("v_note", "notes", info, priority=priority)
+    return await db.find("v_note", "notes", info, mandatory_filters={"priority": priority})
 
 
 @fraiseql.query

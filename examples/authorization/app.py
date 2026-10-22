@@ -39,7 +39,7 @@ async def documents(info) -> list[Document]:
 async def create_document(info, title: str) -> Document:
     """Create a document (blocked for read-only principals by the authorizer)."""
     db = info.context["db"]
-    return await db.find_one("v_document", title=title)
+    return await db.find_one("v_document", mandatory_filters={"title": title})
 
 
 class DenyMutationsAuthorizer:

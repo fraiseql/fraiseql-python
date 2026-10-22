@@ -178,7 +178,7 @@ async def get_user(info, id: UUID) -> User | None:
 
     try:
         # Your database logic here
-        user = await db.find_one("v_users", id=id)
+        user = await db.find_one("v_users", mandatory_filters={"id": id})
 
         if user:
             logger.info(

@@ -67,7 +67,7 @@ async def me(info) -> User | None:
 
     # Query user from database
     db = info.context["db"]
-    return await db.find_one("v_user", "user", info, id=user_context.user_id)
+    return await db.find_one("v_user", "user", info, mandatory_filters={"id": user_context.user_id})
 
 
 @fraiseql.query
@@ -77,7 +77,9 @@ async def my_posts(info, limit: int = 10) -> list[Post]:
     user_context = info.context["user"]
 
     db = info.context["db"]
-    return await db.find("v_post", "posts", info, author_id=user_context.user_id, limit=limit)
+    return await db.find(
+        "v_post", "posts", info, mandatory_filters={"author_id": user_context.user_id}, limit=limit
+    )
 
 
 @fraiseql.query
@@ -104,7 +106,7 @@ async def create_post(info, title: str, content: str) -> Post:
         },
     )
 
-    return await db.find_one("v_post", "post", info, id=result["id"])
+    return await db.find_one("v_post", "post", info, mandatory_filters={"id": result["id"]})
 
 
 async def create_app() -> FastAPI:

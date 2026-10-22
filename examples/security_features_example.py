@@ -122,7 +122,7 @@ async def users(info, limit: int = 10) -> list[User]:
 async def user(info, id: str) -> User | None:
     """Get single user by ID (low complexity)."""
     db = info.context["db"]
-    return await db.find_one("users", id=id)
+    return await db.find_one("users", mandatory_filters={"id": id})
 
 
 async def user_posts(info, user_id: str, limit: int = 20) -> list[Post]:
@@ -130,7 +130,7 @@ async def user_posts(info, user_id: str, limit: int = 20) -> list[Post]:
     limit = min(limit, 50)  # Cap limit
 
     db = info.context["db"]
-    return await db.find("posts", author_id=user_id, limit=limit)
+    return await db.find("posts", mandatory_filters={"author_id": user_id}, limit=limit)
 
 
 async def search_posts(info, query: str, limit: int = 10) -> list[Post]:
