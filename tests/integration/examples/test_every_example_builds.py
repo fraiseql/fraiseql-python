@@ -109,7 +109,6 @@ _KNOWN_FAILURES = {
     "examples/specialized_types/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples/token_revocation_example.py": "needs redis",
     "examples/turborouter/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
-    "examples/vector_search/main.py": "imports fraiseql.fraise_query, which fraiseql doesn't have",
 }
 
 
