@@ -14,7 +14,7 @@ When fetching related data, naive implementations cause N+1 queries:
 async def author(self, info) -> User:
     db = info.context["db"]
     # This runs for EVERY post! (1 + N queries)
-    return await db.find_one("v_user", id=self.author_id)
+    return await db.find_one("v_user", mandatory_filters={"id": self.author_id})
 ```
 
 **Query**:
@@ -261,7 +261,7 @@ async def post_created(info) -> Post:
             post_id = notification.payload
 
             # Fetch the new post
-            post = await db.find_one("v_post", id=post_id)
+            post = await db.find_one("v_post", mandatory_filters={"id": post_id})
             yield post
 ```
 
@@ -316,7 +316,7 @@ async def post_created(info, author_id: ID | None = None) -> Post:
                 continue
 
             post_id = UUID(notification.payload)
-            post = await db.find_one("v_post", id=post_id)
+            post = await db.find_one("v_post", mandatory_filters={"id": post_id})
 
             # Filter by author if specified
             if author_id is None or post.author_id == author_id:
@@ -447,12 +447,13 @@ async def search_posts(
     # Get query embedding (e.g., from OpenAI)
     query_embedding = await get_embedding(query)
 
-    # Vector similarity search
+    # Vector similarity search: nearest by cosine distance
+    from fraiseql.sql.order_by_generator import OrderBy, OrderBySet
+
     return await db.find(
         "v_post",
-        order_by=[("embedding <-> %s", "ASC")],  # Cosine distance
+        order_by=OrderBySet([OrderBy("embedding.cosine_distance", value=query_embedding)]),
         limit=limit,
-        params=[query_embedding],
     )
 ```
 
@@ -630,7 +631,7 @@ async def author(self) -> User:
 @fraiseql.field
 async def author(self, info) -> User:
     db = info.context["db"]
-    return await db.find_one("v_user", id=self.author_id)  # N+1 queries!
+    return await db.find_one("v_user", mandatory_filters={"id": self.author_id})  # N+1 queries!
 ```
 
 ### 2. Index Vector Columns

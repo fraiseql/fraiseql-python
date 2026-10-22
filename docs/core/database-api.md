@@ -82,7 +82,7 @@ from fraiseql.types import ID
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", "user", id=id)
+    return await db.find_one("v_user", "user", mandatory_filters={"id": id})
 ```
 
 **Parameters:**

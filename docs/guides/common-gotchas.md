@@ -77,7 +77,7 @@ import fraiseql
 @fraiseql.dataloader_field
 async def posts(user: User, info) -> list[Post]:
     db = info.context["db"]
-    return await db.find("v_post", fk_user=user.id)
+    return await db.find("v_post", mandatory_filters={"fk_user": user.id})
 ```
 
 **Result:** ~2 queries total (users + batched posts)
@@ -378,7 +378,7 @@ import fraiseql
 @fraiseql.query(authorizer=salary_authorizer)
 async def user_compensation(info, id: ID) -> Compensation | None:
     db = info.context["db"]
-    return await db.find_one("v_compensation", id=id)
+    return await db.find_one("v_compensation", mandatory_filters={"id": id})
 ```
 
 **Or enforce row visibility with PostgreSQL Row-Level Security (RLS):**
@@ -660,7 +660,7 @@ async def users(info, status: str | None = None) -> list[User]:
     Response key: "users" (an array of User objects) unless aliased.
     """
     db = info.context["db"]
-    return await db.find("v_user", status=status)
+    return await db.find("v_user", mandatory_filters={"status": status})
 ```
 
 ---

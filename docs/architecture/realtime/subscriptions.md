@@ -142,7 +142,7 @@ async def task_updates(info, project_id: UUID) -> AsyncGenerator[Task, None]:
         if event["project_id"] != str(project_id):
             continue  # not our project — skip
 
-        task = await db.find_one("v_task", id=event["task_id"])
+        task = await db.find_one("v_task", mandatory_filters={"id": event["task_id"]})
         if task is not None:
             yield task
 ```
@@ -172,7 +172,7 @@ async def task_updates(info, project_id: UUID) -> AsyncGenerator[Task, None]:
     seen: dict[str, str] = {}  # task id -> last-seen updated_at
 
     while True:
-        tasks = await db.find("v_task", fk_project=project_id)
+        tasks = await db.find("v_task", mandatory_filters={"fk_project": project_id})
         for task in tasks:
             if seen.get(task.id) != task.updated_at:
                 seen[task.id] = task.updated_at

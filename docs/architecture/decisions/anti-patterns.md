@@ -116,7 +116,7 @@ async def author(info, comment: Comment) -> User:
     # Called once per comment, but FraiseQL collects the keys and issues a
     # single batched load — turning N+1 queries into 1.
     db = info.context["db"]
-    return await db.find_one("v_user", id=comment.author_id)
+    return await db.find_one("v_user", mandatory_filters={"id": comment.author_id})
 ```
 
 **Solution C — cap depth and page nested lists.** Keep request shapes sane and
@@ -225,7 +225,7 @@ async def create_order(info, input: CreateOrderInput) -> CreateOrderSuccess:
     db = info.context["db"]
 
     # Validate by hand, in the app
-    customer = await db.find_one("v_customer", id=input.customer_id)
+    customer = await db.find_one("v_customer", mandatory_filters={"id": input.customer_id})
     if customer is None:
         return CreateOrderError(message="unknown customer")
 
@@ -399,7 +399,7 @@ and side effects that are either blocking *or* silently dropped on failure.
 @fraiseql.query
 async def get_user(info, id: ID) -> User | None:
     db = info.context["db"]
-    user = await db.find_one("v_user", id=id)
+    user = await db.find_one("v_user", mandatory_filters={"id": id})
 
     current = info.context["current_user"]
     if user.created_by != current.id and not current.is_admin:
@@ -411,7 +411,7 @@ async def delete_user(info, id: ID) -> bool:
     # A *different* check, written by hand, in a different place
     db = info.context["db"]
     current = info.context["current_user"]
-    target = await db.find_one("v_user", id=id)
+    target = await db.find_one("v_user", mandatory_filters={"id": id})
     if target.id != current.id and not current.is_admin:
         raise PermissionError("Not authorized")
     await db.execute_function("fn_delete_user", {"id": id})
@@ -442,7 +442,7 @@ owner_or_admin = OwnerOrAdminAuthorizer()   # implements Authorizer
 @fraiseql.query(authorizer=owner_or_admin)
 async def get_user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 @fraiseql.mutation
 async def delete_user(

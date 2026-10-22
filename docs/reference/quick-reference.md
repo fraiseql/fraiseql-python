@@ -106,7 +106,7 @@ async def user(info, id: ID) -> User | None:
     """Get user by ID."""
     db = info.context["db"]
     # field_name auto-inferred from function name "user"
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ### Query - Filter with Where Input Types

@@ -606,7 +606,7 @@ User = await generator.generate_type_class(view)
 @fraiseql.query
 async def get_user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_users", id=id)
+    return await db.find_one("v_users", mandatory_filters={"id": id})
 ```
 
 ### Type Introspection API

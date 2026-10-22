@@ -130,7 +130,7 @@ from fraiseql.optimization.dataloader import DataLoader
 class UserDataLoader(DataLoader):
     async def batch_load(self, keys: list[UUID]) -> list["User | None"]:
         db = self.context["db"]
-        rows = await db.find("v_user", id__in=keys)
+        rows = await db.find("v_user", where={"id": {"in": keys}})
         by_id = {row.id: row for row in rows}
         return [by_id.get(key) for key in keys]
 

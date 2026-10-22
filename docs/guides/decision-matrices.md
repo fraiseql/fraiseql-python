@@ -47,7 +47,7 @@ for user in users:
     print(user.name)
 
 # find_one() - Optional single result
-user = await db.find_one(User, id="some-uuid")
+user = await db.find_one(User, mandatory_filters={"id": "some-uuid"})
 if user is None:
     print("User not found")  # Handle None
 else:
@@ -358,7 +358,7 @@ async def create_user(info, name: str, email: str) -> User:
         "name": name,
         "email": email
     })
-    return await db.find_one(User, id=result["id"])
+    return await db.find_one(User, mandatory_filters={"id": result["id"]})
 ```
 
 **Class-based pattern (with success/error):**

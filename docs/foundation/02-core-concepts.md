@@ -180,7 +180,7 @@ from fraiseql.types import ID
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 @fraiseql.query
 async def users(info) -> list[User]:

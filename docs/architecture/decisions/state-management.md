@@ -130,7 +130,7 @@ async def get_user_posts(cache: ResultCache, db, user_id):
     key = cache.key_builder.build_key("v_post", filters={"user_id": user_id})
 
     async def fetch():
-        return await db.find("v_post", user_id=user_id)
+        return await db.find("v_post", mandatory_filters={"user_id": user_id})
 
     return await cache.get_or_set(key, fetch, ttl=300)
 ```
@@ -183,7 +183,7 @@ from fraiseql.caching import CachedRepository, ResultCache, PostgresCache
 cached_db = CachedRepository(base_repository=db, cache=ResultCache(PostgresCache(pool)))
 
 # Reads go through the cache (tenant-isolated key, cache-aside)
-posts = await cached_db.find("v_post", status="published")
+posts = await cached_db.find("v_post", mandatory_filters={"status": "published"})
 
 # Per-call overrides
 fresh = await cached_db.find("v_post", skip_cache=True)          # bypass cache

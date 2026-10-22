@@ -248,8 +248,8 @@ cache = ResultCache(backend=backend, config=CacheConfig(default_ttl=300))
 cached_repo = CachedRepository(base_repository=base_repo, cache=cache)
 
 # Reads are cached (per-call opt-out + custom TTL available):
-rows = await cached_repo.find("v_user", status="active")
-row = await cached_repo.find_one("v_user", id=user_id, cache_ttl=600)
+rows = await cached_repo.find("v_user", mandatory_filters={"status": "active"})
+row = await cached_repo.find_one("v_user", cache_ttl=600, mandatory_filters={"id": user_id})
 fresh = await cached_repo.find("v_user", skip_cache=True)
 
 # Writes invalidate related cache entries automatically:
@@ -271,7 +271,7 @@ cache = ResultCache(backend=backend, config=CacheConfig())
 @cached_query(cache, ttl=600)
 async def top_sellers(region: str) -> list[dict]:
     db = ...  # your FraiseQLRepository
-    return await db.find("v_top_sellers", region=region)
+    return await db.find("v_top_sellers", mandatory_filters={"region": region})
 
 
 # Bypass the cache for a single call:
@@ -732,7 +732,7 @@ import fraiseql
 async def user_profile(info, id: ID) -> UserProfile:
     """Returns only public profile fields from v_user_profile."""
     db = info.context["db"]
-    return await db.find_one("v_user_profile", id=id)
+    return await db.find_one("v_user_profile", mandatory_filters={"id": id})
 ```
 
 ---

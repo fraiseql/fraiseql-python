@@ -477,13 +477,13 @@ manual filtering required.
 @fraiseql.query
 async def me(info) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=info.context["user_id"])
+    return await db.find_one("v_user", mandatory_filters={"id": info.context["user_id"]})
 
 @fraiseql.query
 async def projects(info, status: str | None = None) -> list[Project]:
     db = info.context["db"]
     filters = {"status": status} if status else {}
-    return await db.find("v_project", **filters)
+    return await db.find("v_project", mandatory_filters=filters)
 
 @fraiseql.query
 async def tasks(
@@ -497,7 +497,7 @@ async def tasks(
     filters = {"project_id": project_id}
     if status:
         filters["status"] = status
-    return await db.find("v_task", limit=limit, offset=offset, **filters)
+    return await db.find("v_task", limit=limit, offset=offset, mandatory_filters=filters)
 ```
 
 ### Authorization Beyond Tenant Isolation

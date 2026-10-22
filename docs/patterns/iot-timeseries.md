@@ -408,14 +408,14 @@ async def devices(info, device_type: str | None = None) -> list[Device]:
     """List devices, optionally filtered by type."""
     db = info.context["db"]
     filters = {"device_type": device_type} if device_type else {}
-    return await db.find("v_device", **filters)
+    return await db.find("v_device", mandatory_filters=filters)
 
 
 @fraiseql.query
 async def device(info, id: ID) -> Device | None:
     """Get one device by id."""
     db = info.context["db"]
-    return await db.find_one("v_device", id=id)
+    return await db.find_one("v_device", mandatory_filters={"id": id})
 
 
 @fraiseql.query
@@ -430,10 +430,8 @@ async def sensor_metrics(
     db = info.context["db"]
     return await db.find(
         "v_reading_1h",
-        device_id=device_id,
-        sensor_name=sensor_name,
-        bucket__gte=start_time,
-        bucket__lte=end_time,
+        mandatory_filters={"device_id": device_id, "sensor_name": sensor_name},
+        where={"bucket": {"gte": start_time, "lte": end_time}},
     )
 
 
@@ -441,7 +439,7 @@ async def sensor_metrics(
 async def active_alerts(info) -> list[Alert]:
     """Unacknowledged alerts."""
     db = info.context["db"]
-    return await db.find("v_alert", acknowledged=False)
+    return await db.find("v_alert", mandatory_filters={"acknowledged": False})
 ```
 
 `start_time`/`end_time` map to the WHERE operators `bucket__gte` / `bucket__lte`, which
@@ -758,7 +756,7 @@ async def test_threshold_triggers_alert(schema, db):
         "{ ... on RecordReadingSuccess { sensorName } } }" % device_id,
         context_value={"db": db},
     )
-    alerts = await db.find("v_alert", acknowledged=False)
+    alerts = await db.find("v_alert", mandatory_filters={"acknowledged": False})
     assert any(a["data"]["severity"] == "warning" for a in alerts)
 ```
 

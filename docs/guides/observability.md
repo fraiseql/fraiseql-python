@@ -164,7 +164,7 @@ from fraiseql.monitoring import with_metrics
 @with_metrics("query")
 async def expensive_report(info) -> Report:
     db = info.context["db"]
-    return await db.find_one("v_report", id=info.variable_values["id"])
+    return await db.find_one("v_report", mandatory_filters={"id": info.variable_values["id"]})
 ```
 
 You can also reach the live collector directly with `get_metrics()` to record bespoke values.

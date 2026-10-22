@@ -96,7 +96,7 @@ async def users(info) -> list[User]:
 async def user(info, id: UUID) -> User | None:
     """Get user by ID."""
     db = info.context["db"]
-    return await db.find_one("v_user", "user", info, id=id)
+    return await db.find_one("v_user", "user", info, mandatory_filters={"id": id})
 ```
 
 **Info Object:**
@@ -260,7 +260,7 @@ user = await db.find_one(
     "v_user",
     "user",
     info,
-    id=user_id
+    mandatory_filters={"id": user_id},
 )
 ```
 

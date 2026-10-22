@@ -587,7 +587,7 @@ async def create_user(info, input: CreateUserInput) -> User:
         "name": input.name,
         "email": input.email
     })
-    return await db.find_one("v_user", id=result["id"])
+    return await db.find_one("v_user", mandatory_filters={"id": result["id"]})
 ```
 
 **Class-based pattern (with success/error):**

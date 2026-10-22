@@ -1988,7 +1988,9 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info
-            **kwargs: Query parameters (id, where, mandatory_filters, etc.)
+            **kwargs: Query parameters: ``where`` and ``mandatory_filters`` (column
+                equality, e.g. ``mandatory_filters={"id": id}``). A bare filter such
+                as ``id=id`` raises TypeError.
 
         Returns:
             RustResponseBytes for non-null results, None for null results (no record found)

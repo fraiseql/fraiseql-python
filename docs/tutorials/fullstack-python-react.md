@@ -567,7 +567,7 @@ async def users(info) -> list[User]:
 async def user(info, id: ID) -> User | None:
     """Get a single user by id."""
     db = info.context["db"]
-    return await db.find_one("v_user", "user", info, id=id)
+    return await db.find_one("v_user", "user", info, mandatory_filters={"id": id})
 
 
 @fraiseql.query
@@ -584,7 +584,7 @@ async def posts(info, published_only: bool = True) -> list[Post]:
 async def post(info, id: ID) -> Post | None:
     """Get a single post by id."""
     db = info.context["db"]
-    return await db.find_one("v_post", "post", info, id=id)
+    return await db.find_one("v_post", "post", info, mandatory_filters={"id": id})
 
 
 @fraiseql.query
@@ -620,7 +620,7 @@ async def create_post(info, input: CreatePostInput) -> PostSuccess | MutationErr
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not create post"))
 
-    created = await db.find_one("v_post", "post", info, id=result["id"])
+    created = await db.find_one("v_post", "post", info, mandatory_filters={"id": result["id"]})
     return PostSuccess(post=created)
 
 
@@ -639,7 +639,7 @@ async def update_post(info, input: UpdatePostInput) -> PostSuccess | MutationErr
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not update post"))
 
-    updated = await db.find_one("v_post", "post", info, id=result["id"])
+    updated = await db.find_one("v_post", "post", info, mandatory_filters={"id": result["id"]})
     return PostSuccess(post=updated)
 
 
@@ -666,7 +666,7 @@ async def create_comment(info, input: CreateCommentInput) -> CreateCommentSucces
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not create comment"))
 
-    created = await db.find_one("v_comment", "comment", info, id=result["id"])
+    created = await db.find_one("v_comment", "comment", info, mandatory_filters={"id": result["id"]})
     return CreateCommentSuccess(comment=created)
 
 
@@ -679,7 +679,7 @@ async def like_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationErr
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not like post"))
 
-    updated = await db.find_one("v_post", "post", info, id=result["id"])
+    updated = await db.find_one("v_post", "post", info, mandatory_filters={"id": result["id"]})
     return LikeSuccess(post=updated)
 
 
@@ -692,7 +692,7 @@ async def unlike_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationE
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not unlike post"))
 
-    updated = await db.find_one("v_post", "post", info, id=result["id"])
+    updated = await db.find_one("v_post", "post", info, mandatory_filters={"id": result["id"]})
     return LikeSuccess(post=updated)
 
 

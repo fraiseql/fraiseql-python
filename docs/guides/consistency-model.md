@@ -55,7 +55,7 @@ from fraiseql.types import ID
 @fraiseql.query
 async def user(info, id: ID) -> "User | None":
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)   # reads latest committed state
+    return await db.find_one("v_user", mandatory_filters={"id": id})   # reads latest committed state
 
 @fraiseql.mutation
 async def update_user(info, input: "UpdateUserInput") -> "UpdateUserSuccess | UpdateUserError":

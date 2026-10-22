@@ -272,7 +272,7 @@ Because every read is a single query against a PostgreSQL view and every write i
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ```graphql

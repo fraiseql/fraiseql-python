@@ -182,7 +182,7 @@ Once confident, enable caching by default:
 ```python
 # Caching automatic (no skip_cache flag)
 users = await cached_repo.find("users")
-products = await cached_repo.find("products", status="active")
+products = await cached_repo.find("products", mandatory_filters={"status": "active"})
 ```
 
 ## Verification Checklist
@@ -222,10 +222,10 @@ print(cache_key)
 
 ```python
 # First query (cache miss)
-result1 = await cached_repo.find("users", status="active")
+result1 = await cached_repo.find("users", mandatory_filters={"status": "active"})
 
 # Second query (cache hit)
-result2 = await cached_repo.find("users", status="active")
+result2 = await cached_repo.find("users", mandatory_filters={"status": "active"})
 
 # Results should be identical
 assert result1 == result2

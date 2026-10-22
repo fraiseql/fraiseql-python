@@ -72,7 +72,7 @@ from fraiseql import dataloader
 @dataloader
 async def posts(user: User, info: Info) -> list[Post]:
     # Automatically batched
-    return await info.context.repo.find("posts_view", user_id=user.id)
+    return await info.context["db"].find("posts_view", mandatory_filters={"user_id": user.id})
 ```
 
 ### 4. Query Complexity Analysis

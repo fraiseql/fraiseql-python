@@ -286,7 +286,7 @@ async def get_my_profile(info: GraphQLResolveInfo) -> User:
         raise AuthenticationError("Not authenticated")
 
     # Use repository to fetch user data
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 ```
 
 ## Auth0 Provider
@@ -545,10 +545,10 @@ class PostgresUserRepository(UserRepository):
     """User repository backed by PostgreSQL."""
 
     async def get_user_by_username(self, username: str) -> User | None:
-        return await db.find_one("v_user", "user", None, username=username)
+        return await db.find_one("v_user", "user", None, mandatory_filters={"username": username})
 
     async def get_user_by_id(self, user_id: str) -> User | None:
-        return await db.find_one("v_user", "user", None, id=user_id)
+        return await db.find_one("v_user", "user", None, mandatory_filters={"id": user_id})
 
     async def create_user(self, username: str, password_hash: str, email: str) -> User:
         result = await db.execute_function("fn_create_user", {
@@ -556,7 +556,7 @@ class PostgresUserRepository(UserRepository):
             "password_hash": password_hash,
             "email": email
         })
-        return await db.find_one("v_user", "user", None, id=result["id"])
+        return await db.find_one("v_user", "user", None, mandatory_filters={"id": result["id"]})
 
 # 2. Create provider
 user_repo = PostgresUserRepository()

@@ -495,20 +495,20 @@ class DocumentError:
 @fraiseql.query
 async def document(info, id: ID) -> Document | None:
     db = info.context["db"]
-    return await db.find_one("v_document", id=id)
+    return await db.find_one("v_document", mandatory_filters={"id": id})
 
 
 @fraiseql.query
 async def document_changes(info, document_id: ID) -> list[DocumentChange]:
     """Changes for a document, oldest first (used to catch up on reconnect)."""
     db = info.context["db"]
-    return await db.find("v_document_change", document_id=document_id)
+    return await db.find("v_document_change", mandatory_filters={"document_id": document_id})
 
 
 @fraiseql.query
 async def comments(info, document_id: ID) -> list[Comment]:
     db = info.context["db"]
-    return await db.find("v_comment", document_id=document_id)
+    return await db.find("v_comment", mandatory_filters={"document_id": document_id})
 ```
 
 ### Mutations (writes via `fn_`)
@@ -587,7 +587,7 @@ async def document_change_stream(
     pool = info.context["pool"]
     last_seen = None
     async for _ in _listen(pool, "document_change", document_id):
-        changes = await db.find("v_document_change", document_id=document_id)
+        changes = await db.find("v_document_change", mandatory_filters={"document_id": document_id})
         for change in changes:
             if last_seen is None or change.created_at > last_seen:
                 last_seen = change.created_at
@@ -602,7 +602,7 @@ async def presence_stream(
     db = info.context["db"]
     pool = info.context["pool"]
     async for _ in _listen(pool, "presence", document_id):
-        for presence in await db.find("v_presence", document_id=document_id):
+        for presence in await db.find("v_presence", mandatory_filters={"document_id": document_id}):
             yield presence
 
 
@@ -614,7 +614,7 @@ async def comment_stream(
     db = info.context["db"]
     pool = info.context["pool"]
     async for _ in _listen(pool, "comment", document_id):
-        for comment in await db.find("v_comment", document_id=document_id):
+        for comment in await db.find("v_comment", mandatory_filters={"document_id": document_id}):
             yield comment
 ```
 
@@ -650,7 +650,7 @@ async def others_changes(
     pool = info.context["pool"]
     last_seen = None
     async for _ in _listen(pool, "document_change", document_id):
-        for change in await db.find("v_document_change", document_id=document_id):
+        for change in await db.find("v_document_change", mandatory_filters={"document_id": document_id}):
             if last_seen is None or change.created_at > last_seen:
                 last_seen = change.created_at
                 yield change

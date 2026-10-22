@@ -119,7 +119,7 @@ async def me(info) -> User | None:
     if user_id is None:
         return None
     db = info.context["db"]
-    return await db.find_one("v_user", id=user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user_id})
 
 
 @fraiseql.mutation
@@ -537,7 +537,7 @@ async def user_created(info) -> AsyncGenerator[User, None]:
     db = info.context["db"]
     async for payload in db.listen("user_created"):   # LISTEN on a NOTIFY channel
         user_id = payload["id"]
-        user = await db.find_one("v_user", id=user_id)
+        user = await db.find_one("v_user", mandatory_filters={"id": user_id})
         if user is not None:
             yield User(**user)
 
@@ -546,7 +546,7 @@ async def user_created(info) -> AsyncGenerator[User, None]:
 async def user_updated(info, user_id: ID) -> AsyncGenerator[User, None]:
     db = info.context["db"]
     async for payload in db.listen(f"user_updated:{user_id}"):
-        user = await db.find_one("v_user", id=user_id)
+        user = await db.find_one("v_user", mandatory_filters={"id": user_id})
         if user is not None:
             yield User(**user)
 ```
@@ -765,7 +765,7 @@ def build_cached_repo(repo, pool):
 async def user(info, id: ID) -> User | None:
     # info.context["db"] is the CachedRepository; cache lookup is transparent.
     db = info.context["db"]
-    row = await db.find_one("v_user", id=id)
+    row = await db.find_one("v_user", mandatory_filters={"id": id})
     return User(**row) if row else None
 ```
 

@@ -303,7 +303,7 @@ Because reads return a `data` JSONB document shaped to the requested GraphQL fie
 @fraiseql.query
 async def post(info, id: ID) -> Post | None:
     db = info.context["db"]
-    row = await db.find_one("v_post", id=id)
+    row = await db.find_one("v_post", mandatory_filters={"id": id})
     if row is None:
         return None
     user = info.context.get("user")
@@ -735,7 +735,7 @@ Control access based on user role. Check the role in the resolver before fetchin
 @fraiseql.query
 async def post(info, id: ID) -> Post | None:
     db = info.context["db"]
-    row = await db.find_one("v_post", id=id)
+    row = await db.find_one("v_post", mandatory_filters={"id": id})
     if row is None:
         return None
 
@@ -785,7 +785,7 @@ def can_read_document(user, doc) -> bool:
 @fraiseql.query
 async def document(info, id: ID) -> Document | None:
     db = info.context["db"]
-    doc = await db.find_one("v_document", id=id)
+    doc = await db.find_one("v_document", mandatory_filters={"id": id})
     user = info.context.get("user")
     if doc is None or user is None or not can_read_document(user, doc):
         return None

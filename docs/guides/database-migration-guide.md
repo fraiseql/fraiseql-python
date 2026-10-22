@@ -262,7 +262,7 @@ async def users(info) -> list[User]:
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ### Step 2.3: Multi-tenancy with Row-Level Security

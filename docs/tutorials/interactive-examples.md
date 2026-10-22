@@ -79,12 +79,10 @@ query GetUsers {
 import fraiseql
 
 @fraiseql.query
-async def users(self, info, email_filter: str | None = None) -> list[User]:
-    filters = {}
-    if email_filter:
-        filters['email__icontains'] = email_filter
+async def users(info, email_filter: str | None = None) -> list[User]:
+    where = {"email": {"icontains": email_filter}} if email_filter else None
 
-    return await repo.find("v_user", "users", info, **filters)
+    return await info.context["db"].find("v_user", "users", info, where=where)
 ```
 
 ### GraphQL: Query with Arguments

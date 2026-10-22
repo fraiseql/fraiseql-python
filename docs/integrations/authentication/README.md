@@ -167,7 +167,7 @@ from fraiseql.auth import requires_auth, requires_permission, requires_role
 async def me(info) -> User:
     user = info.context["user"]  # guaranteed authenticated
     db = info.context["db"]
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 
 
 @fraiseql.mutation

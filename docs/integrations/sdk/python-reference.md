@@ -166,7 +166,7 @@ async def users(info) -> list[User]:
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ### `@fraiseql.mutation`
@@ -368,7 +368,7 @@ is the CQRS data access object — reads via views, writes via functions.
 rows = await db.find("v_order", where={"status": {"eq": "active"}}, limit=20)
 
 # Single record
-one = await db.find_one("v_user", id=user_id)
+one = await db.find_one("v_user", mandatory_filters={"id": user_id})
 
 # Count
 total = await db.count("v_user", where={"status": {"eq": "active"}})
@@ -496,7 +496,7 @@ async def users(info) -> list[User]:
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 
 @fraiseql.mutation

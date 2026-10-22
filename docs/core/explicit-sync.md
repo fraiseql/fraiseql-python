@@ -262,7 +262,7 @@ async def create_post(self, info, title: str, content: str, author_id: str) -> P
 
     # 4. Read from query side
     db = info.context["db"]
-    return await db.find_one("tv_post", id=post_id)
+    return await db.find_one("tv_post", mandatory_filters={"id": post_id})
 ```
 
 ### Pattern 2: Batch Sync

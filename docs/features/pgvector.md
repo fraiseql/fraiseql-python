@@ -468,8 +468,8 @@ query_embedding = get_embedding("machine learning basics")
 documents = await repo.find(
     "documents",
     where={"embedding": {"cosine_distance": query_embedding}},
-    orderBy={"embedding": {"cosine_distance": query_embedding}},
-    limit=10
+    order_by={"embedding": {"cosine_distance": query_embedding}},
+    limit=10,
 )
 ```
 
@@ -485,8 +485,8 @@ similar_products = await repo.find(
         "embedding": {"cosine_distance": product_embedding},
         "category": {"eq": product.category}  # Same category
     },
-    orderBy={"embedding": {"cosine_distance": product_embedding}},
-    limit=5
+    order_by={"embedding": {"cosine_distance": product_embedding}},
+    limit=5,
 )
 ```
 
@@ -499,8 +499,8 @@ query_embedding = get_embedding(user_question)
 relevant_docs = await repo.find(
     "documents",
     where={"embedding": {"cosine_distance": query_embedding}},
-    orderBy={"embedding": {"cosine_distance": query_embedding}},
-    limit=3
+    order_by={"embedding": {"cosine_distance": query_embedding}},
+    limit=3,
 )
 
 context = "\n".join(doc["content"] for doc in relevant_docs)
@@ -518,8 +518,8 @@ results = await repo.find(
         "embedding": {"cosine_distance": query_embedding},
         "content": {"search": query_text}  # Full-text search
     },
-    orderBy={"embedding": {"cosine_distance": query_embedding}},
-    limit=20
+    order_by={"embedding": {"cosine_distance": query_embedding}},
+    limit=20,
 )
 ```
 
@@ -761,8 +761,8 @@ async def main():
     results = await repo.find(
         "documents",
         where={"embedding": {"cosine_distance": query_embedding}},
-        orderBy={"embedding": {"cosine_distance": query_embedding}},
-        limit=10
+        order_by={"embedding": {"cosine_distance": query_embedding}},
+        limit=10,
     )
 
     # Hybrid search
@@ -773,8 +773,8 @@ async def main():
             "category": {"eq": "technical"},
             "created_at": {"gte": "2024-01-01"}
         },
-        orderBy={"embedding": {"cosine_distance": query_embedding}},
-        limit=20
+        order_by={"embedding": {"cosine_distance": query_embedding}},
+        limit=20,
     )
 
 asyncio.run(main())
@@ -811,8 +811,8 @@ async def search_documents(
     return await repo.find(
         "documents",
         where=where,
-        orderBy={"embedding": {"cosine_distance": query_embedding}},
-        limit=limit
+        order_by={"embedding": {"cosine_distance": query_embedding}},
+        limit=limit,
     )
 
 app = FraiseQLApp(

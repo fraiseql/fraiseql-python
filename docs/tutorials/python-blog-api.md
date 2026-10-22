@@ -362,7 +362,7 @@ async def authors(info) -> list[Author]:
 async def author(info, id: ID) -> Author | None:
     """Get a single author by id."""
     db = info.context["db"]
-    return await db.find_one("v_author", id=id)
+    return await db.find_one("v_author", mandatory_filters={"id": id})
 
 
 @fraiseql.query
@@ -372,21 +372,21 @@ async def posts(info, published: bool | None = None) -> list[Post]:
     filters: dict = {}
     if published is not None:
         filters["published"] = published
-    return await db.find("v_post", order_by="-createdAt", **filters)
+    return await db.find("v_post", order_by="-createdAt", mandatory_filters=filters)
 
 
 @fraiseql.query
 async def post(info, id: ID) -> Post | None:
     """Get a single post by id."""
     db = info.context["db"]
-    return await db.find_one("v_post", id=id)
+    return await db.find_one("v_post", mandatory_filters={"id": id})
 
 
 @fraiseql.query
 async def post_comments(info, post_id: ID) -> list[Comment]:
     """List comments for a post."""
     db = info.context["db"]
-    return await db.find("v_comment", post_id=post_id, order_by="createdAt")
+    return await db.find("v_comment", order_by="createdAt", mandatory_filters={"post_id": post_id})
 ```
 
 The repository (`db`) is FraiseQL's CQRS repository. Its main query methods are:
@@ -469,7 +469,7 @@ async def create_author(
     if not result.get("success"):
         return MutationError(message=result.get("message", "Failed to create author"))
 
-    author = await db.find_one("v_author", id=result["id"])
+    author = await db.find_one("v_author", mandatory_filters={"id": result["id"]})
     return CreateAuthorSuccess(author=author)
 
 
@@ -491,7 +491,7 @@ async def create_post(
     if not result.get("success"):
         return MutationError(message=result.get("message", "Failed to create post"))
 
-    post = await db.find_one("v_post", id=result["id"])
+    post = await db.find_one("v_post", mandatory_filters={"id": result["id"]})
     return CreatePostSuccess(post=post)
 
 
@@ -512,7 +512,7 @@ async def add_comment(
     if not result.get("success"):
         return MutationError(message=result.get("message", "Failed to add comment"))
 
-    comment = await db.find_one("v_comment", id=result["id"])
+    comment = await db.find_one("v_comment", mandatory_filters={"id": result["id"]})
     return AddCommentSuccess(comment=comment)
 ```
 

@@ -197,7 +197,7 @@ async def my_profile(info) -> User | None:
     if user is None or not user.has_role("member"):
         return None
     db = info.context["db"]
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 ```
 
 ---

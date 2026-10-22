@@ -57,7 +57,7 @@ cached_repo = CachedRepository(
 
 # Use cached repository - automatic caching!
 # View name: "v_user" (singular, as defined in schema)
-users = await cached_repo.find("v_user", status="active")
+users = await cached_repo.find("v_user", mandatory_filters={"status": "active"})
 ```
 
 ### FastAPI Integration
@@ -207,15 +207,15 @@ cached_repo = CachedRepository(
 # Query with custom TTL
 users = await cached_repo.find(
     "users",
-    status="active",
-    cache_ttl=600  # 10 minutes for this query
+    cache_ttl=600,
+    mandatory_filters={"status": "active"},
 )
 
 # Skip cache for specific query
 users = await cached_repo.find(
     "users",
-    status="active",
-    skip_cache=True  # Bypass cache, fetch fresh data
+    skip_cache=True,
+    mandatory_filters={"status": "active"},
 )
 ```
 
@@ -263,7 +263,7 @@ base_repo = FraiseQLRepository(
 cached_repo = CachedRepository(base_repo, result_cache)
 
 # Automatically generates tenant-scoped cache key
-users = await cached_repo.find("v_user", status="active")
+users = await cached_repo.find("v_user", mandatory_filters={"status": "active"})
 # Cache key: "fraiseql:tenant-123:users:status:active"
 ```
 
@@ -278,7 +278,7 @@ users = await cached_repo.find("v_user", status="active")
 base_repo = FraiseQLRepository(pool, context={})
 
 cached_repo = CachedRepository(base_repo, result_cache)
-users = await cached_repo.find("v_user", status="active")
+users = await cached_repo.find("v_user", mandatory_filters={"status": "active"})
 # Cache key: "fraiseql:users:status:active"
 # ⚠️ This cache key is SHARED ACROSS ALL TENANTS - SECURITY VIOLATION!
 
@@ -288,7 +288,7 @@ base_repo = FraiseQLRepository(
     context={"tenant_id": tenant_id}  # REQUIRED for multi-tenant apps
 )
 cached_repo = CachedRepository(base_repo, result_cache)
-users = await cached_repo.find("v_user", status="active")
+users = await cached_repo.find("v_user", mandatory_filters={"status": "active"})
 # Cache key: "fraiseql:tenant_123:users:status:active"  ✅ Isolated per tenant
 ```
 
@@ -468,8 +468,8 @@ cached_repo = CachedRepository(base_repo, result_cache)
 
 # All find() calls automatically cached
 # Note: View name is "v_user" (singular, as defined in schema)
-users = await cached_repo.find("v_user", status="active")  # Returns list
-user = await cached_repo.find_one("v_user", id=user_id)   # Returns single item
+users = await cached_repo.find("v_user", mandatory_filters={"status": "active"})  # Returns list
+user = await cached_repo.find_one("v_user", mandatory_filters={"id": user_id})   # Returns single item
 
 # Mutations automatically invalidate related cache
 await cached_repo.execute_function("create_user", user_data)
@@ -498,7 +498,7 @@ if cached_result:
     return cached_result
 
 # Fetch from database
-result = await base_repo.find("v_user", status="active", limit=10)
+result = await base_repo.find("v_user", limit=10, mandatory_filters={"status": "active"})
 
 # Cache result
 await result_cache.set(cache_key, result, ttl=300)
@@ -525,10 +525,9 @@ async def get_top_products(
 
     return await db.find(
         "products",
-        category=category,
-        status="published",
         order_by=[("sales_count", "DESC")],
-        limit=limit
+        limit=limit,
+        mandatory_filters={"category": category, "status": "published"},
     )
 ```
 
@@ -766,15 +765,15 @@ repo = FraiseQLRepository(pool, context={})
 # Frequently changing data (short TTL)
 recent_orders = await cached_repo.find(
     "orders",
-    created_at__gte=today,
-    cache_ttl=60  # 1 minute
+    cache_ttl=60,
+    where={"created_at": {"gte": today}},
 )
 
 # Rarely changing data (long TTL)
 categories = await cached_repo.find(
     "categories",
-    status="active",
-    cache_ttl=3600  # 1 hour
+    cache_ttl=3600,
+    mandatory_filters={"status": "active"},
 )
 
 # Static data (very long TTL)
@@ -796,8 +795,8 @@ admin_stats = await cached_repo.find(
 # User-facing: can cache
 user_stats = await cached_repo.find(
     "user_stats",
-    user_id=user_id,
-    cache_ttl=300  # 5 minutes OK
+    cache_ttl=300,
+    mandatory_filters={"user_id": user_id},
 )
 ```
 

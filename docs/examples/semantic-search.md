@@ -135,12 +135,12 @@ async def semantic_search(
                 "cosine_distance": query_embedding
             }
         },
-        orderBy={
+        order_by={
             "embedding": {
                 "cosine_distance": query_embedding
             }
         },
-        limit=limit
+        limit=limit,
     )
 
     return extract_graphql_data(result, "documents")
@@ -180,12 +180,12 @@ async def hybrid_search(
     result = await repo.find(
         "documents",
         where=where_clause,
-        orderBy={
+        order_by={
             "embedding": {
                 "cosine_distance": query_embedding
             }
         },
-        limit=limit
+        limit=limit,
     )
 
     return extract_graphql_data(result, "documents")
@@ -220,12 +220,12 @@ async def search_with_distance_metric(
                 operator: query_embedding
             }
         },
-        orderBy={
+        order_by={
             "embedding": {
                 operator: query_embedding
             }
         },
-        limit=limit
+        limit=limit,
     )
 
     return extract_graphql_data(result, "documents")
@@ -514,8 +514,8 @@ async def get_similar_products(
             "id": {"neq": str(product_id)},  # Exclude source product
             "embedding": {"cosine_distance": source_embedding}
         },
-        orderBy={"embedding": {"cosine_distance": source_embedding}},
-        limit=limit
+        order_by={"embedding": {"cosine_distance": source_embedding}},
+        limit=limit,
     )
 
     return extract_graphql_data(result, "products")
@@ -541,8 +541,8 @@ async def find_duplicate_content(
         where={
             "embedding": {"cosine_distance": content_embedding}
         },
-        orderBy={"embedding": {"cosine_distance": content_embedding}},
-        limit=10
+        order_by={"embedding": {"cosine_distance": content_embedding}},
+        limit=10,
     )
 
     documents = extract_graphql_data(result, "documents")
@@ -580,8 +580,8 @@ async def search_by_image(
     result = await repo.find(
         "documents",
         where=where_clause,
-        orderBy={"image_embedding": {"cosine_distance": image_embedding}},
-        limit=limit
+        order_by={"image_embedding": {"cosine_distance": image_embedding}},
+        limit=limit,
     )
 
     return extract_graphql_data(result, "documents")

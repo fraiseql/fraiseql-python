@@ -26,7 +26,7 @@ from fraiseql.types import ID
 async def user(info, id: ID) -> User:
     db = info.context["db"]
     # field_name auto-inferred as "user" from function name
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 > **Note**: FraiseQL has two repository classes: `FraiseQLRepository` (modern, recommended) and `CQRSRepository` (legacy). See [Repository Classes Comparison](repositories.md) for details on when to use each.
@@ -190,7 +190,7 @@ from fraiseql.types import ID
 @fraiseql.query
 async def user(info, id: ID) -> User | None:
     db = info.context["db"]
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 
 # Using where parameter
 @fraiseql.query
@@ -211,7 +211,7 @@ async def active_user_by_email(info, email: str) -> User | None:
 @fraiseql.query
 async def get_user(info, id: ID) -> User:
     db = info.context["db"]
-    user = await db.find_one("v_user", id=id)
+    user = await db.find_one("v_user", mandatory_filters={"id": id})
     if user is None:
         raise GraphQLError("User not found")
     return user
@@ -418,7 +418,7 @@ async def create_user(info, input: CreateUserInput) -> User:
 
     # Fetch created record via Rust pipeline
     # field_name auto-inferred from function name "create_user" → "user"
-    return await db.find_one("v_user", id=result["id"])
+    return await db.find_one("v_user", mandatory_filters={"id": result["id"]})
 ```
 
 **PostgreSQL Function**:
@@ -455,7 +455,7 @@ async def update_user(info, id: ID, input: UpdateUserInput) -> User:
     })
 
     # Fetch updated record
-    return await db.find_one("v_user", id=id)
+    return await db.find_one("v_user", mandatory_filters={"id": id})
 ```
 
 ### Deleting Records
@@ -1033,7 +1033,7 @@ from fraiseql.types import ID
 async def get_user(info, id: ID) -> User | None:
     try:
         db = info.context["db"]
-        return await db.find_one("v_user", id=id)
+        return await db.find_one("v_user", mandatory_filters={"id": id})
     except Exception as e:
         logger.error(f"Failed to fetch user {id}: {e}")
         raise GraphQLError("Failed to fetch user")

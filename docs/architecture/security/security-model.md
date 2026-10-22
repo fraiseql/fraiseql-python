@@ -209,7 +209,7 @@ async def me(info) -> "User":
     """Any authenticated user."""
     db = info.context["db"]
     user = info.context["user"]
-    return await db.find_one("v_user", id=user.user_id)
+    return await db.find_one("v_user", mandatory_filters={"id": user.user_id})
 
 
 @fraiseql.query
@@ -689,7 +689,7 @@ async def request_data_deletion(info, user_id: ID) -> "DeletionSuccess":
 async def export_user_data(info, user_id: ID) -> JSON:
     """Export all data for the authenticated owner."""
     db = info.context["db"]
-    return await db.find_one("v_user_export", id=user_id)
+    return await db.find_one("v_user_export", mandatory_filters={"id": user_id})
 ```
 
 ### 7.2 HIPAA

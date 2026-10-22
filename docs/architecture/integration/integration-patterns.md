@@ -327,7 +327,7 @@ import fraiseql
 async def me(info) -> User | None:
     db = info.context["db"]
     principal = info.context["user"]  # populated by shared auth middleware
-    return await db.find_one("v_user", id=principal.id)
+    return await db.find_one("v_user", mandatory_filters={"id": principal.id})
 ```
 
 Because authorization is enforced per resolver, keep it consistent across every
