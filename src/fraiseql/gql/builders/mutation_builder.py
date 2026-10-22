@@ -36,7 +36,7 @@ from fraiseql.core.graphql_type import (
     convert_type_to_graphql_output,
 )
 from fraiseql.mutations.decorators import FraiseUnion, resolve_union_annotation
-from fraiseql.mutations.mutation_decorator import _camel_to_snake
+from fraiseql.mutations.mutation_decorator import MutationDefinition, _camel_to_snake
 from fraiseql.mutations.result_names import legacy_result_union_name, result_union_name
 from fraiseql.security.authorization import enforce_around_async, enforce_around_sync
 from fraiseql.types.coercion import wrap_resolver_with_input_coercion
@@ -258,6 +258,7 @@ class MutationTypeBuilder:
         Returns:
             The Mutation GraphQLObjectType.
         """
+        self._check_class_mutations()
         fields = {}
         field_names, unions, union_names = self._names()
 
@@ -339,6 +340,20 @@ class MutationTypeBuilder:
             )
 
         return GraphQLObjectType(name="Mutation", fields=MappingProxyType(fields))
+
+    def _check_class_mutations(self) -> None:
+        """Raise one TypeError listing every class mutation with faulty members."""
+        problems = [
+            problem
+            for fn in self.registry.mutations.values()
+            if isinstance(
+                definition := getattr(fn, "__fraiseql_mutation__", None), MutationDefinition
+            )
+            for problem in definition.member_problems()
+        ]
+        if problems:
+            msg = "Invalid class mutations:\n" + "\n".join(f"- {p}" for p in problems)
+            raise TypeError(msg)
 
     def _names(self) -> tuple[dict[str, str], dict[str, _ResultUnion], dict[str, str]]:
         """Pick every mutation's field name and result union name, in one place.

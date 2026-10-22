@@ -72,13 +72,14 @@ class CreateNoteInput:
 class UpdateNoteInput:
     """Input for updating a note."""
 
+    id: int
     title: str | None = None
     content: str | None = None
     priority: str | None = None
     tags: list[str] | None = None
 
 
-# Success/Failure types
+# Success/error types
 @fraiseql.success
 class CreateNoteSuccess:
     """Success response for note creation."""
@@ -103,76 +104,25 @@ class NoteError:
     code: str
 
 
-# Mutations
+# Mutations. Each calls the SQL function named after it (create_note, update_note),
+# which takes the input as one jsonb and returns a mutation_response (see the
+# setup notes at the bottom of this file).
 @fraiseql.mutation
 class CreateNote:
     """Create a new note."""
 
     input: CreateNoteInput
     success: CreateNoteSuccess
-    failure: NoteError
-
-    async def resolve(self, info) -> CreateNoteSuccess | NoteError:
-        db = info.context["db"]
-
-        try:
-            note_data = {
-                "title": self.input.title,
-                "content": self.input.content,
-                "priority": self.input.priority,
-                "tags": self.input.tags,
-            }
-
-            result = await db.insert("tb_note", note_data, returning="id")
-
-            # Get the created note
-            created_note = await db.find_one("v_note", "note", info, id=result["id"])
-            if created_note:
-                return CreateNoteSuccess(note=created_note)
-            return NoteError(message="Failed to retrieve created note", code="RETRIEVAL_ERROR")
-
-        except Exception as e:
-            return NoteError(message=f"Failed to create note: {e!s}", code="CREATE_ERROR")
+    error: NoteError
 
 
 @fraiseql.mutation
 class UpdateNote:
     """Update an existing note."""
 
-    id: int
     input: UpdateNoteInput
     success: UpdateNoteSuccess
-    failure: NoteError
-
-    async def resolve(self, info) -> UpdateNoteSuccess | NoteError:
-        db = info.context["db"]
-
-        try:
-            # Build update data from non-None inputs
-            update_data = {}
-            if self.input.title is not None:
-                update_data["title"] = self.input.title
-            if self.input.content is not None:
-                update_data["content"] = self.input.content
-            if self.input.priority is not None:
-                update_data["priority"] = self.input.priority
-            if self.input.tags is not None:
-                update_data["tags"] = self.input.tags
-
-            if not update_data:
-                return NoteError(message="No fields to update", code="NO_CHANGES")
-
-            # Update the note
-            await db.update("tb_note", update_data, where={"id": self.id})
-
-            # Get the updated note
-            updated_note = await db.find_one("v_note", "note", info, id=self.id)
-            if updated_note:
-                return UpdateNoteSuccess(note=updated_note)
-            return NoteError(message="Note not found after update", code="NOT_FOUND")
-
-        except Exception as e:
-            return NoteError(message=f"Failed to update note: {e!s}", code="UPDATE_ERROR")
+    error: NoteError
 
 
 # Collect all types, queries, and mutations
@@ -192,6 +142,41 @@ if __name__ == "__main__":
     # CREATE VIEW v_note AS SELECT id, jsonb_build_object('id', id, 'title', title,
     #                       'content', content, 'priority', priority, 'tags', tags,
     #                       'created_at', created_at) AS data FROM tb_note;
+    #
+    # The mutations call these functions. mutation_response and the mutation_*
+    # helpers come from migrations/trinity/005_add_mutation_response.sql.
+    #
+    # CREATE FUNCTION create_note(input jsonb) RETURNS mutation_response AS $$
+    # DECLARE v_id int;
+    # BEGIN
+    #     INSERT INTO tb_note (title, content, priority, tags)
+    #     VALUES (input->>'title', input->>'content',
+    #             coalesce(input->>'priority', 'normal'),
+    #             coalesce(ARRAY(SELECT jsonb_array_elements_text(input->'tags')), '{}'))
+    #     RETURNING id INTO v_id;
+    #     RETURN mutation_created('Note created',
+    #         (SELECT data FROM v_note WHERE id = v_id), 'Note');
+    # END;
+    # $$ LANGUAGE plpgsql;
+    #
+    # CREATE FUNCTION update_note(input jsonb) RETURNS mutation_response AS $$
+    # BEGIN
+    #     UPDATE tb_note SET
+    #         title = coalesce(input->>'title', title),
+    #         content = coalesce(input->>'content', content),
+    #         priority = coalesce(input->>'priority', priority),
+    #         tags = CASE WHEN input ? 'tags' AND input->'tags' <> 'null'
+    #                     THEN ARRAY(SELECT jsonb_array_elements_text(input->'tags'))
+    #                     ELSE tags END
+    #     WHERE id = (input->>'id')::int;
+    #     IF NOT FOUND THEN
+    #         RETURN mutation_not_found('Note', input->>'id');
+    #     END IF;
+    #     RETURN mutation_updated('Note updated',
+    #         (SELECT data FROM v_note WHERE id = (input->>'id')::int),
+    #         ARRAY(SELECT jsonb_object_keys(jsonb_strip_nulls(input - 'id'))), 'Note');
+    # END;
+    # $$ LANGUAGE plpgsql;
 
     database_url = os.getenv("DATABASE_URL", "postgresql://localhost/fraiseql_where_example")
 

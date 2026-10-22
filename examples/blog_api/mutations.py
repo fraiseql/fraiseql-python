@@ -20,16 +20,13 @@ from models import (
     CreateCommentInput,
     CreatePostError,
     CreatePostInput,
-    CreatePostNoop,
     CreatePostSuccess,
     CreateUserError,
     CreateUserInput,
-    CreateUserNoop,
     CreateUserSuccess,
     Post,
     UpdatePostError,
     UpdatePostInput,
-    UpdatePostNoop,
     UpdatePostSuccess,
     User,
 )
@@ -283,7 +280,6 @@ class CreatePostEnterprise:
     input: CreatePostInput
     success: CreatePostSuccess
     error: CreatePostError
-    noop: CreatePostNoop  # For duplicate handling
 
 
 @fraiseql.mutation(
@@ -305,7 +301,6 @@ class UpdatePostEnterprise:
     input: UpdatePostInput
     success: UpdatePostSuccess
     error: UpdatePostError
-    noop: UpdatePostNoop  # For no-changes scenarios
 
 
 @fraiseql.mutation(
@@ -327,7 +322,6 @@ class CreateUserEnterprise:
     input: CreateUserInput
     success: CreateUserSuccess
     error: CreateUserError
-    noop: CreateUserNoop  # For duplicate emails
 
 
 # Legacy Pattern Examples (for comparison)

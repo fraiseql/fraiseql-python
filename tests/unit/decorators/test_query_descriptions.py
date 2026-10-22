@@ -121,9 +121,6 @@ class TestMutationDescriptions:
             success: CreateUserSuccess
             error: CreateUserError
 
-            async def resolve(self, info) -> None:
-                return CreateUserSuccess(message="User created")
-
         @fraiseql.query
         async def dummy_query(info) -> str:
             return "dummy"
@@ -157,9 +154,6 @@ class TestMutationDescriptions:
             input: UpdateDataInput
             success: UpdateDataSuccess
             error: UpdateDataError
-
-            async def resolve(self, info) -> None:
-                return UpdateDataSuccess(message="Data updated")
 
         @fraiseql.query
         async def dummy_query2(info) -> str:
@@ -200,9 +194,6 @@ class TestMutationDescriptions:
             input: ProcessOrderInput
             success: ProcessOrderSuccess
             error: ProcessOrderError
-
-            async def resolve(self, info) -> None:
-                return ProcessOrderSuccess(message="Order processed")
 
         @fraiseql.query
         async def dummy_query3(info) -> str:

@@ -337,69 +337,6 @@ class CreateTaskSuccess:
     audit_metadata: dict[str, Any]
 
 
-# NOOP Types for Business Rule Handling
-
-
-@fraiseql.success
-class CreateOrganizationNoop:
-    """Organization creation was a no-op."""
-
-    existing_organization: Organization
-    message: str
-    noop_reason: str
-
-    # NOOP context
-    conflict_field: str  # name, legal_name, tax_id
-    attempted_value: str
-    business_rule_violated: str | None = None
-    suggested_action: str | None = None
-
-
-@fraiseql.success
-class CreateUserNoop:
-    """User creation was a no-op."""
-
-    existing_user: User
-    message: str
-    noop_reason: str
-
-    # User-specific NOOP context
-    conflict_field: str  # email, identifier
-    attempted_email: str | None = None
-    organization_mismatch: bool = False
-    invitation_already_sent: bool = False
-
-
-@fraiseql.success
-class CreateProjectNoop:
-    """Project creation was a no-op."""
-
-    existing_project: Project
-    message: str
-    noop_reason: str
-
-    # Project-specific NOOP context
-    name_conflict_in_organization: bool = False
-    owner_permission_insufficient: bool = False
-    budget_exceeds_organization_limit: bool = False
-    template_unavailable: bool = False
-
-
-@fraiseql.success
-class CreateTaskNoop:
-    """Task creation was a no-op."""
-
-    existing_task: Task | None = None
-    message: str
-    noop_reason: str
-
-    # Task-specific NOOP context
-    project_not_accepting_tasks: bool = False
-    parent_task_completed: bool = False
-    assignee_unavailable: bool = False
-    duplicate_title_in_project: bool = False
-
-
 # Error Types with Detailed Context
 
 
@@ -531,21 +468,6 @@ class UpdateProjectSuccess:
     stakeholders_notified: int = 0
 
     audit_metadata: dict[str, Any]
-
-
-@fraiseql.success
-class UpdateProjectNoop:
-    """Project update was a no-op."""
-
-    project: Project
-    message: str = "No changes detected"
-    noop_reason: str = "no_changes"
-
-    # NOOP context
-    fields_checked: list[str]
-    version_conflict: bool = False
-    permission_denied_fields: list[str] = fraise_field(default_factory=list)
-    business_rule_prevented_changes: list[str] = fraise_field(default_factory=list)
 
 
 @fraiseql.error

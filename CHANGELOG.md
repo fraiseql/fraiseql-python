@@ -39,6 +39,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `requires_role` and `requires_permission`** that they don't accept (#577).
   `fraiseql/__init__.pyi` now matches the runtime signatures, so a type checker
   flags `requires_role("admin", optional=True)`, which fails at runtime.
+### Changed
+
+- **The schema build rejects class mutations with members fraiseql doesn't
+  read** (#576, #587). A class mutation reads only `input:`, `success:`,
+  `error:` and `prepare_input`. Anything else was ignored without a word:
+  `failure:` or `noop:` left the error type unreachable (the field returned the
+  success type alone), and an `async def resolve()` method never ran. The build
+  now raises one `TypeError` listing every faulty mutation:
+
+  ```text
+  Invalid class mutations:
+  - Mutation CreateThing has `failure`, which fraiseql doesn't read: a class mutation reads only `input:`, `success:`, `error:` and `prepare_input`. For the error type, use `error:`.
+  ```
+
+  Members inherited from base classes and mixins count, and names starting
+  with `_` (private helpers) are allowed. To upgrade: rename `failure:` (or
+  `errors:`) to `error:`; remove `noop:` (a `noop:*` status already returns the
+  error type); move the code of a `resolve()` method into a function mutation,
+  `@fraiseql.mutation async def create_thing(info, input: CreateThingInput) -> CreateThingSuccess | CreateThingError`.
+
+### Fixed
+
+- **A class mutation without `input:` failed with an error naming neither the
+  mutation nor the annotation** (#576): `Invalid type passed to
+  convert_type_to_graphql_input: <class 'NoneType'>`. The schema build now says
+  `Mutation ClearCart has no `input:` annotation` and points to function
+  mutations for mutations without arguments. A class with neither `success:` nor
+  `error:` gets a similar message instead of `Unsupported output type`.
 
 ## [1.29.1] - 2026-10-19
 

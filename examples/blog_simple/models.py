@@ -9,15 +9,15 @@ This module demonstrates FraiseQL with Trinity pattern:
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Union
+from typing import Any
 from uuid import UUID
 
 from graphql import GraphQLResolveInfo
 
 import fraiseql
-from fraiseql.types import ID
 from fraiseql.db import DatabaseQuery
 from fraiseql.patterns import TrinityMixin, get_pk_column_name
+from fraiseql.types import ID
 
 
 # Domain enums
@@ -352,68 +352,62 @@ class PermissionError:
     required_role: str | None = None
 
 
-# Mutation classes with Trinity support
+# Mutations
 @fraiseql.mutation
-class CreatePost:
+async def create_post(
+    info: GraphQLResolveInfo, input: CreatePostInput
+) -> CreatePostSuccess | ValidationError | PermissionError:
     """Create a new blog post."""
+    db = info.context["db"]
+    user_id = info.context["user_id"]  # ✅ CORRECT: Get UUID from context
 
-    input: CreatePostInput
-    success: CreatePostSuccess
-    failure: Union[ValidationError, PermissionError]
+    if not user_id:
+        return PermissionError(message="Authentication required")
 
-    async def resolve(
-        self, info: GraphQLResolveInfo
-    ) -> Union[CreatePostSuccess, ValidationError, PermissionError]:
-        db = info.context["db"]
-        user_id = info.context["user_id"]  # ✅ CORRECT: Get UUID from context
+    try:
+        # ✅ Use database function that handles UUID → pk mapping
+        payload = {
+            "title": input.title,
+            "content": input.content,
+            "excerpt": input.excerpt,
+            "status": PostStatus.DRAFT.value,
+        }
 
-        if not user_id:
-            return PermissionError(message="Authentication required")
+        # Call database function with UUID (function maps to pk internally)
+        result = await db.execute_function(
+            "create_post", {"input_user_id": str(user_id), "input_payload": payload}
+        )
 
-        try:
-            # ✅ Use database function that handles UUID → pk mapping
-            payload = {
-                "title": self.input.title,
-                "content": self.input.content,
-                "excerpt": self.input.excerpt,
-                "status": PostStatus.DRAFT.value,
-            }
+        # Check for errors returned by database function
+        if result.get("status", "").startswith("error:") or result.get("status", "").startswith(
+            "noop:"
+        ):
+            return ValidationError(message=result.get("message", "Failed to create post"))
 
-            # Call database function with UUID (function maps to pk internally)
-            result = await db.execute_function(
-                "create_post", {"input_user_id": str(user_id), "input_payload": payload}
-            )
+        post_id = result.get("id")
 
-            # Check for errors returned by database function
-            if result.get("status", "").startswith("error:") or result.get("status", "").startswith(
-                "noop:"
-            ):
-                return ValidationError(message=result.get("message", "Failed to create post"))
+        # Add tags if provided (TODO: create add_tags_to_post function)
+        if input.tag_ids:
+            from fraiseql.db import DatabaseQuery
 
-            post_id = result.get("id")
+            for tag_id in input.tag_ids:
+                tag_query = DatabaseQuery(
+                    """
+                    INSERT INTO tb_post_tag (fk_post, fk_tag)
+                    SELECT p.pk_post, t.pk_tag
+                    FROM tb_post p, tb_tag t
+                    WHERE p.id = %s AND t.id = %s
+                    """,
+                    [str(post_id), str(tag_id)],
+                )
+                await db.run(tag_query)
 
-            # Add tags if provided (TODO: create add_tags_to_post function)
-            if self.input.tag_ids:
-                from fraiseql.db import DatabaseQuery
+        # Return created post by UUID
+        post = await db.find_one("v_posts", id=post_id)
+        return CreatePostSuccess(post=post)
 
-                for tag_id in self.input.tag_ids:
-                    tag_query = DatabaseQuery(
-                        """
-                        INSERT INTO tb_post_tag (fk_post, fk_tag)
-                        SELECT p.pk_post, t.pk_tag
-                        FROM tb_post p, tb_tag t
-                        WHERE p.id = %s AND t.id = %s
-                        """,
-                        [str(post_id), str(tag_id)],
-                    )
-                    await db.run(tag_query)
-
-            # Return created post by UUID
-            post = await db.find_one("v_posts", id=post_id)
-            return CreatePostSuccess(post=post)
-
-        except Exception as e:
-            return ValidationError(message=f"Failed to create post: {e!s}")
+    except Exception as e:
+        return ValidationError(message=f"Failed to create post: {e!s}")
 
 
 # Query resolvers
@@ -513,5 +507,5 @@ async def users(info: GraphQLResolveInfo, limit: int = 20) -> list[User]:
 
 # Export collections for app registration
 BLOG_TYPES = [User, Post, Comment, Tag, UserRole, PostStatus, CommentStatus]
-BLOG_MUTATIONS = [CreatePost]
+BLOG_MUTATIONS = [create_post]
 BLOG_QUERIES = [posts, post, user, tag, tags, users]

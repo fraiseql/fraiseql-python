@@ -364,39 +364,6 @@ class UpdatePostError:
     code: str
 
 
-# Enterprise NOOP Result Types
-
-
-@fraiseql.success
-class CreateUserNoop:
-    """User creation was a no-op."""
-
-    existing_user: User
-    message: str
-    noop_reason: str
-    was_noop: bool = True
-
-
-@fraiseql.success
-class CreatePostNoop:
-    """Post creation was a no-op."""
-
-    existing_post: Post
-    message: str
-    noop_reason: str
-    was_noop: bool = True
-
-
-@fraiseql.success
-class UpdatePostNoop:
-    """Post update was a no-op."""
-
-    post: Post
-    message: str = "No changes detected"
-    noop_reason: str = "no_changes"
-    was_noop: bool = True
-
-
 # Enhanced Success Types with Audit Information
 
 

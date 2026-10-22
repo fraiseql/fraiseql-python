@@ -118,7 +118,7 @@ class CreateNoteInput:
     content: str | None = None
 
 
-# Define success/failure types
+# Define success/error types
 @fraiseql.success
 class CreateNoteSuccess:
     """Success response for note creation."""
@@ -162,38 +162,32 @@ async def note(info, id: int) -> Note | None:
 
 # Mutations
 @fraiseql.mutation
-class CreateNote:
+async def create_note(info, input: CreateNoteInput) -> CreateNoteSuccess | ValidationError:
     """Create a new note."""
+    db = info.context["db"]
 
-    input: CreateNoteInput
-    success: CreateNoteSuccess
-    failure: ValidationError
+    try:
+        # Call SQL function (CQRS pattern)
+        result = await db.execute_function("fn_create_note", {
+            "title": input.title,
+            "content": input.content,
+        })
 
-    async def resolve(self, info) -> CreateNoteSuccess | ValidationError:
-        db = info.context["db"]
+        if not result.get("success"):
+            return ValidationError(message="Failed to create note")
 
-        try:
-            # Call SQL function (CQRS pattern)
-            result = await db.execute_function("fn_create_note", {
-                "title": self.input.title,
-                "content": self.input.content,
-            })
+        # Fetch the created note via Rust pipeline
+        note = await db.find_one("v_note", "note", info, id=result["id"])
+        return CreateNoteSuccess(note=note)
 
-            if not result.get("success"):
-                return ValidationError(message="Failed to create note")
-
-            # Fetch the created note via Rust pipeline
-            note = await db.find_one("v_note", "note", info, id=result["id"])
-            return CreateNoteSuccess(note=note)
-
-        except Exception as e:
-            return ValidationError(message=f"Failed to create note: {e!s}")
+    except Exception as e:
+        return ValidationError(message=f"Failed to create note: {e!s}")
 
 
 # Collect types, queries, and mutations for app creation
 QUICKSTART_TYPES = [Note]
 QUICKSTART_QUERIES = [notes, notes_filtered, note]
-QUICKSTART_MUTATIONS = [CreateNote]
+QUICKSTART_MUTATIONS = [create_note]
 
 
 # Create and run the app

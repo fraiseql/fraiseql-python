@@ -9,25 +9,20 @@ from .models import (
     # Create inputs
     CreateOrganizationInput,
     # NOOP types
-    CreateOrganizationNoop,
     # Success types
     CreateOrganizationSuccess,
     CreateProjectError,
     CreateProjectInput,
-    CreateProjectNoop,
     CreateProjectSuccess,
     CreateTaskError,
     CreateTaskInput,
-    CreateTaskNoop,
     CreateTaskSuccess,
     CreateUserError,
     CreateUserInput,
-    CreateUserNoop,
     CreateUserSuccess,
     UpdateProjectError,
     # Update inputs
     UpdateProjectInput,
-    UpdateProjectNoop,
     UpdateProjectSuccess,
 )
 
@@ -49,7 +44,6 @@ class CreateOrganization:
     input: CreateOrganizationInput
     success: CreateOrganizationSuccess
     error: CreateOrganizationError
-    noop: CreateOrganizationNoop
 
 
 # User Management Mutations
@@ -74,7 +68,6 @@ class CreateUser:
     input: CreateUserInput
     success: CreateUserSuccess
     error: CreateUserError
-    noop: CreateUserNoop
 
 
 # Project Management Mutations
@@ -102,7 +95,6 @@ class CreateProject:
     input: CreateProjectInput
     success: CreateProjectSuccess
     error: CreateProjectError
-    noop: CreateProjectNoop
 
 
 @fraiseql.mutation(function="update_project", schema="app")
@@ -128,7 +120,6 @@ class UpdateProject:
     input: UpdateProjectInput
     success: UpdateProjectSuccess
     error: UpdateProjectError
-    noop: UpdateProjectNoop
 
 
 # Task Management Mutations
@@ -162,7 +153,6 @@ class CreateTask:
     input: CreateTaskInput
     success: CreateTaskSuccess
     error: CreateTaskError
-    noop: CreateTaskNoop
 
 
 # Administrative Mutations
@@ -192,7 +182,6 @@ class ArchiveOrganization:
     # Return type would be defined similarly to above patterns
     # success: ArchiveOrganizationSuccess
     # error: ArchiveOrganizationError
-    # noop: ArchiveOrganizationNoop
 
 
 # Bulk Operations
@@ -223,7 +212,6 @@ class BulkCreateUsers:
     # Would return detailed results for each user
     # success: BulkCreateUsersSuccess  # with per-user results
     # error: BulkCreateUsersError      # with per-user errors
-    # noop: BulkCreateUsersNoop        # if no users could be created
 
 
 # Cross-Entity Operations
@@ -262,4 +250,3 @@ class TransferProject:
     # Would include comprehensive transfer results
     # success: TransferProjectSuccess
     # error: TransferProjectError
-    # noop: TransferProjectNoop

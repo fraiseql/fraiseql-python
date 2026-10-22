@@ -26,6 +26,12 @@ T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
+# The members a class mutation reads. Anything else in the class is a mistake
+# (checked at schema build, see MutationDefinition.member_problems).
+_CLASS_MUTATION_MEMBERS = frozenset({"input", "success", "error", "prepare_input"})
+# Names used for the error type in docs and other libraries.
+_ERROR_TYPE_MISNAMES = frozenset({"failure", "noop", "errors"})
+
 
 def _info_fragments(info: Any) -> dict[str, Any]:
     """The query's named fragments, or {} when info carries none."""
@@ -536,6 +542,7 @@ class MutationDefinition:
 
         # Get type hints
         hints = get_type_hints(mutation_class)
+        self._annotated_members = frozenset(hints)
         self.input_type = hints.get("input")
         self.success_type = hints.get("success")
         self.error_type = hints.get("error")
@@ -556,6 +563,53 @@ class MutationDefinition:
         self.prepare_input_takes_info = self.prepare_input is not None and _hook_accepts_info(
             self.prepare_input
         )
+
+    def member_problems(self) -> list[str]:
+        """What's wrong with the class's members, one message each; empty if nothing.
+
+        A class mutation needs ``input:`` and at least one of ``success:`` and
+        ``error:``, and reads nothing but those and ``prepare_input``. Members
+        inherited from base classes and mixins count. Names starting with ``_``
+        are left alone, so private helpers are allowed.
+
+        Checked when the schema is built (``MutationTypeBuilder.build``), not at
+        decoration, so a schema build reports every faulty mutation at once.
+        """
+        problems = []
+        if self.input_type is None:
+            problems.append(
+                f"Mutation {self.name} has no `input:` annotation. A class mutation "
+                "passes one input object to its SQL function; for a mutation without "
+                "arguments, write a function mutation: "
+                f"`@fraiseql.mutation async def {_camel_to_snake(self.name)}(info) -> ...`."
+            )
+        if self.success_type is None and self.error_type is None:
+            problems.append(
+                f"Mutation {self.name} has neither `success:` nor `error:`: annotate "
+                "its success type and error type."
+            )
+        members = set(self._annotated_members)
+        for klass in self.mutation_class.__mro__:
+            if klass is not object:
+                members.update(vars(klass))
+        unknown = {member for member in members if not member.startswith("_")}
+        for member in sorted(unknown - _CLASS_MUTATION_MEMBERS):
+            message = (
+                f"Mutation {self.name} has `{member}`, which fraiseql doesn't read: a "
+                "class mutation reads only `input:`, `success:`, `error:` and "
+                "`prepare_input`."
+            )
+            if member in _ERROR_TYPE_MISNAMES:
+                message += " For the error type, use `error:`."
+            elif member == "resolve":
+                message += (
+                    " A class mutation calls its SQL function and never calls "
+                    "`resolve`. To run your own code, write a function mutation "
+                    "(`@fraiseql.mutation async def ...`), or reshape the input in "
+                    "`prepare_input`."
+                )
+            problems.append(message)
+        return problems
 
     def _derive_entity_info(self) -> tuple[str | None, str | None]:
         """Derive entity field name and type from success type annotations.
