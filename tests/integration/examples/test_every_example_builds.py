@@ -96,12 +96,6 @@ _KNOWN_FAILURES = {
     "examples/federation/saga-manual-compensation/bank-service/server.py": "Flask, not fraiseql",
     "examples/filtering/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples/hybrid_tables/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
-    "examples/ltree-hierarchical-data/organization-chart/schema.py": (
-        "imports LTree from fraiseql.types.scalars"
-    ),
-    "examples/ltree-hierarchical-data/product-catalog/schema.py": (
-        "imports LTree from fraiseql.types.scalars"
-    ),
     "examples/python/fraiseql_client.py": "an Arrow Flight client; v1 has no Flight server",
     "examples/python/test_arrow_flight.py": "an Arrow Flight client; v1 has no Flight server",
     "examples/rag-system/app.py": "imports UUID from fraiseql.types.scalars",
