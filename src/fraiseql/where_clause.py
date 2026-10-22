@@ -234,12 +234,26 @@ ARRAY_OPERATORS_EXTRA = {
     "len_neq": "!=",
 }
 
-# Path operators (for hierarchical paths)
+# Path operators (for hierarchical paths). depth_* are ltree operators (above).
 PATH_OPERATORS = {
-    "depth_eq": "depth =",
-    "depth_gt": "depth >",
-    "depth_lt": "depth <",
     "isdescendant": "isdescendant",
+}
+
+# ltree depth comparisons: nlevel(path) <comparison> value
+LTREE_DEPTH_COMPARISONS = {
+    "nlevel": "=",
+    "nlevel_eq": "=",
+    "nlevel_neq": "!=",
+    "nlevel_gt": ">",
+    "nlevel_gte": ">=",
+    "nlevel_lt": "<",
+    "nlevel_lte": "<=",
+    "depth_eq": "=",
+    "depth_neq": "!=",
+    "depth_gt": ">",
+    "depth_gte": ">=",
+    "depth_lt": "<",
+    "depth_lte": "<=",
 }
 
 # List operators (fallback)
@@ -414,6 +428,9 @@ class FieldCondition:
                 )
                 return sql, params
 
+            if self.operator in LTREE_DEPTH_COMPARISONS:
+                return self._ltree_depth_sql(Identifier(self.target_column))
+
             sql_op = ALL_OPERATORS[self.operator]
 
             if self.operator in CONTAINMENT_OPERATORS:
@@ -478,6 +495,10 @@ class FieldCondition:
                     entity_schema, entity_name, str(self.value), ltree_op, jsonb_expr
                 )
                 return sql, params
+
+            if self.operator in LTREE_DEPTH_COMPARISONS:
+                # ->> gives text; nlevel() needs an ltree
+                return self._ltree_depth_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
 
             if self.operator in CONTAINMENT_OPERATORS:
                 # IN/NOT IN: psycopg3 requires individual placeholders
@@ -554,6 +575,9 @@ class FieldCondition:
                     Identifier(self.target_column),
                 )
                 return sql, params
+
+            if self.operator in LTREE_DEPTH_COMPARISONS:
+                return self._ltree_depth_sql(Identifier(self.target_column))
 
             sql_op = ALL_OPERATORS[self.operator]
 
@@ -803,6 +827,12 @@ class FieldCondition:
             raise ValueError(f"Unknown lookup_strategy: {self.lookup_strategy}")
 
         return sql, params
+
+    def _ltree_depth_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """Compare the path's depth with the value: nlevel(path) > %s."""
+        comparison = LTREE_DEPTH_COMPARISONS[self.operator]
+        sql = Composed([SQL("nlevel("), path_expr, SQL(f") {comparison} "), SQL("%s")])
+        return sql, [int(self.value)]
 
     def _build_like_pattern(self) -> str:
         """Build LIKE pattern from operator and value."""

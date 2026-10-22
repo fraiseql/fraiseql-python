@@ -182,6 +182,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in such a query with "First argument must be GraphQLResolveInfo", although
   each field queried alone worked. They now accept either; the checks they make
   on the user are unchanged.
+### Fixed
+
+- **ltree depth filters render valid SQL.** `nlevel`, `nlevel_eq`, `nlevel_neq`,
+  `nlevel_gt`, `nlevel_gte`, `nlevel_lt`, `nlevel_lte` and their `depth_*` aliases
+  (GraphQL `depthGt`, `nlevelLte`, ...) failed with a PostgreSQL syntax error on a
+  `db.find` where, on an `ltree` column and on a JSONB field alike: `depth_gt`
+  rendered `"path" depth > %s` and `nlevel_gt` rendered `"path" nlevel({}) > %s`.
+  They now render `nlevel(path) > %s`, with the JSONB value cast to `ltree`.
 
 ## [1.29.1] - 2026-10-19
 
