@@ -162,6 +162,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unused Rust modules** (#580): `db::query`, `db::where_builder`,
   `security::{config, csrf, validators}` and `response`. Nothing called them, and
   none was reachable from Python.
+### Fixed
+
+- **`Auth0ProviderWithRevocation` validates tokens.** Its `validate_token`
+  recursed until `RecursionError` on every call, so an app using it
+  authenticated no one: `super().validate_token` resolves to the revocation
+  mixin's own method, which called back into it. It now runs Auth0's validation,
+  then rejects a revoked token with `InvalidTokenError`. The class docstring
+  showed `RedisRevocationStore`, which fraiseql doesn't have; it shows
+  `PostgreSQLRevocationStore`.
 
 ## [1.29.1] - 2026-10-19
 
