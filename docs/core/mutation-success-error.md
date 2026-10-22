@@ -87,25 +87,30 @@ type UserCreated {
 
 ### Basic Usage
 
-Define error types with custom fields:
+Define error types with the fields of your own they carry:
 
 ```python
 @fraiseql.error
 class ValidationError:
-    message: str
-    code: str = "VALIDATION_ERROR"
-    field: str | None = None
+    field: str | None = None  # From the function's metadata
 ```
 
-**Note**: `@error` does NOT auto-inject fields like `@success` does. You define all fields explicitly.
+`@error` adds four fields, like `@success` adds its own: `status` (the
+function's status string), `message`, `errors` (a list of `Error`), and `code`,
+the HTTP-like code of the status prefix (`validation:` 422, `not_found:` 404,
+`conflict:` 409, `unauthorized:` 401, `forbidden:` 403, other failures 500). A
+field you declare with one of these names replaces the added one, so don't
+redeclare `code` as a string: fraiseql fills it with a number.
 
 ### Generated GraphQL Type
 
 ```graphql
 type ValidationError {
-  message: String!
-  code: String!
   field: String
+  status: String!
+  message: String
+  errors: [Error]
+  code: Int!
 }
 ```
 
@@ -115,8 +120,10 @@ type ValidationError {
 {
   "data": {
     "createUser": {
+      "__typename": "ValidationError",
+      "status": "validation:email",
       "message": "Email is already taken",
-      "code": "VALIDATION_ERROR",
+      "code": 422,
       "field": "email"
     }
   }
@@ -144,11 +151,9 @@ class UserCreated:
     user: User
     message: str = "User created successfully"  # Custom default
 
-# Error type (explicit fields only)
+# Error type (status, message, errors and code are added)
 @fraiseql.error
 class ValidationError:
-    message: str
-    code: str = "VALIDATION_ERROR"
     field: str | None = None
 
 # Mutation definition: calls the SQL function create_user(input jsonb)
@@ -395,31 +400,33 @@ class UpdateUser:
 
 ## Best Practices
 
-### 1. Use Descriptive Error Codes
+### 1. Use Descriptive Statuses
 
-```python
-@fraiseql.error
-class ValidationError:
-    message: str
-    code: str = "VALIDATION_ERROR"  # Clear, uppercase, specific
-    field: str | None = None
+The function's status names the error: its prefix picks the error type and the
+numeric `code`, the rest says which error it is.
+
+```sql
+RETURN ROW('validation:email_taken', 'Email is already taken',
+           NULL, NULL, NULL, NULL, NULL, jsonb_build_object('field', 'email'))
+    ::mutation_response;
 ```
 
-**Error codes should be:**
+**Statuses should be:**
 
-- UPPERCASE_SNAKE_CASE
-- Descriptive (VALIDATION_ERROR, not ERR001)
+- A known prefix: `validation:`, `not_found:`, `conflict:`, `unauthorized:`,
+  `forbidden:`
+- Descriptive after it (`validation:email_taken`, not `validation:e1`)
 - Unique across your application
 
 ### 2. Include Field Names in Validation Errors
 
+Put the field in the function's `metadata` (as above) and declare it on the
+error type, so the client can highlight the right field:
+
 ```python
-if not self.input.email:
-    return ValidationError(
-        message="Email is required",
-        field="email",  # ✅ Helps client highlight the right field
-        code="REQUIRED_FIELD"
-    )
+@fraiseql.error
+class ValidationError:
+    field: str | None = None  # ✅ Helps client highlight the right field
 ```
 
 ### 3. Leverage Auto-Injected message for User Feedback
