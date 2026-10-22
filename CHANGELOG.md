@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A resolver can wrap what `db.find` / `db.find_one` return in another
+  object.** In HTTP mode they return a complete Rust-built response, which
+  only works as a root field's whole result. A function mutation reading its
+  row back (`return CreateNoteSuccess(note=await db.find_one("v_note", ...))`)
+  answered `{"data": {"v_note": ...}}` instead of the mutation field, and a
+  query returning `NotePage(notes=await db.find("v_note"))` failed. Below the
+  root, the field's data is now taken out of the response and completed like
+  any object. When the resolver's `info` describes another type than the view's
+  (here `NotePage`, or the mutation's result union), `find` no longer projects
+  the rows onto that selection: they are read whole.
+
+### Fixed
+
 - **`failed:validation`, `failed:not_found` and `failed:duplicate` get the error
   codes 422, 404 and 409.** The trinity helpers in
   `migrations/trinity/005_add_mutation_response.sql` (`mutation_validation_error`,

@@ -1381,6 +1381,32 @@ class FraiseQLRepository:
         self._type_name_cache[view_name] = type_name
         return type_name
 
+    def _projects_for_view(self, info: Any, view_name: str) -> bool:
+        """Whether info's selection describes the rows of view_name.
+
+        False when info's field returns another type: a resolver reading a view to
+        build some other object (``return NotePage(notes=await db.find("v_note"))``,
+        or a mutation's success type). Its selection would project the rows onto
+        the wrong fields, so the rows are read whole. True when that can't be told.
+        """
+        type_name = self._get_cached_type_name(view_name)
+        return_type = getattr(info, "return_type", None)
+        schema = getattr(info, "schema", None)
+        if not type_name or return_type is None or schema is None:
+            return True
+        view_type = schema.get_type(type_name)
+        if view_type is None:
+            return True
+
+        from graphql import get_named_type, is_abstract_type
+
+        named = get_named_type(return_type)
+        if named is view_type:
+            return True
+        if is_abstract_type(named):
+            return view_type in schema.get_possible_types(named)
+        return False
+
     def _adopt_session_context(self, request_context: Mapping[str, Any]) -> None:
         """Copy the request values that session variables are read from.
 
@@ -1788,7 +1814,7 @@ class FraiseQLRepository:
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
-        if info:
+        if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
             from fraiseql.core.selection_tree import GraphQLSchemaWrapper, build_selection_tree
             from fraiseql.utils.casing import to_snake_case
@@ -2055,7 +2081,7 @@ class FraiseQLRepository:
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
-        if info:
+        if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
             from fraiseql.core.selection_tree import GraphQLSchemaWrapper, build_selection_tree
             from fraiseql.utils.casing import to_snake_case
