@@ -132,40 +132,35 @@ flowchart LR
 
 **PostgreSQL Function Example**:
 
+A class mutation calls its function with the input as one `jsonb` and reads the
+`mutation_response` it returns (`mutation_response` and the `mutation_*` helpers come
+from `migrations/trinity/005_add_mutation_response.sql`):
+
 ```sql
 -- Write-optimized function
-CREATE OR REPLACE FUNCTION fn_create_user(
-    p_name TEXT,
-    p_email TEXT
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     v_user_id UUID;
 BEGIN
     -- Validation
-    IF p_email IS NULL OR p_email = '' THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Email is required'
-        );
+    IF coalesce(input->>'email', '') = '' THEN
+        RETURN mutation_validation_error('Email is required', 'email');
     END IF;
 
     -- Check uniqueness
-    IF EXISTS (SELECT 1 FROM tb_user WHERE email = p_email) THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Email already exists'
-        );
+    IF EXISTS (SELECT 1 FROM tb_user WHERE email = input->>'email') THEN
+        RETURN mutation_conflict('Email already exists');
     END IF;
 
     -- Insert
     INSERT INTO tb_user (name, email)
-    VALUES (p_name, p_email)
+    VALUES (input->>'name', input->>'email')
     RETURNING id INTO v_user_id;
 
     -- Success response
-    RETURN jsonb_build_object(
-        'success', true,
-        'userId', v_user_id
+    RETURN mutation_created(
+        'User created', (SELECT data FROM v_user WHERE id = v_user_id), 'User'
     );
 END;
 $$ LANGUAGE plpgsql;
@@ -174,27 +169,33 @@ $$ LANGUAGE plpgsql;
 **GraphQL Mutation**:
 
 ```python
-@fraiseql.mutation
-async def create_user(
-    info,
-    name: str,
+@fraiseql.input
+class CreateUserInput:
+    name: str
     email: str
-) -> CreateUserResult:
-    """Create a new user.
 
-    Args:
-        name: User's full name
-        email: User's email address
 
-    Returns:
-        CreateUserResult with success status and user ID or error message
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+
+
+@fraiseql.error
+class CreateUserError:
+    field: str | None = None
+
+
+@fraiseql.mutation
+class CreateUser:
+    """Create a new user: calls create_user(input jsonb).
+
+    Returns CreateUserSuccess with the new user, or CreateUserError with the
+    message and status the function returned.
     """
-    result = await info.context.db.execute(
-        "SELECT fn_create_user($1, $2)",
-        name,
-        email
-    )
-    return CreateUserResult.from_jsonb(result)
+
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: CreateUserError
 ```
 
 **Benefits of Function-Based Mutations**:

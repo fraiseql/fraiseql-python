@@ -347,19 +347,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Mutation explicitly calls sync (CRITICAL!)
-CREATE FUNCTION fn_create_user(p_name TEXT, p_email TEXT)
-RETURNS JSONB AS $$
+-- Mutation explicitly calls sync (CRITICAL!). A class mutation calls it with the
+-- input as one jsonb; mutation_response and mutation_created() come from
+-- migrations/trinity/005_add_mutation_response.sql
+CREATE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE v_user_id UUID;
 BEGIN
     INSERT INTO tb_user (name, email)
-    VALUES (p_name, p_email)
+    VALUES (input->>'name', input->>'email')
     RETURNING id INTO v_user_id;
 
     -- Explicitly sync to projection table
     PERFORM fn_sync_tv_user(v_user_id);
 
-    RETURN (SELECT data FROM tv_user WHERE id = v_user_id);
+    RETURN mutation_created(
+        'User created', (SELECT data FROM tv_user WHERE id = v_user_id), 'User'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -370,22 +374,32 @@ Projection tables do **NOT** auto-update. Every mutation must call sync function
 
 ```sql
 -- ✅ CORRECT
-CREATE FUNCTION fn_update_user(...) RETURNS JSONB AS $$
+CREATE FUNCTION update_user(input jsonb) RETURNS mutation_response AS $$
 BEGIN
-    UPDATE tb_user SET name = p_name WHERE id = p_id;
-    PERFORM fn_sync_tv_user(p_id);  -- Must call!
-    RETURN (SELECT data FROM tv_user WHERE id = p_id);
+    UPDATE tb_user SET name = input->>'name' WHERE id = (input->>'id')::uuid;
+    PERFORM fn_sync_tv_user((input->>'id')::uuid);  -- Must call!
+    RETURN mutation_updated(
+        'User updated',
+        (SELECT data FROM tv_user WHERE id = (input->>'id')::uuid),
+        ARRAY['name'],
+        'User'
+    );
 END;
-$$;
+$$ LANGUAGE plpgsql;
 
 -- ❌ WRONG - Missing sync!
-CREATE FUNCTION fn_update_user_broken(...) RETURNS JSONB AS $$
+CREATE FUNCTION update_user_broken(input jsonb) RETURNS mutation_response AS $$
 BEGIN
-    UPDATE tb_user SET name = p_name WHERE id = p_id;
+    UPDATE tb_user SET name = input->>'name' WHERE id = (input->>'id')::uuid;
     -- tv_user will have stale data!
-    RETURN (SELECT data FROM tv_user WHERE id = p_id);
+    RETURN mutation_updated(
+        'User updated',
+        (SELECT data FROM tv_user WHERE id = (input->>'id')::uuid),
+        ARRAY['name'],
+        'User'
+    );
 END;
-$$;
+$$ LANGUAGE plpgsql;
 ```
 
 **Benefits:**

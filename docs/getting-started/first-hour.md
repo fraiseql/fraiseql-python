@@ -200,15 +200,15 @@ and many more specialized operators for specific Postgresql types (CIDR, LTREE e
 
 ### Step 1: Create Delete Function (Basic Pattern)
 
-Create a PostgreSQL function for deletion that returns a simple boolean:
+Create a PostgreSQL function for deletion that returns a simple boolean. FraiseQL
+calls it with the arguments as one `jsonb`, and gives you back its `OUT` parameters:
 
 ```sql
 -- Create basic delete function (returns boolean)
-CREATE OR REPLACE FUNCTION fn_delete_note(note_id UUID)
-RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION fn_delete_note(input JSONB, OUT deleted BOOLEAN) AS $$
 BEGIN
-    DELETE FROM tb_note WHERE id = note_id;
-    RETURN FOUND;  -- Returns true if a row was deleted, false otherwise
+    DELETE FROM tb_note WHERE id = (input->>'id')::uuid;
+    deleted := FOUND;  -- true if a row was deleted, false otherwise
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -223,7 +223,9 @@ Add a simple mutation to your app:
 async def delete_note(info, id: ID) -> bool:
     """Delete a note by ID (returns true if deleted, false if not found)."""
     db = info.context["db"]
-    return await db.fetchval("SELECT fn_delete_note($1)", id)
+    # Runs SELECT * FROM fn_delete_note('{"id": ...}'::jsonb): a dict of OUT parameters
+    result = await db.execute_function("fn_delete_note", {"id": str(id)})
+    return result["deleted"]
 ```
 
 **Restart your server** to register the new mutation.
@@ -242,29 +244,29 @@ mutation {
 
 The boolean return is simple but doesn't provide error details. Let's improve this with structured success/failure types.
 
-**First, update the database function** to return JSONB with error information:
+**First, update the database function** to return error information:
 
 ```sql
--- Improved function that returns JSONB with error details
-CREATE OR REPLACE FUNCTION fn_delete_note(note_id UUID)
-RETURNS JSONB AS $$
-DECLARE
-    deleted_count INTEGER;
-BEGIN
-    DELETE FROM tb_note WHERE id = note_id;
-    GET DIAGNOSTICS deleted_count = ROW_COUNT;
+-- Its OUT parameters change, so drop the basic version first
+DROP FUNCTION IF EXISTS fn_delete_note(JSONB);
 
-    IF deleted_count = 0 THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'message', 'Note not found',
-            'code', 'NOT_FOUND'
-        );
+-- Improved function that returns error details
+CREATE FUNCTION fn_delete_note(
+    input JSONB,
+    OUT success BOOLEAN,
+    OUT message TEXT,
+    OUT code TEXT
+) AS $$
+BEGIN
+    DELETE FROM tb_note WHERE id = (input->>'id')::uuid;
+
+    IF NOT FOUND THEN
+        success := false;
+        message := 'Note not found';
+        code := 'NOT_FOUND';
     ELSE
-        RETURN jsonb_build_object(
-            'success', true,
-            'message', 'Note deleted successfully'
-        );
+        success := true;
+        message := 'Note deleted successfully';
     END IF;
 END;
 $$ LANGUAGE plpgsql;
@@ -289,9 +291,8 @@ class DeleteNoteError:
 async def delete_note(info, id: ID) -> DeleteNoteSuccess | DeleteNoteError:
     """Delete a note by ID with detailed error handling."""
     db = info.context["db"]
-    # Call function that returns JSONB directly from database
-    # FraiseQL automatically maps JSONB to the appropriate type
-    result = await db.fetchval("SELECT fn_delete_note($1)", id)
+    # The function's OUT parameters come back as a dict
+    result = await db.execute_function("fn_delete_note", {"id": str(id)})
 
     # Return the appropriate type based on success field
     if result.get("success"):

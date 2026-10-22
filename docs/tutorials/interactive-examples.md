@@ -203,27 +203,19 @@ query GetPostsWithAuthors {
 ### SQL: Business Logic Function
 
 ```sql
--- fn_create_post handles validation and insertion
-CREATE FUNCTION fn_create_post(
-    p_title text,
-    p_content text,
-    p_author_id uuid
-) RETURNS uuid AS $$
-DECLARE
-    v_post_id uuid;
+-- fn_create_post handles validation and insertion. It takes the arguments as
+-- one jsonb, and returns the new post's id as an OUT parameter.
+CREATE FUNCTION fn_create_post(input jsonb, OUT post_id uuid) AS $$
 BEGIN
     -- Validation
-    IF NOT EXISTS (SELECT 1 FROM tb_user WHERE id = p_author_id) THEN
+    IF NOT EXISTS (SELECT 1 FROM tb_user WHERE id = (input->>'author_id')::uuid) THEN
         RAISE EXCEPTION 'Author does not exist';
     END IF;
 
     -- Insert post
     INSERT INTO tb_post (title, content, author_id)
-    VALUES (p_title, p_content, p_author_id)
-    RETURNING id INTO v_post_id;
-
-    -- Return new post ID
-    RETURN v_post_id;
+    VALUES (input->>'title', input->>'content', (input->>'author_id')::uuid)
+    RETURNING id INTO post_id;
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -231,25 +223,29 @@ $$ LANGUAGE plpgsql;
 ### Python: Mutation Resolver
 
 ```python
-from fraiseql import mutation, input
+import fraiseql
 from fraiseql.types import ID
 
-@input
+@fraiseql.input
 class CreatePostInput:
     title: str
     content: str
     author_id: ID
 
 @fraiseql.mutation
-async def create_post(self, info, input: CreatePostInput) -> Post:
-    # Call PostgreSQL function
-    post_id = await db.execute_scalar(
-        "SELECT fn_create_post($1, $2, $3)",
-        [input.title, input.content, input.author_id]
+async def create_post(info, input: CreatePostInput) -> Post:
+    db = info.context["db"]
+    # Call PostgreSQL function: it gets one jsonb, and its OUT parameters come
+    # back as a dict
+    result = await db.execute_function(
+        "fn_create_post",
+        {"title": input.title, "content": input.content, "author_id": str(input.author_id)},
     )
 
     # Return created post
-    return await self.post(info, id=post_id)
+    return await db.find_one(
+        "v_post", "createPost", info, mandatory_filters={"id": result["post_id"]}
+    )
 ```
 
 ### GraphQL: Mutation Operation

@@ -124,13 +124,15 @@ CREATE VIEW v_comment AS
 SELECT
     c.id,
     c.fk_post,
+    c.fk_parent,
     c.created_at,
     jsonb_build_object(
         '__typename', 'Comment',
         'id', c.id,
         'content', c.content,
         'createdAt', c.created_at,
-        'author', (SELECT data FROM v_user WHERE pk_user = c.fk_author),
+        'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
+                   WHERE u.pk_user = c.fk_author),
         'post', (
             SELECT jsonb_build_object(
                 '__typename', 'Post',
@@ -146,7 +148,8 @@ SELECT
                     'id', r.id,
                     'content', r.content,
                     'createdAt', r.created_at,
-                    'author', (SELECT data FROM v_user WHERE pk_user = r.fk_author)
+                    'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
+                               WHERE u.pk_user = r.fk_author)
                 ) ORDER BY r.created_at
             )
             FROM tb_comment r
@@ -164,7 +167,7 @@ SELECT
     p.created_at,
     jsonb_build_object(
         '__typename', 'Post',
-        'id', p.pk_post,
+        'id', p.id,
         'title', p.title,
         'slug', p.slug,
         'content', p.content,
@@ -173,11 +176,12 @@ SELECT
         'isPublished', p.is_published,
         'publishedAt', p.published_at,
         'createdAt', p.created_at,
-        'author', (SELECT data FROM v_user WHERE id = p.fk_author),
+        'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
+                   WHERE u.pk_user = p.fk_author),
         'comments', COALESCE(
             (SELECT jsonb_agg(data ORDER BY created_at)
              FROM v_comment
-             WHERE fk_post = p.id AND fk_parent IS NULL),
+             WHERE fk_post = p.pk_post AND fk_parent IS NULL),
             '[]'::jsonb
         )
     ) AS data
@@ -249,34 +253,32 @@ def get_posts(
 
 ## Mutations
 
-**Pattern**: PostgreSQL functions handle business logic.
+**Pattern**: PostgreSQL functions handle business logic. A class mutation calls
+the function named after it (`CreatePost` calls `create_post`) with its context
+params first and the input as one `jsonb`, and turns the `mutation_response` it
+returns into the success or error type. `mutation_response` and the `mutation_*`
+helpers come from `migrations/trinity/005_add_mutation_response.sql`.
 
 ```sql
 -- Create post function
-CREATE OR REPLACE FUNCTION fn_create_post(
-    p_author_id UUID,
-    p_title TEXT,
-    p_content TEXT,
-    p_excerpt TEXT DEFAULT NULL,
-    p_tags TEXT[] DEFAULT '{}',
-    p_is_published BOOLEAN DEFAULT false
-)
-RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION create_post(p_author_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_post_id UUID;
     v_author_pk INT;
     v_slug TEXT;
+    v_is_published BOOLEAN := coalesce((input->>'is_published')::boolean, false);
 BEGIN
     -- Get author internal pk_user
     SELECT pk_user INTO v_author_pk
     FROM tb_user WHERE id = p_author_id;
 
     IF v_author_pk IS NULL THEN
-        RAISE EXCEPTION 'Author not found: %', p_author_id;
+        RETURN mutation_not_found('User', p_author_id::text);
     END IF;
 
     -- Generate slug
-    v_slug := lower(regexp_replace(p_title, '[^a-zA-Z0-9]+', '-', 'g'));
+    v_slug := lower(regexp_replace(input->>'title', '[^a-zA-Z0-9]+', '-', 'g'));
     v_slug := trim(both '-' from v_slug);
     v_slug := v_slug || '-' || substr(md5(random()::text), 1, 8);
 
@@ -286,24 +288,22 @@ BEGIN
         is_published, published_at
     )
     VALUES (
-        v_author_pk, p_title, v_slug, p_content, p_excerpt, p_tags,
-        p_is_published,
-        CASE WHEN p_is_published THEN NOW() ELSE NULL END
+        v_author_pk, input->>'title', v_slug, input->>'content', input->>'excerpt',
+        ARRAY(SELECT jsonb_array_elements_text(coalesce(input->'tags', '[]'))),
+        v_is_published,
+        CASE WHEN v_is_published THEN NOW() ELSE NULL END
     )
     RETURNING id INTO v_post_id;
 
-    RETURN v_post_id;
+    RETURN mutation_created(
+        'Post created', (SELECT data FROM v_post WHERE id = v_post_id), 'Post'
+    );
 END;
 $$ LANGUAGE plpgsql;
 
 -- Create comment function
-CREATE OR REPLACE FUNCTION fn_create_comment(
-    p_author_id UUID,
-    p_post_id UUID,
-    p_content TEXT,
-    p_parent_id UUID DEFAULT NULL
-)
-RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION create_comment(p_author_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_comment_id UUID;
     v_author_pk INT;
@@ -312,21 +312,24 @@ DECLARE
 BEGIN
     -- Get internal primary keys
     SELECT pk_user INTO v_author_pk FROM tb_user WHERE id = p_author_id;
-    SELECT pk_post INTO v_post_pk FROM tb_post WHERE id = p_post_id;
-    IF p_parent_id IS NOT NULL THEN
-        SELECT pk_comment INTO v_parent_pk FROM tb_comment WHERE id = p_parent_id;
+    SELECT pk_post INTO v_post_pk FROM tb_post WHERE id = (input->>'post_id')::uuid;
+    IF input->>'parent_id' IS NOT NULL THEN
+        SELECT pk_comment INTO v_parent_pk
+        FROM tb_comment WHERE id = (input->>'parent_id')::uuid;
     END IF;
 
     IF v_author_pk IS NULL OR v_post_pk IS NULL THEN
-        RAISE EXCEPTION 'Author or post not found';
+        RETURN mutation_not_found('Author or post');
     END IF;
 
     -- Insert comment
     INSERT INTO tb_comment (fk_author, fk_post, fk_parent, content)
-    VALUES (v_author_pk, v_post_pk, v_parent_pk, p_content)
+    VALUES (v_author_pk, v_post_pk, v_parent_pk, input->>'content')
     RETURNING id INTO v_comment_id;
 
-    RETURN v_comment_id;
+    RETURN mutation_created(
+        'Comment added', (SELECT data FROM v_comment WHERE id = v_comment_id), 'Comment'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -351,15 +354,32 @@ class CreateCommentInput:
     content: str
     parent_id: ID | None = None
 
-@fraiseql.mutation
-def create_post(input: CreatePostInput) -> Post:
-    """Create new blog post."""
-    pass  # Implementation handled by framework
+@fraiseql.success
+class CreatePostSuccess:
+    post: Post
 
-@fraiseql.mutation
-def create_comment(input: CreateCommentInput) -> Comment:
+@fraiseql.success
+class CreateCommentSuccess:
+    comment: Comment
+
+@fraiseql.error
+class BlogError:
+    """status, message and code come from the function's mutation_response."""
+
+# The author is the signed-in user: info.context["user_id"] is passed first
+@fraiseql.mutation(context_params={"user_id": "p_author_id"})
+class CreatePost:
+    """Create new blog post."""
+    input: CreatePostInput
+    success: CreatePostSuccess
+    error: BlogError
+
+@fraiseql.mutation(context_params={"user_id": "p_author_id"})
+class CreateComment:
     """Add comment to post."""
-    pass  # Implementation handled by framework
+    input: CreateCommentInput
+    success: CreateCommentSuccess
+    error: BlogError
 ```
 
 ## Application Setup

@@ -344,21 +344,32 @@ class CreateUser:
     success: CreateUserSuccess
     error: CreateUserError
 
-# Database function:
-# See [canonical fn_create_user()](../examples/canonical-examples.md#create-user-function)
+# Database function: called with the input as one jsonb, it returns a
+# mutation_response. See [canonical create_user()](../examples/canonical-examples.md#create-user-function)
 # for the complete implementation with validation and error handling.
 
 # Simple version for migration reference:
 ```
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_create_user(p_email TEXT, p_name TEXT)
-RETURNS UUID AS $$
+CREATE OR REPLACE FUNCTION fn_create_user(input jsonb)
+RETURNS mutation_response AS $$
+DECLARE
+    v_user_id UUID;
 BEGIN
-    INSERT INTO tb_user (email, name) VALUES (p_email, p_name) RETURNING id;
+    INSERT INTO tb_user (email, name)
+    VALUES (input->>'email', input->>'name')
+    RETURNING id INTO v_user_id;
+
+    RETURN mutation_created(
+        'User created', (SELECT data FROM v_user WHERE id = v_user_id), 'User'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
+
+`mutation_response` and the `mutation_*` helpers come from
+`migrations/trinity/005_add_mutation_response.sql`.
 
 ### 4.2 Complex Mutations with CASCADE
 
@@ -389,6 +400,23 @@ class CreatePost(graphene.Mutation):
 **After (FraiseQL with CASCADE):**
 
 ```python
+@fraiseql.input
+class CreatePostInput:
+    title: str
+    content: str
+    author_id: ID
+
+
+@fraiseql.success
+class CreatePostSuccess:
+    post: Post
+
+
+@fraiseql.error
+class CreatePostError:
+    message: str
+
+
 @fraiseql.mutation(
     function="fn_create_post",
     name="createPost",
@@ -396,24 +424,37 @@ class CreatePost(graphene.Mutation):
 )
 class CreatePost:
     """Create a new post"""
-    title: str
-    content: str
-    author_id: ID
+    input: CreatePostInput
+    success: CreatePostSuccess
+    error: CreatePostError
+```
 
-# Database function
-CREATE OR REPLACE FUNCTION fn_create_post(
-    input_title TEXT,
-    input_content TEXT,
-    input_author_id UUID
-) RETURNS UUID AS $$
+```sql
+-- Database function: the cascade lists the new post and its updated author
+CREATE OR REPLACE FUNCTION fn_create_post(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
-    new_post_id UUID;
+    v_post_id UUID;
+    v_author_id UUID := (input->>'author_id')::uuid;
+    v_post JSONB;
 BEGIN
     INSERT INTO tb_post (title, content, author_id)
-    VALUES (input_title, input_content, input_author_id)
-    RETURNING id INTO new_post_id;
+    VALUES (input->>'title', input->>'content', v_author_id)
+    RETURNING id INTO v_post_id;
 
-    RETURN new_post_id;
+    v_post := (SELECT data FROM v_post WHERE id = v_post_id);
+
+    RETURN mutation_created(
+        'Post created',
+        v_post,
+        'Post',
+        cascade_merge(
+            cascade_entity_created('Post', v_post_id::text, v_post),
+            cascade_entity_update(
+                'User', v_author_id::text, (SELECT data FROM v_user WHERE id = v_author_id)
+            )
+        )
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```

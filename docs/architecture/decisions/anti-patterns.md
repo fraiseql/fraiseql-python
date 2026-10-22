@@ -253,7 +253,7 @@ async def create_order(info, input: CreateOrderInput) -> CreateOrderSuccess:
 
 **Solution**: Put the write logic in one `fn_` PostgreSQL function. The resolver
 just validates the shape of the input and calls it; the function does
-validation, the writes, and returns a JSONB result in a single transaction:
+validation, the writes, and returns the result in a single transaction:
 
 ```python
 # ✅ CORRECT: resolver is thin; the database owns the write
@@ -275,30 +275,38 @@ async def create_order(
 ```
 
 ```sql
--- fn_create_order does the validation + all writes atomically and returns JSONB.
-CREATE FUNCTION fn_create_order(p_customer_id uuid, p_lines jsonb)
-RETURNS jsonb
+-- fn_create_order does the validation + all writes atomically. execute_function
+-- passes the input as one jsonb and runs SELECT * FROM fn_create_order(...), so the
+-- OUT parameters are the keys of the dict it returns.
+CREATE FUNCTION fn_create_order(
+    input jsonb,
+    OUT success boolean,
+    OUT code text,
+    OUT message text,
+    OUT "order" jsonb
+)
 LANGUAGE plpgsql AS $$
 DECLARE
     v_order_id uuid;
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM tb_customer WHERE id = p_customer_id) THEN
-        RETURN jsonb_build_object('success', false,
-                                  'code', 'UNKNOWN_CUSTOMER',
-                                  'message', 'unknown customer');
+    IF NOT EXISTS (SELECT 1 FROM tb_customer WHERE id = (input->>'customer_id')::uuid) THEN
+        success := false;
+        code := 'UNKNOWN_CUSTOMER';
+        message := 'unknown customer';
+        RETURN;
     END IF;
 
     INSERT INTO tb_order (fk_customer)
-    SELECT pk_customer FROM tb_customer WHERE id = p_customer_id
+    SELECT pk_customer FROM tb_customer WHERE id = (input->>'customer_id')::uuid
     RETURNING id INTO v_order_id;
 
     INSERT INTO tb_order_line (fk_order, sku, qty)
     SELECT (SELECT pk_order FROM tb_order WHERE id = v_order_id),
            line->>'sku', (line->>'qty')::int
-    FROM jsonb_array_elements(p_lines) AS line;
+    FROM jsonb_array_elements(input->'lines') AS line;
 
-    RETURN jsonb_build_object('success', true,
-                              'order', (SELECT data FROM v_order WHERE id = v_order_id));
+    success := true;
+    "order" := (SELECT data FROM v_order WHERE id = v_order_id);
 END;
 $$;
 ```

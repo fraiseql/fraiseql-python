@@ -84,40 +84,35 @@ CREATE INDEX idx_post_identifier ON tb_post(identifier) WHERE deleted_at IS NULL
 
 ## PostgreSQL Function Examples
 
+A class mutation calls its function with the input as one `jsonb` argument (its
+keys in snake_case), after any `context_params`, and reads the
+`mutation_response` it returns. `mutation_response` and the `mutation_*` helpers
+come from `migrations/trinity/005_add_mutation_response.sql`. The mutation
+classes that call these functions are [below](#mutation-classes).
+
 ### Create User Function
 
 **Complete example with validation and error handling:**
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_create_user(
-    p_name TEXT,
-    p_email TEXT,
-    p_identifier TEXT DEFAULT NULL
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     v_user_id UUID;
 BEGIN
     -- Validation: Email format
-    IF p_email !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$' THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Invalid email format',
-            'code', 'INVALID_EMAIL'
-        );
+    IF input->>'email' !~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+        RETURN mutation_validation_error('Invalid email format', 'email');
     END IF;
 
     -- Validation: Name length
-    IF LENGTH(p_name) < 2 THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Name must be at least 2 characters',
-            'code', 'INVALID_NAME'
-        );
+    IF length(coalesce(input->>'name', '')) < 2 THEN
+        RETURN mutation_validation_error('Name must be at least 2 characters', 'name');
     END IF;
 
     -- Insert user
     INSERT INTO tb_user (name, email, identifier)
-    VALUES (p_name, p_email, p_identifier)
+    VALUES (input->>'name', input->>'email', input->>'identifier')
     RETURNING id INTO v_user_id;
 
     -- Audit log (optional)
@@ -125,24 +120,14 @@ BEGIN
     VALUES ('user_created', jsonb_build_object('user_id', v_user_id));
 
     -- Return success with user data
-    RETURN jsonb_build_object(
-        'success', true,
-        'user', (SELECT data FROM v_user WHERE id = v_user_id),
-        'message', 'User created successfully'
+    RETURN mutation_created(
+        'User created successfully',
+        (SELECT data FROM v_user WHERE id = v_user_id),
+        'User'
     );
 EXCEPTION
     WHEN unique_violation THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'Email or identifier already exists',
-            'code', 'DUPLICATE_USER'
-        );
-    WHEN OTHERS THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', SQLERRM,
-            'code', 'DATABASE_ERROR'
-        );
+        RETURN mutation_conflict('Email or identifier already exists');
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -157,42 +142,33 @@ $$ LANGUAGE plpgsql;
 
 ### Update User Function
 
-**Example with optimistic locking:**
+**Example updating only the fields the input sets:**
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_update_user(
-    p_id UUID,
-    p_name TEXT DEFAULT NULL,
-    p_bio TEXT DEFAULT NULL,
-    p_avatar_url TEXT DEFAULT NULL
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION update_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
-    v_updated_rows INT;
+    v_user_id UUID := (input->>'id')::uuid;
 BEGIN
     -- Update only provided fields
     UPDATE tb_user
     SET
-        name = COALESCE(p_name, name),
-        bio = COALESCE(p_bio, bio),
-        avatar_url = COALESCE(p_avatar_url, avatar_url),
+        name = coalesce(input->>'name', name),
+        bio = coalesce(input->>'bio', bio),
+        avatar_url = coalesce(input->>'avatar_url', avatar_url),
         updated_at = NOW()
-    WHERE id = p_id
+    WHERE id = v_user_id
       AND deleted_at IS NULL;
 
-    GET DIAGNOSTICS v_updated_rows = ROW_COUNT;
-
-    IF v_updated_rows = 0 THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'User not found',
-            'code', 'NOT_FOUND'
-        );
+    IF NOT FOUND THEN
+        RETURN mutation_not_found('User', v_user_id::text);
     END IF;
 
-    RETURN jsonb_build_object(
-        'success', true,
-        'user', (SELECT data FROM v_user WHERE id = p_id),
-        'message', 'User updated successfully'
+    RETURN mutation_updated(
+        'User updated successfully',
+        (SELECT data FROM v_user WHERE id = v_user_id),
+        ARRAY(SELECT jsonb_object_keys(jsonb_strip_nulls(input - 'id'))),
+        'User'
     );
 END;
 $$ LANGUAGE plpgsql;
@@ -205,34 +181,89 @@ $$ LANGUAGE plpgsql;
 **Example with cascade considerations:**
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_delete_user(
-    p_id UUID
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION delete_user(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
-    v_deleted_rows INT;
+    v_user_id UUID := (input->>'id')::uuid;
 BEGIN
     -- Soft delete
     UPDATE tb_user
     SET deleted_at = NOW()
-    WHERE id = p_id
+    WHERE id = v_user_id
       AND deleted_at IS NULL;
 
-    GET DIAGNOSTICS v_deleted_rows = ROW_COUNT;
-
-    IF v_deleted_rows = 0 THEN
-        RETURN jsonb_build_object(
-            'success', false,
-            'error', 'User not found or already deleted',
-            'code', 'NOT_FOUND'
-        );
+    IF NOT FOUND THEN
+        RETURN mutation_not_found('User', v_user_id::text);
     END IF;
 
-    RETURN jsonb_build_object(
-        'success', true,
-        'message', 'User deleted successfully'
-    );
+    RETURN mutation_deleted('User deleted successfully', v_user_id::text, 'User');
 END;
 $$ LANGUAGE plpgsql;
+```
+
+---
+
+### Mutation Classes
+
+**The class mutations that call the functions above** (each calls the function
+named after it in snake_case: `CreateUser` calls `create_user`):
+
+```python
+import fraiseql
+from fraiseql.types import ID
+
+@fraiseql.input
+class CreateUserInput:
+    name: str
+    email: str
+    identifier: str | None = None
+
+@fraiseql.input
+class UpdateUserInput:
+    id: ID
+    name: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
+
+@fraiseql.input
+class DeleteUserInput:
+    id: ID
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+
+@fraiseql.success
+class UpdateUserSuccess:
+    user: User
+
+@fraiseql.success
+class DeleteUserSuccess:
+    # Filled from the mutation_response's entity_id. @fraiseql.success adds id
+    # only to a type with an entity field, and this one has none.
+    id: ID | None = None
+
+@fraiseql.error
+class UserError:
+    field: str | None = None  # From the validation error's metadata
+
+@fraiseql.mutation
+class CreateUser:
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: UserError
+
+@fraiseql.mutation
+class UpdateUser:
+    input: UpdateUserInput
+    success: UpdateUserSuccess
+    error: UserError
+
+@fraiseql.mutation
+class DeleteUser:
+    input: DeleteUserInput
+    success: DeleteUserSuccess
+    error: UserError
 ```
 
 ---
@@ -379,7 +410,8 @@ mutation {
     email: "alice@example.com"
     identifier: "alice"
   }) {
-    success {
+    __typename
+    ... on CreateUserSuccess {
       user {
         id
         name
@@ -387,9 +419,10 @@ mutation {
       }
       message
     }
-    failure {
+    ... on UserError {
       message
       code
+      field
     }
   }
 }
@@ -484,7 +517,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Usage in mutation (explicit sync required)
-CREATE FUNCTION fn_create_user(...) RETURNS JSONB AS $$
+CREATE FUNCTION create_user(input jsonb) RETURNS mutation_response AS $$
 DECLARE v_user_id UUID;
 BEGIN
     INSERT INTO tb_user (...) VALUES (...) RETURNING id INTO v_user_id;
@@ -492,7 +525,9 @@ BEGIN
     -- ✅ Explicitly sync to projection table
     PERFORM fn_sync_tv_user(v_user_id);
 
-    RETURN (SELECT data FROM tv_user WHERE id = v_user_id);
+    RETURN mutation_created(
+        'User created', (SELECT data FROM tv_user WHERE id = v_user_id), 'User'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```

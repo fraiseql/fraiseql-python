@@ -273,106 +273,115 @@ CREATE TRIGGER trg_comment_notify
 ## Write functions (`fn_`)
 
 Mutations never touch tables directly. They call PostgreSQL functions that hold the
-write logic and return JSONB describing success or failure. Because the writes go
-through `tb_document_change` / `tb_presence` / `tb_comment`, the triggers above fire
-automatically — the mutation does not have to `NOTIFY` by hand.
+write logic and return a `mutation_response` describing success or failure. A class
+mutation calls its function with its `context_params` first (here the user's id, from
+the request context) and then the input as one `jsonb`. `mutation_response` and the
+`mutation_*` helpers come from `migrations/trinity/005_add_mutation_response.sql`.
+Because the writes go through `tb_document_change` / `tb_presence` / `tb_comment`, the
+triggers above fire automatically — the mutation does not have to `NOTIFY` by hand.
 
 ```sql
-CREATE OR REPLACE FUNCTION fn_apply_operation(
-    p_document_id  UUID,
-    p_user_id      UUID,
-    p_operation    JSONB,
-    p_vector_clock JSONB
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION fn_apply_operation(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_pk_document BIGINT;
-    v_change      tb_document_change;
+    v_change_id   UUID;
+    v_operation   JSONB := input->'operation';
 BEGIN
     SELECT pk_document INTO v_pk_document
     FROM tb_document
-    WHERE id = p_document_id AND deleted_at IS NULL;
+    WHERE id = (input->>'document_id')::uuid AND deleted_at IS NULL;
 
     IF v_pk_document IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'document not found');
+        RETURN mutation_not_found('Document', input->>'document_id');
     END IF;
 
     INSERT INTO tb_document_change (fk_document, user_id, operation, vector_clock)
-    VALUES (v_pk_document, p_user_id, p_operation, p_vector_clock)
-    RETURNING * INTO v_change;
+    VALUES (v_pk_document, p_user_id, v_operation, input->'vector_clock')
+    RETURNING id INTO v_change_id;
 
     -- Apply the operation to the materialized content (insert/delete on text).
     UPDATE tb_document
-    SET content = CASE p_operation->>'type'
+    SET content = CASE v_operation->>'type'
             WHEN 'insert' THEN
-                left(content, (p_operation->>'position')::int)
-                || (p_operation->>'content')
-                || substr(content, (p_operation->>'position')::int + 1)
+                left(content, (v_operation->>'position')::int)
+                || (v_operation->>'content')
+                || substr(content, (v_operation->>'position')::int + 1)
             WHEN 'delete' THEN
-                left(content, (p_operation->>'position')::int)
+                left(content, (v_operation->>'position')::int)
                 || substr(content,
-                          (p_operation->>'position')::int
-                          + (p_operation->>'length')::int + 1)
+                          (v_operation->>'position')::int
+                          + (v_operation->>'length')::int + 1)
             ELSE content
         END,
         updated_at = now()
     WHERE pk_document = v_pk_document;
 
-    RETURN jsonb_build_object('success', true, 'change_id', v_change.id);
+    RETURN mutation_created(
+        'Operation applied',
+        (SELECT data FROM v_document_change WHERE id = v_change_id),
+        'DocumentChange'
+    );
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_update_presence(
-    p_document_id     UUID,
-    p_user_id         UUID,
-    p_cursor_position INT,
-    p_selection_start INT,
-    p_selection_end   INT,
-    p_color           TEXT
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION fn_update_presence(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_pk_document BIGINT;
+    v_presence_id UUID;
 BEGIN
-    SELECT pk_document INTO v_pk_document FROM tb_document WHERE id = p_document_id;
+    SELECT pk_document INTO v_pk_document
+    FROM tb_document
+    WHERE id = (input->>'document_id')::uuid;
     IF v_pk_document IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'document not found');
+        RETURN mutation_not_found('Document', input->>'document_id');
     END IF;
 
     INSERT INTO tb_presence
         (fk_document, user_id, cursor_position, selection_start, selection_end, color)
     VALUES
-        (v_pk_document, p_user_id, p_cursor_position,
-         p_selection_start, p_selection_end, p_color)
+        (v_pk_document, p_user_id, (input->>'cursor_position')::int,
+         (input->>'selection_start')::int, (input->>'selection_end')::int,
+         input->>'color')
     ON CONFLICT (fk_document, user_id) DO UPDATE
         SET cursor_position = EXCLUDED.cursor_position,
             selection_start = EXCLUDED.selection_start,
             selection_end   = EXCLUDED.selection_end,
             color           = EXCLUDED.color,
-            last_activity   = now();
+            last_activity   = now()
+    RETURNING id INTO v_presence_id;
 
-    RETURN jsonb_build_object('success', true);
+    RETURN mutation_success(
+        'Presence updated',
+        (SELECT data FROM v_presence WHERE id = v_presence_id),
+        'Presence'
+    );
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_add_comment(
-    p_document_id UUID,
-    p_user_id     UUID,
-    p_content     TEXT,
-    p_position    INT
-) RETURNS JSONB AS $$
+CREATE OR REPLACE FUNCTION fn_add_comment(p_user_id UUID, input JSONB)
+RETURNS mutation_response AS $$
 DECLARE
     v_pk_document BIGINT;
-    v_comment     tb_comment;
+    v_comment_id  UUID;
 BEGIN
-    SELECT pk_document INTO v_pk_document FROM tb_document WHERE id = p_document_id;
+    SELECT pk_document INTO v_pk_document
+    FROM tb_document
+    WHERE id = (input->>'document_id')::uuid;
     IF v_pk_document IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'document not found');
+        RETURN mutation_not_found('Document', input->>'document_id');
     END IF;
 
     INSERT INTO tb_comment (fk_document, user_id, content, position)
-    VALUES (v_pk_document, p_user_id, p_content, p_position)
-    RETURNING * INTO v_comment;
+    VALUES (v_pk_document, p_user_id, input->>'content', (input->>'position')::int)
+    RETURNING id INTO v_comment_id;
 
-    RETURN jsonb_build_object('success', true, 'comment_id', v_comment.id);
+    RETURN mutation_created(
+        'Comment added',
+        (SELECT data FROM v_comment WHERE id = v_comment_id),
+        'Comment'
+    );
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -465,10 +474,19 @@ class ApplyOperationSuccess:
     change: DocumentChange
 
 
+@fraiseql.success
+class UpdatePresenceSuccess:
+    presence: Presence
+
+
+@fraiseql.success
+class AddCommentSuccess:
+    comment: Comment
+
+
 @fraiseql.error
-class ApplyOperationError:
+class DocumentError:
     message: str
-    code: str = "OPERATION_FAILED"
 ```
 
 ### Queries (reads)
@@ -495,62 +513,42 @@ async def comments(info, document_id: ID) -> list[Comment]:
 
 ### Mutations (writes via `fn_`)
 
+Each class mutation calls the function named by `function=`, passing
+`info.context["user_id"]` first (`context_params`) and then the input as one
+`jsonb`; the `mutation_response` comes back as the success or the error type.
+
 ```python
-@fraiseql.mutation
-async def apply_operation(
-    info, input: ApplyOperationInput
-) -> ApplyOperationSuccess | ApplyOperationError:
-    db = info.context["db"]
-    user_id = info.context["user_id"]
-    result = await db.execute_function(
-        "fn_apply_operation",
-        {
-            "p_document_id": input.document_id,
-            "p_user_id": user_id,
-            "p_operation": input.operation,
-            "p_vector_clock": input.vector_clock,
-        },
-    )
-    if not result.get("success"):
-        return ApplyOperationError(message=result.get("message", "failed"))
-    change = await db.find_one("v_document_change", id=result["change_id"])
-    return ApplyOperationSuccess(change=change)
+@fraiseql.mutation(
+    function="fn_apply_operation",
+    name="applyOperation",
+    context_params={"user_id": "p_user_id"},
+)
+class ApplyOperation:
+    input: ApplyOperationInput
+    success: ApplyOperationSuccess
+    error: DocumentError
 
 
-@fraiseql.mutation
-async def update_presence(info, input: UpdatePresenceInput) -> bool:
-    db = info.context["db"]
-    user_id = info.context["user_id"]
-    result = await db.execute_function(
-        "fn_update_presence",
-        {
-            "p_document_id": input.document_id,
-            "p_user_id": user_id,
-            "p_cursor_position": input.cursor_position,
-            "p_selection_start": input.selection_start,
-            "p_selection_end": input.selection_end,
-            "p_color": input.color,
-        },
-    )
-    return bool(result.get("success"))
+@fraiseql.mutation(
+    function="fn_update_presence",
+    name="updatePresence",
+    context_params={"user_id": "p_user_id"},
+)
+class UpdatePresence:
+    input: UpdatePresenceInput
+    success: UpdatePresenceSuccess
+    error: DocumentError
 
 
-@fraiseql.mutation
-async def add_comment(info, input: AddCommentInput) -> Comment | None:
-    db = info.context["db"]
-    user_id = info.context["user_id"]
-    result = await db.execute_function(
-        "fn_add_comment",
-        {
-            "p_document_id": input.document_id,
-            "p_user_id": user_id,
-            "p_content": input.content,
-            "p_position": input.position,
-        },
-    )
-    if not result.get("success"):
-        return None
-    return await db.find_one("v_comment", id=result["comment_id"])
+@fraiseql.mutation(
+    function="fn_add_comment",
+    name="addComment",
+    context_params={"user_id": "p_user_id"},
+)
+class AddComment:
+    input: AddCommentInput
+    success: AddCommentSuccess
+    error: DocumentError
 ```
 
 ---
@@ -677,7 +675,7 @@ app = create_fraiseql_app(
     database_url="postgresql://localhost/collab",
     types=[Document, DocumentChange, Presence, Comment],
     queries=[document, document_changes, comments],
-    mutations=[apply_operation, update_presence, add_comment],
+    mutations=[ApplyOperation, UpdatePresence, AddComment],
     subscriptions=[document_change_stream, presence_stream, comment_stream],
     production=False,   # enables the GraphQL playground (and WebSocket testing)
 )
@@ -746,7 +744,7 @@ const APPLY_OPERATION = gql`
       ... on ApplyOperationSuccess {
         change { id operation createdAt }
       }
-      ... on ApplyOperationError {
+      ... on DocumentError {
         message
         code
       }
