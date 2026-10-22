@@ -56,6 +56,7 @@ _BUILDABLE = [
     "examples.mutations_demo.demo",
     "examples.native_auth_app",
     "examples.quickstart_5min",
+    "examples.saas-starter.main",
     "examples.todo_quickstart",
     "examples.where_input_filtering_example",
 ]
@@ -65,7 +66,6 @@ _BUILDABLE = [
 _BROKEN = {
     "examples.ecommerce.mutations": "Decimal fields: builds with #575's Decimal scalar",
     "examples.enterprise_patterns.mutations": "uses a pydantic FieldInfo as a type",
-    "examples.saas-starter.main": "imports fraiseql.Info, which fraiseql doesn't have",
     "examples.security.secure_graphql_api": "uses fraiseql.union, which fraiseql doesn't have",
 }
 

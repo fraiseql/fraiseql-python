@@ -82,12 +82,12 @@ Complete overview of all FraiseQL capabilities.
 | **Field-Level Authorization** | ✅ Stable | [Authentication](../advanced/authentication.md#field-authorization) | [security](../../examples/security/) |
 | **@authorized Decorator** | ✅ Stable | [Authentication](../advanced/authentication.md#authorized-decorator) | [security](../../examples/security/) |
 | **JWT Authentication** | ✅ Stable | [Authentication](../advanced/authentication.md#jwt) | [native-auth-app](../../examples/native-auth-app/) |
-| **OAuth2 Integration** | ✅ Stable | [Authentication](../advanced/authentication.md#oauth2) | [saas-starter](../../examples/saas-starter/) |
+| **OAuth2 Integration** | ✅ Stable | [Authentication](../advanced/authentication.md#oauth2) | — |
 | **Audit Logging** | ✅ Stable | [Security Guide](../production/security.md#audit-logging) | [blog_enterprise](../../examples/blog_enterprise/) |
 | **Cryptographic Audit Chain** | ✅ Stable | [Security Guide](../production/security.md#crypto-audit) | [enterprise_patterns](../../examples/enterprise_patterns/) |
 | **SQL Injection Prevention** | ✅ Stable | [Security Guide](../production/security.md#sql-injection) | Built-in (automatic) |
 | **CORS Configuration** | ✅ Stable | [Configuration](../core/configuration.md#cors) | All examples |
-| **Rate Limiting** | ✅ Stable | [Security Guide](../production/security.md#rate-limiting) | [saas-starter](../../examples/saas-starter/) |
+| **Rate Limiting** | ✅ Stable | [Security Guide](../production/security.md#rate-limiting) | — |
 
 ---
 
@@ -100,7 +100,7 @@ Complete overview of all FraiseQL capabilities.
 | **Event Sourcing** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md) | [complete_cqrs_blog](../../examples/complete_cqrs_blog/) |
 | **Domain Events** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md#domain-events) | [blog_enterprise](../../examples/blog_enterprise/) |
 | **CQRS Architecture** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
-| **Compliance (GDPR/SOC2/HIPAA)** | ✅ Stable | [Enterprise Guide](../enterprise/README.md) | [saas-starter](../../examples/saas-starter/) |
+| **Compliance (GDPR/SOC2/HIPAA)** | ✅ Stable | [Enterprise Guide](../enterprise/README.md) | — |
 
 ---
 
@@ -118,9 +118,9 @@ Complete overview of all FraiseQL capabilities.
 
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
-| **Built-in Error Tracking** | ✅ Stable | [Monitoring Guide](../production/monitoring.md) | [saas-starter](../../examples/saas-starter/) |
-| **PostgreSQL-based Monitoring** | ✅ Stable | [Monitoring Guide](../production/monitoring.md#postgresql-monitoring) | [saas-starter](../../examples/saas-starter/) |
-| **OpenTelemetry Integration** | ✅ Stable | [Observability Guide](../production/observability.md) | [saas-starter](../../examples/saas-starter/) |
+| **Built-in Error Tracking** | ✅ Stable | [Monitoring Guide](../production/monitoring.md) | — |
+| **PostgreSQL-based Monitoring** | ✅ Stable | [Monitoring Guide](../production/monitoring.md#postgresql-monitoring) | — |
+| **OpenTelemetry Integration** | ✅ Stable | [Observability Guide](../production/observability.md) | — |
 | **Grafana Dashboards** | ✅ Stable | [Monitoring Guide](../production/monitoring.md#grafana) | [grafana/](../../grafana/) |
 | **Health Checks** | ✅ Stable | [Health Checks](../production/health-checks.md) | All examples |
 | **Custom Metrics** | ✅ Stable | [Observability Guide](../production/observability.md#metrics) | [analytics_dashboard](../../examples/analytics_dashboard/) |

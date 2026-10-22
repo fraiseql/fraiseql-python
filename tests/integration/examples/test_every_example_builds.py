@@ -106,7 +106,6 @@ _KNOWN_FAILURES = {
     "examples/python/fraiseql_client.py": "an Arrow Flight client; v1 has no Flight server",
     "examples/python/test_arrow_flight.py": "an Arrow Flight client; v1 has no Flight server",
     "examples/rag-system/app.py": "imports UUID from fraiseql.types.scalars",
-    "examples/saas-starter/main.py": "imports fraiseql.Info, which fraiseql doesn't have",
     "examples/security/secure_graphql_api.py": "uses fraiseql.union, which fraiseql doesn't have",
     "examples/specialized_types/main.py": "imports fraiseql.FraiseQL, which fraiseql doesn't have",
     "examples/token_revocation_example.py": "needs redis",
