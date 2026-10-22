@@ -56,8 +56,6 @@ _KNOWN_FAILURES = {
     "examples/ecommerce/models.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/mutations.py": "Decimal fields: builds with #575's Decimal scalar",
     "examples/ecommerce/queries.py": "Decimal fields: builds with #575's Decimal scalar",
-    "examples/enterprise_patterns/models.py": "uses a pydantic FieldInfo as a type",
-    "examples/enterprise_patterns/mutations.py": "uses a pydantic FieldInfo as a type",
     "examples/existing_complex_where_syntax.py": "Decimal fields (#575)",
     "examples/security/secure_graphql_api.py": "uses fraiseql.union, which fraiseql doesn't have",
     "examples/token_revocation_example.py": "needs redis",

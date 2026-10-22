@@ -20,7 +20,6 @@ A comprehensive analytics and business intelligence API built with FraiseQL, dem
 **Next steps:**
 
 - [Subscriptions](../../docs/architecture/realtime/subscriptions.md) - Add real-time features
-- `../enterprise_patterns/` - Add compliance and audit trails
 
 ## Features
 

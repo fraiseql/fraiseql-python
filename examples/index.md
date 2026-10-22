@@ -42,7 +42,6 @@ Enterprise-grade examples showcasing advanced patterns, scalability, and product
 
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
-| [`enterprise_patterns/`](enterprise_patterns/README.md) | **ALL PATTERNS** - Complete enterprise reference | Audit trails, multi-tenancy, validation layers | 45 min |
 | [`blog_enterprise/`](blog_enterprise/README.md) | Enterprise blog with DDD | Domain-driven design, event sourcing | 40 min |
 | [`analytics_dashboard/`](analytics_dashboard/README.md) | Business intelligence platform | TimescaleDB, complex analytics, dashboards | 40 min |
 | [`saas-starter/`](saas-starter/README.md) | Multi-tenant SaaS foundation | Tenant isolation, billing, user management | 50 min |
@@ -87,7 +86,7 @@ Examples for specific use cases and integrations.
 
 ### 🏢 Enterprise Patterns
 
-- [`enterprise_patterns/`](enterprise_patterns/README.md) - All enterprise patterns
+- [`saas-starter/`](saas-starter/README.md) - Multi-tenant scoping, usage tracking, activity log
 
 ---
 
@@ -98,7 +97,7 @@ Examples for specific use cases and integrations.
 1. **[`todo_quickstart.py`](todo_quickstart.py)** - Learn the basics (5 min)
 2. **[`blog_simple/`](blog_simple/README.md)** - Build a real application (20 min)
 3. **[`ecommerce/`](ecommerce/README.md)** - Add complexity (30 min)
-4. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - Master advanced patterns (45 min)
+4. **[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns (30 min)
 
 ### 🏢 Production Developer Path
 
@@ -116,7 +115,7 @@ Examples for specific use cases and integrations.
 
 ### 🏗️ Enterprise Architect Path
 
-1. **[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
+1. **[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 2. **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
 3. **[`blog_simple/`](blog_simple/README.md)** - CQRS: views for reads, functions for writes
 

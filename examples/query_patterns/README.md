@@ -18,7 +18,7 @@ A comprehensive demonstration of all three ways to register GraphQL queries in F
 
 **Next steps:**
 
-- `../enterprise_patterns/` - Advanced enterprise features
+- `../saas-starter/` - Multi-tenant scoping
 
 ## Overview
 
@@ -238,8 +238,7 @@ After mastering these patterns:
 
 1. **Add mutations** - See `../blog_simple/` for mutations backed by SQL functions
 2. **Add authentication** - See `../saas-starter/` for user management
-3. **Add enterprise patterns** - See `../enterprise_patterns/` for production features
-4. **Add real database integration** - Replace mock data with actual queries
+3. **Add real database integration** - Replace mock data with actual queries
 
 ---
 

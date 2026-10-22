@@ -20,7 +20,7 @@ A comprehensive example of integrating FraiseQL applications with modern observa
 
 **Next steps:**
 
-- `../enterprise_patterns/` - Production monitoring patterns
+- `../saas-starter/` - A multi-tenant production app
 
 ## Overview
 

@@ -14,7 +14,7 @@ LEARNING OUTCOMES:
 NEXT STEPS:
 - blog_simple/ - A blog with SQL-function mutations
 - ecommerce/ - Real business logic
-- enterprise_patterns/ - All advanced patterns
+- saas-starter/ - Multi-tenant production patterns
 """
 
 from datetime import datetime

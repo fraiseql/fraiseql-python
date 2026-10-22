@@ -42,7 +42,7 @@ Complete overview of all FraiseQL capabilities.
 | **Table Views (tv_*)** | ✅ Stable | [Explicit Sync](../core/explicit-sync.md) | [rag-system](../../examples/rag-system/) |
 | **PostgreSQL Functions** | ✅ Stable | [Database API](../core/database-api.md#calling-functions) | [blog_simple](../../examples/blog_simple/) |
 | **Connection Pooling** | ✅ Stable | [Database API](../core/database-api.md#connection-pool) | All examples |
-| **Transaction Support** | ✅ Stable | [Database API](../core/database-api.md#transactions) | [enterprise_patterns](../../examples/enterprise_patterns/) |
+| **Transaction Support** | ✅ Stable | [Database API](../core/database-api.md#transactions) | — |
 | **CQRS Pattern** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
 
 ---
@@ -84,7 +84,7 @@ Complete overview of all FraiseQL capabilities.
 | **JWT Authentication** | ✅ Stable | [Authentication](../advanced/authentication.md#jwt) | [native-auth-app](../../examples/native-auth-app/) |
 | **OAuth2 Integration** | ✅ Stable | [Authentication](../advanced/authentication.md#oauth2) | — |
 | **Audit Logging** | ✅ Stable | [Security Guide](../production/security.md#audit-logging) | [blog_enterprise](../../examples/blog_enterprise/) |
-| **Cryptographic Audit Chain** | ✅ Stable | [Security Guide](../production/security.md#crypto-audit) | [enterprise_patterns](../../examples/enterprise_patterns/) |
+| **Cryptographic Audit Chain** | ✅ Stable | [Security Guide](../production/security.md#crypto-audit) | — |
 | **SQL Injection Prevention** | ✅ Stable | [Security Guide](../production/security.md#sql-injection) | Built-in (automatic) |
 | **CORS Configuration** | ✅ Stable | [Configuration](../core/configuration.md#cors) | All examples |
 | **Rate Limiting** | ✅ Stable | [Security Guide](../production/security.md#rate-limiting) | — |

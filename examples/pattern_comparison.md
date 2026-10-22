@@ -66,7 +66,7 @@ CREATE FUNCTION core.create_user(...) RETURNS app.mutation_result;
 |---------|------------|---------------|----------|
 | `todo_quickstart.py` | Basic | Simple mutations | Learning FraiseQL |
 | `blog_simple/` | Intermediate | Class mutations, `mutation_response` | Content management |
-| `enterprise_patterns/` | Full | All patterns | Production systems |
+| `saas-starter/` | Full | Tenant scoping, context params, activity log | Production systems |
 
 ## Pattern Evolution
 

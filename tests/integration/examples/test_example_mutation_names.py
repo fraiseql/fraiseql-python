@@ -64,7 +64,6 @@ _BUILDABLE = [
 # names already follow the preferred rule; move one to _BUILDABLE once it builds.
 _BROKEN = {
     "examples.ecommerce.mutations": "Decimal fields: builds with #575's Decimal scalar",
-    "examples.enterprise_patterns.mutations": "uses a pydantic FieldInfo as a type",
     "examples.security.secure_graphql_api": "uses fraiseql.union, which fraiseql doesn't have",
 }
 

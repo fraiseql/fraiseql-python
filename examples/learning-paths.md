@@ -71,13 +71,12 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 4: Master Advanced Patterns (30 minutes)
 
-**[`enterprise_patterns/`](enterprise_patterns/README.md)** - All enterprise patterns
+**[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 
-- ✅ Complete audit trail system
-- ✅ Multi-layer validation
-- ✅ NOOP handling and app/core separation
-- ✅ Production compliance patterns
-- **Time**: 45 minutes
+- ✅ Tenant scoping on every query and mutation (`mandatory_filters`, `context_params`)
+- ✅ Validation and not-found errors returned by SQL functions
+- ✅ Usage tracking and an activity log
+- **Time**: 30 minutes
 
 ### 🎉 Beginner Path Outcomes
 
@@ -141,12 +140,11 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 4: Production Mastery (30 minutes)
 
-**[`enterprise_patterns/`](enterprise_patterns/README.md)** - Complete production patterns
+**[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 
-- ✅ All enterprise compliance patterns
-- ✅ Multi-layer validation
-- ✅ Advanced audit and compliance
-- ✅ Production monitoring
+- ✅ Tenant scoping on every query and mutation (`mandatory_filters`, `context_params`)
+- ✅ Validation and not-found errors returned by SQL functions
+- ✅ Usage tracking and an activity log
 
 ### 🎯 Production Path Outcomes
 
@@ -217,12 +215,11 @@ This document provides structured learning paths to help you master FraiseQL pro
 
 ### Phase 1: Enterprise Patterns Foundation (60 minutes)
 
-**[`enterprise_patterns/`](enterprise_patterns/README.md)** - Complete enterprise reference
+**[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
 
-- ✅ All enterprise patterns in one place
-- ✅ Audit trails and compliance
-- ✅ Multi-layer validation
-- ✅ NOOP handling and error patterns
+- ✅ Tenant scoping on every query and mutation (`mandatory_filters`, `context_params`)
+- ✅ Validation and not-found errors returned by SQL functions
+- ✅ Usage tracking and an activity log
 
 **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
 
@@ -302,7 +299,7 @@ If you need specific patterns, here are the best examples:
 | **CQRS** | [`blog_simple/`](blog_simple/README.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
 | **Multi-tenant** | [`apq_multi_tenant/`](apq_multi_tenant.md) | [`saas-starter/`](saas-starter/README.md) |
 | **Real-time** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
-| **Enterprise** | [`enterprise_patterns/`](enterprise_patterns.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
+| **Enterprise** | [`saas-starter/`](saas-starter/README.md) | [`blog_simple/`](blog_simple/README.md) |
 
 ### Use Case-Based Learning
 
