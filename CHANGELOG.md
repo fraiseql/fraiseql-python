@@ -7,144 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- **A success type's entity field can be optional.** `note: Note | None` wasn't
-  recognised as the entity field: the entity reached it only when the function
-  set `entity_type`, and a success without an entity left the key out of the
-  response. It is now filled like `note: Note`, and a missing entity answers
-  `null` there. For a non-null entity field, a success without an entity is an
-  error under any alias (`n: note` came back `null` without one); unselected,
-  it is still no error.
-
-### Fixed
-
-- **Outside HTTP mode, a mutation entity builds from a partial or wider dict.**
-  With graphql-core completing the result (`schema.execute`, `graphql()` in
-  tests, no `create_fraiseql_app`), an entity filtered to the selection failed
-  with `missing a required argument: 'name'`, a JSONB key the type doesn't
-  declare with `unexpected keyword argument 'secret'`, and a field typed as an
-  interface with `Abstract type 'Node' was resolved to a non-object type`.
-  `from_dict` now leaves out keys the type doesn't take, gives unselected
-  required fields `None` (they are never read), and builds an interface-typed
-  field as the type its `__typename` names. HTTP mode was unaffected.
-
-### Fixed
-
-- **`@app.on_event("startup")` and `("shutdown")` handlers run on an app from
-  `create_fraiseql_app`.** It gives the FastAPI app a lifespan, and Starlette
-  ignores `on_event` handlers on an app with a lifespan, so setup registered
-  that way (as several docs pages and examples did) never ran. fraiseql's
-  lifespan now runs them: startup once the database pool is open (and inside
-  your own `lifespan=`), shutdown before the pool closes.
-
-### Fixed
-
-- **A root query answers under the key the client asked for.** For a lone
-  root field, `db.find` / `db.find_one`'s response is served as is, and its
-  key was the `field_name` argument: `db.find("v_comment", "post_comments", info)`
-  answered `{"post_comments": ...}` to a client asking for `postComments`, and
-  an alias (`x: postComments`, or `x: comments` with `info=info`) came back
-  under the field's name. With a root field's `info`, the key is now its
-  response key (the alias, or the GraphQL field name).
-
-### Fixed
-
-- **`error: NotFound | Conflict` on a class mutation is reported at schema
-  build.** Decorating it raised
-  `AttributeError: 'types.UnionType' object has no attribute '__name__'` (and a
-  union `success:` a `TypeError` from `get_type_hints`). A class mutation has
-  one success type and one error type; the schema build now names the mutation
-  and the annotation, with its other problems, as for the other member checks
-  (#576).
-
-### Fixed
-
-- **The ltree filters `index_eq`, `index_gte` and `lca` work.** They rendered
-  invalid SQL (`"path" index = %s`, `"path" lca %s`), on a column and on a JSONB
-  field. `index_eq` / `index_gte` take a label and a position and compare
-  `index(path, label)` with it: `{"index_eq": ("astronomy", 1)}` in Python,
-  `indexEq: {label: "astronomy", position: 1}` in GraphQL, where these fields
-  are now typed `LTreeIndexInput` instead of `Int`. `lca` keeps the rows whose
-  path is the lowest common ancestor of the given paths.
-
-### Changed
-
-- **The ltree operators `subpath`, `index` and `concat` raise `ValueError` in a
-  `where`.** They compute a path or a number, not a condition, and rendered
-  invalid SQL. The error names the operator and what to use instead.
-
-### Fixed
-
-- **A dict `order_by` sorts by vector distance.**
-  `db.find(..., order_by={"embedding": {"cosine_distance": [...]}})`, the form
-  `docs/features/pgvector.md` shows, was dropped with
-  `UserWarning: order_by: ignoring 'embedding.cosine_distance'`, and only
-  `VectorOrderBy(...)` or `OrderBy("embedding.cosine_distance", value=...)`
-  sorted. A `hamming_distance` / `jaccard_distance` bit string was read as a
-  sort direction. Now `{"<operator>": <vector>}` under a field is a distance sort
-  (nearest first), in a dict or a list of dicts, with snake_case or camelCase
-  operator names; a direction string under a key of that name still sorts on a
-  field of that name.
-
-- **A `vector` column of a view without a JSONB column comes back as a list.**
-  `row_to_json` writes a pgvector `vector` through its text output, so a field
-  typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type
-  reads as `list[float]` are now re-read as JSON in that row.
-
-### Fixed
-
-- **A resolver can wrap what `db.find` / `db.find_one` return in another
-  object.** In HTTP mode they return a complete Rust-built response, which
-  only works as a root field's whole result. A function mutation reading its
-  row back (`return CreateNoteSuccess(note=await db.find_one("v_note", ...))`)
-  answered `{"data": {"v_note": ...}}` instead of the mutation field, and a
-  query returning `NotePage(notes=await db.find("v_note"))` failed. Below the
-  root, the field's data is now taken out of the response and completed like
-  any object. When the resolver's `info` describes another type than the view's
-  (here `NotePage`, or the mutation's result union), `find` no longer projects
-  the rows onto that selection: they are read whole.
-
-### Fixed
-
-- **`failed:validation`, `failed:not_found` and `failed:duplicate` get the error
-  codes 422, 404 and 409.** The trinity helpers in
-  `migrations/trinity/005_add_mutation_response.sql` (`mutation_validation_error`,
-  `mutation_not_found`, `mutation_conflict`) return these statuses, and the error
-  type's `code` (and each `errors[].code`) was 500 for all of them: only the
-  `validation:`, `not_found:` and `conflict:` prefixes had their codes. A
-  `failed:<reason>` status is now read like `<reason>:` (`unauthorized`,
-  `forbidden`, `timeout` too; `duplicate` is a conflict); any other `failed:`
-  status stays 500. The `status` string is unchanged.
-  `MutationErrorConfig.get_error_code` maps the same way, and now gives
-  `validation:*` 422 as well.
-
-### Fixed
-
-- **`execute_function` and `execute_function_with_context` return the object a
-  `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
-  puts such a result in one column named after the function, so the result was
-  `{"fn_create_note": {"success": true, ...}}` and the documented
-  `result["success"]` raised `KeyError`. Now it is `{"success": true, ...}`.
-  `result["fn_create_note"]` still works, returning the same object, with a
-  `DeprecationWarning`; `"fn_create_note" in result` and
-  `result.get("fn_create_note")` no longer find it. Functions with OUT
-  parameters, `RETURNS TABLE` or a composite result are unchanged, and so is a
-  `jsonb` array or scalar result.
-
-### Changed
-
-- **`revoke_all_user_tokens(user_id)` (and `logout_all_sessions`) revokes every
-  token of the user issued before the call.** Both revocation stores record when
-  it happened, and `TokenRevocationService.is_token_revoked` rejects a token
-  whose `sub` is that user and whose `iat` is earlier, whether or not its `jti`
-  was ever seen. After such a call, that user's tokens without an `iat` claim are
-  rejected too, and so are tokens without a `jti`, which `is_token_revoked` used
-  to accept unchecked. The cutoff lasts 24 hours, like a single revocation.
-  Stores gain `revoked_before(user_id)`; a custom store without it gets token-id
-  checks only. `PostgreSQLRevocationStore` keeps its table: the cutoff is the
-  `revoked_at` of the user's `__all__<user_id>` row.
-
 ### Changed
 
 - **`CSRFProtectionMiddleware` classifies a GraphQL request by parsing its
@@ -167,6 +29,134 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Referer` without it; a request with neither header passes on its token.
   GraphQL requests used to skip this check (`create_production_csrf_config` sets
   both options).
+
+- **`revoke_all_user_tokens(user_id)` (and `logout_all_sessions`) revokes every
+  token of the user issued before the call.** Both revocation stores record when
+  it happened, and `TokenRevocationService.is_token_revoked` rejects a token
+  whose `sub` is that user and whose `iat` is earlier, whether or not its `jti`
+  was ever seen. After such a call, that user's tokens without an `iat` claim are
+  rejected too, and so are tokens without a `jti`, which `is_token_revoked` used
+  to accept unchecked. The cutoff lasts 24 hours, like a single revocation.
+  Stores gain `revoked_before(user_id)`; a custom store without it gets token-id
+  checks only. `PostgreSQLRevocationStore` keeps its table: the cutoff is the
+  `revoked_at` of the user's `__all__<user_id>` row.
+
+- **The ltree operators `subpath`, `index` and `concat` raise `ValueError` in a
+  `where`.** They compute a path or a number, not a condition, and rendered
+  invalid SQL. The error names the operator and what to use instead.
+
+### Removed
+
+- **`examples/blog_enterprise/`.** It registered no types and one
+  `health_status` query behind a README describing APIs fraiseql doesn't have;
+  `examples/blog_simple/` is the runnable blog example.
+
+- **FraiseQL v2 leftovers:** `docker/docker-compose.{demo,examples,prod-examples,prod,test}.yml`
+  and `docker/README.md` (they served a compiled schema from v2 server images),
+  `migrations/clickhouse/`, `migrations/elasticsearch/`, and the Makefile's
+  `demo-*`, `examples-*` and `prod-*` targets. `make db-up` now starts the
+  PostgreSQL the test suite uses, from the new `docker-compose.test.yml`.
+
+### Fixed
+
+- **`execute_function` and `execute_function_with_context` return the object a
+  `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
+  puts such a result in one column named after the function, so the result was
+  `{"fn_create_note": {"success": true, ...}}` and the documented
+  `result["success"]` raised `KeyError`. Now it is `{"success": true, ...}`.
+  `result["fn_create_note"]` still works, returning the same object, with a
+  `DeprecationWarning`; `"fn_create_note" in result` and
+  `result.get("fn_create_note")` no longer find it. Functions with OUT
+  parameters, `RETURNS TABLE` or a composite result are unchanged, and so is a
+  `jsonb` array or scalar result.
+
+- **`failed:validation`, `failed:not_found` and `failed:duplicate` get the error
+  codes 422, 404 and 409.** The trinity helpers in
+  `migrations/trinity/005_add_mutation_response.sql` (`mutation_validation_error`,
+  `mutation_not_found`, `mutation_conflict`) return these statuses, and the error
+  type's `code` (and each `errors[].code`) was 500 for all of them: only the
+  `validation:`, `not_found:` and `conflict:` prefixes had their codes. A
+  `failed:<reason>` status is now read like `<reason>:` (`unauthorized`,
+  `forbidden`, `timeout` too; `duplicate` is a conflict); any other `failed:`
+  status stays 500. The `status` string is unchanged.
+  `MutationErrorConfig.get_error_code` maps the same way, and now gives
+  `validation:*` 422 as well.
+
+- **A resolver can wrap what `db.find` / `db.find_one` return in another
+  object.** In HTTP mode they return a complete Rust-built response, which
+  only works as a root field's whole result. A function mutation reading its
+  row back (`return CreateNoteSuccess(note=await db.find_one("v_note", ...))`)
+  answered `{"data": {"v_note": ...}}` instead of the mutation field, and a
+  query returning `NotePage(notes=await db.find("v_note"))` failed. Below the
+  root, the field's data is now taken out of the response and completed like
+  any object. When the resolver's `info` describes another type than the view's
+  (here `NotePage`, or the mutation's result union), `find` no longer projects
+  the rows onto that selection: they are read whole.
+
+- **A dict `order_by` sorts by vector distance.**
+  `db.find(..., order_by={"embedding": {"cosine_distance": [...]}})`, the form
+  `docs/features/pgvector.md` shows, was dropped with
+  `UserWarning: order_by: ignoring 'embedding.cosine_distance'`, and only
+  `VectorOrderBy(...)` or `OrderBy("embedding.cosine_distance", value=...)`
+  sorted. A `hamming_distance` / `jaccard_distance` bit string was read as a
+  sort direction. Now `{"<operator>": <vector>}` under a field is a distance sort
+  (nearest first), in a dict or a list of dicts, with snake_case or camelCase
+  operator names; a direction string under a key of that name still sorts on a
+  field of that name.
+
+- **A `vector` column of a view without a JSONB column comes back as a list.**
+  `row_to_json` writes a pgvector `vector` through its text output, so a field
+  typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type
+  reads as `list[float]` are now re-read as JSON in that row.
+
+- **The ltree filters `index_eq`, `index_gte` and `lca` work.** They rendered
+  invalid SQL (`"path" index = %s`, `"path" lca %s`), on a column and on a JSONB
+  field. `index_eq` / `index_gte` take a label and a position and compare
+  `index(path, label)` with it: `{"index_eq": ("astronomy", 1)}` in Python,
+  `indexEq: {label: "astronomy", position: 1}` in GraphQL, where these fields
+  are now typed `LTreeIndexInput` instead of `Int`. `lca` keeps the rows whose
+  path is the lowest common ancestor of the given paths.
+
+- **`error: NotFound | Conflict` on a class mutation is reported at schema
+  build.** Decorating it raised
+  `AttributeError: 'types.UnionType' object has no attribute '__name__'` (and a
+  union `success:` a `TypeError` from `get_type_hints`). A class mutation has
+  one success type and one error type; the schema build now names the mutation
+  and the annotation, with its other problems, as for the other member checks
+  (#576).
+
+- **A root query answers under the key the client asked for.** For a lone
+  root field, `db.find` / `db.find_one`'s response is served as is, and its
+  key was the `field_name` argument: `db.find("v_comment", "post_comments", info)`
+  answered `{"post_comments": ...}` to a client asking for `postComments`, and
+  an alias (`x: postComments`, or `x: comments` with `info=info`) came back
+  under the field's name. With a root field's `info`, the key is now its
+  response key (the alias, or the GraphQL field name).
+
+- **`@app.on_event("startup")` and `("shutdown")` handlers run on an app from
+  `create_fraiseql_app`.** It gives the FastAPI app a lifespan, and Starlette
+  ignores `on_event` handlers on an app with a lifespan, so setup registered
+  that way (as several docs pages and examples did) never ran. fraiseql's
+  lifespan now runs them: startup once the database pool is open (and inside
+  your own `lifespan=`), shutdown before the pool closes.
+
+- **Outside HTTP mode, a mutation entity builds from a partial or wider dict.**
+  With graphql-core completing the result (`schema.execute`, `graphql()` in
+  tests, no `create_fraiseql_app`), an entity filtered to the selection failed
+  with `missing a required argument: 'name'`, a JSONB key the type doesn't
+  declare with `unexpected keyword argument 'secret'`, and a field typed as an
+  interface with `Abstract type 'Node' was resolved to a non-object type`.
+  `from_dict` now leaves out keys the type doesn't take, gives unselected
+  required fields `None` (they are never read), and builds an interface-typed
+  field as the type its `__typename` names. HTTP mode was unaffected.
+
+- **A success type's entity field can be optional.** `note: Note | None` wasn't
+  recognised as the entity field: the entity reached it only when the function
+  set `entity_type`, and a success without an entity left the key out of the
+  response. It is now filled like `note: Note`, and a missing entity answers
+  `null` there. For a non-null entity field, a success without an entity is an
+  error under any alias (`n: note` came back `null` without one); unselected,
+  it is still no error.
 
 ## [1.30.0] - 2026-10-22
 
