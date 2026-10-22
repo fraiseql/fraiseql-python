@@ -144,6 +144,19 @@ def _function_result(function_name: str, row: Mapping[str, Any] | None) -> dict[
     return dict(row)
 
 
+def _root_response_key(info: Any) -> str | None:
+    """The response key (alias, or field name) of a root field's info, else None.
+
+    db.find's response is served as the whole HTTP body for a lone root field, so
+    its key must be the one the client asked for, not the ``field_name`` argument
+    (``"post_comments"`` for ``postComments``) or the field's name under an alias.
+    """
+    path = getattr(info, "path", None)
+    if path is None or path.prev is not None or not isinstance(path.key, str):
+        return None
+    return path.key
+
+
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
     """Check if RustResponseBytes contains empty array (null result).
 
@@ -2020,6 +2033,8 @@ class FraiseQLRepository:
         # Extract field_name from info if not explicitly provided
         if not field_name and info and hasattr(info, "field_name"):
             field_name = info.field_name
+        # A root field's response passes through as is: key it as the client asked
+        field_name = _root_response_key(info) or field_name
 
         # 5. Execute via Rust pipeline (ALWAYS)
         # Check if this is part of a multi-field query to use field-only mode
@@ -2145,6 +2160,8 @@ class FraiseQLRepository:
         # Extract field_name from info if not explicitly provided
         if not field_name and info and hasattr(info, "field_name"):
             field_name = info.field_name
+        # A root field's response passes through as is: key it as the client asked
+        field_name = _root_response_key(info) or field_name
 
         # 5. Execute via Rust pipeline (ALWAYS)
         # Check if this is part of a multi-field query to use field-only mode

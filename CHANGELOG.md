@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A root query answers under the key the client asked for.** For a lone
+  root field, `db.find` / `db.find_one`'s response is served as is, and its
+  key was the `field_name` argument: `db.find("v_comment", "post_comments", info)`
+  answered `{"post_comments": ...}` to a client asking for `postComments`, and
+  an alias (`x: postComments`, or `x: comments` with `info=info`) came back
+  under the field's name. With a root field's `info`, the key is now its
+  response key (the alias, or the GraphQL field name).
+
+### Fixed
+
 - **`error: NotFound | Conflict` on a class mutation is reported at schema
   build.** Decorating it raised
   `AttributeError: 'types.UnionType' object has no attribute '__name__'` (and a
