@@ -495,7 +495,11 @@ async def execute_function(
 | function_name | str | Yes | Fully qualified function name (e.g., 'graphql.create_user') |
 | input_data | dict | Yes | Dictionary to pass as JSONB to the function |
 
-**Returns**: Dictionary result from the function
+**Returns**: The function's result as a dict. It runs
+`SELECT * FROM function_name(%s::jsonb)`: for a function `RETURNS jsonb`, the JSON
+object it returns; for a function with OUT parameters, `RETURNS TABLE` or a
+composite type, its first row, keyed by column. `{}` when it returns no row. (A
+`jsonb` array or scalar stays under a key named after the function.)
 
 **Examples**:
 

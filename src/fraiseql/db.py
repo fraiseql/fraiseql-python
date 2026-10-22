@@ -2,6 +2,7 @@
 
 import logging
 import re
+import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -101,6 +102,45 @@ def _make_mandatory_conditions(
         parts.append(Composed([Identifier(col), SQL(" = "), SQL("%s")]))
         params.append(val)
     return parts, params
+
+
+class _FunctionResult(dict):
+    """The JSON object a function returned, read from its one column.
+
+    ``SELECT * FROM fn(...)`` names a scalar result's column after the function,
+    and execute_function used to return that row, ``{"fn_name": {...}}``. The
+    old key still answers, with the object itself, and a DeprecationWarning.
+    """
+
+    def __init__(self, data: dict[str, Any], column: str) -> None:
+        super().__init__(data)
+        self._column = column
+
+    def __missing__(self, key: Any) -> Any:
+        if key == self._column:
+            warnings.warn(
+                f"execute_function returns the object {self._column}() returned; "
+                f'read its keys directly instead of result["{self._column}"]',
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            return self
+        raise KeyError(key)
+
+
+def _function_result(function_name: str, row: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Return execute_function's result for the row ``SELECT * FROM fn(...)`` gave.
+
+    A function returning a JSON object (``RETURNS jsonb``) comes back as one column
+    named after the function: that object is the result. Any other row (OUT
+    parameters, ``RETURNS TABLE``, a composite type) is returned as is.
+    """
+    if not row:
+        return {}
+    column = function_name.rsplit(".", 1)[-1].lower()
+    if len(row) == 1 and isinstance(row.get(column), dict):
+        return _FunctionResult(row[column], column)
+    return dict(row)
 
 
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
@@ -1540,7 +1580,9 @@ class FraiseQLRepository:
             input_data: Dictionary to pass as JSONB to the function
 
         Returns:
-            Dictionary result from the function (mutation_result type)
+            The function's result: the JSON object a ``RETURNS jsonb`` function
+            returned, or the row of a function with OUT parameters or a composite
+            result (such as ``mutation_response``). ``{}`` when it returns no row.
         """
         import json
 
@@ -1573,7 +1615,7 @@ class FraiseQLRepository:
                     (json.dumps(input_data),),
                 )
                 result = await cursor.fetchone()
-                return result or {}
+                return _function_result(function_name, result)
         else:
             # asyncpg pool
             async with self._pool.acquire() as conn:
@@ -1593,7 +1635,7 @@ class FraiseQLRepository:
                     f"SELECT * FROM {function_name}($1::jsonb)",
                     input_data,  # Pass the dict directly, asyncpg will encode it
                 )
-                return dict(result) if result else {}
+                return _function_result(function_name, dict(result) if result else None)
 
     async def execute_function_with_context(
         self,
@@ -1651,7 +1693,7 @@ class FraiseQLRepository:
                     tuple(params),
                 )
                 result = await cursor.fetchone()
-                return result or {}
+                return _function_result(function_name, result)
         else:
             # asyncpg pool
             if context_args:
@@ -1679,7 +1721,7 @@ class FraiseQLRepository:
                     f"SELECT * FROM {function_name}({placeholders})",
                     *params,
                 )
-                return dict(result) if result else {}
+                return _function_result(function_name, dict(result) if result else None)
 
     async def _ensure_table_columns_cached(self, view_name: str) -> None:
         """Ensure table columns are cached for hybrid table detection.

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **`execute_function` and `execute_function_with_context` return the object a
+  `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
+  puts such a result in one column named after the function, so the result was
+  `{"fn_create_note": {"success": true, ...}}` and the documented
+  `result["success"]` raised `KeyError`. Now it is `{"success": true, ...}`.
+  `result["fn_create_note"]` still works, returning the same object, with a
+  `DeprecationWarning`; `"fn_create_note" in result` and
+  `result.get("fn_create_note")` no longer find it. Functions with OUT
+  parameters, `RETURNS TABLE` or a composite result are unchanged, and so is a
+  `jsonb` array or scalar result.
+
 ### Changed
 
 - **`revoke_all_user_tokens(user_id)` (and `logout_all_sessions`) revokes every
