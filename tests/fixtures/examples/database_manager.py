@@ -395,14 +395,6 @@ class ExampleDatabaseManager:
                     "SELECT COUNT(*) FROM tb_post WHERE id IS NOT NULL",
                 ],
             )
-        elif example_name == "blog_enterprise":
-            return ExampleConfig(
-                name=example_name,
-                path=example_path,
-                schema_files=[],  # No SQL files yet
-                seed_files=[],
-                validation_queries=[],
-            )
 
         # Generic configuration for other examples
         schema_files = []

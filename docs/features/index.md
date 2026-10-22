@@ -43,7 +43,7 @@ Complete overview of all FraiseQL capabilities.
 | **PostgreSQL Functions** | ✅ Stable | [Database API](../core/database-api.md#calling-functions) | [blog_simple](../../examples/blog_simple/) |
 | **Connection Pooling** | ✅ Stable | [Database API](../core/database-api.md#connection-pool) | All examples |
 | **Transaction Support** | ✅ Stable | [Database API](../core/database-api.md#transactions) | — |
-| **CQRS Pattern** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
+| **CQRS Pattern** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_simple](../../examples/blog_simple/) |
 
 ---
 
@@ -83,7 +83,7 @@ Complete overview of all FraiseQL capabilities.
 | **@authorized Decorator** | ✅ Stable | [Authentication](../advanced/authentication.md#authorized-decorator) | [security](../../examples/security/) |
 | **JWT Authentication** | ✅ Stable | [Authentication](../advanced/authentication.md#jwt) | [native-auth-app](../../examples/native-auth-app/) |
 | **OAuth2 Integration** | ✅ Stable | [Authentication](../advanced/authentication.md#oauth2) | — |
-| **Audit Logging** | ✅ Stable | [Security Guide](../production/security.md#audit-logging) | [blog_enterprise](../../examples/blog_enterprise/) |
+| **Audit Logging** | ✅ Stable | [Security Guide](../production/security.md#audit-logging) | — |
 | **Cryptographic Audit Chain** | ✅ Stable | [Security Guide](../production/security.md#crypto-audit) | — |
 | **SQL Injection Prevention** | ✅ Stable | [Security Guide](../production/security.md#sql-injection) | Built-in (automatic) |
 | **CORS Configuration** | ✅ Stable | [Configuration](../core/configuration.md#cors) | All examples |
@@ -96,10 +96,10 @@ Complete overview of all FraiseQL capabilities.
 | Feature | Status | Documentation | Example |
 |---------|--------|---------------|---------|
 | **Multi-Tenancy** | ✅ Stable | [Multi-Tenancy Guide](../advanced/multi-tenancy.md) | [saas-starter](../../examples/saas-starter/) |
-| **Bounded Contexts** | ✅ Stable | [Bounded Contexts](../advanced/bounded-contexts.md) | [blog_enterprise](../../examples/blog_enterprise/) |
+| **Bounded Contexts** | ✅ Stable | [Bounded Contexts](../advanced/bounded-contexts.md) | — |
 | **Event Sourcing** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md) | — |
-| **Domain Events** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md#domain-events) | [blog_enterprise](../../examples/blog_enterprise/) |
-| **CQRS Architecture** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_enterprise](../../examples/blog_enterprise/) |
+| **Domain Events** | ✅ Stable | [Event Sourcing](../advanced/event-sourcing.md#domain-events) | — |
+| **CQRS Architecture** | ✅ Stable | [Patterns Guide](../patterns/README.md#cqrs) | [blog_simple](../../examples/blog_simple/) |
 | **Compliance (GDPR/SOC2/HIPAA)** | ✅ Stable | [Enterprise Guide](../enterprise/README.md) | — |
 
 ---

@@ -155,7 +155,7 @@ Prototypes   Apps       Apps      Apps
 - ❌ Don't compromise on security
 - ❌ Don't skip performance monitoring
 
-**Example Projects**: [Enterprise Blog](../../examples/blog_enterprise/), [Multi-tenant App](../../examples/apq_multi_tenant/)
+**Example Projects**: [Blog](../../examples/blog_simple/), [Multi-tenant App](../../examples/apq_multi_tenant/)
 
 ## Directory Structure
 

@@ -42,7 +42,6 @@ Enterprise-grade examples showcasing advanced patterns, scalability, and product
 
 | Example | Description | Key Concepts | Time |
 |---------|-------------|--------------|------|
-| [`blog_enterprise/`](blog_enterprise/README.md) | Enterprise blog with DDD | Domain-driven design, event sourcing | 40 min |
 | [`analytics_dashboard/`](analytics_dashboard/README.md) | Business intelligence platform | TimescaleDB, complex analytics, dashboards | 40 min |
 | [`saas-starter/`](saas-starter/README.md) | Multi-tenant SaaS foundation | Tenant isolation, billing, user management | 50 min |
 
@@ -69,7 +68,6 @@ Examples for specific use cases and integrations.
 ### 📝 Content Management
 
 - [`blog_simple/`](blog_simple/README.md) - Blog with posts, tags and comments
-- [`blog_enterprise/`](blog_enterprise/README.md) - Advanced blogging platform
 
 ### 🔐 Authentication & Security
 
@@ -115,8 +113,7 @@ Examples for specific use cases and integrations.
 ### 🏗️ Enterprise Architect Path
 
 1. **[`saas-starter/`](saas-starter/README.md)** - Multi-tenant production patterns
-2. **[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
-3. **[`blog_simple/`](blog_simple/README.md)** - CQRS: views for reads, functions for writes
+2. **[`blog_simple/`](blog_simple/README.md)** - CQRS: views for reads, functions for writes
 
 ---
 

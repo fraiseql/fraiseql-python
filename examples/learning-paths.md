@@ -221,13 +221,6 @@ This document provides structured learning paths to help you master FraiseQL pro
 - ✅ Validation and not-found errors returned by SQL functions
 - ✅ Usage tracking and an activity log
 
-**[`blog_enterprise/`](blog_enterprise/README.md)** - Domain-driven design
-
-- ✅ Bounded contexts
-- ✅ Domain events and aggregates
-- ✅ Enterprise authentication
-- ✅ Event sourcing patterns
-
 ### Phase 2: Advanced Architecture (60 minutes)
 
 **[`blog_simple/`](blog_simple/README.md)** - CQRS implementation
@@ -296,7 +289,7 @@ If you need specific patterns, here are the best examples:
 | **Basic CRUD** | [`todo_quickstart.py`](todo_quickstart.py) | [`blog_simple/`](blog_simple/README.md) |
 | **Authentication** | [`security/`](security.md) | [`native-auth-app/`](native-auth-app/README.md) |
 | **Caching** | [`caching_example.py`](caching_example.py) | [`apq_multi_tenant/`](apq_multi_tenant/README.md) |
-| **CQRS** | [`blog_simple/`](blog_simple/README.md) | [`blog_enterprise/`](blog_enterprise/README.md) |
+| **CQRS** | [`blog_simple/`](blog_simple/README.md) | [`saas-starter/`](saas-starter/README.md) |
 | **Multi-tenant** | [`apq_multi_tenant/`](apq_multi_tenant.md) | [`saas-starter/`](saas-starter/README.md) |
 | **Real-time** | [Subscriptions](../docs/architecture/realtime/subscriptions.md) | [`analytics_dashboard/`](analytics_dashboard/README.md) |
 | **Enterprise** | [`saas-starter/`](saas-starter/README.md) | [`blog_simple/`](blog_simple/README.md) |

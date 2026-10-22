@@ -32,9 +32,6 @@ except ImportError:
 # Import fixtures from the new organized structure
 # Import examples fixtures first as they don't require heavy dependencies
 from tests.fixtures.examples.conftest_examples import (  # noqa: F401
-    blog_enterprise_app,
-    blog_enterprise_client,
-    blog_enterprise_db_url,
     blog_simple_app,
     blog_simple_client,
     blog_simple_context,

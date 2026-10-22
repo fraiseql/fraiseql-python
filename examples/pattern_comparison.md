@@ -238,7 +238,7 @@ Is this a learning/prototype project?
 └─ No → Do you need audit trails?
     ├─ No → Use Intermediate patterns (blog_simple)
     └─ Yes → Do you need NOOP handling?
-        ├─ No → Use Advanced patterns (blog_enterprise)
+        ├─ No → Use Advanced patterns (saas-starter)
         └─ Yes → Do you have complex business rules?
             ├─ No → Add NOOP statuses to your functions
             └─ Yes → Use Full Enterprise patterns

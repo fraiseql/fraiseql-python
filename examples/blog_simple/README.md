@@ -19,7 +19,6 @@ with a JSONB `data` column; writes go through SQL functions that return a
 
 **Next steps:**
 
-- [`../blog_enterprise/`](../blog_enterprise/README.md) - Domain-driven structure
 - [`../saas-starter/`](../saas-starter/README.md) - Multi-tenant scoping
 - [`../ecommerce/`](../ecommerce/README.md) - More business logic
 
