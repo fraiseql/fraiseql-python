@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.0] - 2026-10-22
+
 ### Changed
 
 - **`CSRFProtectionMiddleware` classifies a GraphQL request by parsing its
