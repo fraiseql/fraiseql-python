@@ -14,6 +14,7 @@ Exports:
 - DateRangeScalar: PostgreSQL daterange values.
 - DateScalar: ISO 8601 calendar date.
 - DateTimeScalar: ISO 8601 datetime with timezone awareness.
+- DecimalScalar: Exact decimal numbers (decimal.Decimal), serialized as strings.
 - ExchangeCodeScalar: Stock exchange codes.
 - ExchangeRateScalar: Currency exchange rates with high precision.
 - HostnameScalar: DNS hostnames (RFC 1123 compliant).
@@ -47,6 +48,7 @@ from .cusip import CUSIPScalar
 from .date import DateScalar
 from .daterange import DateRangeScalar
 from .datetime import DateTimeScalar
+from .decimal import DecimalScalar
 from .domain_name import DomainNameScalar
 from .duration import DurationScalar
 from .exchange_code import ExchangeCodeScalar
@@ -103,6 +105,7 @@ __all__ = [
     "DateRangeScalar",
     "DateScalar",
     "DateTimeScalar",
+    "DecimalScalar",
     "DomainNameScalar",
     "DurationScalar",
     "ExchangeCodeScalar",

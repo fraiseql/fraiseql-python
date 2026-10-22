@@ -15,6 +15,7 @@ import uuid
 from collections.abc import Mapping
 from dataclasses import fields as dataclass_fields
 from dataclasses import is_dataclass
+from decimal import Decimal
 
 from psycopg import sql
 from psycopg.types.json import Jsonb
@@ -34,6 +35,9 @@ def _serialize_basic(value: object) -> object:
         return value.isoformat()
     if isinstance(value, enum.Enum):
         return value.value
+    if isinstance(value, Decimal):
+        # A JSON string keeps every digit; json.dumps can't encode a Decimal
+        return str(value)
     return value
 
 

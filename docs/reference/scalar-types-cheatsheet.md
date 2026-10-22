@@ -253,6 +253,22 @@ class Order:
     total: Decimal  # Exact precision (NUMERIC)
 ```
 
+`Decimal` is the GraphQL `Decimal` scalar: serialized as a string (`"99.99"`),
+parsed to `decimal.Decimal` from a string or a number, and filtered with
+`DecimalFilter`. A `Decimal` input field reaches your SQL function as a JSON
+string; read it with `(input->>'total')::numeric`.
+
+Emit the column as text in the view, `'total', total::text`. In HTTP mode the
+Rust pipeline parses each JSONB number as a 64-bit float, so a JSONB *number*
+keeps only about 17 significant digits and reaches the client as a number. Text
+keeps every digit, and where filters still compare it as a number:
+
+```sql
+CREATE VIEW v_order AS
+SELECT id, jsonb_build_object('id', id, 'total', total::text) AS data
+FROM tb_order;
+```
+
 ---
 
 ### ❌ Using str for Boolean

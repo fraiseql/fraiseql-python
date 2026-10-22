@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A `Decimal` scalar for `decimal.Decimal`** (#575). A `decimal.Decimal`
+  field failed the schema build (`Unsupported output type`) as an output field,
+  an input field or an argument, and so did every where input of a type with a
+  `Decimal` field (`DecimalFilter`). It now maps to the `Decimal` scalar,
+  serialized as a string (`"12.30"`, every digit kept) and parsed to
+  `decimal.Decimal` from a string, an int or a number literal.
+
+  A `Decimal` input field reaches your SQL function as a JSON string; read it
+  with `(input->>'price')::numeric`. In HTTP mode the Rust pipeline parses JSONB
+  numbers as 64-bit floats, so emit the column as text in your view
+  (`'price', price::text`) to keep every digit; a JSONB number keeps about 17
+  significant digits and reaches the client as a number.
+
 ### Fixed
 
 - **`SchemaRegistry.clear()` now clears registered scalars** (#589). It left
