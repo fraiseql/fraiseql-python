@@ -43,7 +43,7 @@ A **Blog API** supporting:
 
 - FraiseQL's decorators: `@fraiseql.type`, `@fraiseql.query`, `@fraiseql.mutation`,
   `@fraiseql.input`, `@fraiseql.success`, `@fraiseql.error`
-- The **CQRS** split: read from `v_*` views, write through `fn_*` functions
+- The **CQRS** split: read from `v_*` views, write through PostgreSQL functions
 - The **Trinity** identifier pattern: `pk_*` (internal `BIGINT`), `id` (public `UUID`),
   `identifier` (optional human-readable slug)
 - JSONB composition in views to fetch nested data in a single query
@@ -57,7 +57,7 @@ FraiseQL follows **CQRS** (Command Query Responsibility Segregation):
 
 - **Reads** come from `v_*` views, each of which exposes an `id` column plus a
   `data` JSONB column built with `jsonb_build_object(...)`.
-- **Writes** go through `fn_*` PostgreSQL functions, which hold the validation
+- **Writes** go through PostgreSQL functions, one per mutation, which hold the validation
   and write logic and return a JSONB result.
 
 This keeps your write tables normalized while letting reads return ready-to-serve
@@ -124,10 +124,11 @@ CREATE INDEX idx_comment_author ON tb_comment(fk_author);
 
 ### Step 1.3: Read Views (the query side)
 
-A read view always exposes an `id` column (so resolvers can do `WHERE id = $1`)
-plus a `data` JSONB column built with `jsonb_build_object(...)`. Compose related
-data **inside the view** so a single query returns the full nested shape — this
-is how FraiseQL avoids N+1 queries. Never put `pk_*` inside `data`.
+A read view always exposes an `id` column plus a `data` JSONB column built with
+`jsonb_build_object(...)`. Add a plain column for anything a query filters on
+with `mandatory_filters` (here `published` and `post_id`). Compose related data
+**inside the view** so a single query returns the full nested shape — this is
+how FraiseQL avoids N+1 queries. Never put `pk_*` inside `data`.
 
 ```sql
 -- Author view
@@ -140,7 +141,7 @@ SELECT
         'name',       a.name,
         'email',      a.email,
         'bio',        a.bio,
-        'createdAt',  a.created_at
+        'created_at', a.created_at
     ) AS data
 FROM tb_author a;
 
@@ -149,14 +150,13 @@ CREATE VIEW v_post AS
 SELECT
     p.id,
     p.published,
-    p.created_at,
     jsonb_build_object(
-        'id',        p.id,
+        'id',         p.id,
         'identifier', p.identifier,
-        'title',     p.title,
-        'content',   p.content,
-        'published', p.published,
-        'createdAt', p.created_at,
+        'title',      p.title,
+        'content',    p.content,
+        'published',  p.published,
+        'created_at', p.created_at,
         'author', jsonb_build_object(
             'id',    a.id,
             'name',  a.name,
@@ -171,11 +171,10 @@ CREATE VIEW v_comment AS
 SELECT
     c.id,
     p.id AS post_id,
-    c.created_at,
     jsonb_build_object(
-        'id',        c.id,
-        'content',   c.content,
-        'createdAt', c.created_at,
+        'id',         c.id,
+        'content',    c.content,
+        'created_at', c.created_at,
         'author', jsonb_build_object(
             'id',   a.id,
             'name', a.name
@@ -190,49 +189,77 @@ JOIN tb_author a ON a.pk_author = c.fk_author
 JOIN tb_post   p ON p.pk_post   = c.fk_post;
 ```
 
-> **JSON keys are camelCase.** FraiseQL maps GraphQL's `createdAt` to your
-> Python field `created_at` automatically, so build the JSONB with camelCase keys
-> (`createdAt`, etc.) to match the GraphQL field names clients will request.
+> **JSON keys are snake_case**, like the Python field names (`created_at`).
+> FraiseQL's `where` and `order_by` read these keys (`data -> 'created_at'`),
+> and the response turns them into the GraphQL names (`createdAt`).
 
 ### Step 1.4: Write Functions (the command side)
 
-Mutations call `fn_*` PostgreSQL functions. Each function takes a single `jsonb`
-input, performs validation and the write, and returns a JSONB result indicating
-`success` (and typically the new row's `id`). All write business logic lives in
-PostgreSQL.
+Each mutation calls the PostgreSQL function named after it (`CreatePost` calls
+`create_post`). Each takes the GraphQL input as one
+`jsonb` (with snake_case keys: `input->>'author_id'`), validates it, writes, and
+returns a `mutation_response` row:
+
+- `status`: `'created'` selects the mutation's success type; a prefix such as
+  `'validation:'` or `'not_found:'` selects its error type.
+- `message`: a human-readable message.
+- `entity`: the object the success type's field returns. Read it back from the
+  view, so it has the same shape as a query result.
+
+All write business logic lives in PostgreSQL.
 
 ```sql
+-- The row every mutation function returns
+CREATE TYPE mutation_response AS (
+    status          text,
+    message         text,
+    entity_id       text,
+    entity_type     text,
+    entity          jsonb,
+    updated_fields  text[],
+    cascade         jsonb,
+    metadata        jsonb
+);
+
 -- Create an author
-CREATE OR REPLACE FUNCTION fn_create_author(input jsonb)
-RETURNS jsonb AS $$
+CREATE OR REPLACE FUNCTION create_author(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     new_id uuid;
 BEGIN
-    IF input->>'email' IS NULL OR input->>'email' = '' THEN
-        RETURN jsonb_build_object('success', false, 'message', 'email is required');
+    IF coalesce(input->>'email', '') = '' THEN
+        RETURN ROW('validation:email', 'email is required',
+                   NULL, NULL, NULL, NULL, NULL, NULL)::mutation_response;
+    END IF;
+    IF EXISTS (SELECT 1 FROM tb_author WHERE email = input->>'email') THEN
+        RETURN ROW('conflict:email', 'email is already registered',
+                   NULL, NULL, NULL, NULL, NULL, NULL)::mutation_response;
     END IF;
 
     INSERT INTO tb_author (name, email, bio)
     VALUES (input->>'name', input->>'email', input->>'bio')
     RETURNING id INTO new_id;
 
-    RETURN jsonb_build_object('success', true, 'id', new_id);
+    RETURN ROW('created', 'Author created', new_id::text, 'Author',
+               (SELECT data FROM v_author WHERE id = new_id),
+               NULL, NULL, NULL)::mutation_response;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Create a post (looks up the author by public UUID)
-CREATE OR REPLACE FUNCTION fn_create_post(input jsonb)
-RETURNS jsonb AS $$
+CREATE OR REPLACE FUNCTION create_post(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     v_fk_author bigint;
     new_id      uuid;
 BEGIN
     SELECT pk_author INTO v_fk_author
     FROM tb_author
-    WHERE id = (input->>'authorId')::uuid;
+    WHERE id = (input->>'author_id')::uuid;
 
     IF v_fk_author IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'author not found');
+        RETURN ROW('not_found:author', 'author not found',
+                   NULL, NULL, NULL, NULL, NULL, NULL)::mutation_response;
     END IF;
 
     INSERT INTO tb_post (fk_author, title, content, published)
@@ -244,33 +271,39 @@ BEGIN
     )
     RETURNING id INTO new_id;
 
-    RETURN jsonb_build_object('success', true, 'id', new_id);
+    RETURN ROW('created', 'Post created', new_id::text, 'Post',
+               (SELECT data FROM v_post WHERE id = new_id),
+               NULL, NULL, NULL)::mutation_response;
 END;
 $$ LANGUAGE plpgsql;
 
 -- Add a comment to a post
-CREATE OR REPLACE FUNCTION fn_add_comment(input jsonb)
-RETURNS jsonb AS $$
+CREATE OR REPLACE FUNCTION add_comment(input jsonb)
+RETURNS mutation_response AS $$
 DECLARE
     v_fk_post   bigint;
     v_fk_author bigint;
     new_id      uuid;
 BEGIN
-    SELECT pk_post   INTO v_fk_post   FROM tb_post   WHERE id = (input->>'postId')::uuid;
-    SELECT pk_author INTO v_fk_author FROM tb_author WHERE id = (input->>'authorId')::uuid;
+    SELECT pk_post   INTO v_fk_post   FROM tb_post   WHERE id = (input->>'post_id')::uuid;
+    SELECT pk_author INTO v_fk_author FROM tb_author WHERE id = (input->>'author_id')::uuid;
 
     IF v_fk_post IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'post not found');
+        RETURN ROW('not_found:post', 'post not found',
+                   NULL, NULL, NULL, NULL, NULL, NULL)::mutation_response;
     END IF;
     IF v_fk_author IS NULL THEN
-        RETURN jsonb_build_object('success', false, 'message', 'author not found');
+        RETURN ROW('not_found:author', 'author not found',
+                   NULL, NULL, NULL, NULL, NULL, NULL)::mutation_response;
     END IF;
 
     INSERT INTO tb_comment (fk_post, fk_author, content)
     VALUES (v_fk_post, v_fk_author, input->>'content')
     RETURNING id INTO new_id;
 
-    RETURN jsonb_build_object('success', true, 'id', new_id);
+    RETURN ROW('created', 'Comment added', new_id::text, 'Comment',
+               (SELECT data FROM v_comment WHERE id = new_id),
+               NULL, NULL, NULL)::mutation_response;
 END;
 $$ LANGUAGE plpgsql;
 ```
@@ -347,62 +380,108 @@ views already compose — no extra resolvers or N+1 queries.
 
 A `@fraiseql.query` resolver is an `async` function whose first parameter is
 `info`. Get the repository from `info.context["db"]` and call `db.find(...)` for
-lists or `db.find_one(...)` for a single record. The GraphQL field name is
-inferred from the function name.
+lists or `db.find_one(...)` for a single record, passing `info=info`: FraiseQL
+reads the requested fields and the field name from it. The GraphQL field name
+is inferred from the function name.
 
 ```python
+from graphql import GraphQLResolveInfo
+
+
 @fraiseql.query
-async def authors(info) -> list[Author]:
-    """List all authors."""
+async def authors(
+    info: GraphQLResolveInfo,
+    where=None,
+    order_by=None,
+    limit: int | None = 20,
+    offset: int | None = None,
+) -> list[Author]:
+    """List authors, newest first unless orderBy says otherwise."""
     db = info.context["db"]
-    return await db.find("v_author", order_by="-createdAt")
+    return await db.find(
+        "v_author",
+        info=info,
+        where=where,
+        order_by=order_by or {"created_at": "DESC"},
+        limit=limit,
+        offset=offset,
+    )
 
 
 @fraiseql.query
-async def author(info, id: ID) -> Author | None:
+async def author(info: GraphQLResolveInfo, id: ID) -> Author | None:
     """Get a single author by id."""
     db = info.context["db"]
-    return await db.find_one("v_author", mandatory_filters={"id": id})
+    return await db.find_one("v_author", info=info, mandatory_filters={"id": id})
 
 
 @fraiseql.query
-async def posts(info, published: bool | None = None) -> list[Post]:
-    """List posts, optionally filtered by published status."""
+async def posts(
+    info: GraphQLResolveInfo,
+    published: bool | None = None,
+    where=None,
+    order_by=None,
+    limit: int | None = 20,
+    offset: int | None = None,
+) -> list[Post]:
+    """List posts, optionally only the published (or unpublished) ones."""
     db = info.context["db"]
-    filters: dict = {}
-    if published is not None:
-        filters["published"] = published
-    return await db.find("v_post", order_by="-createdAt", mandatory_filters=filters)
+    filters = {} if published is None else {"published": published}
+    return await db.find(
+        "v_post",
+        info=info,
+        mandatory_filters=filters,
+        where=where,
+        order_by=order_by or {"created_at": "DESC"},
+        limit=limit,
+        offset=offset,
+    )
 
 
 @fraiseql.query
-async def post(info, id: ID) -> Post | None:
+async def post(info: GraphQLResolveInfo, id: ID) -> Post | None:
     """Get a single post by id."""
     db = info.context["db"]
-    return await db.find_one("v_post", mandatory_filters={"id": id})
+    return await db.find_one("v_post", info=info, mandatory_filters={"id": id})
 
 
 @fraiseql.query
-async def post_comments(info, post_id: ID) -> list[Comment]:
-    """List comments for a post."""
+async def post_comments(info: GraphQLResolveInfo, post_id: ID) -> list[Comment]:
+    """List a post's comments, oldest first."""
     db = info.context["db"]
-    return await db.find("v_comment", order_by="createdAt", mandatory_filters={"post_id": post_id})
+    return await db.find(
+        "v_comment",
+        info=info,
+        mandatory_filters={"post_id": post_id},
+        order_by={"created_at": "ASC"},
+    )
 ```
 
 The repository (`db`) is FraiseQL's CQRS repository. Its main query methods are:
 
-- `await db.find("v_x", **filters)` — list rows from a view
-- `await db.find_one("v_x", id=...)` — a single row (or `None`)
-- `await db.count("v_x", **filters)` — a count
+- `await db.find("v_x", info=info, where=..., order_by=..., limit=..., offset=...)`
+  — list rows from a view
+- `await db.find_one("v_x", info=info, mandatory_filters={"id": id})` — a single
+  row (or `None`)
 
-Filters become `WHERE` conditions; `order_by` accepts a column name, with a `-`
-prefix for descending (e.g. `"-createdAt"`).
+`mandatory_filters` compares view **columns** for equality (`id`, `published`,
+`post_id` above), and the client can't remove it. `where` and `order_by` address
+**keys of the `data` JSONB** in snake_case: `order_by={"created_at": "DESC"}`
+sorts on `data -> 'created_at'`. A query returning a list gets `where`,
+`orderBy`, `limit` and `offset` GraphQL arguments; declaring them, as `authors`
+and `posts` do, lets you set defaults and pass them on. Leave `where` and
+`order_by` unannotated: FraiseQL gives them the type's generated input types
+(`AuthorWhereInput`, `AuthorOrderByInput`).
 
 ### Step 2.3: Inputs and Result Types
 
-Mutations take an `@fraiseql.input` and return a union of an `@fraiseql.success`
-and an `@fraiseql.error`. The `@fraiseql.success` decorator auto-injects
-`status`, `message`, `updated_fields`, and `id` fields.
+A mutation takes an `@fraiseql.input`, and returns its `@fraiseql.success` type
+or its `@fraiseql.error` type, chosen by the function's `status`.
+`@fraiseql.success` adds `status`, `message`, `updated_fields` and `id` to the
+class; its own field (`author` below) receives the function's `entity`.
+`@fraiseql.error` adds `status`, `message`, `code` (the HTTP-style code of the
+status prefix: 422 for `validation:`, 404 for `not_found:`, 409 for
+`conflict:`) and `errors`.
 
 ```python
 @fraiseql.input
@@ -444,76 +523,45 @@ class AddCommentSuccess:
 
 @fraiseql.error
 class MutationError:
-    message: str
-    code: str = "VALIDATION_ERROR"
+    """status, message and code come from the function's mutation_response."""
 ```
 
 ### Step 2.4: Mutations
 
-A `@fraiseql.mutation` resolver calls a `fn_*` function via
-`db.execute_function(name, params)`. It receives the function's JSONB result as a
-dict; on success it reads the freshly written row back through a view and wraps it
-in the success type.
+A mutation is a class naming its input, success and error types. FraiseQL calls
+the PostgreSQL function named after the class in snake_case (`CreateAuthor` calls
+`create_author`) with the input as one `jsonb`, and turns the `mutation_response`
+it returns into the success or error type. To call a function with another name,
+pass `function="..."` together with `name="createAuthor"`: without `name=`, the
+GraphQL field is named after the function. The
+class body holds no code: the write logic is in the function.
 
 ```python
 @fraiseql.mutation
-async def create_author(
-    info, input: CreateAuthorInput
-) -> CreateAuthorSuccess | MutationError:
+class CreateAuthor:
     """Create a new author."""
-    db = info.context["db"]
-    result = await db.execute_function(
-        "fn_create_author",
-        {"name": input.name, "email": input.email, "bio": input.bio},
-    )
-    if not result.get("success"):
-        return MutationError(message=result.get("message", "Failed to create author"))
 
-    author = await db.find_one("v_author", mandatory_filters={"id": result["id"]})
-    return CreateAuthorSuccess(author=author)
+    input: CreateAuthorInput
+    success: CreateAuthorSuccess
+    error: MutationError
 
 
 @fraiseql.mutation
-async def create_post(
-    info, input: CreatePostInput
-) -> CreatePostSuccess | MutationError:
+class CreatePost:
     """Create a new post."""
-    db = info.context["db"]
-    result = await db.execute_function(
-        "fn_create_post",
-        {
-            "title": input.title,
-            "content": input.content,
-            "authorId": str(input.author_id),
-            "published": input.published,
-        },
-    )
-    if not result.get("success"):
-        return MutationError(message=result.get("message", "Failed to create post"))
 
-    post = await db.find_one("v_post", mandatory_filters={"id": result["id"]})
-    return CreatePostSuccess(post=post)
+    input: CreatePostInput
+    success: CreatePostSuccess
+    error: MutationError
 
 
 @fraiseql.mutation
-async def add_comment(
-    info, input: AddCommentInput
-) -> AddCommentSuccess | MutationError:
+class AddComment:
     """Add a comment to a post."""
-    db = info.context["db"]
-    result = await db.execute_function(
-        "fn_add_comment",
-        {
-            "postId": str(input.post_id),
-            "authorId": str(input.author_id),
-            "content": input.content,
-        },
-    )
-    if not result.get("success"):
-        return MutationError(message=result.get("message", "Failed to add comment"))
 
-    comment = await db.find_one("v_comment", mandatory_filters={"id": result["id"]})
-    return AddCommentSuccess(comment=comment)
+    input: AddCommentInput
+    success: AddCommentSuccess
+    error: MutationError
 ```
 
 ---
@@ -536,7 +584,7 @@ app = create_fraiseql_app(
     database_url=os.getenv("DATABASE_URL", "postgresql://localhost/blog"),
     types=[Author, Post, Comment],
     queries=[authors, author, posts, post, post_comments],
-    mutations=[create_author, create_post, add_comment],
+    mutations=[CreateAuthor, CreatePost, AddComment],
     title="Blog API",
     description="A simple blog API built with FraiseQL",
     production=False,  # False enables the GraphQL playground
@@ -685,16 +733,17 @@ GraphQL request                FraiseQL (Python + FastAPI)            PostgreSQL
 query  { posts { ... } }   →   @fraiseql.query resolver           →   SELECT data FROM v_post
                                db.find("v_post")                       (JSONB, author embedded)
 
-mutation { createPost }    →   @fraiseql.mutation resolver        →   SELECT fn_create_post(jsonb)
-                               db.execute_function("fn_create_post")   (validate + INSERT)
+mutation { createPost }    →   @fraiseql.mutation class CreatePost →   SELECT * FROM create_post(jsonb)
+                                                                       (validate + INSERT,
+                                                                        returns mutation_response)
 ```
 
 - **Reads** flow through `@fraiseql.query` → `db.find` / `db.find_one` → a `v_*`
   view's `data` JSONB. FraiseQL trims the JSONB to exactly the fields the client
   requested.
-- **Writes** flow through `@fraiseql.mutation` → `db.execute_function` → an
-  `fn_*` function that validates and writes, then the resolver reads the result
-  back through a view.
+- **Writes** flow through a `@fraiseql.mutation` class → its function,
+  which validates, writes and returns a `mutation_response` whose `entity` it
+  read back through a view. Its `status` picks the success or the error type.
 - **The schema is built in memory at startup** from your decorated Python
   objects. Restart the app to pick up Python changes; run new SQL with `psql` to
   pick up schema changes.
@@ -722,22 +771,28 @@ class Author: ...
 
 Without `sql_source`, FraiseQL can't map the type to a read view.
 
-### JSONB keys must match GraphQL field names
+### JSONB keys are snake_case
 
-GraphQL field `createdAt` maps to your Python field `created_at`. Build the view's
-JSONB with the **camelCase** key (`'createdAt', a.created_at`) so the data lines
-up with what clients request.
+Build the view's JSONB with the Python field name (`'created_at', a.created_at`),
+not the GraphQL one. `where` and `order_by` look up `data -> 'created_at'`; with a
+camelCase key, a filter on that field matches nothing and a sort on it does
+nothing. FraiseQL camelCases the keys in the response (`createdAt`).
+
+### `order_by` takes a dict
+
+`order_by={"created_at": "DESC"}`, or a list of such dicts for several keys. A
+string such as `"-created_at"` is not a sort specification.
 
 ### Never expose `pk_*`
 
 Keep `pk_*`/`fk_*` out of the `data` JSONB. Expose only `id` (a `UUID`) and,
 optionally, `identifier`.
 
-### Pass `UUID` arguments to functions as strings
+### Cast `UUID` inputs back inside the function
 
-`db.execute_function` serializes its params dict to JSONB. Cast `ID`/`UUID`
-arguments with `str(...)`, and cast them back inside the function (e.g.
-`(input->>'authorId')::uuid`).
+The input reaches the function as JSONB, where an `ID` is a string. Cast it
+back with `(input->>'author_id')::uuid`. Input keys are snake_case, like the
+Python field names.
 
 ---
 
@@ -760,10 +815,11 @@ read views, write functions, and Python decorators tying them to GraphQL.
 You've learned how to:
 
 - Design a CQRS PostgreSQL schema: `tb_*` write tables (Trinity pattern), `v_*`
-  read views building a `data` JSONB, and `fn_*` write functions
+  read views building a `data` JSONB, and write functions
 - Define GraphQL types with `@fraiseql.type(sql_source=..., jsonb_column="data")`
 - Write query resolvers with `@fraiseql.query` using `db.find` / `db.find_one`
-- Write mutation resolvers with `@fraiseql.mutation` using `db.execute_function`,
-  returning `@fraiseql.success | @fraiseql.error` unions
+- Write mutations as `@fraiseql.mutation` classes backed by functions
+  that return a `mutation_response`, answered with a `@fraiseql.success` or
+  `@fraiseql.error` type
 - Assemble and serve the API with `create_fraiseql_app` and `uvicorn` — schema
   built in memory at startup, no compile step
