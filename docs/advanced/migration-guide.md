@@ -47,7 +47,10 @@ from fraiseql_rs import build_mutation_response
 
 ### 2. Update Function Calls
 
-No changes required! The function signature remains identical:
+The call takes a selection document in `entity_selections` (format 2): what the
+query selected on the success and error types, under its response keys
+(`fraiseql.mutations.mutation_decorator._response_selections` builds it from a
+resolver's `info`). `null` for a type returns it unfiltered:
 
 ```python
 result = build_mutation_response(
@@ -59,7 +62,7 @@ result = build_mutation_response(
     entity_type="User",
     cascade_selections=None,
     auto_camel_case=True,
-    success_type_fields=None
+    entity_selections='{"format": 2, "success": null, "error": null}',
 )
 ```
 

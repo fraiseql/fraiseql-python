@@ -13,10 +13,7 @@ import pytest
 from graphql import FragmentDefinitionNode, OperationDefinitionNode, build_schema, parse
 
 from fraiseql import _get_fraiseql_rs
-from fraiseql.mutations.mutation_decorator import (
-    _extract_entity_field_selections,
-    _extract_mutation_selected_fields,
-)
+from fraiseql.mutations.mutation_decorator import _response_selections
 
 _SCHEMA = build_schema("""
     interface Node { id: ID! }
@@ -68,8 +65,9 @@ def _respond(rs: Any, query: str) -> dict[str, Any]:
         field_nodes=[operation.selection_set.selections[0]],
         fragments={d.name.value: d for d in definitions if isinstance(d, FragmentDefinitionNode)},
     )
-    selections = _extract_entity_field_selections(info, "UpdateLocationSuccess", "location")
-    success_fields = _extract_mutation_selected_fields(info, "UpdateLocationSuccess")
+    document = _response_selections(
+        info, "UpdateLocationSuccess", "UpdateLocationError", by_alias=True
+    )
     out = rs.build_mutation_response(
         json.dumps(_RESULT),
         "updateLocation",
@@ -79,9 +77,9 @@ def _respond(rs: Any, query: str) -> dict[str, Any]:
         None,
         None,
         True,
-        success_fields,
         None,
-        json.dumps(selections) if selections else None,
+        None,
+        json.dumps(document),
     )
     return json.loads(out)["data"]["updateLocation"]
 

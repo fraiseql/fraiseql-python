@@ -68,7 +68,7 @@ class TestCascadeEdgeCases:
             "input": {
                 "title": "Test Post",
                 "content": "Test content",
-                "authorId": "00000000-0000-0000-0000-000000000001",
+                "authorId": "user-123",
             }
         }
 
@@ -82,8 +82,10 @@ class TestCascadeEdgeCases:
         assert "errors" not in result
         response_data = result["data"]["createPostWithEntity"]
 
-        assert "cascade" not in response_data
-        assert "message" in response_data  # Only message should be present
+        assert response_data == {
+            "__typename": "CreatePostWithEntitySuccess",
+            "message": response_data["message"],
+        }
 
     @pytest.mark.asyncio
     async def test_cascade_with_nested_field_selections(self, cascade_http_client):
@@ -211,9 +213,9 @@ class TestCascadeEdgeCases:
         assert "errors" not in result
         response_data = result["data"]["createPostWithEntity"]
 
-        # CASCADE should be present (alias handling may be separate issue)
-        assert "cascade" in response_data
-        assert "updated" in response_data["cascade"]
+        # CASCADE comes back under its alias
+        assert "cascade" not in response_data
+        assert response_data["sideEffects"]["updated"]
 
     @pytest.mark.asyncio
     async def test_cascade_selection_with_variables(self, cascade_http_client):

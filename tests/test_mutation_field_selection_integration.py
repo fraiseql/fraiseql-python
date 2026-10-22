@@ -3,6 +3,7 @@
 import json
 
 from fraiseql.mutations.decorators import error, success
+from tests.unit.mutations.selection_document import legacy_document
 
 
 def test_decorator_adds_fields_to_gql_fields():
@@ -80,8 +81,10 @@ def test_rust_field_filtering():
         "entity",  # entity_field_name
         "TestEntity",  # entity_type
         None,  # cascade_selections
-        True,  # auto_camel_case
-        selected_fields,  # success_type_fields
+        True,
+        None,
+        None,
+        legacy_document(selected_fields, None, "entity", None),
     )
 
     response_json = json.loads(response)
@@ -131,7 +134,9 @@ def test_rust_no_selection_returns_all():
         "TestEntity",
         None,
         True,
-        None,  # No selection - should return all Success-type fields
+        None,
+        None,
+        legacy_document(None, None, "entity", None),
     )
 
     response_json = json.loads(response)
@@ -180,7 +185,9 @@ def test_partial_field_selection():
         "TestEntity",
         None,
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, "entity", None),
     )
 
     response_json = json.loads(response)

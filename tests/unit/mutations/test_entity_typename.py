@@ -10,6 +10,7 @@ from typing import Any
 import pytest
 
 from fraiseql import _get_fraiseql_rs
+from tests.unit.mutations.selection_document import UNFILTERED
 
 _RESULT = {
     "status": "updated",
@@ -44,6 +45,7 @@ def _respond(
         "UpdateLocationError",
         entity_field_name,
         entity_type,
+        entity_selections=UNFILTERED,
     )
     return json.loads(out)["data"]["updateLocation"]
 

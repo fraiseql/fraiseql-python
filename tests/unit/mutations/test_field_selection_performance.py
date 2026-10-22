@@ -6,6 +6,7 @@ import time
 import pytest
 
 from fraiseql import _get_fraiseql_rs
+from tests.unit.mutations.selection_document import legacy_document
 
 
 @pytest.fixture
@@ -43,7 +44,9 @@ def test_performance_small_response_field_filtering(fraiseql_rs):
             "Machine",
             None,
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, "machine", None),
         )
 
     start = time.perf_counter()
@@ -94,7 +97,9 @@ def test_performance_medium_response_field_filtering(fraiseql_rs):
             "Machine",
             None,
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, "machine", None),
         )
 
     start = time.perf_counter()
@@ -147,7 +152,9 @@ def test_performance_large_cascade_field_filtering(fraiseql_rs):
             "Machine",
             json.dumps(cascade_selections),
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, "machine", None),
         )
 
     start = time.perf_counter()
@@ -184,6 +191,7 @@ def test_performance_no_filtering_vs_filtering(fraiseql_rs):
     )
 
     def run(selected_fields, iterations):
+        document = legacy_document(selected_fields, None, "machine", None)
         start = time.thread_time()
         for _ in range(iterations):
             fraiseql_rs.build_mutation_response(
@@ -195,7 +203,9 @@ def test_performance_no_filtering_vs_filtering(fraiseql_rs):
                 "Machine",
                 None,
                 True,
-                selected_fields,
+                None,
+                None,
+                document,
             )
         return time.thread_time() - start
 
@@ -253,7 +263,9 @@ def test_performance_canary():
         "Test",
         None,
         True,
-        ["status"],
+        None,
+        None,
+        legacy_document(["status"], None, "entity", None),
     )
     elapsed = (time.perf_counter() - start) * 1000
 

@@ -5,6 +5,7 @@ import json
 import pytest
 
 from fraiseql import _get_fraiseql_rs
+from tests.unit.mutations.selection_document import legacy_document
 
 
 @pytest.fixture
@@ -53,8 +54,10 @@ def test_rust_filters_success_fields_correctly(fraiseql_rs):
         "machine",  # entity_field_name (Option)
         "Machine",  # entity_type (Option)
         None,  # cascade_selections (Option)
-        True,  # auto_camel_case (bool)
-        selected_fields,  # success_type_fields (Option)
+        True,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -106,8 +109,10 @@ def test_rust_returns_all_fields_when_all_requested(fraiseql_rs):
         "machine",  # entity_field_name (Option)
         "Machine",  # entity_type (Option)
         None,  # cascade_selections (Option)
-        True,  # auto_camel_case (bool)
-        selected_fields,  # success_type_fields (Option)
+        True,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -149,8 +154,10 @@ def test_rust_backward_compat_none_selection(fraiseql_rs):
         "machine",  # entity_field_name (Option)
         "Machine",  # entity_type (Option)
         None,  # cascade_selections (Option)
-        True,  # auto_camel_case (bool)
-        None,  # success_type_fields (None = no filtering)
+        True,
+        None,
+        None,
+        legacy_document(None, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -201,9 +208,10 @@ def test_rust_error_response_field_filtering(fraiseql_rs):
         "machine",  # entity_field_name (Option)
         "Machine",  # entity_type (Option)
         None,  # cascade_selections (Option)
-        True,  # auto_camel_case (bool)
-        None,  # success_type_fields (not used for error responses)
-        selected_fields,  # error_type_fields (Option) - for error response filtering
+        True,
+        None,
+        None,
+        legacy_document(None, selected_fields, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -258,8 +266,9 @@ def test_error_type_filters_auto_injected_fields(fraiseql_rs):
         None,
         None,
         True,
-        None,  # success_type_fields (not used for error responses)
-        selected_fields,  # error_type_fields - for error response filtering
+        None,
+        None,
+        legacy_document(None, selected_fields, None, None),
     )
 
     response = json.loads(response_json)
@@ -304,7 +313,9 @@ def test_error_type_all_auto_injected_fields(fraiseql_rs):
         "Machine",
         None,
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -355,7 +366,9 @@ def test_error_type_code_computation(fraiseql_rs):
             None,
             None,
             True,
-            selected_fields,
+            None,
+            None,
+            legacy_document(selected_fields, None, None, None),
         )
 
         response = json.loads(response_json)
@@ -396,7 +409,9 @@ def test_error_type_does_not_have_success_fields(fraiseql_rs):
         None,
         None,
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, None, None),
     )
 
     response = json.loads(response_json)
@@ -458,7 +473,9 @@ def test_cascade_field_selection(fraiseql_rs):
         "Machine",
         json.dumps(cascade_selections),  # Pass cascade selections
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -518,7 +535,9 @@ def test_empty_cascade_selection(fraiseql_rs):
         "Machine",
         json.dumps(cascade_selections),
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -574,8 +593,9 @@ def test_multiple_entity_fields_selection(fraiseql_rs):
         "Machine",
         None,
         True,
-        None,  # success_type_fields (not used for error responses)
-        selected_fields,  # error_type_fields - for error response filtering
+        None,
+        None,
+        legacy_document(None, selected_fields, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -631,7 +651,9 @@ def test_multiple_entity_fields_success_type(fraiseql_rs):
         "Machine",
         None,
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)
@@ -697,7 +719,9 @@ def test_nested_entity_field_selection(fraiseql_rs):
         "Machine",
         None,
         True,
-        selected_fields,
+        None,
+        None,
+        legacy_document(selected_fields, None, "machine", None),
     )
 
     response = json.loads(response_json)

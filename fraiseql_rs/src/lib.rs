@@ -404,8 +404,14 @@ pub fn filter_cascade_data(cascade_json: &str, selections_json: Option<&str>) ->
 /// This function transforms PostgreSQL mutation_response JSON into GraphQL responses.
 /// It supports both simple format (just entity JSONB) and full format with status.
 ///
+/// The response holds only what the query selected, under its response keys, as
+/// described by the selection document in `entity_selections` (format
+/// `MUTATION_SELECTION_FORMAT`): `{"format": 2, "success": Selection | null,
+/// "error": Selection | null}`, `null` meaning unfiltered. See
+/// `mutation::project_selection` for a Selection.
+///
 /// Examples:
-///     >>> # Simple format
+///     >>> # Simple format, unfiltered
 ///     >>> result = build_mutation_response(
 ///     ...     '{"id": "123", "name": "John"}',
 ///     ...     "createUser",
@@ -413,23 +419,28 @@ pub fn filter_cascade_data(cascade_json: &str, selections_json: Option<&str>) ->
 ///     ...     "CreateUserError",
 ///     ...     "user",
 ///     ...     "User",
-///     ...     None
+///     ...     entity_selections='{"format": 2, "success": null, "error": null}',
 ///     ... )
 ///
 /// Args:
 ///     mutation_json: Raw JSON from PostgreSQL (simple or full format)
-///     field_name: GraphQL field name (e.g., "createUser")
+///     field_name: The response key of the mutation field (its alias, or its name)
 ///     success_type: Success type name (e.g., "CreateUserSuccess")
 ///     error_type: Error type name (e.g., "CreateUserError")
 ///     entity_field_name: Field name for entity (e.g., "user")
 ///     entity_type: Entity type for __typename (e.g., "User") - REQUIRED for simple format
 ///     cascade_selections: Optional cascade selections JSON string
+///     auto_camel_case: Whether to convert keys to camelCase
+///     success_type_fields: Unused since the selection document (format 2)
+///     error_type_fields: Unused since the selection document (format 2)
+///     entity_selections: The selection document (JSON), required
 ///
 /// Returns:
 ///     UTF-8 encoded GraphQL response bytes ready for HTTP
 ///
 /// Raises:
-///     ValueError: If JSON is malformed or transformation fails
+///     ValueError: If JSON is malformed, the selection document is missing or of
+///         another format, or transformation fails
 #[pyfunction]
 #[pyo3(signature = (mutation_json, field_name, success_type, error_type, entity_field_name=None, entity_type=None, cascade_selections=None, auto_camel_case=true, success_type_fields=None, error_type_fields=None, entity_selections=None))]
 #[allow(clippy::too_many_arguments)]
@@ -446,7 +457,11 @@ pub fn build_mutation_response(
     error_type_fields: Option<Vec<String>>,
     entity_selections: Option<&str>,
 ) -> PyResult<Vec<u8>> {
-    mutation::build_mutation_response(
+    // Field lists from before the selection document; the document replaces them
+    let _ = (success_type_fields, error_type_fields);
+    let document = mutation::parse_selection_document(entity_selections)
+        .map_err(pyo3::exceptions::PyValueError::new_err)?;
+    mutation::build_mutation_response_selected(
         mutation_json,
         field_name,
         success_type,
@@ -455,9 +470,7 @@ pub fn build_mutation_response(
         entity_type,
         cascade_selections,
         auto_camel_case,
-        success_type_fields,
-        error_type_fields,
-        entity_selections,
+        &document,
     )
     .map_err(pyo3::exceptions::PyValueError::new_err)
 }
@@ -696,6 +709,7 @@ fn fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add mutation response building
     m.add_function(wrap_pyfunction!(build_mutation_response, m)?)?;
+    m.add("MUTATION_SELECTION_FORMAT", mutation::SELECTION_FORMAT)?;
 
     // Add GraphQL execution functions (Phase 4)
     m.add_function(wrap_pyfunction!(execute_query_async, m)?)?;

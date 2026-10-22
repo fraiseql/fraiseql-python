@@ -91,6 +91,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   isn't a number in a row the filter reaches, PostgreSQL now raises
   `invalid input syntax for type numeric` instead of comparing text. Strings and
   booleans are compared as before.
+### Changed
+
+- **A mutation response holds only what the query selected, under its response
+  keys** (#581, #573). In HTTP mode the response Rust builds goes to the client as
+  is, and it didn't apply GraphQL selections faithfully. Now:
+  - every alias is kept: on the mutation field (`m: createUser`), on fields of the
+    success and error types (`msg: message`), and in the entity (`other: owner { id }`);
+    one field under two aliases gets each its own sub-selection;
+  - lists are filtered element by element at any depth (`tags { id }` returned
+    every key of every tag);
+  - with no fields selected on the success type (`{ __typename }`, or only a
+    fragment on the error type), the result is `{"__typename": ...}` alone. It
+    was the whole entity, every key of its JSONB included;
+  - under a field typed as an interface or union, an object keeps the fields of
+    the fragments on its own type, picked by its `__typename` (`... on Person
+    { name } ... on Org { title }` gave a `Person` its `title` too). The view must
+    emit `__typename` in the nested JSONB; without it, the fields of every
+    fragment are kept, as before;
+  - the error type's `code` appears only when selected; it was always written.
+
+  Objects keep their `__typename` whether or not it is selected, as before.
+  Outside HTTP mode graphql-core already applied the selection; it now receives
+  the same filtered data.
+
+  `fraiseql._fraiseql_rs.build_mutation_response` takes a selection document
+  (format 2) in `entity_selections` and raises `ValueError` without one; its
+  `success_type_fields` and `error_type_fields` arguments are ignored. The
+  extension exports `MUTATION_SELECTION_FORMAT`, and fraiseql refuses an
+  extension built for another format (a stale build in a development checkout)
+  with a `RuntimeError` asking to rebuild it. `execute_mutation_rust` takes
+  `selections=` in place of `success_type_fields=`, `error_type_fields=` and
+  `entity_selections=`; without it, the response is unfiltered.
 
 ## [1.29.1] - 2026-10-19
 

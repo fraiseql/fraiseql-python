@@ -53,6 +53,15 @@ def _warn_if_untyped_entity(function_name: str, result: dict[str, Any]) -> None:
     )
 
 
+# The format of the selection document sent to build_mutation_response
+# (see mutation_decorator._response_selections). The extension exports the
+# format it reads as MUTATION_SELECTION_FORMAT.
+SELECTION_FORMAT = 2
+
+# What build_mutation_response returns when there is no GraphQL selection to apply.
+UNFILTERED_SELECTIONS = json.dumps({"format": SELECTION_FORMAT, "success": None, "error": None})
+
+
 def _get_fraiseql_rs():
     """Lazy-load Rust extension."""
     try:
@@ -64,6 +73,24 @@ def _get_fraiseql_rs():
             "fraiseql Rust extension not available. "
             "Reinstall: pip install --force-reinstall fraiseql"
         ) from e
+
+
+def _checked_fraiseql_rs() -> Any:
+    """The Rust extension, once it is known to read this package's selection format.
+
+    The extension ships with the package. One from another version (a stale build in
+    a development checkout) would read the selection document differently and return
+    the wrong fields without an error, so it is refused.
+    """
+    fraiseql_rs = _get_fraiseql_rs()
+    found = getattr(fraiseql_rs, "MUTATION_SELECTION_FORMAT", None)
+    if found != SELECTION_FORMAT:
+        raise RuntimeError(
+            f"The fraiseql Rust extension reads mutation selection format {found}, and this "
+            f"fraiseql sends format {SELECTION_FORMAT}: they are from different versions. "
+            "Reinstall fraiseql, or rebuild the extension (uv run maturin develop)."
+        )
+    return fraiseql_rs
 
 
 async def execute_mutation_rust(
@@ -79,9 +106,7 @@ async def execute_mutation_rust(
     cascade_selections: str | None = None,
     config: Any | None = None,
     success_type_class: Type | None = None,
-    success_type_fields: list[str] | None = None,
-    error_type_fields: list[str] | None = None,
-    entity_selections: str | None = None,
+    selections: str | None = None,
 ) -> RustResponseBytes:
     """Execute mutation via Rust-first pipeline.
 
@@ -103,15 +128,17 @@ async def execute_mutation_rust(
         config: Optional FraiseQLConfig instance. If None, uses global config.
         success_type_class: Python Success type class for entity flattening.
             If provided, will flatten entity JSONB fields to match Success type schema.
-        success_type_fields: List of field names expected in Success type for validation.
-        error_type_fields: List of field names expected in Error type for field selection.
-        entity_selections: Optional entity field selections JSON (GitHub issue #525).
-            Specifies which fields to include in nested entity objects.
+        selections: The selection document (JSON) from
+            mutation_decorator._response_selections: what the query selected on the
+            success and error types, under its response keys. None returns the
+            response unfiltered, for callers without a GraphQL selection.
 
     Returns:
         RustResponseBytes ready for HTTP response
     """
-    fraiseql_rs = _get_fraiseql_rs()
+    fraiseql_rs = _checked_fraiseql_rs()
+    if selections is None:
+        selections = UNFILTERED_SELECTIONS
 
     # Get config if not provided
     if config is None:
@@ -173,9 +200,9 @@ async def execute_mutation_rust(
             entity_type,
             None,  # cascade_selections
             auto_camel_case,  # Pass config flag
-            success_type_fields,  # Success type field list
-            error_type_fields,  # Error type field list
-            None,  # entity_selections (not needed for error case)
+            None,  # success_type_fields: replaced by the selection document
+            None,  # error_type_fields: replaced by the selection document
+            selections,
         )
         return RustResponseBytes(response_bytes)
 
@@ -259,9 +286,9 @@ async def execute_mutation_rust(
         entity_type,
         cascade_selections,
         auto_camel_case,  # Pass config flag
-        success_type_fields,  # Pass field list for schema validation
-        error_type_fields,  # Pass error type field list for auto-injection
-        entity_selections,  # Pass entity field selections (GitHub issue #525)
+        None,  # success_type_fields: replaced by the selection document
+        None,  # error_type_fields: replaced by the selection document
+        selections,
     )
 
     # Validate Rust response structure
@@ -284,13 +311,8 @@ async def execute_mutation_rust(
                         f"Validation failures should return Error type, not Success type."
                     )
 
-            # Error type: code field must be present
-            elif typename == error_type:
-                if "code" not in mutation_result:
-                    raise ValueError(
-                        f"Error type '{typename}' missing required 'code' field. "
-                        f"Ensure Rust pipeline includes code field."
-                    )
+            # Error type: code, when selected under its own name, is an int
+            elif typename == error_type and "code" in mutation_result:
                 if not isinstance(mutation_result["code"], int):
                     raise ValueError(
                         f"Error type '{typename}' has invalid 'code' type: {type(mutation_result['code'])}. "  # noqa: E501

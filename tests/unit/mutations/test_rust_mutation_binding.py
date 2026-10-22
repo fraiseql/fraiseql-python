@@ -2,6 +2,8 @@
 
 import pytest
 
+from tests.unit.mutations.selection_document import UNFILTERED
+
 # Import Rust extension for tests
 try:
     from fraiseql import _fraiseql_rs
@@ -32,7 +34,8 @@ def test_rust_binding_simple_format():
         "CreateUserError",  # Error type name
         "user",  # entity_field_name
         "User",  # entity_type for __typename
-        None,  # cascade_selections
+        None,  # cascade_selections,
+        entity_selections=UNFILTERED,
     )
 
     response = json.loads(response_bytes)
@@ -66,7 +69,8 @@ def test_rust_binding_v2_success():
         "CreateUserError",
         "user",  # entity_field_name
         None,  # entity_type (comes from JSON in v2)
-        None,  # cascade_selections
+        None,  # cascade_selections,
+        entity_selections=UNFILTERED,
     )
 
     response = json.loads(response_bytes)
@@ -99,7 +103,8 @@ def test_rust_binding_error():
         "CreateUserError",
         "user",  # entity_field_name
         None,  # entity_type
-        None,  # cascade_selections
+        None,  # cascade_selections,
+        entity_selections=UNFILTERED,
     )
 
     response = json.loads(response_bytes)
@@ -118,4 +123,5 @@ def test_rust_binding_invalid_json():
             "CreateUserError",
             "user",
             None,
+            entity_selections=UNFILTERED,
         )

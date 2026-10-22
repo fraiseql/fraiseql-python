@@ -5,6 +5,8 @@
 //!
 //! Related to GitHub issue #525.
 
+use std::collections::HashMap;
+
 use serde_json::{Map, Value, json};
 
 /// Filter entity fields based on GraphQL selections
@@ -126,11 +128,154 @@ pub fn filter_entity_fields(entity: &Value, selections: &Value) -> Value {
     Value::Object(filtered)
 }
 
+/// Project a value onto a selection from the selection document (format 2).
+///
+/// A selection is `{"fields": [{"name", "alias", "selections"?}], "__type"?, "__on"?}`.
+/// The result holds only the selected fields, each under its `alias` (the response
+/// key), so it can go to the client as is:
+///
+/// - an array is projected element by element, at any depth;
+/// - an object's type is its `__typename`, else the selection's `__type`. When
+///   `__on` has an entry for that type, its field list is used, else `fields`. The
+///   object keeps `__typename` when its type is known, and `__typename` selected
+///   under an alias is written under that alias. A field missing from the data is
+///   skipped. A selection without `fields` yields `__typename` alone;
+/// - anything else is returned as is.
+///
+/// # Examples
+///
+/// ```
+/// use serde_json::json;
+/// use fraiseql_rs::mutation::project_selection;
+///
+/// let tags = json!([{"id": "t1", "secret": "x"}]);
+/// let selection = json!({"__type": "Tag", "fields": [{"name": "id", "alias": "key"}]});
+///
+/// assert_eq!(project_selection(tags, &selection), json!([{"__typename": "Tag", "key": "t1"}]));
+/// ```
+pub fn project_selection(value: Value, selection: &Value) -> Value {
+    match value {
+        Value::Array(items) => {
+            Value::Array(items.into_iter().map(|item| project_selection(item, selection)).collect())
+        },
+        Value::Object(map) => project_object(map, selection),
+        other => other,
+    }
+}
+
+fn project_object(mut map: Map<String, Value>, selection: &Value) -> Value {
+    let type_name = map
+        .get("__typename")
+        .and_then(Value::as_str)
+        .or_else(|| selection.get("__type").and_then(Value::as_str))
+        .map(str::to_owned);
+    let fields = type_name
+        .as_deref()
+        .and_then(|name| selection.get("__on").and_then(|on| on.get(name)))
+        .or_else(|| selection.get("fields"))
+        .and_then(Value::as_array);
+
+    // A field selected under several aliases is read once per alias: the values are
+    // moved out of the object, and cloned while another alias still needs them
+    let mut uses: HashMap<&str, usize> = HashMap::new();
+    for field in fields.into_iter().flatten() {
+        if let Some(name) = field.get("name").and_then(Value::as_str) {
+            *uses.entry(name).or_default() += 1;
+        }
+    }
+
+    let mut projected = Map::new();
+    if let Some(type_name) = &type_name {
+        projected.insert("__typename".to_string(), json!(type_name));
+    }
+    for field in fields.into_iter().flatten() {
+        let Some(name) = field.get("name").and_then(Value::as_str) else {
+            continue;
+        };
+        let alias = field.get("alias").and_then(Value::as_str).unwrap_or(name);
+        if name == "__typename" {
+            if let Some(type_name) = &type_name {
+                projected.insert(alias.to_string(), json!(type_name));
+            }
+            continue;
+        }
+        let remaining = uses.get_mut(name).map_or(0, |count| {
+            *count -= 1;
+            *count
+        });
+        let field_value = if remaining > 0 {
+            map.get(name).cloned()
+        } else {
+            map.remove(name)
+        };
+        let Some(field_value) = field_value else {
+            continue;
+        };
+        let value = match field.get("selections") {
+            Some(sub_selection) if !sub_selection.is_null() => {
+                project_selection(field_value, sub_selection)
+            },
+            _ => field_value,
+        };
+        projected.insert(alias.to_string(), value);
+    }
+    Value::Object(projected)
+}
+
 #[cfg(test)]
 mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn test_project_writes_response_keys() {
+        let value = json!({"id": "l1", "name": "HQ", "secret": "x"});
+        let selection = json!({
+            "__type": "Location",
+            "fields": [{"name": "id", "alias": "ident"}, {"name": "id", "alias": "id"}],
+        });
+
+        assert_eq!(
+            project_selection(value, &selection),
+            json!({"__typename": "Location", "ident": "l1", "id": "l1"})
+        );
+    }
+
+    #[test]
+    fn test_project_filters_nested_lists() {
+        let value = json!({"grid": [[{"id": "t1", "secret": "x"}]]});
+        let selection = json!({"fields": [{
+            "name": "grid", "alias": "grid",
+            "selections": {"__type": "Tag", "fields": [{"name": "id", "alias": "id"}]},
+        }]});
+
+        assert_eq!(
+            project_selection(value, &selection),
+            json!({"grid": [[{"__typename": "Tag", "id": "t1"}]]})
+        );
+    }
+
+    #[test]
+    fn test_project_picks_fields_by_typename() {
+        let value = json!({"__typename": "Org", "name": "n", "title": "t"});
+        let selection = json!({
+            "fields": [{"name": "name", "alias": "name"}, {"name": "title", "alias": "title"}],
+            "__on": {"Org": [{"name": "title", "alias": "title"}]},
+        });
+
+        assert_eq!(
+            project_selection(value, &selection),
+            json!({"__typename": "Org", "title": "t"})
+        );
+    }
+
+    #[test]
+    fn test_project_without_fields_keeps_only_typename() {
+        let value = json!({"__typename": "Location", "secret": "x"});
+
+        assert_eq!(project_selection(value, &json!({})), json!({"__typename": "Location"}));
+    }
 
     #[test]
     fn test_filter_simple_fields() {

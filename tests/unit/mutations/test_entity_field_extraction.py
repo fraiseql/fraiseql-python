@@ -1,6 +1,6 @@
 """Unit tests for entity field selection extraction from GraphQL queries.
 
-These tests verify the _extract_entity_field_selections() function which
+These tests verify the entity_selection() function which
 parses GraphQL selection sets to extract nested field selections for entity
 objects in mutation responses.
 
@@ -24,11 +24,8 @@ from graphql import (
 )
 
 import fraiseql
-from fraiseql.mutations.mutation_decorator import (
-    _extract_entity_field_selections,
-    _extract_mutation_selected_fields,
-    _request_entity_type,
-)
+from fraiseql.mutations.mutation_decorator import _request_entity_type
+from tests.unit.mutations.selection_document import entity_selection, selected_field_names
 
 
 def create_field_node(name: str, selections: list | None = None) -> FieldNode:
@@ -82,7 +79,7 @@ class TestEntityFieldExtraction:
         info.field_nodes = [mutation_field]
 
         # Extract selections
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         # Should return nested dict with fields
         assert result is not None
@@ -134,7 +131,7 @@ class TestEntityFieldExtraction:
         info.field_nodes = [mutation_field]
 
         # Extract selections
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         # Should have top-level fields
         assert result is not None
@@ -189,7 +186,7 @@ class TestEntityFieldExtraction:
         mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         # Verify nested structure
         assert result is not None
@@ -222,7 +219,7 @@ class TestEntityFieldExtraction:
         mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         # Should return None when entity not selected
         assert result is None
@@ -252,7 +249,7 @@ class TestEntityFieldExtraction:
         mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         # Empty selection = return None (don't filter, return all fields)
         assert result is None
@@ -271,7 +268,7 @@ class TestEntityFieldExtraction:
         mutation_field = create_field_node("mutation", [error_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         # Should return None when fragment type doesn't match
         assert result is None
@@ -281,13 +278,13 @@ class TestEntityFieldExtraction:
         info = MagicMock()
         info.field_nodes = []
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is None
 
     def test_none_info(self):
         """Test when info is None."""
-        result = _extract_entity_field_selections(None, "CreateLocationSuccess", "location")
+        result = entity_selection(None, "CreateLocationSuccess", "location")
 
         assert result is None
 
@@ -340,23 +337,17 @@ class TestEntityFieldExtraction:
         info.field_nodes = [mutation_field]
 
         # Extract machine selections
-        machine_result = _extract_entity_field_selections(
-            info, "UpdateMachineLocationSuccess", "machine"
-        )
+        machine_result = entity_selection(info, "UpdateMachineLocationSuccess", "machine")
         assert machine_result is not None
         assert set(machine_result["fields"]) == {"id", "name"}
 
         # Extract previousLocation selections
-        prev_result = _extract_entity_field_selections(
-            info, "UpdateMachineLocationSuccess", "previousLocation"
-        )
+        prev_result = entity_selection(info, "UpdateMachineLocationSuccess", "previousLocation")
         assert prev_result is not None
         assert set(prev_result["fields"]) == {"id"}
 
         # Extract newLocation selections
-        new_result = _extract_entity_field_selections(
-            info, "UpdateMachineLocationSuccess", "newLocation"
-        )
+        new_result = entity_selection(info, "UpdateMachineLocationSuccess", "newLocation")
         assert new_result is not None
         assert set(new_result["fields"]) == {"id", "name"}
 
@@ -382,7 +373,7 @@ class TestEntityFieldExtraction:
         mutation_field = create_field_node("mutation", [success_fragment])
         info.field_nodes = [mutation_field]
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["fields"] == ["__typename", "id", "name"]
@@ -436,7 +427,7 @@ class TestTypeNameFromSchema:
             } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["__type"] == "Location"
@@ -450,7 +441,7 @@ class TestTypeNameFromSchema:
             } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["owner"] == {"fields": ["id"]}
@@ -460,7 +451,7 @@ class TestTypeNameFromSchema:
             mutation { createLocation { ... on CreateLocationSuccess { node { id } } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "node")
+        result = entity_selection(info, "CreateLocationSuccess", "node")
 
         assert result == {"fields": ["id"]}
 
@@ -476,7 +467,7 @@ class TestNamedFragmentSpreads:
             fragment LocFields on Location { id name }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result == {"fields": ["id", "name"], "__type": "Location"}
 
@@ -486,8 +477,8 @@ class TestNamedFragmentSpreads:
             fragment SF on CreateLocationSuccess { message location { id } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
-        success_fields = _extract_mutation_selected_fields(info, "CreateLocationSuccess")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
+        success_fields = selected_field_names(info, "CreateLocationSuccess")
 
         assert result == {"fields": ["id"], "__type": "Location"}
         assert success_fields is not None
@@ -501,7 +492,7 @@ class TestNamedFragmentSpreads:
             fragment PersonFields on Person { name }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["manager"] == {"fields": ["name"], "__type": "Person"}
@@ -515,7 +506,7 @@ class TestNamedFragmentSpreads:
             fragment LocFields on Location { id name address { city } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["fields"] == ["id", "address", "name"]
@@ -529,7 +520,7 @@ class TestNamedFragmentSpreads:
             fragment NodeFields on Node { id }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["fields"] == ["id", "name"]
@@ -549,7 +540,7 @@ class TestFragmentsUnderAbstractFields:
             } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["owner"] == {"fields": ["name"]}
@@ -561,7 +552,7 @@ class TestFragmentsUnderAbstractFields:
             } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["owner"] == {"fields": ["id", "name"]}
@@ -573,7 +564,7 @@ class TestFragmentsUnderAbstractFields:
             } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["ownerU"] == {"fields": ["__typename", "name", "title"]}
@@ -586,7 +577,7 @@ class TestFragmentsUnderAbstractFields:
             fragment PersonFields on Person { name }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["owner"] == {"fields": ["name"]}
@@ -598,7 +589,7 @@ class TestFragmentsUnderAbstractFields:
             } } }
         """)
 
-        result = _extract_entity_field_selections(info, "CreateLocationSuccess", "location")
+        result = entity_selection(info, "CreateLocationSuccess", "location")
 
         assert result is not None
         assert result["owner"] == {"fields": ["__typename"]}

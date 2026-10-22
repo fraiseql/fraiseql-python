@@ -19,6 +19,7 @@ from graphql import (
 )
 
 from fraiseql.mutations.error_config import MutationErrorConfig
+from fraiseql.mutations.rust_executor import SELECTION_FORMAT
 from fraiseql.types.definitions import UNSET
 from fraiseql.utils.casing import to_camel_case, to_snake_case
 
@@ -95,11 +96,11 @@ def _fragment_applies(type_condition: Any, type_name: str | None, schema: Any) -
     A fragment applies when it has no type condition, when the condition is the type
     itself, or when it is an interface or union the type belongs to.
 
-    When the object's type isn't known (no schema, or a field typed as an interface or
-    union), every fragment applies: the selection is the union of the fields of every
-    fragment, whatever its type condition. That never filters out a field the object's
-    own type selects; it may keep one selected for a sibling type. Choosing per object
-    would need its __typename from the data, at filtering time in Rust.
+    When the object's type isn't known (type_name None), every fragment applies: the
+    selection is the union of the fields of every fragment. For a field typed as an
+    interface or union, _selection also collects the fields for each possible object
+    type, and Rust picks them by the object's __typename; the union is used for data
+    without one.
     """
     if type_condition is None or type_name is None:
         return True
@@ -170,315 +171,130 @@ def _merged_selection_set(field_nodes: list[Any]) -> Any:
     )
 
 
-def _extract_fields_from_selection_set(
-    selection_set: Any,
-    field_set: set[str],
-    fragments: dict[str, Any] | None = None,
-    type_name: str | None = None,
-    schema: Any = None,
-) -> None:
-    """Helper to extract field names from selection set, expanding fragments."""
-    for field_selection in _iter_selected_fields(selection_set, fragments or {}, type_name, schema):
-        field_name = field_selection.name.value
-        if field_name != "__typename":
-            field_set.add(field_name)
-
-
-def _type_fragment_selection_sets(
-    info: GraphQLResolveInfo, type_name: str, fragments: dict[str, Any]
-) -> Iterator[Any]:
-    """Yield the selection sets of the mutation field's fragments on type_name.
-
-    Covers inline fragments (``... on CreateMachineSuccess``) and named fragment
-    spreads (``...MachineFields``) whose fragment is on type_name.
-    """
-    # Mutations typically have one field_node (the mutation field)
-    for field_node in info.field_nodes:
-        if not field_node.selection_set:
-            continue
-
-        for selection in field_node.selection_set.selections:
-            # InlineFragment with type condition (e.g., "... on CreateMachineSuccess")
-            if hasattr(selection, "type_condition") and selection.type_condition:
-                if selection.type_condition.name.value == type_name and selection.selection_set:
-                    yield selection.selection_set
-
-            # Named fragment spread (e.g., "...FragmentName")
-            elif hasattr(selection, "name"):
-                fragment = fragments.get(selection.name.value)
-                if (
-                    fragment
-                    and hasattr(fragment, "type_condition")
-                    and fragment.type_condition.name.value == type_name
-                    and fragment.selection_set
-                ):
-                    yield fragment.selection_set
-
-
-def _extract_mutation_selected_fields(info: GraphQLResolveInfo, type_name: str) -> list[str] | None:
-    """Extract fields selected on a mutation response type from GraphQL query.
-
-    Supports both inline fragments (... on Type) and named fragments (...FragmentName),
-    including fragments spread inside them.
-
-    For mutations with union types, looks for fragments on the specific type.
-    Returns None if no specific selection found (= return all fields for backward compat).
-
-    Example query (inline fragment):
-        mutation {
-            createMachine(input: $input) {
-                ... on CreateMachineSuccess {
-                    status
-                    machine { id }
-                }
-            }
-        }
-
-    Example query (named fragment):
-        fragment MachineFields on CreateMachineSuccess {
-            status
-            machine { id }
-        }
-        mutation {
-            createMachine(input: $input) {
-                ...MachineFields
-            }
-        }
-
-    Extracts: ["status", "machine"] for type_name="CreateMachineSuccess"
-    """
-    if info is None or not info.field_nodes:
-        return None
-
-    fragments = _info_fragments(info)
+def _real_schema(info: Any) -> Any:
+    """info.schema when it is a GraphQL schema (its type_map is a dict), else None."""
     schema = getattr(info, "schema", None)
-    selected_fields: set[str] = set()
-    for selection_set in _type_fragment_selection_sets(info, type_name, fragments):
-        _extract_fields_from_selection_set(
-            selection_set, selected_fields, fragments, type_name, schema
-        )
-
-    if not selected_fields:
-        return None
-
-    return list(selected_fields)
+    return schema if isinstance(getattr(schema, "type_map", None), dict) else None
 
 
-def _extract_nested_selections(
+def _selected_fields(
     selection_set: Any,
-    schema: Any = None,
-    parent_type: Any = None,
-    fragments: dict[str, Any] | None = None,
-) -> dict[str, Any] | None:
-    """Recursively extract nested field selections with type information.
+    fragments: dict[str, Any],
+    schema: Any,
+    type_name: str | None,
+    parent_type: Any,
+    *,
+    by_alias: bool,
+    leaf_fields: frozenset[str] = frozenset(),
+) -> list[dict[str, Any]]:
+    """The fields selected on an object of type_name, one entry per response key.
 
-    Fragments that apply to parent_type are expanded (see _iter_selected_fields), and
-    a field selected more than once gets its sub-selections merged.
+    Each entry is ``{"name", "alias", "selections"?}``. With by_alias, fields are
+    grouped by response key (the alias, or the name), and alias is that key. Without,
+    they are grouped by name and alias is the name, for graphql-core, which reads
+    fields by name and applies aliases itself. Fields with one key are merged, as
+    GraphQL merges them.
 
-    Args:
-        selection_set: GraphQL SelectionSet to parse
-        schema: GraphQL schema for type lookup (optional, for __type injection)
-        parent_type: Parent GraphQL type definition (optional, for __type injection)
-        fragments: The query's named fragments, by name (optional)
-
-    Returns:
-        Dict with "fields" list, optional "__type", and nested dicts for sub-selections.
-        Returns None if empty.
-
-    Example:
-        For selection: { id, name, address { id, city } }
-        Returns: {
-            "fields": ["id", "name", "address"],
-            "address": {
-                "fields": ["id", "city"],
-                "__type": "PublicAddress"  # Added for nested object types
-            }
-        }
+    type_name None means the object's type isn't known: every fragment applies (see
+    _fragment_applies). A field in leaf_fields gets no "selections": its value is
+    copied as is.
     """
-    if not selection_set or not hasattr(selection_set, "selections"):
-        return None
-
-    fragments = fragments or {}
-    field_nodes: dict[str, list[Any]] = {}
-    for field_selection in _iter_selected_fields(
-        selection_set, fragments, _concrete_type_name(parent_type), schema
-    ):
-        # __typename is kept. Rust skips it when copying fields and keeps the data's
-        # __typename (or __type's), so an object selecting only __typename is filtered
-        # down to it rather than passed through whole.
-        field_nodes.setdefault(field_selection.name.value, []).append(field_selection)
-
-    fields = list(field_nodes)
-    nested = {}
-
-    for field_name, nodes in field_nodes.items():
-        # Check if this field has sub-selections
+    groups: dict[str, list[Any]] = {}
+    for node in _iter_selected_fields(selection_set, fragments, type_name, schema):
+        key = node.alias.value if by_alias and node.alias else node.name.value
+        groups.setdefault(key, []).append(node)
+    fields = []
+    for key, nodes in groups.items():
+        name = nodes[0].name.value
+        entry: dict[str, Any] = {"name": name, "alias": key}
         sub_selection_set = _merged_selection_set(nodes)
-        if sub_selection_set:
-            # Get the field type from schema if available. An abstract type has no name
-            # to give: the object behind it is one of several types, and its data says which.
-            field_type = _graphql_named_type(schema, parent_type, field_name)
-            field_type_name = _concrete_type_name(field_type)
-
-            # Recursively extract nested selections with type context
-            sub_selections = _extract_nested_selections(
-                sub_selection_set,
-                schema=schema,
-                parent_type=field_type,  # Pass the field type as parent for recursion
-                fragments=fragments,
+        if sub_selection_set is not None and name not in leaf_fields:
+            field_type = _graphql_named_type(schema, parent_type, name)
+            entry["selections"] = _selection(
+                sub_selection_set, fragments, schema, field_type, by_alias=by_alias
             )
-            if sub_selections:
-                # Add __type to nested selections if we have type information
-                if field_type_name:
-                    sub_selections["__type"] = field_type_name
-
-                nested[field_name] = sub_selections
-
-    if not fields:
-        return None
-
-    result = {"fields": fields}
-    result.update(nested)
-    return result
+        fields.append(entry)
+    return fields
 
 
-def _entity_selection_set(
-    info: GraphQLResolveInfo, type_name: str, entity_field_name: str, schema: Any = None
-) -> Any:
-    """The merged selection set of the entity field on type_name, or None if not selected.
+def _selection(
+    selection_set: Any, fragments: dict[str, Any], schema: Any, field_type: Any, *, by_alias: bool
+) -> dict[str, Any]:
+    """The selection of a field's value: ``{"fields", "__type"?, "__on"?}``.
 
-    The entity field can be selected in the mutation's fragment on type_name, or in a
-    fragment spread inside it.
+    For an object type, "__type" names it: Rust gives it as __typename to an object
+    whose data has none. For an interface or union (#573), "__on" holds, for each
+    possible object type, the fields GraphQL collects for it, and Rust picks the list
+    by the object's __typename. "fields" then holds the fields of every fragment, for
+    data without __typename.
     """
+    type_name = _concrete_type_name(field_type)
+    selection: dict[str, Any] = {
+        "fields": _selected_fields(
+            selection_set, fragments, schema, type_name, field_type, by_alias=by_alias
+        )
+    }
+    if type_name is not None:
+        selection["__type"] = type_name
+    elif schema is not None and is_abstract_type(field_type):
+        selection["__on"] = {
+            object_type.name: _selected_fields(
+                selection_set, fragments, schema, object_type.name, object_type, by_alias=by_alias
+            )
+            for object_type in schema.get_possible_types(field_type)
+        }
+    return selection
+
+
+def _response_selections(
+    info: GraphQLResolveInfo | None,
+    success_type_name: str,
+    error_type_name: str,
+    *,
+    by_alias: bool,
+    leaf_fields: frozenset[str] = frozenset(),
+) -> dict[str, Any]:
+    """The selection document for fraiseql_rs.build_mutation_response.
+
+    ``{"format": 2, "success": Selection, "error": Selection}``: what the mutation
+    field selects on its result when the result is the success type, and when it is
+    the error type. That is the fields selected on the union (__typename), on the type,
+    and in fragments that apply to it; nothing selected for a type means only its
+    __typename comes back. A Selection is ``{"fields": [{"name", "alias",
+    "selections"?}], "__type"?, "__on"?}`` (see _selected_fields and _selection), so a
+    field named "fields" or "__on" can't collide with the document's own keys.
+
+    by_alias picks response keys (HTTP mode, where Rust's response goes to the client
+    as is) or field names (graphql-core completes the result). Fields in leaf_fields,
+    such as cascade (filtered on its own), are copied without a sub-selection.
+    """
+    schema = _real_schema(info)
     fragments = _info_fragments(info)
-    return _merged_selection_set(
-        [
-            field
-            for selection_set in _type_fragment_selection_sets(info, type_name, fragments)
-            for field in _iter_selected_fields(selection_set, fragments, type_name, schema)
-            if field.name.value == entity_field_name
-        ]
-    )
+    field_nodes = list(getattr(info, "field_nodes", None) or [])
+    selection_set = _merged_selection_set(field_nodes) if field_nodes else None
 
+    def for_type(type_name: str) -> dict[str, Any]:
+        object_type = schema.type_map.get(type_name) if schema is not None else None
+        fields = (
+            _selected_fields(
+                selection_set,
+                fragments,
+                schema,
+                type_name,
+                object_type,
+                by_alias=by_alias,
+                leaf_fields=leaf_fields,
+            )
+            if selection_set is not None
+            else []
+        )
+        return {"__type": type_name, "fields": fields}
 
-def _extract_entity_field_selections(
-    info: GraphQLResolveInfo | None, type_name: str, entity_field_name: str
-) -> dict[str, Any] | None:
-    """Extract nested field selections for a specific entity field in mutation response.
-
-    This function parses the GraphQL query to find which fields were requested
-    on an entity object within a mutation Success/Error type, enabling field
-    filtering for nested entities.
-
-    Args:
-        info: GraphQL resolve info containing the query
-        type_name: The Success/Error type name (e.g., "CreateLocationSuccess")
-        entity_field_name: The entity field to extract selections for (e.g., "location")
-
-    Returns:
-        Nested dict structure with field selections and type information, or None if:
-        - Entity field not selected
-        - Empty selection (GraphQL default = all fields)
-        - No selection info available
-
-    Example:
-        For query:
-            mutation {
-                createLocation(input: $input) {
-                    ... on CreateLocationSuccess {
-                        location {
-                            id
-                            name
-                            address {
-                                id
-                                formatted
-                            }
-                        }
-                    }
-                }
-            }
-
-    Returns:
-            {
-                "fields": ["id", "name", "address"],
-                "__type": "Location",
-                "address": {
-                    "fields": ["id", "formatted"],
-                    "__type": "PublicAddress"
-                }
-            }
-    """
-    if not info or not info.field_nodes:
-        return None
-
-    # Get schema for type lookup
-    schema = info.schema if hasattr(info, "schema") else None
-    if not schema:
-        # Fallback to basic extraction without type info
-        return _extract_entity_field_selections_basic(info, type_name, entity_field_name)
-
-    # Validate we have a real schema, not a mock object
-    # Real GraphQL schemas have type_map as a dict, not a MagicMock
-    if not hasattr(schema, "type_map") or not isinstance(getattr(schema, "type_map", None), dict):
-        # Not a real schema (likely a mock) - fallback to basic extraction
-        return _extract_entity_field_selections_basic(info, type_name, entity_field_name)
-
-    # Get the parent type (Success/Error type) from schema
-    parent_type = schema.type_map.get(type_name)
-    if not parent_type:
-        # Fallback to basic extraction without type info
-        return _extract_entity_field_selections_basic(info, type_name, entity_field_name)
-
-    # Get the entity field's type, and its name unless it is abstract
-    entity_field_type = _graphql_named_type(schema, parent_type, entity_field_name)
-    entity_type_name = _concrete_type_name(entity_field_type)
-
-    selection_set = _entity_selection_set(info, type_name, entity_field_name, schema)
-    if selection_set is None:
-        # Entity field not selected, or empty selection {} (don't filter)
-        return None
-
-    # Recursively extract nested selections with type context
-    result = _extract_nested_selections(
-        selection_set,
-        schema=schema,
-        parent_type=entity_field_type,
-        fragments=_info_fragments(info),
-    )
-
-    # Add __type to top-level entity if we have type info
-    if result and entity_type_name:
-        result["__type"] = entity_type_name
-
-    return result
-
-
-def _extract_entity_field_selections_basic(
-    info: GraphQLResolveInfo | None, type_name: str, entity_field_name: str
-) -> dict[str, Any] | None:
-    """Fallback extraction without type information (backward compatibility).
-
-    This is used when schema is not available or type lookup fails.
-    Returns field selections without __type annotations.
-
-    Args:
-        info: GraphQL resolve info containing the query
-        type_name: The Success/Error type name
-        entity_field_name: The entity field to extract selections for
-
-    Returns:
-        Nested dict structure with field selections (no __type), or None
-    """
-    if not info or not info.field_nodes:
-        return None
-
-    selection_set = _entity_selection_set(info, type_name, entity_field_name)
-    if selection_set is None:
-        # Entity field not selected, or empty selection {} (don't filter)
-        return None
-
-    # Basic extraction without type info
-    return _extract_nested_selections(selection_set, fragments=_info_fragments(info))
+    return {
+        "format": SELECTION_FORMAT,
+        "success": for_type(success_type_name),
+        "error": for_type(error_type_name),
+    }
 
 
 def _object_type_name(annotation: Any) -> str | None:
@@ -859,8 +675,16 @@ class MutationDefinition:
             from fraiseql.mutations.rust_executor import execute_mutation_rust
 
             full_function_name = f"{self.schema}.{self.function_name}"
-            # GraphQL field name: CreatePost -> createPost (lowercase first letter)
-            field_name = self.name[0].lower() + self.name[1:] if self.name else self.name
+            # In HTTP mode (set by the FastAPI routers) Rust's response goes to the client
+            # as is, so it is keyed by response keys: the field's alias, or its name.
+            # Otherwise graphql-core completes the result and reads fields by name, and
+            # the root key only has to match below.
+            http_mode = info.context.get("_http_mode", False)
+            path_key = getattr(getattr(info, "path", None), "key", None)
+            if http_mode and isinstance(path_key, str):
+                field_name = path_key
+            else:
+                field_name = self.name[0].lower() + self.name[1:] if self.name else self.name
             success_type_name = getattr(self.success_type, "__name__", "Success")  # type: ignore[attr-defined]
             error_type_name = getattr(self.error_type, "__name__", "Error")
 
@@ -896,22 +720,18 @@ class MutationDefinition:
                 logger.debug(f"Input data keys: {list(input_data.keys()) if input_data else None}")
                 logger.debug(f"Success type: {success_type_name}, Error type: {error_type_name}")
 
-                # Extract selected fields from GraphQL query for field filtering
-                # Returns None if no specific selection found (backward compat: return all fields)
-                success_type_fields = _extract_mutation_selected_fields(info, success_type_name)
-                error_type_fields = _extract_mutation_selected_fields(info, error_type_name)
-                logger.debug(f"Selected success fields from query: {success_type_fields}")
-                logger.debug(f"Selected error fields from query: {error_type_fields}")
-
-                # Extract entity field selections for nested field filtering (GitHub issue #525)
-                entity_selections_json = None
-                if self.entity_field_name:
-                    entity_selections = _extract_entity_field_selections(
-                        info, success_type_name, self.entity_field_name
+                # What the query selects on the success and error types, down to the
+                # entity's nested fields (#525, #581, #573); Rust returns only that
+                selections_json = json.dumps(
+                    _response_selections(
+                        info,
+                        success_type_name,
+                        error_type_name,
+                        by_alias=http_mode,
+                        leaf_fields=frozenset({"cascade"}) if self.enable_cascade else frozenset(),
                     )
-                    if entity_selections:
-                        entity_selections_json = json.dumps(entity_selections)
-                        logger.debug(f"Entity field selections: {entity_selections_json}")
+                )
+                logger.debug(f"Response selections: {selections_json}")
 
                 # Extract CASCADE selections from GraphQL query
                 cascade_selections_json = self._get_cascade_selections(info)
@@ -933,9 +753,7 @@ class MutationDefinition:
                         context_args=context_args or None,
                         cascade_selections=cascade_selections_json,
                         success_type_class=self.success_type,
-                        success_type_fields=success_type_fields,
-                        error_type_fields=error_type_fields,
-                        entity_selections=entity_selections_json,
+                        selections=selections_json,
                     )
                     logger.debug(f"Mutation {self.name} executed successfully")
                 except Exception as e:
@@ -953,11 +771,8 @@ class MutationDefinition:
                     )
                     raise
 
-            # Check if we're in HTTP mode (set by FastAPI routers)
             # HTTP mode: return RustResponseBytes directly for performance
             # Non-HTTP mode: parse and return Python objects for direct GraphQL execution
-            http_mode = info.context.get("_http_mode", False)
-
             if http_mode:
                 # RUST-FIRST PATH: Return RustResponseBytes directly to HTTP
                 # This bypasses Python JSON parsing entirely for maximum performance
