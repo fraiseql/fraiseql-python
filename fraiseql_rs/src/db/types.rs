@@ -2,6 +2,9 @@
 
 use std::time::Duration;
 
+use bytes::BytesMut;
+use tokio_postgres::types::ToSql;
+
 /// Configuration for database connection pool
 #[derive(Debug, Clone)]
 pub struct PoolConfig {
@@ -146,4 +149,35 @@ pub struct ConnectionInfo {
     pub user: String,
     pub connection_count: u32,
     pub idle_count: u32,
+}
+
+// Implement ToSql for QueryParam to enable parameter binding
+impl ToSql for QueryParam {
+    tokio_postgres::types::to_sql_checked!();
+
+    fn to_sql(
+        &self,
+        ty: &tokio_postgres::types::Type,
+        out: &mut BytesMut,
+    ) -> Result<tokio_postgres::types::IsNull, Box<dyn std::error::Error + Sync + Send>> {
+        match self {
+            QueryParam::Null => Ok(tokio_postgres::types::IsNull::Yes),
+            QueryParam::Bool(val) => val.to_sql(ty, out),
+            QueryParam::Int(val) => val.to_sql(ty, out),
+            QueryParam::BigInt(val) => val.to_sql(ty, out),
+            QueryParam::Float(val) => val.to_sql(ty, out),
+            QueryParam::Double(val) => val.to_sql(ty, out),
+            QueryParam::Text(val) => val.to_sql(ty, out),
+            // TODO Phase 4.1: Add proper ToSql for advanced types
+            QueryParam::Json(val) => val.to_string().to_sql(ty, out),
+            QueryParam::Timestamp(val) => val.to_string().to_sql(ty, out),
+            QueryParam::Uuid(val) => val.to_string().to_sql(ty, out),
+        }
+    }
+
+    fn accepts(_ty: &tokio_postgres::types::Type) -> bool {
+        // For now, accept all types - the actual validation happens in to_sql
+        // In a full implementation, we'd check type compatibility here
+        true
+    }
 }

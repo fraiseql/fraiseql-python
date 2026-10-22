@@ -26,7 +26,6 @@ pub mod mutations;
 pub mod pipeline;
 pub mod query;
 pub mod rbac;
-pub mod response;
 pub mod schema_registry;
 pub mod security;
 
