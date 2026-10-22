@@ -9,8 +9,10 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Awaitable, Callable
+from urllib.parse import urlparse
 
 from fastapi import FastAPI, Request, Response
+from graphql import GraphQLError, OperationDefinitionNode, parse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -119,6 +121,27 @@ class CSRFTokenGenerator:
             return False
 
 
+def _origin_of(url: str) -> str:
+    """Return the ``scheme://host[:port]`` origin of a URL."""
+    parsed = urlparse(url)
+    return f"{parsed.scheme}://{parsed.netloc}"
+
+
+def _lookup_persisted_query(sha256_hash: str) -> str | None:
+    """Return the stored document for an APQ hash, as the GraphQL router finds it."""
+    from fraiseql.fastapi.dependencies import get_fraiseql_config
+    from fraiseql.storage.apq_store import get_persisted_query
+
+    config = get_fraiseql_config()
+    if config is not None:
+        from fraiseql.middleware.apq_caching import get_apq_backend
+
+        document = get_apq_backend(config).get_persisted_query(sha256_hash)
+        if document:
+            return document
+    return get_persisted_query(sha256_hash)
+
+
 class GraphQLCSRFValidator:
     """CSRF validation specifically for GraphQL operations."""
 
@@ -129,19 +152,66 @@ class GraphQLCSRFValidator:
             config.token_timeout,
         )
 
-    def _extract_operation_type(self, request_body: dict) -> str | None:
-        """Extract operation type from GraphQL request."""
-        query = request_body.get("query", "")
-        query_lower = query.lower().strip()
+    def _extract_operation_type(self, request_body: Any) -> str | None:
+        """Extract operation type from GraphQL request.
 
-        if query_lower.startswith("mutation"):
-            return "mutation"
-        if query_lower.startswith("subscription"):
-            return "subscription"
-        if query_lower.startswith("query") or "{" in query_lower:
-            return "query"
+        The document is parsed, so comments and fragments before the operation don't
+        hide it. A document with any mutation is a mutation, whichever operation
+        ``operationName`` selects; then subscription, then query. A batched body
+        (a list) takes the strongest type of its entries.
 
+        Returns:
+            The operation type, ``"unknown"`` for a document that can't be parsed or
+            looked up, or None when the request carries no document to execute.
+        """
+        if isinstance(request_body, list):
+            types = {self._extract_operation_type(entry) for entry in request_body}
+            for operation_type in ("unknown", "mutation", "subscription", "query"):
+                if operation_type in types:
+                    return operation_type
+            return None
+        if not isinstance(request_body, dict):
+            return None
+
+        query = request_body.get("query")
+        if not query:
+            try:
+                query = self._persisted_document(request_body)
+            except Exception:
+                logger.warning("CSRF check: could not look up persisted query", exc_info=True)
+                return "unknown"
+        if not query:
+            return None
+        if not isinstance(query, str):
+            return "unknown"
+
+        try:
+            document = parse(query, no_location=True)
+        except (GraphQLError, TypeError):
+            return "unknown"
+
+        operations = {
+            definition.operation.value
+            for definition in document.definitions
+            if isinstance(definition, OperationDefinitionNode)
+        }
+        for operation_type in ("mutation", "subscription", "query"):
+            if operation_type in operations:
+                return operation_type
         return None
+
+    def _persisted_document(self, request_body: dict) -> str | None:
+        """Return the stored document an APQ hash-only request will execute."""
+        extensions = request_body.get("extensions")
+        if not isinstance(extensions, dict):
+            return None
+        persisted = extensions.get("persistedQuery")
+        if not isinstance(persisted, dict):
+            return None
+        sha256_hash = persisted.get("sha256Hash")
+        if not isinstance(sha256_hash, str) or not sha256_hash.strip():
+            return None
+        return _lookup_persisted_query(sha256_hash)
 
     def _requires_csrf_protection(self, operation_type: str) -> bool:
         """Check if operation type requires CSRF protection."""
@@ -149,10 +219,37 @@ class GraphQLCSRFValidator:
             return self.config.require_for_mutations
         if operation_type == "subscription":
             return self.config.require_for_subscriptions
+        if operation_type == "unknown":
+            return self.config.require_for_mutations or self.config.require_for_subscriptions
         return False
 
+    def _validate_origin(self, request: Request) -> JSONResponse | None:
+        """Reject a request whose Origin (or, without one, Referer) isn't trusted.
+
+        Applies when ``check_referrer`` is on and ``trusted_origins`` is set. A request
+        with neither header passes: browsers send ``Origin`` on cross-origin POSTs, and
+        clients outside a browser may send neither.
+        """
+        if not self.config.check_referrer or not self.config.trusted_origins:
+            return None
+
+        origin = request.headers.get("Origin")
+        if origin is None:
+            referrer = request.headers.get("Referer")
+            if not referrer:
+                return None
+            origin = _origin_of(referrer)
+
+        if origin not in self.config.trusted_origins:
+            return self._create_csrf_error_response("Untrusted origin")
+        return None
+
     def _get_csrf_token_from_request(self, request: Request) -> str | None:
-        """Extract CSRF token from request."""
+        """Extract the CSRF token the client sent.
+
+        The token counts only in the header or in the GraphQL variables. The
+        ``csrf_token`` cookie doesn't: the browser attaches it to every request.
+        """
         # Try header first
         token = request.headers.get(self.config.header_name)
         if token:
@@ -161,10 +258,6 @@ class GraphQLCSRFValidator:
         # Try body for GraphQL variables
         if hasattr(request, "_csrf_token_from_body"):
             return request._csrf_token_from_body
-
-        # Try cookies
-        if self.config.storage == CSRFTokenStorage.COOKIE:
-            return request.cookies.get(self.config.cookie_name)
 
         return None
 
@@ -189,11 +282,16 @@ class GraphQLCSRFValidator:
         if not operation_type or not self._requires_csrf_protection(operation_type):
             return None
 
+        origin_error = self._validate_origin(request)
+        if origin_error:
+            return origin_error
+
         # Extract CSRF token from GraphQL variables if present
-        variables = request_body.get("variables", {})
-        csrf_token_from_vars = variables.get(self.config.token_name)
-        if csrf_token_from_vars:
-            request._csrf_token_from_body = csrf_token_from_vars
+        variables = request_body.get("variables") if isinstance(request_body, dict) else None
+        if isinstance(variables, dict):
+            csrf_token_from_vars = variables.get(self.config.token_name)
+            if isinstance(csrf_token_from_vars, str) and csrf_token_from_vars:
+                request._csrf_token_from_body = csrf_token_from_vars
 
         # Get CSRF token
         csrf_token = self._get_csrf_token_from_request(request)
@@ -295,6 +393,12 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         if request.url.path in self.config.exempt_paths:
             return await call_next(request)
 
+        # A GraphQL GET can carry a mutation in its query string
+        if request.url.path == self.graphql_path and request.method == "GET":
+            csrf_error = await self._validate_graphql_get(request)
+            if csrf_error:
+                return csrf_error
+
         # Skip for safe methods (GET, HEAD, OPTIONS)
         if request.method in ["GET", "HEAD", "OPTIONS"]:
             response = await call_next(request)
@@ -349,6 +453,20 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         await self._add_csrf_token_to_response(request, response)
         return response
 
+    async def _validate_graphql_get(self, request: Request) -> JSONResponse | None:
+        """Validate CSRF for a GraphQL operation sent as GET query parameters."""
+        query = request.query_params.get("query")
+        if not query:
+            return None
+        request_body: dict[str, Any] = {"query": query}
+        variables = request.query_params.get("variables")
+        if variables:
+            try:
+                request_body["variables"] = json.loads(variables)
+            except json.JSONDecodeError:
+                pass
+        return await self.graphql_validator.validate_graphql_csrf(request, request_body)
+
     async def _validate_csrf(self, request: Request) -> JSONResponse | None:
         """Validate CSRF token for non-GraphQL requests."""
         # Check referrer if enabled
@@ -385,27 +503,16 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
 
     def _extract_origin(self, url: str) -> str:
         """Extract origin from URL."""
-        from urllib.parse import urlparse
-
-        parsed = urlparse(url)
-        return f"{parsed.scheme}://{parsed.netloc}"
+        return _origin_of(url)
 
     def _get_csrf_token(self, request: Request) -> str | None:
-        """Get CSRF token from request."""
-        # Try header first
-        token = request.headers.get(self.config.header_name)
-        if token:
-            return token
+        """Get CSRF token from request.
 
-        # Try form data
+        Only the header counts. The ``csrf_token`` cookie doesn't: the browser
+        attaches it to every request.
+        """
         # Note: We can't await form() in a sync method, so we skip form data checking
-        # CSRF tokens should be sent via headers or cookies in production
-
-        # Try cookies
-        if self.config.storage == CSRFTokenStorage.COOKIE:
-            return request.cookies.get(self.config.cookie_name)
-
-        return None
+        return request.headers.get(self.config.header_name)
 
     def _get_session_id(self, request: Request) -> str | None:
         """Get session ID from request."""

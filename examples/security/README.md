@@ -159,17 +159,18 @@ curl -X POST http://localhost:8000/graphql \
   -H "X-CSRF-Token: $TOKEN" \
   -d '{"query": "mutation { createPost(input: {title: \"Test\", content: \"Hello World\"}) { id } }"}'
 
-# Mutation without CSRF token: 403 in production
+# Mutation without CSRF token: 403
 curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer valid-token" \
   -d '{"query": "mutation { createPost(input: {title: \"Test\", content: \"Hello World\"}) { id } }"}'
 ```
 
-Every response also sets a `csrf_token` cookie, which counts as the token when the
-client sends it back. In development (`ENVIRONMENT=development`, the default) the
-cookie isn't `Secure`, so a browser (or `curl -c jar -b jar`) passes after its first
-request; in production it is `Secure` and `SameSite=Strict`.
+Mutations need the token in the `X-CSRF-Token` header (or as a `csrf_token`
+GraphQL variable), in every environment. Every response also sets a `csrf_token`
+cookie, but the cookie alone doesn't count: the browser would send it with a forged
+request too. In production, a mutation whose `Origin` (or `Referer`) isn't one of
+`TRUSTED_ORIGINS` is rejected as well.
 
 Without `Authorization: Bearer valid-token`, mutations return an `UNAUTHENTICATED` error.
 

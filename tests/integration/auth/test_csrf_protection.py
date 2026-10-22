@@ -286,8 +286,8 @@ class TestCSRFProtectionMiddleware:
         token = middleware._get_csrf_token(request)
         assert token == "test-token"
 
-    def test_get_csrf_token_from_cookie(self, app, csrf_config) -> None:
-        """Test getting CSRF token from cookie."""
+    def test_get_csrf_token_ignores_cookie(self, app, csrf_config) -> None:
+        """The cookie isn't a submitted token: the browser sends it on its own."""
         csrf_config.storage = CSRFTokenStorage.COOKIE
         middleware = CSRFProtectionMiddleware(app=app, config=csrf_config)
 
@@ -296,7 +296,7 @@ class TestCSRFProtectionMiddleware:
         request.cookies = {"csrf_token": "test-token"}
 
         token = middleware._get_csrf_token(request)
-        assert token == "test-token"
+        assert token is None
 
     @pytest.mark.asyncio
     async def test_validate_csrf_missing_token(self, app, csrf_config) -> None:
@@ -652,9 +652,9 @@ class TestGraphQLCSRFValidatorExtended:
     def test_extract_operation_type_mutation(self, validator) -> None:
         """Test extracting mutation operation type."""
         bodies = [
-            {"query": "mutation CreateUser { ... }"},
-            {"query": "MUTATION UpdatePost { ... }"},
-            {"query": "  mutation  DeleteItem { ... }"},
+            {"query": "mutation CreateUser { createUser { id } }"},
+            {"query": "  mutation  DeleteItem { deleteItem }"},
+            {"query": "# delete\nmutation DeleteItem { deleteItem }"},
         ]
 
         for body in bodies:
@@ -663,8 +663,8 @@ class TestGraphQLCSRFValidatorExtended:
     def test_extract_operation_type_query(self, validator) -> None:
         """Test extracting query operation type."""
         bodies = [
-            {"query": "query GetUser { ... }"},
-            {"query": "QUERY ListPosts { ... }"},
+            {"query": "query GetUser { user { id } }"},
+            {"query": "query ListPosts { posts { id } }"},
             {"query": "{ user { id } }"},  # Anonymous query
             {"query": "  { items { name } }"},
         ]
@@ -675,8 +675,8 @@ class TestGraphQLCSRFValidatorExtended:
     def test_extract_operation_type_subscription(self, validator) -> None:
         """Test extracting subscription operation type."""
         bodies = [
-            {"query": "subscription OnMessage { ... }"},
-            {"query": "SUBSCRIPTION Updates { ... }"},
+            {"query": "subscription OnMessage { message { id } }"},
+            {"query": "subscription Updates { updates }"},
         ]
 
         for body in bodies:
@@ -693,7 +693,7 @@ class TestGraphQLCSRFValidatorExtended:
 
         for body in bodies:
             result = validator._extract_operation_type(body)
-            assert result is None or result == "query"
+            assert result is None or result == "unknown"
 
     def test_requires_csrf_protection(self, validator) -> None:
         """Test checking if operation requires CSRF protection."""
@@ -965,3 +965,210 @@ class TestCSRFSetupExtended:
         # Should add token endpoint
         routes = [r.path for r in app.routes]
         assert "/csrf-token" in routes
+
+
+class TestGraphQLDocumentClassification:
+    """The token requirement follows the parsed GraphQL document."""
+
+    @pytest.fixture
+    def validator(self, csrf_config: CSRFConfig) -> GraphQLCSRFValidator:
+        return GraphQLCSRFValidator(csrf_config)
+
+    @pytest.mark.parametrize(
+        ("document", "expected"),
+        [
+            ("mutation M { createUser { id } }", "mutation"),
+            ("# create a user\nmutation M { createUser { id } }", "mutation"),
+            ("﻿mutation M { createUser { id } }", "mutation"),
+            (
+                "fragment F on User { id }\nmutation M { createUser { ...F } }",
+                "mutation",
+            ),
+            ("query Q { user { id } }\nmutation M { createUser { id } }", "mutation"),
+            ("subscription S { userUpdated { id } }", "subscription"),
+            ("# list users\n{ users { id } }", "query"),
+            ("fragment F on User { id }\nquery Q { user { ...F } }", "query"),
+            ('{ users(name: "mutation") { id } }', "query"),
+            ("mutation M { createUser { id }", "unknown"),
+            ("not graphql", "unknown"),
+        ],
+    )
+    def test_operation_type(self, validator, document, expected) -> None:
+        assert validator._extract_operation_type({"query": document}) == expected
+
+    def test_no_document(self, validator) -> None:
+        assert validator._extract_operation_type({}) is None
+        assert validator._extract_operation_type({"query": ""}) is None
+
+    def test_persisted_document_is_looked_up(self, validator) -> None:
+        import hashlib
+
+        from fraiseql.storage.apq_store import clear_storage, store_persisted_query
+
+        document = "# stored\nmutation M { createUser { id } }"
+        digest = hashlib.sha256(document.encode()).hexdigest()
+        store_persisted_query(digest, document)
+        try:
+            body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": digest}}}
+            assert validator._extract_operation_type(body) == "mutation"
+        finally:
+            clear_storage()
+
+        # A hash nothing stored runs nothing: the server answers PersistedQueryNotFound
+        body = {"extensions": {"persistedQuery": {"version": 1, "sha256Hash": "0" * 64}}}
+        assert validator._extract_operation_type(body) is None
+
+    def test_unparsed_documents_need_a_token(self, validator) -> None:
+        assert validator._requires_csrf_protection("unknown")
+
+    @pytest.mark.parametrize(
+        "document",
+        [
+            "# create a user\nmutation M { createUser { id } }",
+            "fragment F on User { id }\nmutation M { createUser { ...F } }",
+            "mutation M { createUser { id }",
+        ],
+    )
+    def test_post_without_token_is_rejected(self, app, csrf_config, document) -> None:
+        app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+        client = TestClient(app)
+
+        response = client.post("/graphql", json={"query": document})
+
+        assert response.status_code == 403
+        assert response.json()["errors"][0]["extensions"]["code"] == "CSRF_PROTECTION_FAILED"
+
+    def test_null_variables(self, app, csrf_config) -> None:
+        app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+        client = TestClient(app)
+
+        response = client.post(
+            "/graphql",
+            json={"query": "mutation M { createUser { id } }", "variables": None},
+        )
+
+        assert response.status_code == 403
+
+    def test_batched_body(self, app, csrf_config) -> None:
+        app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+        client = TestClient(app)
+
+        response = client.post(
+            "/graphql",
+            json=[{"query": "{ users { id } }"}, {"query": "mutation M { createUser { id } }"}],
+        )
+
+        assert response.status_code == 403
+
+    def test_get_mutation_needs_a_token(self, csrf_config) -> None:
+        app = FastAPI()
+
+        @app.get("/graphql")
+        async def graphql_get() -> dict[str, dict[str, str]]:
+            return {"data": {"test": "success"}}
+
+        app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+        client = TestClient(app)
+
+        mutation = client.get("/graphql", params={"query": "mutation M { createUser { id } }"})
+        query = client.get("/graphql", params={"query": "{ users { id } }"})
+        token = query.cookies.get(csrf_config.cookie_name)
+        with_token = client.get(
+            "/graphql",
+            params={"query": "mutation M { createUser { id } }"},
+            headers={"X-CSRF-Token": token},
+        )
+
+        assert mutation.status_code == 403
+        assert query.status_code == 200
+        assert with_token.status_code == 200
+
+
+class TestGraphQLTokenSource:
+    """A mutation needs the token in the header or the variables; the cookie isn't enough."""
+
+    def test_cookie_alone_is_rejected(self, app, csrf_config) -> None:
+        app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+        client = TestClient(app)
+        client.get("/test")  # sets the csrf_token cookie, which the client sends back
+        assert client.cookies.get(csrf_config.cookie_name)
+
+        response = client.post("/graphql", json={"query": "mutation M { createUser { id } }"})
+
+        assert response.status_code == 403
+        assert "CSRF token is required" in response.json()["errors"][0]["message"]
+
+    def test_cookie_alone_is_rejected_outside_graphql(self, app, csrf_config) -> None:
+        app.add_middleware(CSRFProtectionMiddleware, config=csrf_config)
+        client = TestClient(app)
+        client.get("/test")
+
+        assert client.post("/test").status_code == 403
+
+    def test_header_token_is_accepted(self, app, csrf_config) -> None:
+        setup_csrf_protection(app, csrf_config.secret_key, csrf_config)
+        client = TestClient(app)
+        token = client.get("/csrf-token").json()["csrf_token"]
+
+        response = client.post(
+            "/graphql",
+            json={"query": "mutation M { createUser { id } }"},
+            headers={"X-CSRF-Token": token},
+        )
+
+        assert response.status_code == 200
+
+
+class TestGraphQLOrigin:
+    """With check_referrer, a mutation from an untrusted origin is rejected."""
+
+    @pytest.fixture
+    def origin_config(self) -> CSRFConfig:
+        return CSRFConfig(
+            secret_key="test-secret-key-for-csrf-protection",
+            cookie_secure=False,
+            check_referrer=True,
+            trusted_origins={"https://app.example"},
+        )
+
+    def _post(self, app, config, headers) -> int:
+        app.add_middleware(CSRFProtectionMiddleware, config=config)
+        client = TestClient(app)
+        token = CSRFTokenGenerator(config.secret_key).generate_token()
+        response = client.post(
+            "/graphql",
+            json={"query": "mutation M { createUser { id } }"},
+            headers={"X-CSRF-Token": token, **headers},
+        )
+        return response.status_code
+
+    @pytest.mark.parametrize(
+        ("headers", "status"),
+        [
+            ({"Origin": "https://app.example"}, 200),
+            ({"Referer": "https://app.example/page"}, 200),
+            ({}, 200),
+            ({"Origin": "https://other.example"}, 403),
+            ({"Origin": "null"}, 403),
+            ({"Referer": "https://other.example/page"}, 403),
+            ({"Origin": "https://other.example", "Referer": "https://app.example/"}, 403),
+        ],
+    )
+    def test_origin(self, app, origin_config, headers, status) -> None:
+        assert self._post(app, origin_config, headers) == status
+
+    def test_queries_are_not_checked(self, app, origin_config) -> None:
+        app.add_middleware(CSRFProtectionMiddleware, config=origin_config)
+        client = TestClient(app)
+
+        response = client.post(
+            "/graphql",
+            json={"query": "{ users { id } }"},
+            headers={"Origin": "https://other.example"},
+        )
+
+        assert response.status_code == 200
+
+    def test_without_trusted_origins_nothing_is_compared(self, app) -> None:
+        config = CSRFConfig(secret_key="s", cookie_secure=False, check_referrer=True)
+        assert self._post(app, config, {"Origin": "https://other.example"}) == 200

@@ -32,16 +32,16 @@ def post(query, headers):
     r = client.post("/graphql", json={"query": query}, headers=headers)
     return {"status": r.status_code, "body": r.json()}
 
-# Every response sets the csrf_token cookie; TestClient keeps it, as a browser
-# would, but sends it back over plain HTTP only when it isn't Secure (development)
+# Every response sets the csrf_token cookie and TestClient sends it back, as a
+# browser would; mutations still need the token in the X-CSRF-Token header
 out = {"headers": dict(client.get("/security-info").headers)}
+CSRF = {"X-CSRF-Token": client.get("/csrf-token").json()["csrf_token"]}
 out |= {
-    "anonymous_create": post(CREATE, {}),
-    "short_title": post('mutation { createPost(input: {title: "Hi", content: "Long enough content"}) { id } }', AUTH),
+    "anonymous_create": post(CREATE, CSRF),
+    "short_title": post('mutation { createPost(input: {title: "Hi", content: "Long enough content"}) { id } }', {**AUTH, **CSRF}),
     "create": post(CREATE, AUTH),
+    "create_with_token": post(CREATE, {**AUTH, **CSRF}),
 }
-token = client.get("/csrf-token").json()["csrf_token"]
-out["create_with_token"] = post(CREATE, {**AUTH, "X-CSRF-Token": token})
 out["posts"] = post("{ posts { title } me { username } }", AUTH)
 client.__exit__(None, None, None)
 print(json.dumps(out))
@@ -72,28 +72,18 @@ def _error_code(response: dict) -> str:
     return response["body"]["errors"][0]["extensions"]["code"]
 
 
-def test_development_accepts_the_csrf_cookie() -> None:
-    out = _run("development")
+@pytest.mark.parametrize("environment", ["development", "production"])
+def test_mutations_require_a_csrf_token(environment: str) -> None:
+    out = _run(environment)
 
-    assert _error_code(out["anonymous_create"]) == "UNAUTHENTICATED"
-    assert _error_code(out["short_title"]) == "VALIDATION_ERROR"
-    assert out["create"]["status"] == 200
-    assert out["create"]["body"]["data"]["createPost"]["title"] == "Hello world"
-    assert [p["title"] for p in out["posts"]["body"]["data"]["posts"]] == [
-        "Hello world",
-        "Hello world",
-    ]
-    assert out["posts"]["body"]["data"]["me"] == {"username": "demo"}
-    assert out["headers"]["x-content-type-options"] == "nosniff"
-
-
-def test_production_requires_a_csrf_token_for_mutations() -> None:
-    out = _run("production")
-
-    # The cookie is Secure in production, so over HTTP only the header counts
     assert out["create"]["status"] == 403
     assert _error_code(out["create"]) == "CSRF_PROTECTION_FAILED"
-    assert out["anonymous_create"]["status"] == 403
+    assert _error_code(out["anonymous_create"]) == "UNAUTHENTICATED"
+    assert _error_code(out["short_title"]) == "VALIDATION_ERROR"
     assert out["create_with_token"]["status"] == 200
     assert out["create_with_token"]["body"]["data"]["createPost"]["title"] == "Hello world"
-    assert "strict-transport-security" in out["headers"]
+    assert [p["title"] for p in out["posts"]["body"]["data"]["posts"]] == ["Hello world"]
+    assert out["posts"]["body"]["data"]["me"] == {"username": "demo"}
+    assert out["headers"]["x-content-type-options"] == "nosniff"
+    if environment == "production":
+        assert "strict-transport-security" in out["headers"]

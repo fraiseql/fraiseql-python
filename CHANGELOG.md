@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **`CSRFProtectionMiddleware` classifies a GraphQL request by parsing its
+  document.** It used to look at how the query text starts. Now a document that
+  contains a mutation needs a token whatever precedes the mutation and whichever
+  operation `operationName` selects. A document that doesn't parse needs one too
+  (unless `require_for_mutations` and `require_for_subscriptions` are both off).
+  An APQ hash-only request is classified by its stored document, a batched body
+  by its entries, and a `GET /graphql` whose `query` parameter holds a mutation
+  needs a token like a POST. `"variables": null` no longer fails in the middleware.
+
+- **The `csrf_token` cookie no longer counts as the CSRF token.** Send the token
+  in the `X-CSRF-Token` header (get one from `GET /csrf-token`), or as the
+  `csrf_token` GraphQL variable. This applies to GraphQL mutations and to other
+  `POST`/`PUT`/`PATCH`/`DELETE` routes behind the middleware. A client that sent
+  only the cookie now gets 403.
+
+- **With `check_referrer` and `trusted_origins` set, a GraphQL mutation from an
+  origin outside `trusted_origins` gets 403.** The middleware reads `Origin`, or
+  `Referer` without it; a request with neither header passes on its token.
+  GraphQL requests used to skip this check (`create_production_csrf_config` sets
+  both options).
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

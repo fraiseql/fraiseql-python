@@ -221,7 +221,7 @@ def create_app() -> FastAPI:
             redis_client=redis_client,
         )
     elif ENVIRONMENT == "development":
-        # More permissive: no CSRF token required, relaxed headers
+        # More permissive: relaxed headers, no referrer check, non-Secure cookies
         setup_development_security(app=app, secret_key=SECRET_KEY)
     else:
         # Custom security setup for GraphQL
