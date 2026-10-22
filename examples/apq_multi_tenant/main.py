@@ -6,6 +6,7 @@ for multi-tenant SaaS applications.
 """
 
 import hashlib
+from typing import Any
 
 from fraiseql import FraiseQLConfig, create_fraiseql_app
 from fraiseql.storage.backends.memory import MemoryAPQBackend

@@ -52,7 +52,6 @@ fraiseql.build_fraiseql_schema()
 """
 
 _KNOWN_FAILURES = {
-    "examples/apq_multi_tenant/main.py": "uses typing.Any without importing it",
     "examples/blog_api/app.py": "opens a connection pool at import",
     "examples/complete_cqrs_blog/app.py": "written with Strawberry and asyncpg",
     "examples/complete_cqrs_blog/migrations/run_migrations.py": "needs asyncpg",
