@@ -2,6 +2,7 @@
 
 import logging
 import re
+import types
 import warnings
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
 from contextlib import asynccontextmanager
@@ -2987,6 +2988,45 @@ class FraiseQLRepository:
                 return non_none_args[0]
         return field_type if origin is None else None
 
+    def _row_json(self, view_name: str) -> SQL | Composed:
+        """The JSON of a row of a view without a JSONB column: ``row_to_json(t)``.
+
+        row_to_json writes a pgvector ``vector`` (or ``halfvec``) column through
+        its text output, the string ``"[0.1,0.2]"``. That text is a JSON array, so
+        the columns the type reads as ``list[float]`` are re-read as JSON; an
+        array column comes out the same either way.
+        """
+        from psycopg.sql import Literal
+
+        columns = self._float_list_columns(view_name)
+        if not columns:
+            return SQL("row_to_json(t)")
+        entries = SQL(", ").join(
+            SQL("{}, (to_jsonb(t) ->> {})::jsonb").format(Literal(column), Literal(column))
+            for column in columns
+        )
+        return SQL("(to_jsonb(t) || jsonb_build_object({}))").format(entries)
+
+    def _float_list_columns(self, view_name: str) -> list[str]:
+        """Columns of view_name that its registered type reads as ``list[float]``."""
+        try:
+            type_class = self._get_type_for_view(view_name)
+        except NotImplementedError:
+            return []
+        fields = getattr(type_class, "__gql_fields__", None) or {}
+        hints = getattr(type_class, "__gql_type_hints__", None) or {}
+        known_columns = _table_metadata.get(view_name, {}).get("columns") or None
+
+        columns = []
+        for name, field in fields.items():
+            field_type = getattr(field, "field_type", None) or hints.get(name)
+            if get_origin(field_type) in (Union, types.UnionType):
+                field_type = next((a for a in get_args(field_type) if a is not type(None)), None)
+            is_float_list = get_origin(field_type) is list and get_args(field_type) == (float,)
+            if is_float_list and (known_columns is None or name in known_columns):
+                columns.append(name)
+        return columns
+
     def _get_type_for_view(self, view_name: str) -> type:
         """Get the type class for a given view name."""
         # Check the global type registry
@@ -3237,7 +3277,9 @@ class FraiseQLRepository:
             # For tables with jsonb_column=None, select all columns as JSON
             # This allows the Rust pipeline to extract individual fields
             query_parts = [
-                SQL("SELECT row_to_json(t)::text FROM "),
+                SQL("SELECT "),
+                self._row_json(view_name),
+                SQL("::text FROM "),
                 table_identifier,
                 SQL(" AS t"),
             ]

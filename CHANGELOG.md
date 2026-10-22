@@ -9,6 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A dict `order_by` sorts by vector distance.**
+  `db.find(..., order_by={"embedding": {"cosine_distance": [...]}})`, the form
+  `docs/features/pgvector.md` shows, was dropped with
+  `UserWarning: order_by: ignoring 'embedding.cosine_distance'`, and only
+  `VectorOrderBy(...)` or `OrderBy("embedding.cosine_distance", value=...)`
+  sorted. A `hamming_distance` / `jaccard_distance` bit string was read as a
+  sort direction. Now `{"<operator>": <vector>}` under a field is a distance sort
+  (nearest first), in a dict or a list of dicts, with snake_case or camelCase
+  operator names; a direction string under a key of that name still sorts on a
+  field of that name.
+
+- **A `vector` column of a view without a JSONB column comes back as a list.**
+  `row_to_json` writes a pgvector `vector` through its text output, so a field
+  typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type
+  reads as `list[float]` are now re-read as JSON in that row.
+
+### Fixed
+
 - **A resolver can wrap what `db.find` / `db.find_one` return in another
   object.** In HTTP mode they return a complete Rust-built response, which
   only works as a root field's whole result. A function mutation reading its

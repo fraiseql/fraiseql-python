@@ -551,3 +551,93 @@ async def test_vector_hnsw_index_performance(class_db_pool, test_schema, vector_
     # 1. Run EXPLAIN on the query
     # 2. Verify "Index Scan" appears in the plan
     # 3. Check that query executes in < 100ms
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "order_by",
+    [
+        {"embedding": {"cosine_distance": [0.3, 0.4, 0.5] + [0.0] * 381}},
+        {"embedding": {"l2Distance": [0.3, 0.4, 0.5] + [0.0] * 381}},
+        [{"embedding": {"l2_distance": [0.3, 0.4, 0.5] + [0.0] * 381}}],
+    ],
+)
+async def test_vector_order_by_plain_dict(
+    class_db_pool, test_schema, vector_test_setup, order_by
+) -> None:
+    """A plain dict orders by distance like VectorOrderBy (not dropped with a warning)."""
+    repo = FraiseQLRepository(class_db_pool)
+
+    result = await repo.find("test_documents", order_by=order_by, limit=3)
+
+    results = extract_graphql_data(result, "test_documents")
+    # Nearest to Data Science's own embedding; the physical order is the reverse
+    assert [r["title"] for r in results] == [
+        "Data Science",
+        "Machine Learning",
+        "Python Programming",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_binary_vector_order_by_plain_dict(
+    class_db_pool, test_schema, binary_vector_test_setup
+) -> None:
+    """A bit string in a dict order_by is a Hamming operand, not a direction."""
+    repo = FraiseQLRepository(class_db_pool)
+    query_fingerprint = "0000000000100010100000100111001111100101001010111011101110100100"
+
+    result = await repo.find(
+        "test_fingerprints",
+        order_by={"fingerprint": {"hamming_distance": query_fingerprint}},
+        limit=3,
+    )
+
+    results = extract_graphql_data(result, "test_fingerprints")
+    assert [row["name"] for row in results] == ["Item C", "Item A", "Item B"]
+
+
+@pytest.mark.asyncio
+async def test_vector_column_comes_back_as_a_list(
+    class_db_pool, test_schema, vector_test_setup
+) -> None:
+    """On a view without a JSONB column, a vector column read as list[float] is a list.
+
+    row_to_json writes a vector through its text output, a JSON string.
+    """
+    from fraiseql.db import register_type_for_view
+
+    async with class_db_pool.connection() as conn:
+        await conn.execute(f"SET search_path TO {test_schema}, public")
+        await conn.execute(
+            "CREATE VIEW v_document_flat AS SELECT id, title, embedding, "
+            "embedding::real[]::float8[] AS embedding_array FROM test_documents"
+        )
+        await conn.commit()
+
+    @fraise_type(sql_source="v_document_flat", jsonb_column=None)
+    class FlatDocument:
+        id: UUID
+        title: str
+        embedding: list[float]
+        embedding_array: list[float]
+
+    register_type_for_view(
+        "v_document_flat",
+        FlatDocument,
+        table_columns={"id", "title", "embedding", "embedding_array"},
+        has_jsonb_data=False,
+    )
+    repo = FraiseQLRepository(class_db_pool)
+
+    result = await repo.find("v_document_flat", order_by={"title": "asc"}, limit=1)
+
+    [row] = extract_graphql_data(result, "v_document_flat")
+    assert row["title"] == "Data Science"
+    assert row["embedding"][:3] == pytest.approx([0.3, 0.4, 0.5])
+    assert len(row["embedding"]) == 384
+    assert row["embeddingArray"][:3] == pytest.approx([0.3, 0.4, 0.5])
+
+    one = await repo.find_one("v_document_flat", mandatory_filters={"title": "Data Science"})
+    embedding = one.to_json()["data"]["v_document_flat"]["embedding"]
+    assert embedding[:3] == pytest.approx([0.3, 0.4, 0.5])

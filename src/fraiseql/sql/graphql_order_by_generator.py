@@ -285,6 +285,28 @@ def _append_vector_order_by(value: Any, field_path: str, instructions: list[Orde
             return
 
 
+_BIT_DISTANCE_OPERATORS = ("hamming_distance", "jaccard_distance")
+
+
+def _is_vector_operand(operator: str, value: Any) -> bool:
+    """Whether ``{operator: value}`` in a dict ``order_by`` asks for a distance sort.
+
+    A list or tuple is a vector; for the bit-vector operators, so is a string of
+    0s and 1s. Any other value (``"desc"``) is a direction on a field that happens
+    to share the operator's name.
+    """
+    if operator not in VECTOR_DISTANCE_OPERATORS:
+        return False
+    if isinstance(value, (list, tuple)):
+        return True
+    return (
+        operator in _BIT_DISTANCE_OPERATORS
+        and isinstance(value, str)
+        and bool(value)
+        and set(value) <= {"0", "1"}
+    )
+
+
 def _collect_dict_order_by(
     obj_dict: dict[str, Any],
     instructions: list[OrderBy],
@@ -312,8 +334,17 @@ def _collect_dict_order_by(
         snake_field_name = to_snake_case(field_name)
         field_path = f"{prefix}.{snake_field_name}" if prefix else snake_field_name
 
+        # {"embedding": {"cosine_distance": [...]}}: the dict form of VectorOrderBy
+        if prefix and _is_vector_operand(snake_field_name, value):
+            instructions.append(
+                OrderBy(
+                    field=field_path,
+                    direction=OrderDirection.ASC,  # ASC = nearest first
+                    value=value,
+                )
+            )
         # Nested object: recurse so the leaf carries the full dotted path.
-        if isinstance(value, dict):
+        elif isinstance(value, dict):
             _collect_dict_order_by(value, instructions, field_path, global_collation, source_type)
         # A VectorOrderBy names the distance operator it wants.
         elif _is_vector_order_by(value):
