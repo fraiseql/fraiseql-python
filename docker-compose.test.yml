@@ -1,0 +1,26 @@
+# PostgreSQL for the test suite: make db-up / db-down / db-reset
+#
+# The example tests (tests/integration/examples) connect to
+# postgresql://fraiseql:fraiseql@localhost:5432; the image ships pgvector, and
+# ltree comes with PostgreSQL. Other database tests use testcontainers, or
+# TEST_DATABASE_URL=postgresql://fraiseql:fraiseql@localhost:5432/fraiseql.
+
+services:
+  postgres-test:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: fraiseql
+      POSTGRES_PASSWORD: fraiseql
+      POSTGRES_DB: fraiseql
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fraiseql -d fraiseql"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  postgres-test-data:
