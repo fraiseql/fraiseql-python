@@ -22,18 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`'price', price::text`) to keep every digit; a JSONB number keeps about 17
   significant digits and reaches the client as a number.
 
-### Fixed
-
-- **`SchemaRegistry.clear()` now clears registered scalars** (#589). It left
-  them in place, so a schema built after `clear()` (or after
-  `fraiseql.testing.clear_fraiseql_state()`) still held every scalar registered
-  before it, and a later type with the same name, such as an enum called `Color`,
-  failed with `Schema must contain uniquely named types`. Types registered after
-  `clear()` register the scalars they use again, as they do on first
-  registration. A scalar you registered by hand with `register_scalar()` must be
-  registered again after `clear()`.
-### Added
-
 - **`requires_any_role` and `requires_any_permission` are exported from
   `fraiseql.auth` and `fraiseql`** (#577). They were importable only from
   `fraiseql.auth.decorators`, so the documented
@@ -48,12 +36,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   async def delete_project(info, project_id: UUID) -> Project: ...
   ```
 
-### Fixed
-
-- **The type stub declared an `optional=` keyword on `requires_auth`,
-  `requires_role` and `requires_permission`** that they don't accept (#577).
-  `fraiseql/__init__.pyi` now matches the runtime signatures, so a type checker
-  flags `requires_role("admin", optional=True)`, which fails at runtime.
 ### Changed
 
 - **The schema build rejects class mutations with members fraiseql doesn't
@@ -73,25 +55,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `errors:`) to `error:`; remove `noop:` (a `noop:*` status already returns the
   error type); move the code of a `resolve()` method into a function mutation,
   `@fraiseql.mutation async def create_thing(info, input: CreateThingInput) -> CreateThingSuccess | CreateThingError`.
-
-### Fixed
-
-- **A class mutation without `input:` failed with an error naming neither the
-  mutation nor the annotation** (#576): `Invalid type passed to
-  convert_type_to_graphql_input: <class 'NoneType'>`. The schema build now says
-  `Mutation ClearCart has no `input:` annotation` and points to function
-  mutations for mutations without arguments. A class with neither `success:` nor
-  `error:` gets a similar message instead of `Unsupported output type`.
-- **Number filters on JSONB fields compared text** (#575). A filter such as
-  `where: {quantity: {gt: 9}}` on a field of the JSONB data compared
-  `data->>'quantity'` with the text `'9'`: `10` didn't match (as text,
-  `'10' < '9'`), and `{price: {eq: 10.5}}` missed `10.50`. A number is now
-  compared as `numeric`, `(data->>'quantity')::numeric > 9`, for `eq`, `neq`,
-  `gt`, `gte`, `lt`, `lte`, `in` and `nin`. If the field holds something that
-  isn't a number in a row the filter reaches, PostgreSQL now raises
-  `invalid input syntax for type numeric` instead of comparing text. Strings and
-  booleans are compared as before.
-### Changed
 
 - **A mutation response holds only what the query selected, under its response
   keys** (#581, #573). In HTTP mode the response Rust builds goes to the client as
@@ -123,7 +86,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with a `RuntimeError` asking to rebuild it. `execute_mutation_rust` takes
   `selections=` in place of `success_type_fields=`, `error_type_fields=` and
   `entity_selections=`; without it, the response is unfiltered.
-### Changed
 
 - **The Rust extension no longer exports `Arena` or `test_snake_to_camel`**
   (#579). They were test helpers registered in the production module. The
@@ -132,12 +94,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   removes the arena's `unsafe` code. Its `core_benchmark` transforms run 8 to
   14% faster.
 
+### Removed
+
+- **Unused Rust modules** (#580): `db::query`, `db::where_builder`,
+  `security::{config, csrf, validators}` and `response`. Nothing called them, and
+  none was reachable from Python.
+
 ### Fixed
+
+- **`SchemaRegistry.clear()` now clears registered scalars** (#589). It left
+  them in place, so a schema built after `clear()` (or after
+  `fraiseql.testing.clear_fraiseql_state()`) still held every scalar registered
+  before it, and a later type with the same name, such as an enum called `Color`,
+  failed with `Schema must contain uniquely named types`. Types registered after
+  `clear()` register the scalars they use again, as they do on first
+  registration. A scalar you registered by hand with `register_scalar()` must be
+  registered again after `clear()`.
+
+- **The type stub declared an `optional=` keyword on `requires_auth`,
+  `requires_role` and `requires_permission`** that they don't accept (#577).
+  `fraiseql/__init__.pyi` now matches the runtime signatures, so a type checker
+  flags `requires_role("admin", optional=True)`, which fails at runtime.
+
+- **A class mutation without `input:` failed with an error naming neither the
+  mutation nor the annotation** (#576): `Invalid type passed to
+  convert_type_to_graphql_input: <class 'NoneType'>`. The schema build now says
+  `Mutation ClearCart has no `input:` annotation` and points to function
+  mutations for mutations without arguments. A class with neither `success:` nor
+  `error:` gets a similar message instead of `Unsupported output type`.
+
+- **Number filters on JSONB fields compared text** (#575). A filter such as
+  `where: {quantity: {gt: 9}}` on a field of the JSONB data compared
+  `data->>'quantity'` with the text `'9'`: `10` didn't match (as text,
+  `'10' < '9'`), and `{price: {eq: 10.5}}` missed `10.50`. A number is now
+  compared as `numeric`, `(data->>'quantity')::numeric > 9`, for `eq`, `neq`,
+  `gt`, `gte`, `lt`, `lte`, `in` and `nin`. If the field holds something that
+  isn't a number in a row the filter reaches, PostgreSQL now raises
+  `invalid input syntax for type numeric` instead of comparing text. Strings and
+  booleans are compared as before.
 
 - **On CPUs without AVX2 (ARM64 included), the zero-copy path upper-cased the
   letter after a digit that follows an underscore** (#579): `a_1b` became `a1B`.
   It is now `a1b` everywhere, as with AVX2 and in the other camelCase paths.
-### Fixed
 
 - **The query plan cache shared one plan between queries that differ only in an
   argument value, and a cache hit returned no parameters** (#580).
@@ -145,24 +143,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   argument names, so `users(where: {email: {eq: "a@x"}})` and `... "b@x"}}` got
   the first one's SQL, with an empty parameter list. Plans are now keyed by
   argument values too and keep their parameters.
+
 - **A mutation result returned as plain JSON with status `new`, `completed`, `ok`
   or `validation:*` was read as an entity** (#580). Format detection didn't know
   these statuses (`new` is what `mutation_created()` returns), so the whole
   object became the entity of a success. Results of the 8-field
   `mutation_response` type were not affected.
+
 - **An error status with an empty reason (`failed:`) gave an empty `identifier`
   in the `errors` array** (#580); it is `general_error`, as for `failed`.
+
 - **The opt-in `/graphql/rust` endpoint's complexity limit truncated the depth
   multiplier** (#580): a field at depth 1 cost 1 × its cost instead of 1.5 ×. A
   fractional cost now rounds up. Fragment cycles are reported as a closed path
   (`FragA -> FragB -> FragA`), the same one on every run.
-
-### Removed
-
-- **Unused Rust modules** (#580): `db::query`, `db::where_builder`,
-  `security::{config, csrf, validators}` and `response`. Nothing called them, and
-  none was reachable from Python.
-### Fixed
 
 - **`Auth0ProviderWithRevocation` validates tokens.** Its `validate_token`
   recursed until `RecursionError` on every call, so an app using it
@@ -171,7 +165,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   then rejects a revoked token with `InvalidTokenError`. The class docstring
   showed `RedisRevocationStore`, which fraiseql doesn't have; it shows
   `PostgreSQLRevocationStore`.
-### Fixed
 
 - **Auth decorators work when a query has several root fields.** A query
   selecting two or more root fields (`{ me { id } projects { id } }`) runs on
@@ -182,7 +175,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in such a query with "First argument must be GraphQLResolveInfo", although
   each field queried alone worked. They now accept either; the checks they make
   on the user are unchanged.
-### Fixed
 
 - **ltree depth filters render valid SQL.** `nlevel`, `nlevel_eq`, `nlevel_neq`,
   `nlevel_gt`, `nlevel_gte`, `nlevel_lt`, `nlevel_lte` and their `depth_*` aliases
@@ -190,7 +182,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `db.find` where, on an `ltree` column and on a JSONB field alike: `depth_gt`
   rendered `"path" depth > %s` and `nlevel_gt` rendered `"path" nlevel({}) > %s`.
   They now render `nlevel(path) > %s`, with the JSONB value cast to `ltree`.
-### Fixed
 
 - **`order_by` works on a view without a JSONB column.** For a type declared
   with `jsonb_column=None` (or a view registered with `has_jsonb_data=False`),
@@ -200,7 +191,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `native_dimensions`. Top-level sort fields on such a view now sort on the
   column, `t."field"`. A `column_mapping={"field": "field"}` added as a
   workaround still works and can be removed.
-### Fixed
 
 - **An operation with several mutations answers each of them.** In HTTP mode
   `mutation { a: createTag(...) {...} b: createTag(...) {...} }` ran both
@@ -209,7 +199,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as the whole HTTP body. The fields' results are now merged into one response,
   each under its response key, with the errors of any field that failed. An
   operation with one root field still gets Rust's response as is.
-### Fixed
 
 - **A list query's automatic `where`, `orderBy`, `limit` and `offset` arguments
   apply even when the resolver doesn't declare them.** fraiseql adds them to every
