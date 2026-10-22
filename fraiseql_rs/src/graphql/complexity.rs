@@ -177,11 +177,12 @@ impl ComplexityAnalyzer {
             .copied()
             .unwrap_or(self.config.field_cost);
 
-        complexity = complexity.saturating_add(field_cost);
-
-        // Depth multiplier (exponential growth for deep queries)
-        let depth_multiplier = (self.config.depth_multiplier.powi(depth as i32) * 100.0) as u32;
-        complexity = complexity.saturating_mul(depth_multiplier / 100).max(field_cost);
+        // Depth multiplier (exponential growth for deep queries). A fractional cost
+        // rounds up, so that a deep field never costs less than its multiplier says;
+        // `as u32` saturates at u32::MAX.
+        let depth_multiplier = self.config.depth_multiplier.powi(depth as i32);
+        let field_cost_at_depth = (field_cost as f32 * depth_multiplier).ceil() as u32;
+        complexity = complexity.saturating_add(field_cost_at_depth.max(field_cost));
 
         // Add complexity for nested fields
         let nested_count = selection.nested_fields.len() as u32;
@@ -430,6 +431,28 @@ mod tests {
 
         let result = analyzer.validate_complexity(&query);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_depth_multiplier_is_not_truncated() {
+        let config = ComplexityConfig {
+            field_cost: 10,
+            ..Default::default()
+        };
+        let analyzer = ComplexityAnalyzer::with_config(config);
+        let field = |nested_fields| FieldSelection {
+            name: "f".to_string(),
+            alias: None,
+            arguments: vec![],
+            nested_fields,
+            directives: vec![],
+        };
+
+        // 10 at depth 0, 10 * 1.5 = 15 at depth 1, 10 * 2.25 = 22.5 -> 23 at depth 2
+        let mut query = ParsedQuery::default();
+        query.selections = vec![field(vec![field(vec![field(vec![])])])];
+
+        assert_eq!(analyzer.analyze(&query).score, 10 + 15 + 23);
     }
 
     #[test]

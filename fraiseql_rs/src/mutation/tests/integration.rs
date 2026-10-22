@@ -397,14 +397,15 @@ fn test_error_response_includes_errors_array() {
     let error_response = &response["data"]["createUser"];
 
     assert_eq!(error_response["__typename"], "CreateUserError");
-    assert_eq!(error_response["code"], 422);
+    // failed:* maps to 500; validation:* would map to 422
+    assert_eq!(error_response["code"], 500);
     assert_eq!(error_response["status"], "failed:validation");
     assert_eq!(error_response["message"], "Email already exists");
 
     // NEW: errors array should be present
     let errors = error_response["errors"].as_array().unwrap();
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors[0]["code"], 422);
+    assert_eq!(errors[0]["code"], 500);
     assert_eq!(errors[0]["identifier"], "validation");
     assert_eq!(errors[0]["message"], "Email already exists");
     assert!(errors[0]["details"].is_null());

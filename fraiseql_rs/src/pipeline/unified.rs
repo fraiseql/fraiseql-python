@@ -81,6 +81,7 @@ impl GraphQLPipeline {
                 signature: signature.clone(),
                 sql_template: composed.sql.clone(),
                 parameters: vec![], // Simplified for Phase 9
+                parameter_values: vec![],
                 created_at: std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .unwrap()

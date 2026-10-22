@@ -23,93 +23,6 @@ fn test_empty_selections_filters_all_fields() {
 }
 
 #[test]
-fn test_filter_by_typename_include() {
-    let cascade = r#"{
-        "updated": [
-            {"__typename": "Post", "id": "1", "entity": {}},
-            {"__typename": "User", "id": "2", "entity": {}},
-            {"__typename": "Comment", "id": "3", "entity": {}}
-        ]
-    }"#;
-
-    let selections = r#"{
-        "fields": ["updated"],
-        "updated": {
-            "include": ["Post", "User"]
-        }
-    }"#;
-
-    let result = filter_cascade_data(cascade, Some(selections)).unwrap();
-    let v: Value = serde_json::from_str(&result).unwrap();
-    let updated = v["updated"].as_array().unwrap();
-
-    assert_eq!(updated.len(), 2);
-    assert_eq!(updated[0]["__typename"], "Post");
-    assert_eq!(updated[1]["__typename"], "User");
-}
-
-#[test]
-fn test_filter_by_typename_exclude() {
-    let cascade = r#"{
-        "updated": [
-            {"__typename": "Post", "id": "1", "entity": {}},
-            {"__typename": "User", "id": "2", "entity": {}},
-            {"__typename": "Comment", "id": "3", "entity": {}}
-        ]
-    }"#;
-
-    let selections = r#"{
-        "fields": ["updated"],
-        "updated": {
-            "exclude": ["Comment"]
-        }
-    }"#;
-
-    let result = filter_cascade_data(cascade, Some(selections)).unwrap();
-    let v: Value = serde_json::from_str(&result).unwrap();
-    let updated = v["updated"].as_array().unwrap();
-
-    assert_eq!(updated.len(), 2);
-    assert_eq!(updated[0]["__typename"], "Post");
-    assert_eq!(updated[1]["__typename"], "User");
-}
-
-#[test]
-fn test_filter_entity_fields() {
-    let cascade = r#"{
-        "updated": [{
-            "__typename": "Post",
-            "id": "1",
-            "operation": "CREATED",
-            "entity": {
-                "id": "1",
-                "title": "Hello",
-                "content": "World",
-                "authorId": "123"
-            }
-        }]
-    }"#;
-
-    let selections = r#"{
-        "fields": ["updated"],
-        "updated": {
-            "entity_selections": {
-                "Post": ["id", "title"]
-            }
-        }
-    }"#;
-
-    let result = filter_cascade_data(cascade, Some(selections)).unwrap();
-    let v: Value = serde_json::from_str(&result).unwrap();
-    let entity = &v["updated"][0]["entity"];
-
-    assert!(entity.get("id").is_some());
-    assert!(entity.get("title").is_some());
-    assert!(entity.get("content").is_none());
-    assert!(entity.get("authorId").is_none());
-}
-
-#[test]
 fn test_filter_updated_item_fields() {
     let cascade = r#"{
         "updated": [{
@@ -135,59 +48,6 @@ fn test_filter_updated_item_fields() {
     assert!(item.get("id").is_some());
     assert!(item.get("operation").is_none());
     assert!(item.get("entity").is_none());
-}
-
-#[test]
-fn test_filter_multiple_entity_types() {
-    let cascade = r#"{
-        "updated": [
-            {
-                "__typename": "Post",
-                "id": "1",
-                "entity": {
-                    "id": "1",
-                    "title": "Post Title",
-                    "content": "Post Content",
-                    "authorId": "123"
-                }
-            },
-            {
-                "__typename": "User",
-                "id": "123",
-                "entity": {
-                    "id": "123",
-                    "name": "John Doe",
-                    "email": "john@example.com",
-                    "postCount": 5
-                }
-            }
-        ]
-    }"#;
-
-    let selections = r#"{
-        "fields": ["updated"],
-        "updated": {
-            "entity_selections": {
-                "Post": ["id", "title"],
-                "User": ["id", "name", "postCount"]
-            }
-        }
-    }"#;
-
-    let result = filter_cascade_data(cascade, Some(selections)).unwrap();
-    let v: Value = serde_json::from_str(&result).unwrap();
-
-    let post_entity = &v["updated"][0]["entity"];
-    assert!(post_entity.get("id").is_some());
-    assert!(post_entity.get("title").is_some());
-    assert!(post_entity.get("content").is_none());
-    assert!(post_entity.get("authorId").is_none());
-
-    let user_entity = &v["updated"][1]["entity"];
-    assert!(user_entity.get("id").is_some());
-    assert!(user_entity.get("name").is_some());
-    assert!(user_entity.get("postCount").is_some());
-    assert!(user_entity.get("email").is_none());
 }
 
 #[test]
@@ -352,9 +212,7 @@ fn test_filter_all_cascade_fields() {
     let selections = r#"{
         "fields": ["updated", "deleted", "invalidations", "metadata"],
         "updated": {
-            "entity_selections": {
-                "Post": ["id", "title"]
-            }
+            "fields": ["__typename", "id"]
         },
         "deleted": {
             "fields": ["__typename", "id"]
@@ -377,8 +235,9 @@ fn test_filter_all_cascade_fields() {
     assert!(v.get("metadata").is_some());
 
     // Check filtering worked
-    let post_entity = &v["updated"][0]["entity"];
-    assert_eq!(post_entity.as_object().unwrap().len(), 2);
+    let updated_item = &v["updated"][0];
+    assert_eq!(updated_item.as_object().unwrap().len(), 2);
+    assert!(updated_item.get("entity").is_none());
 
     let deleted_item = &v["deleted"][0];
     assert_eq!(deleted_item.as_object().unwrap().len(), 2);
@@ -424,29 +283,6 @@ fn test_empty_cascade() {
 }
 
 #[test]
-fn test_entity_without_typename() {
-    let cascade = r#"{
-        "updated": [
-            {"id": "1", "entity": {"id": "1", "title": "Hello"}}
-        ]
-    }"#;
-
-    let selections = r#"{
-        "fields": ["updated"],
-        "updated": {
-            "include": ["Post"]
-        }
-    }"#;
-
-    let result = filter_cascade_data(cascade, Some(selections)).unwrap();
-    let v: Value = serde_json::from_str(&result).unwrap();
-    let updated = v["updated"].as_array().unwrap();
-
-    // Item without __typename is filtered out
-    assert_eq!(updated.len(), 0);
-}
-
-#[test]
 fn test_large_cascade_payload() {
     // Generate large cascade with 100 entities
     let mut updated = Vec::new();
@@ -462,9 +298,7 @@ fn test_large_cascade_payload() {
     let selections = r#"{
         "fields": ["updated"],
         "updated": {
-            "entity_selections": {
-                "Post": ["id", "title"]
-            }
+            "fields": ["__typename", "id"]
         }
     }"#;
 
@@ -474,11 +308,10 @@ fn test_large_cascade_payload() {
 
     assert_eq!(updated_arr.len(), 100);
 
-    // Verify filtering worked on all entities
+    // Verify filtering worked on all items
     for item in updated_arr {
-        let entity = &item["entity"];
-        assert!(entity.get("id").is_some());
-        assert!(entity.get("title").is_some());
-        assert!(entity.get("content").is_none());
+        assert!(item.get("id").is_some());
+        assert!(item.get("__typename").is_some());
+        assert!(item.get("entity").is_none());
     }
 }

@@ -71,10 +71,10 @@ pub fn build_sql_query_cached(
 
     // Check cache
     if let Ok(Some(cached_plan)) = QUERY_PLAN_CACHE.get(&signature) {
-        // Cache hit - return cached plan
+        // Cache hit - return cached plan with its parameters
         return Ok(GeneratedQuery {
             sql: cached_plan.sql_template,
-            parameters: vec![], // Parameters already bound
+            parameters: cached_plan.parameter_values,
         });
     }
 
@@ -117,6 +117,7 @@ pub fn build_sql_query_cached(
             signature,
             sql_template: composed.sql,
             parameters: vec![],
+            parameter_values: result.parameters.clone(),
             created_at: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()

@@ -137,6 +137,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **On CPUs without AVX2 (ARM64 included), the zero-copy path upper-cased the
   letter after a digit that follows an underscore** (#579): `a_1b` became `a1B`.
   It is now `a1b` everywhere, as with AVX2 and in the other camelCase paths.
+### Fixed
+
+- **The query plan cache shared one plan between queries that differ only in an
+  argument value, and a cache hit returned no parameters** (#580).
+  `RustQueryBuilder.build_cached` (`build_sql_query_cached`) keyed plans by
+  argument names, so `users(where: {email: {eq: "a@x"}})` and `... "b@x"}}` got
+  the first one's SQL, with an empty parameter list. Plans are now keyed by
+  argument values too and keep their parameters.
+- **A mutation result returned as plain JSON with status `new`, `completed`, `ok`
+  or `validation:*` was read as an entity** (#580). Format detection didn't know
+  these statuses (`new` is what `mutation_created()` returns), so the whole
+  object became the entity of a success. Results of the 8-field
+  `mutation_response` type were not affected.
+- **An error status with an empty reason (`failed:`) gave an empty `identifier`
+  in the `errors` array** (#580); it is `general_error`, as for `failed`.
+- **The opt-in `/graphql/rust` endpoint's complexity limit truncated the depth
+  multiplier** (#580): a field at depth 1 cost 1 × its cost instead of 1.5 ×. A
+  fractional cost now rounds up. Fragment cycles are reported as a closed path
+  (`FragA -> FragB -> FragA`), the same one on every run.
+
+### Removed
+
+- **Unused Rust modules** (#580): `db::query`, `db::where_builder`,
+  `security::{config, csrf, validators}` and `response`. Nothing called them, and
+  none was reachable from Python.
 
 ## [1.29.1] - 2026-10-19
 

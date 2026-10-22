@@ -163,10 +163,31 @@ jobs:
       - name: Clippy
         run: cargo clippy --manifest-path fraiseql_rs/Cargo.toml --all-features -- -D warnings
 
-      # cargo test cannot run for PyO3 extension-module crates (linking issue).
-      # Rust integration is tested via pytest in the integration-tests job.
       - name: Build (verify compilation)
         run: cargo build --manifest-path fraiseql_rs/Cargo.toml --all-features
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install Python for the Rust tests
+        run: uv python install 3.13
+
+      # pyo3's extension-module feature leaves the Python symbols for the interpreter
+      # that loads the extension to provide, so a plain `cargo test --lib` fails to
+      # link (#580). Link the test binary against the libpython of the interpreter
+      # pyo3 builds for, and point PYO3_PYTHON at it so both agree on the version.
+      # A separate target directory keeps these RUSTFLAGS from invalidating the
+      # artifacts of the steps above.
+      - name: Rust unit tests
+        working-directory: fraiseql_rs
+        run: |
+          PY=$(uv python find 3.13)
+          LIBDIR=$("$PY" -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')
+          PYVER=$("$PY" -c 'import sys; print(f"{sys.version_info[0]}.{sys.version_info[1]}")')
+          PYO3_PYTHON="$PY" \
+          RUSTFLAGS="-L $LIBDIR -l python$PYVER -C link-arg=-Wl,-rpath,$LIBDIR" \
+          CARGO_TARGET_DIR=target/libpython-tests \
+            cargo test --lib --all-features
 
       # Neither clippy nor build above compiles the bench targets, so the benches
       # drifted past the API they call and nothing noticed (#471). This is the

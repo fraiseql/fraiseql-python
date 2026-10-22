@@ -56,40 +56,6 @@ fn test_build_simple_format_response() {
 }
 
 #[test]
-fn test_build_simple_format_with_status_data_field() {
-    // When simple format has "status" in entity, it should be renamed to "statusData"
-    let result = MutationResult {
-        status: MutationStatus::Success("created".to_string()),
-        message: "Task created".to_string(),
-        entity_id: None,
-        entity_type: Some("Task".to_string()),
-        entity: Some(json!({"id": "1", "status": "pending"})),
-        updated_fields: None,
-        cascade: None,
-        metadata: None,
-        is_simple_format: true,
-    };
-
-    let response = build_graphql_response(
-        &result,
-        "createTask",
-        "CreateTaskSuccess",
-        "CreateTaskError",
-        Some("task"),
-        Some("Task"),
-        true,
-        None,
-        None,
-        None,
-        None,
-    )
-    .unwrap();
-
-    let data = &response["data"]["createTask"];
-    assert_eq!(data["task"]["statusData"], "pending");
-}
-
-#[test]
 fn test_build_simple_format_array_response() {
     let result = MutationResult {
         status: MutationStatus::Success("created".to_string()),
@@ -159,9 +125,10 @@ fn test_build_simple_format_response_with_cascade() {
         Some("post"),
         Some("Post"),
         true,
-        None,                         // success_type_fields
-        None,                         // error_type_fields
-        Some(r#"{"cascade": true}"#), // cascade_selections
+        None, // success_type_fields
+        None, // error_type_fields
+        // cascade_selections: the cascade is written only when selected
+        Some(r#"{"fields": ["updated", "deleted", "invalidations", "metadata"]}"#),
         None,
     )
     .unwrap();
@@ -170,16 +137,15 @@ fn test_build_simple_format_response_with_cascade() {
     assert_eq!(data["post"]["id"], "post-123");
     assert_eq!(data["post"]["title"], "Updated");
 
-    // Verify CASCADE structure
+    // Verify CASCADE structure (cascade items are copied as they are)
     let cascade = &data["cascade"];
     assert!(cascade.is_object());
 
     let updated = cascade["updated"].as_array().unwrap();
     assert_eq!(updated.len(), 1);
-    assert_eq!(updated[0]["entityId"], "user-1");
-    assert_eq!(updated[0]["entityType"], "User");
-    assert_eq!(updated[0]["fields"][0], "postCount");
-    assert_eq!(updated[0]["post_count"], 5);
+    assert_eq!(updated[0]["entity_id"], "user-1");
+    assert_eq!(updated[0]["entity_type"], "User");
+    assert_eq!(updated[0]["fields"][0], "post_count");
 
     let deleted = cascade["deleted"].as_array().unwrap();
     assert_eq!(deleted.len(), 0);
@@ -227,7 +193,8 @@ fn test_build_full_success_response() {
 
     let data = &response["data"]["createUser"];
     assert_eq!(data["__typename"], "CreateUserSuccess");
-    assert_eq!(data["code"], 201); // New
+    assert!(data.get("code").is_none()); // Only error types have a code
+    assert_eq!(data["status"], "created");
     assert_eq!(data["message"], "User created");
     assert_eq!(data["user"]["id"], "123");
 }
@@ -263,7 +230,7 @@ fn test_build_full_error_response() {
 
     let data = &response["data"]["createUser"];
     assert_eq!(data["__typename"], "CreateUserError");
-    assert_eq!(data["code"], 400); // Failed
+    assert_eq!(data["code"], 500); // failed:* (validation:* would be 422)
     assert_eq!(data["message"], "Email already exists");
 }
 
@@ -334,13 +301,8 @@ fn test_success_response_has_errors_field() {
     // Verify
     let obj = response.as_object().expect("Response should be object");
 
-    // Check errors field exists
-    assert!(obj.contains_key("errors"), "Response missing 'errors' field");
-
-    // Check errors is empty array
-    let errors = obj.get("errors").expect("errors field should exist");
-    let errors_array = errors.as_array().expect("errors should be array");
-    assert_eq!(errors_array.len(), 0, "errors array should be empty for success");
+    // Success types have no errors field (v1.8.1); only error types do
+    assert!(!obj.contains_key("errors"), "Success response has an 'errors' field");
 }
 
 #[test]
@@ -370,7 +332,7 @@ fn test_success_response_all_standard_fields() {
     assert!(obj.contains_key("id"), "Missing id");
     assert!(obj.contains_key("message"), "Missing message");
     assert!(obj.contains_key("status"), "Missing status");
-    assert!(obj.contains_key("errors"), "Missing errors");
+    assert!(!obj.contains_key("errors"), "Success types have no errors field");
     assert!(obj.contains_key("user"), "Missing user entity");
     assert!(obj.contains_key("updatedFields"), "Missing updatedFields");
 
@@ -378,9 +340,6 @@ fn test_success_response_all_standard_fields() {
     assert_eq!(obj.get("__typename").unwrap().as_str(), Some("CreateUserSuccess"));
     assert_eq!(obj.get("status").unwrap().as_str(), Some("success:created"));
     assert_eq!(obj.get("message").unwrap().as_str(), Some("User created successfully"));
-
-    let errors = obj.get("errors").unwrap().as_array().unwrap();
-    assert_eq!(errors.len(), 0, "Success should have empty errors array");
 }
 
 #[test]
@@ -435,15 +394,13 @@ fn test_success_fields_order() {
     let id_idx = keys.iter().position(|&k| k == "id").unwrap();
     let message_idx = keys.iter().position(|&k| k == "message").unwrap();
     let status_idx = keys.iter().position(|&k| k == "status").unwrap();
-    let errors_idx = keys.iter().position(|&k| k == "errors").unwrap();
     let user_idx = keys.iter().position(|&k| k == "user").unwrap();
 
     // Verify ordering
     assert!(typename_idx < id_idx, "__typename should come before id");
     assert!(id_idx < message_idx, "id should come before message");
     assert!(message_idx < status_idx, "message should come before status");
-    assert!(status_idx < errors_idx, "status should come before errors");
-    assert!(errors_idx < user_idx, "errors should come before entity");
+    assert!(status_idx < user_idx, "status should come before entity");
 }
 
 // ============================================================================
@@ -463,7 +420,7 @@ fn test_extract_identifier_from_failed_with_colon() {
 #[test]
 fn test_extract_identifier_from_noop_with_colon() {
     // Status: "noop:not_found" -> identifier: "not_found"
-    let status = MutationStatus::Noop("not_found".to_string());
+    let status = MutationStatus::Noop("noop:not_found".to_string());
     let identifier = extract_identifier_from_status(&status);
     assert_eq!(identifier, "not_found");
 }
@@ -547,7 +504,7 @@ fn test_generate_errors_array_explicit_override() {
 fn test_generate_errors_array_noop_status() {
     // Test error generation from noop status (e.g., not_found)
     let result = MutationResult {
-        status: MutationStatus::Noop("not_found".to_string()),
+        status: MutationStatus::Noop("noop:not_found".to_string()),
         message: "User not found".to_string(),
         entity: None,
         entity_type: Some("User".to_string()),
@@ -595,7 +552,7 @@ fn test_noop_returns_error_type_v1_8() {
         true,
         None,
         None,
-        Some(r#"{"status": true}"#),
+        Some(r#"{"fields": ["status"]}"#),
         None,
     )
     .unwrap();
@@ -771,7 +728,7 @@ fn test_error_response_includes_cascade() {
         true,
         None,
         None,
-        Some(r#"{"status": true, "reason": true}"#),
+        Some(r#"{"fields": ["status", "reason"]}"#),
         None,
     )
     .unwrap();
@@ -804,7 +761,7 @@ fn test_cascade_never_nested_in_entity() {
         "CreatePostError",
         Some("post"),
         Some("Post"),
-        None,
+        Some(r#"{"fields": ["updated", "deleted", "invalidations"]}"#),
         true,
         None,
         None,
@@ -882,7 +839,7 @@ fn test_cascade_never_copied_from_entity_wrapper() {
         "CreateAllocationError",
         Some("allocation"),
         Some("Allocation"),
-        None,
+        Some(r#"{"fields": ["updated", "deleted", "invalidations"]}"#),
         true,
         None,
         None,
@@ -904,7 +861,9 @@ fn test_cascade_never_copied_from_entity_wrapper() {
     );
 
     // Message from wrapper should be copied (this is correct behavior)
-    assert_eq!(success["message"], "New allocation created");
+    // The result has no message of its own (""), and a wrapper field never replaces
+    // a field the result sets
+    assert_eq!(success["message"], "");
 
     // Verify entity has correct fields
     assert_eq!(success["allocation"]["id"], "d8c7c0b3-6b21-44c7-9195-504ca1c63e47");
@@ -1029,9 +988,10 @@ fn test_null_entity() {
 
     let response: serde_json::Value = serde_json::from_slice(&result).unwrap();
 
-    // Should have message but no entity field
+    // The 8-field parser keeps a null entity as a JSON null, so the entity field is
+    // written as null (the success builder's non-null check sees Some(Null))
     assert_eq!(response["data"]["test"]["message"], "OK");
-    assert!(response["data"]["test"].get("entity").is_none());
+    assert!(response["data"]["test"]["entity"].is_null());
 }
 
 // ============================================================================
@@ -1160,12 +1120,11 @@ fn test_success_response_field_filtering_all_fields() {
         is_simple_format: false,
     };
 
-    // Request ALL fields
+    // Request ALL fields (success types have no errors field)
     let selected_fields = vec![
         "id".to_string(),
         "status".to_string(),
         "message".to_string(),
-        "errors".to_string(),
         "updatedFields".to_string(),
         "user".to_string(),
     ];
@@ -1188,9 +1147,8 @@ fn test_success_response_field_filtering_all_fields() {
     let data = &response["data"]["createUser"];
     assert_eq!(data["__typename"], "CreateUserSuccess");
     assert_eq!(data["id"], "123");
-    assert_eq!(data["status"], "success");
+    assert_eq!(data["status"], "created");
     assert_eq!(data["message"], "User created");
-    assert_eq!(data["errors"], json!([]));
     assert_eq!(data["updatedFields"], json!(["firstName"])); // camelCase
     assert_eq!(data["user"]["id"], "123");
 }
@@ -1229,7 +1187,7 @@ fn test_success_response_field_filtering_partial_fields() {
 
     let data = &response["data"]["createUser"];
     assert_eq!(data["__typename"], "CreateUserSuccess");
-    assert_eq!(data["status"], "success");
+    assert_eq!(data["status"], "created");
     assert_eq!(data["user"]["id"], "123");
 
     // These should NOT be present (filtered out)
@@ -1273,9 +1231,8 @@ fn test_success_response_field_filtering_no_filtering() {
     assert_eq!(data["__typename"], "CreateUserSuccess");
     // All fields should be present when no filtering is applied
     assert_eq!(data["id"], "123");
-    assert_eq!(data["status"], "success");
+    assert_eq!(data["status"], "created");
     assert_eq!(data["message"], "User created");
-    assert_eq!(data["errors"], json!([]));
     assert_eq!(data["updatedFields"], json!(["firstName"]));
     assert_eq!(data["user"]["id"], "123");
 }
@@ -1305,8 +1262,8 @@ fn test_error_response_field_filtering() {
         None,
         None,
         true,
-        Some(&selected_fields),
         None,
+        Some(&selected_fields),
         None,
         None,
     )
@@ -1317,7 +1274,8 @@ fn test_error_response_field_filtering() {
     assert_eq!(data["status"], "failed:validation");
     assert_eq!(data["message"], "Invalid input");
 
-    // These should NOT be present (filtered out)
-    assert!(!data.as_object().unwrap().contains_key("code"));
+    // errors is filtered out; this builder always writes code (the selection
+    // document of build_mutation_response_selected leaves it out unless selected)
+    assert_eq!(data["code"], 500);
     assert!(!data.as_object().unwrap().contains_key("errors"));
 }

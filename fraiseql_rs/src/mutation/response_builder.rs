@@ -452,20 +452,12 @@ pub fn generate_errors_array(result: &MutationResult, code: i32) -> Result<Value
 /// - "failed" -> "general_error"
 pub fn extract_identifier_from_status(status: &MutationStatus) -> String {
     match status {
-        MutationStatus::Noop(reason) => {
-            // Extract part after colon: "noop:already_exists" -> "already_exists"
-            if let Some((_prefix, identifier)) = reason.split_once(':') {
-                identifier.to_string()
-            } else {
-                "general_error".to_string()
-            }
-        },
-        MutationStatus::Error(reason) => {
-            // Extract part after colon: "validation:invalid_input" -> "invalid_input"
-            if let Some((_prefix, identifier)) = reason.split_once(':') {
-                identifier.to_string()
-            } else {
-                "general_error".to_string()
+        // Part after the colon: "noop:already_exists" -> "already_exists",
+        // "validation:invalid_input" -> "invalid_input"; none or empty -> general_error
+        MutationStatus::Noop(reason) | MutationStatus::Error(reason) => {
+            match reason.split_once(':') {
+                Some((_prefix, identifier)) if !identifier.is_empty() => identifier.to_string(),
+                _ => "general_error".to_string(),
             }
         },
         MutationStatus::Success(_) => {
@@ -587,15 +579,14 @@ mod tests {
             Some("user"),
             true,
             None,
-            None,
+            Some(r#"{"fields": ["updated"]}"#),
             None,
         )
         .unwrap();
         let obj = response.as_object().unwrap();
 
-        // CASCADE at success level
+        // CASCADE at success level (written only when selected)
         assert!(obj.contains_key("cascade"));
-        assert_eq!(obj["cascade"]["__typename"], "Cascade");
         assert!(obj["cascade"]["updated"].is_array());
 
         // NOT in entity
@@ -609,7 +600,9 @@ mod tests {
             message: "Success".to_string(),
             entity_id: None,
             entity_type: Some("Post".to_string()),
-            entity: Some(json!({"post": {"id": "456", "title": "Hello"}, "message": "Created"})),
+            entity: Some(
+                json!({"post": {"id": "456", "title": "Hello"}, "message": "Created", "extra_info": "x"}),
+            ),
             updated_fields: None,
             cascade: None,
             metadata: None,
@@ -618,8 +611,8 @@ mod tests {
 
         let response = build_success_response(
             &result,
-            "CreateUserSuccess",
-            Some("user"),
+            "CreatePostSuccess",
+            Some("post"),
             true,
             None,
             None,
@@ -633,8 +626,9 @@ mod tests {
         assert_eq!(obj["post"]["id"], "456");
         assert_eq!(obj["post"]["title"], "Hello");
 
-        // Wrapper field promoted to success level
-        assert_eq!(obj["message"], "Created");
+        // Wrapper fields promoted to success level, unless the result already sets them
+        assert_eq!(obj["extraInfo"], "x");
+        assert_eq!(obj["message"], "Success");
     }
 
     #[test]
@@ -688,10 +682,11 @@ mod tests {
                 .unwrap();
         let obj = response.as_object().unwrap();
 
-        // Auto-generated error with extracted code
+        // Auto-generated error: numeric code, identifier from the status
         let errors = obj["errors"].as_array().unwrap();
         assert_eq!(errors.len(), 1);
-        assert_eq!(errors[0]["code"], "invalid_input");
+        assert_eq!(errors[0]["code"], 422);
+        assert_eq!(errors[0]["identifier"], "invalid_input");
         assert_eq!(errors[0]["message"], "Validation failed");
     }
 

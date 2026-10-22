@@ -5,8 +5,11 @@ use sha2::{Digest, Sha256};
 use crate::graphql::types::{FieldSelection, ParsedQuery};
 
 /// Generate cache key from GraphQL query.
+///
+/// Two queries share a key only when they would build the same SQL with the same
+/// parameters: same structure, same argument values (literals are bound as
+/// parameters, so they must be part of the key), same variable names.
 pub fn generate_signature(parsed_query: &ParsedQuery) -> String {
-    // Create string representation of query structure (ignoring variables and literals)
     let structure = build_query_structure(parsed_query);
 
     // Hash the structure to get a short signature
@@ -17,7 +20,7 @@ pub fn generate_signature(parsed_query: &ParsedQuery) -> String {
     hex::encode(hash)
 }
 
-/// Build structural representation (variables → placeholders).
+/// Build the representation that is hashed into the signature.
 fn build_query_structure(parsed_query: &ParsedQuery) -> String {
     let mut parts = vec![];
 
@@ -40,9 +43,10 @@ fn build_query_structure(parsed_query: &ParsedQuery) -> String {
 fn build_selection_structure(selection: &FieldSelection) -> String {
     let mut parts = vec![format!("field:{}", selection.name)];
 
-    // Include argument names (not values)
+    // Argument names and values: a literal becomes an SQL parameter, so queries
+    // differing only in a value need their own plan
     for arg in &selection.arguments {
-        parts.push(format!("arg:{}", arg.name));
+        parts.push(format!("arg:{}={}:{}", arg.name, arg.value_type, arg.value_json));
     }
 
     // Recurse for nested fields
@@ -66,7 +70,7 @@ pub fn is_cacheable(parsed_query: &ParsedQuery) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::graphql::types::{FieldSelection, ParsedQuery};
+    use crate::graphql::types::{FieldSelection, GraphQLArgument, ParsedQuery};
 
     #[test]
     fn test_signature_generation() {
@@ -91,13 +95,36 @@ mod tests {
         assert_ne!(sig1, sig2);
     }
 
+    #[test]
+    fn test_argument_values_are_part_of_the_signature() {
+        let with_value = |value: &str| {
+            let mut query = create_test_query("query { users { id } }");
+            query.selections[0].arguments = vec![GraphQLArgument {
+                name: "id".to_string(),
+                value_type: "scalar".to_string(),
+                value_json: value.to_string(),
+            }];
+            generate_signature(&query)
+        };
+
+        assert_eq!(with_value("1"), with_value("1"));
+        assert_ne!(with_value("1"), with_value("2"));
+    }
+
+    /// A query `{ <root> { id } }`, with the root field taken from the query string.
     fn create_test_query(query_str: &str) -> ParsedQuery {
+        let root = query_str
+            .trim_start_matches("query {")
+            .split_whitespace()
+            .next()
+            .unwrap()
+            .to_string();
         ParsedQuery {
             operation_type: "query".to_string(),
             operation_name: None,
-            root_field: "users".to_string(),
+            root_field: root.clone(),
             selections: vec![FieldSelection {
-                name: "users".to_string(),
+                name: root,
                 alias: None,
                 arguments: vec![],
                 nested_fields: vec![FieldSelection {

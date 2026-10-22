@@ -267,7 +267,7 @@ mod integration_tests {
             "CreateUserError",
             Some("user"),
             Some("User"),
-            None,
+            Some(r#"{"fields": ["updated"]}"#),
             true,
             None,
             None,
@@ -437,15 +437,21 @@ pub struct MutationResult {
     pub is_simple_format: bool,
 }
 
-/// Valid mutation status prefixes/values for format detection
+/// Valid mutation status prefixes/values for format detection: the success keywords
+/// of the status taxonomy (including "new", which mutation_created() returns) and the
+/// prefixes MutationStatus::from_str classifies
 const VALID_STATUS_PREFIXES: &[&str] = &[
     // Success keywords (no colon)
     "success",
+    "new",
     "created",
     "updated",
     "deleted",
+    "completed",
+    "ok",
     // Error prefixes
     "failed:",
+    "validation:",
     "unauthorized:",
     "forbidden:",
     "not_found:",

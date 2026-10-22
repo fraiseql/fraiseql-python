@@ -13,6 +13,9 @@ pub struct CachedQueryPlan {
     pub signature: String,
     pub sql_template: String,
     pub parameters: Vec<ParamInfo>,
+    /// The bound parameter values (name, value), returned again on a cache hit
+    #[serde(default)]
+    pub parameter_values: Vec<(String, String)>,
     pub created_at: u64, // Unix timestamp
     pub hit_count: u64,
 }
@@ -119,6 +122,7 @@ mod tests {
             signature: "test_query".to_string(),
             sql_template: "SELECT * FROM users".to_string(),
             parameters: vec![],
+            parameter_values: vec![],
             created_at: 0,
             hit_count: 0,
         };
@@ -136,6 +140,7 @@ mod tests {
             signature: "test".to_string(),
             sql_template: "SELECT *".to_string(),
             parameters: vec![],
+            parameter_values: vec![],
             created_at: 0,
             hit_count: 0,
         };
@@ -160,6 +165,7 @@ mod tests {
                 signature: format!("query_{}", i),
                 sql_template: "SELECT *".to_string(),
                 parameters: vec![],
+                parameter_values: vec![],
                 created_at: 0,
                 hit_count: 0,
             };

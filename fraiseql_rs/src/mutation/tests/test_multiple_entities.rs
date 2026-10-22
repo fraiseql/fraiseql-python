@@ -88,7 +88,7 @@ fn test_error_with_conflict_entity() {
     //     "conflict_machine": {...}
     // }
     let json = r#"{
-        "status": "failed:conflict",
+        "status": "conflict:duplicate_serial_number",
         "message": "Machine with this serial number already exists",
         "entity_type": "Machine",
         "entity": {
@@ -120,7 +120,7 @@ fn test_error_with_conflict_entity() {
 
     // Auto-injected fields at root
     assert_eq!(error["__typename"], "CreateMachineError");
-    assert_eq!(error["status"], "failed:conflict");
+    assert_eq!(error["status"], "conflict:duplicate_serial_number");
     assert_eq!(error["message"], "Machine with this serial number already exists");
     assert_eq!(error["code"], 409); // Conflict
 
