@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Outside HTTP mode, a mutation entity builds from a partial or wider dict.**
+  With graphql-core completing the result (`schema.execute`, `graphql()` in
+  tests, no `create_fraiseql_app`), an entity filtered to the selection failed
+  with `missing a required argument: 'name'`, a JSONB key the type doesn't
+  declare with `unexpected keyword argument 'secret'`, and a field typed as an
+  interface with `Abstract type 'Node' was resolved to a non-object type`.
+  `from_dict` now leaves out keys the type doesn't take, gives unselected
+  required fields `None` (they are never read), and builds an interface-typed
+  field as the type its `__typename` names. HTTP mode was unaffected.
+
+### Fixed
+
 - **`@app.on_event("startup")` and `("shutdown")` handlers run on an app from
   `create_fraiseql_app`.** It gives the FastAPI app a lifespan, and Starlette
   ignores `on_event` handlers on an app with a lifespan, so setup registered

@@ -157,12 +157,6 @@ def _post(client: TestClient, query: str) -> dict:
     return body["data"]
 
 
-# Outside HTTP mode graphql-core builds the Python type from the entity dict, which
-# fails unless the dict holds exactly the type's fields: a field left out by the
-# selection ("missing a required argument") or a JSONB key the type doesn't have
-# ("unexpected keyword argument 'secret'"). The same failure happens on 1.29.1.
-_ENTITY_OUTSIDE_HTTP = "graphql-core can't build the entity type from a partial or wider dict"
-
 _CASES = {
     "aliased nested field": (
         _success("location { id other: owner { id } }"),
@@ -257,15 +251,9 @@ class TestMutationResponseSelectionsOverHttp:
 
         assert data == {"r": {"__typename": "UpdateLocationError", "why": "ok", "code": 404}}
 
-    @pytest.mark.parametrize(
-        "case",
-        [
-            pytest.param(case, marks=pytest.mark.xfail(strict=True, reason=_ENTITY_OUTSIDE_HTTP))
-            if "location" in _CASES[case][0]
-            else case
-            for case in _CASES
-        ],
-    )
+    # Outside HTTP mode graphql-core builds the entity's Python type from the dict,
+    # which holds only the selected fields, and may hold JSONB keys the type lacks
+    @pytest.mark.parametrize("case", list(_CASES))
     async def test_graphql_core_gives_the_same_data(
         self, class_db_pool, update_location_function, mutation, case: str
     ) -> None:
