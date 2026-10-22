@@ -31,6 +31,7 @@ Known Limitations:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Any, Literal
 
 from psycopg.sql import SQL, Composed, Identifier
@@ -267,6 +268,16 @@ ALL_OPERATORS = {
 }
 
 
+def _is_number(value: Any) -> bool:
+    """True for an int, float or Decimal, not a bool."""
+    return isinstance(value, int | float | Decimal) and not isinstance(value, bool)
+
+
+def _as_numeric(expr: Composed) -> Composed:
+    """Cast a ``->>`` text extraction to numeric: ``(expr)::numeric``."""
+    return Composed([SQL("("), expr, SQL(")::numeric")])
+
+
 @dataclass
 class FieldCondition:
     """Single filter condition on a field.
@@ -472,6 +483,8 @@ class FieldCondition:
                 # IN/NOT IN: psycopg3 requires individual placeholders
                 values_list = self.value if isinstance(self.value, list) else [self.value]
                 placeholders = ", ".join(["%s"] * len(values_list))
+                if values_list and all(map(_is_number, values_list)):
+                    jsonb_expr = _as_numeric(jsonb_expr)
                 sql = Composed([jsonb_expr, SQL(f" {sql_op} ({placeholders})")])
                 params.extend(values_list)
             elif self.operator == "isnull":
@@ -496,6 +509,10 @@ class FieldCondition:
                     raise ValueError(
                         f"Network operator '{self.operator}' not supported by registry"
                     )
+            elif _is_number(self.value):
+                # As text, '9' > '10' and '10.50' <> '10.5': compare numbers as numeric
+                sql = Composed([_as_numeric(jsonb_expr), SQL(f" {sql_op} "), SQL("%s")])
+                params.append(self.value)
             else:
                 # JSONB text comparison - need to handle boolean conversion
                 sql = Composed([jsonb_expr, SQL(f" {sql_op} "), SQL("%s")])

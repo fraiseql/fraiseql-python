@@ -67,6 +67,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Mutation ClearCart has no `input:` annotation` and points to function
   mutations for mutations without arguments. A class with neither `success:` nor
   `error:` gets a similar message instead of `Unsupported output type`.
+- **Number filters on JSONB fields compared text** (#575). A filter such as
+  `where: {quantity: {gt: 9}}` on a field of the JSONB data compared
+  `data->>'quantity'` with the text `'9'`: `10` didn't match (as text,
+  `'10' < '9'`), and `{price: {eq: 10.5}}` missed `10.50`. A number is now
+  compared as `numeric`, `(data->>'quantity')::numeric > 9`, for `eq`, `neq`,
+  `gt`, `gte`, `lt`, `lte`, `in` and `nin`. If the field holds something that
+  isn't a number in a row the filter reaches, PostgreSQL now raises
+  `invalid input syntax for type numeric` instead of comparing text. Strings and
+  booleans are compared as before.
 
 ## [1.29.1] - 2026-10-19
 
