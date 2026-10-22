@@ -1,31 +1,38 @@
 """Example: Secure GraphQL API with FraiseQL Security
 
-This example demonstrates how to set up a production-ready GraphQL API
-with comprehensive security features including:
+This example sets up a GraphQL API with fraiseql's security middleware:
 
 - Rate limiting for different operation types
 - CSRF protection for mutations
 - Security headers for defense in depth
-- Input validation and sanitization
+- Authentication from a bearer token, checked in resolvers
+
+The posts live in memory so the example runs without a database; see
+../blog_simple/ for queries and mutations backed by PostgreSQL.
 
 Usage:
     python secure_graphql_api.py
+
+    ENVIRONMENT=production SECRET_KEY=... DOMAIN=api.example.com \
+        TRUSTED_ORIGINS=https://app.example.com python secure_graphql_api.py
 """
 
 import os
 from datetime import UTC, datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import FastAPI, Request
+from graphql import GraphQLError, GraphQLResolveInfo
 
 import fraiseql
-from fraiseql.types import ID
+from fraiseql.fastapi import create_fraiseql_app
 from fraiseql.security import (
     create_security_config_for_graphql,
     setup_development_security,
     setup_production_security,
     setup_security,
 )
+from fraiseql.types import ID
 
 # Environment configuration
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
@@ -33,11 +40,15 @@ SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
 DOMAIN = os.getenv("DOMAIN", "api.example.com")
 TRUSTED_ORIGINS = os.getenv("TRUSTED_ORIGINS", "https://app.example.com").split(",")
 
-# Database URL (in real app, this would come from environment)
+# create_fraiseql_app needs a URL; nothing here queries the database
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/secure_blog")
 
 # Redis for distributed rate limiting (optional)
 REDIS_URL = os.getenv("REDIS_URL")
+
+# The one valid token and its user, standing in for JWT validation
+DEMO_TOKEN = "valid-token"
+DEMO_USER_ID = UUID("123e4567-e89b-12d3-a456-426614174002")
 
 
 # GraphQL Types
@@ -45,9 +56,6 @@ REDIS_URL = os.getenv("REDIS_URL")
 class User:
     id: ID
     username: str
-    email: str
-    is_active: bool
-    created_at: datetime
 
 
 @fraiseql.type
@@ -61,24 +69,15 @@ class Post:
     updated_at: datetime
 
 
-@fraiseql.type
-class Comment:
-    id: ID
-    content: str
-    post_id: ID
-    author_id: ID
-    created_at: datetime
-
-
 # Input Types
-@fraiseql.type
+@fraiseql.input
 class CreatePostInput:
-    title: str = fraiseql.field(description="Post title (required)")
-    content: str = fraiseql.field(description="Post content (required)")
+    title: str = fraiseql.fraise_field(description="Post title, at least 3 characters")
+    content: str = fraiseql.fraise_field(description="Post content, at least 10 characters")
     published: bool = False
 
 
-@fraiseql.type
+@fraiseql.input
 class UpdatePostInput:
     id: ID
     title: str | None = None
@@ -86,228 +85,125 @@ class UpdatePostInput:
     published: bool | None = None
 
 
-@fraiseql.type
-class CreateCommentInput:
-    post_id: ID
-    content: str
+# In-memory storage, standing in for the database
+POSTS: dict[UUID, Post] = {}
 
 
-# Result Types (for better error handling)
-@fraiseql.union
-class PostResult:
-    success: "PostSuccess"
-    error: "PostError"
+def _require_user(info: GraphQLResolveInfo) -> UUID:
+    """Return the authenticated user's id, or refuse the operation."""
+    user_id = info.context.get("user_id")
+    if user_id is None:
+        raise GraphQLError("Authentication required", extensions={"code": "UNAUTHENTICATED"})
+    return user_id
 
 
-@fraiseql.type
-class PostSuccess:
-    post: Post
-    message: str
-
-
-@fraiseql.type
-class PostError:
-    message: str
-    code: str
-
-
-# Root Query Type
-@fraiseql.type
-class Query:
-    @fraiseql.field
-    async def posts(
-        self,
-        info: fraiseql.Info,
-        limit: int = 20,
-        offset: int = 0,
-    ) -> list[Post]:
-        """Get all published posts."""
-        # In a real application, this would query the database
-        return []
-
-    @fraiseql.field
-    async def post(self, info: fraiseql.Info, id: ID) -> Post | None:
-        """Get a specific post by ID."""
-        return None
-
-    @fraiseql.field
-    async def user(self, info: fraiseql.Info, id: ID) -> User | None:
-        """Get user by ID."""
-        return None
-
-    @fraiseql.field
-    async def me(self, info: fraiseql.Info) -> User | None:
-        """Get current authenticated user."""
-        # Check authentication from request context
-        user_id = getattr(info.context.get("request", {}).state, "user_id", None)
-        if not user_id:
-            return None
-
-        # Return current user (would query database in real app)
-        return None
-
-
-# Mutation Type
-@fraiseql.mutation
-async def create_post(
-    info: fraiseql.Info,
-    input: CreatePostInput,
-) -> PostResult:
-    """Create a new post (requires authentication and CSRF token)."""
-    request = info.context.get("request")
-
-    # Check authentication
-    user_id = getattr(request.state, "user_id", None)
-    if not user_id:
-        return PostResult(
-            error=PostError(
-                message="Authentication required",
-                code="UNAUTHORIZED",
-            ),
-        )
-
-    # Validate input (basic example)
-    if len(input.title.strip()) < 3:
-        return PostResult(
-            error=PostError(
-                message="Title must be at least 3 characters",
-                code="VALIDATION_ERROR",
-            ),
-        )
-
-    if len(input.content.strip()) < 10:
-        return PostResult(
-            error=PostError(
-                message="Content must be at least 10 characters",
-                code="VALIDATION_ERROR",
-            ),
-        )
-
-    # In a real application, save to database
-    # post = await create_post_in_db(user_id, input.title, input.content, input.published)
-
-    # Return success result
-    post = Post(
-        id=UUID("123e4567-e89b-12d3-a456-426614174000"),
-        title=input.title,
-        content=input.content,
-        author_id=user_id,
-        published=input.published,
-        created_at=datetime.now(tz=UTC),
-        updated_at=datetime.now(tz=UTC),
+# Queries
+@fraiseql.query
+async def posts(info: GraphQLResolveInfo, limit: int = 20, offset: int = 0) -> list[Post]:
+    """Get published posts, newest first."""
+    published = sorted(
+        (p for p in POSTS.values() if p.published), key=lambda p: p.created_at, reverse=True
     )
-
-    return PostResult(
-        success=PostSuccess(
-            post=post,
-            message="Post created successfully",
-        ),
-    )
+    return published[offset : offset + limit]
 
 
+@fraiseql.query
+async def post(info: GraphQLResolveInfo, id: ID) -> Post | None:
+    """Get a published post, or one of your own drafts."""
+    found = POSTS.get(UUID(str(id)))
+    if found is None or (not found.published and found.author_id != info.context.get("user_id")):
+        return None
+    return found
+
+
+@fraiseql.query
+async def me(info: GraphQLResolveInfo) -> User | None:
+    """Get the authenticated user, or null."""
+    user_id = info.context.get("user_id")
+    return User(id=user_id, username="demo") if user_id else None
+
+
+# Mutations (authentication required; CSRF protection applies to them)
 @fraiseql.mutation
-async def update_post(
-    info: fraiseql.Info,
-    input: UpdatePostInput,
-) -> PostResult:
-    """Update an existing post (requires authentication and CSRF token)."""
-    request = info.context.get("request")
-
-    # Check authentication
-    user_id = getattr(request.state, "user_id", None)
-    if not user_id:
-        return PostResult(
-            error=PostError(
-                message="Authentication required",
-                code="UNAUTHORIZED",
-            ),
-        )
-
-    # In a real application:
-    # 1. Check if post exists
-    # 2. Check if user owns the post
-    # 3. Update the post
-    # 4. Return updated post
-
-    return PostResult(
-        error=PostError(
-            message="Post not found or access denied",
-            code="NOT_FOUND",
-        ),
-    )
-
-
-@fraiseql.mutation
-async def create_comment(
-    info: fraiseql.Info,
-    input: CreateCommentInput,
-) -> Comment:
-    """Create a comment on a post."""
-    request = info.context.get("request")
-
-    # Check authentication
-    user_id = getattr(request.state, "user_id", None)
-    if not user_id:
-        raise fraiseql.GraphQLError(
-            "Authentication required",
-            extensions={"code": "UNAUTHORIZED"},
-        )
+async def create_post(info: GraphQLResolveInfo, input: CreatePostInput) -> Post:
+    """Create a post."""
+    user_id = _require_user(info)
 
     # Validate input
-    if len(input.content.strip()) < 5:
-        raise fraiseql.GraphQLError(
-            "Comment must be at least 5 characters",
-            extensions={"code": "VALIDATION_ERROR"},
+    if len(input.title.strip()) < 3:
+        raise GraphQLError(
+            "Title must be at least 3 characters", extensions={"code": "VALIDATION_ERROR"}
+        )
+    if len(input.content.strip()) < 10:
+        raise GraphQLError(
+            "Content must be at least 10 characters", extensions={"code": "VALIDATION_ERROR"}
         )
 
-    # In a real application, save to database
-    return Comment(
-        id=UUID("123e4567-e89b-12d3-a456-426614174001"),
-        content=input.content,
-        post_id=input.post_id,
+    now = datetime.now(tz=UTC)
+    new_post = Post(
+        id=uuid4(),
+        title=input.title.strip(),
+        content=input.content.strip(),
         author_id=user_id,
-        created_at=datetime.now(tz=UTC),
+        published=input.published,
+        created_at=now,
+        updated_at=now,
     )
+    POSTS[new_post.id] = new_post
+    return new_post
 
 
-# Authentication middleware (simplified example)
+@fraiseql.mutation
+async def update_post(info: GraphQLResolveInfo, input: UpdatePostInput) -> Post:
+    """Update one of your posts."""
+    user_id = _require_user(info)
+
+    # Same answer for a missing post and someone else's: don't reveal which
+    existing = POSTS.get(UUID(str(input.id)))
+    if existing is None or existing.author_id != user_id:
+        raise GraphQLError("Post not found or access denied", extensions={"code": "NOT_FOUND"})
+
+    if input.title is not None:
+        existing.title = input.title.strip()
+    if input.content is not None:
+        existing.content = input.content.strip()
+    if input.published is not None:
+        existing.published = input.published
+    existing.updated_at = datetime.now(tz=UTC)
+    return existing
+
+
+# Authentication
 async def auth_middleware(request: Request, call_next):
-    """Simple authentication middleware."""
-    # Check for Authorization header
-    auth_header = request.headers.get("Authorization")
+    """Set request.state.user_id from the bearer token (None without a valid one)."""
+    auth_header = request.headers.get("Authorization", "")
+    token = auth_header.removeprefix("Bearer ") if auth_header.startswith("Bearer ") else None
 
-    if auth_header and auth_header.startswith("Bearer "):
-        token = auth_header[7:]
-
-        # In a real app, validate JWT token
-        if token == "valid-token":
-            request.state.user_id = UUID("123e4567-e89b-12d3-a456-426614174002")
-            request.state.is_authenticated = True
-        else:
-            request.state.user_id = None
-            request.state.is_authenticated = False
-    else:
-        request.state.user_id = None
-        request.state.is_authenticated = False
-
+    # In a real app, validate a JWT here
+    request.state.user_id = DEMO_USER_ID if token == DEMO_TOKEN else None
     return await call_next(request)
+
+
+async def get_context(request: Request) -> dict:
+    """Add the authenticated user to fraiseql's GraphQL context."""
+    return {"user_id": getattr(request.state, "user_id", None)}
 
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
-    # Create FastAPI app
-    app = FastAPI(
+    app = create_fraiseql_app(
+        database_url=DATABASE_URL,
+        types=[User, Post],
+        queries=[posts, post, me],
+        mutations=[create_post, update_post],
+        context_getter=get_context,
         title="Secure GraphQL API",
-        description="Example of a secure GraphQL API using FraiseQL",
-        version="1.0.0",
+        description="GraphQL API with rate limiting, CSRF protection and security headers",
+        production=(ENVIRONMENT == "production"),
     )
-
-    # Add authentication middleware first
-    app.middleware("http")(auth_middleware)
 
     # Set up security based on environment
     if ENVIRONMENT == "production":
-        # Production security setup
         redis_client = None
         if REDIS_URL:
             try:
@@ -324,89 +220,41 @@ def create_app() -> FastAPI:
             trusted_origins=set(TRUSTED_ORIGINS),
             redis_client=redis_client,
         )
-
     elif ENVIRONMENT == "development":
-        # Development security setup (more permissive)
-        setup_development_security(
-            app=app,
-            secret_key=SECRET_KEY,
-        )
-
+        # More permissive: no CSRF token required, relaxed headers
+        setup_development_security(app=app, secret_key=SECRET_KEY)
     else:
         # Custom security setup for GraphQL
         config = create_security_config_for_graphql(
             secret_key=SECRET_KEY,
             environment=ENVIRONMENT,
             trusted_origins=TRUSTED_ORIGINS,
-            enable_introspection=(ENVIRONMENT != "production"),
+            enable_introspection=False,
         )
+        setup_security(app=app, secret_key=SECRET_KEY, custom_config=config)
 
-        setup_security(
-            app=app,
-            secret_key=SECRET_KEY,
-            custom_config=config,
-        )
-
-    # Create FraiseQL app
-    fraiseql_app = fraiseql.create_fraiseql_app(
-        database_url=DATABASE_URL,
-        types=[User, Post, Comment, Query],
-        mutations=[create_post, update_post, create_comment],
-        title="Secure GraphQL API",
-        description="Production-ready GraphQL API with comprehensive security",
-        production=(ENVIRONMENT == "production"),
-    )
-
-    # Mount GraphQL endpoint
-    app.mount("/graphql", fraiseql_app)
-
-    # Health check endpoints
-    @app.get("/health")
-    async def health():
-        return {"status": "healthy", "environment": ENVIRONMENT}
+    # Added last, so it runs first and the security middleware sees the user
+    app.middleware("http")(auth_middleware)
 
     @app.get("/security-info")
     async def security_info():
-        """Endpoint to check security configuration (development only)."""
+        """Show the security configuration (not in production)."""
         if ENVIRONMENT == "production":
             return {"error": "Not available in production"}
 
         return {
             "environment": ENVIRONMENT,
-            "security_features": {
-                "rate_limiting": "enabled",
-                "csrf_protection": "enabled",
-                "security_headers": "enabled",
-                "input_validation": "enabled",
-            },
+            "security_features": ["rate_limiting", "csrf_protection", "security_headers"],
             "trusted_origins": TRUSTED_ORIGINS,
-            "csrf_token_endpoint": "/csrf-token",
         }
 
     return app
 
 
-def main():
-    """Run the application."""
-    import uvicorn
-
-    app = create_app()
-
-    # Run with uvicorn
-    port = int(os.getenv("PORT", 8000))
-    host = os.getenv("HOST", "0.0.0.0")  # noqa: S104
-
-    if ENVIRONMENT != "production":
-        pass
-
-    uvicorn.run(
-        app,
-        host=host,
-        port=port,
-        reload=(ENVIRONMENT == "development"),
-        log_level="info",
-    )
+app = create_app()
 
 
 if __name__ == "__main__":
-    main()
+    import uvicorn
+
+    uvicorn.run(app, host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "8000")))  # noqa: S104

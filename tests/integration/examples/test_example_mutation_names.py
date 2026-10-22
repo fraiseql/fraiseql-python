@@ -56,6 +56,7 @@ _BUILDABLE = [
     "examples.native_auth_app",
     "examples.quickstart_5min",
     "examples.saas-starter.main",
+    "examples.security.secure_graphql_api",
     "examples.todo_quickstart",
     "examples.where_input_filtering_example",
 ]
@@ -64,7 +65,6 @@ _BUILDABLE = [
 # names already follow the preferred rule; move one to _BUILDABLE once it builds.
 _BROKEN = {
     "examples.ecommerce.mutations": "Decimal fields: builds with #575's Decimal scalar",
-    "examples.security.secure_graphql_api": "uses fraiseql.union, which fraiseql doesn't have",
 }
 
 

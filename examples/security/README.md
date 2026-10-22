@@ -2,6 +2,8 @@
 
 This example demonstrates how to build a production-ready GraphQL API with comprehensive security features using FraiseQL's security module.
 
+`secure_graphql_api.py` keeps its posts in memory, so it runs without a database: the point is the security setup. See [`../blog_simple/`](../blog_simple/README.md) for queries and mutations on PostgreSQL.
+
 ## Security Features Implemented
 
 ### 🛡️ Rate Limiting
@@ -15,7 +17,7 @@ This example demonstrates how to build a production-ready GraphQL API with compr
 
 - **Mutation Protection**: All mutations require valid CSRF tokens
 - **Multiple Token Sources**: Supports tokens in headers, cookies, or GraphQL variables
-- **Session Integration**: Tokens are bound to user sessions for enhanced security
+- **Session Integration**: Tokens are bound to the session when a session middleware sets `request.state.session_id` (or a `session_id` cookie)
 - **Configurable**: Separate configs for production and development
 
 ### 🛡️ Security Headers
@@ -57,7 +59,7 @@ setup_security(
     secret_key="your-secret-key",
     environment="production",
     domain="api.example.com",
-    trusted_origins={"https://app.example.com"}
+    trusted_origins={"https://app.example.com"},
 )
 ```
 
@@ -100,7 +102,7 @@ security = setup_production_security(
     secret_key="strong-secret-key",
     domain="api.example.com",
     trusted_origins={"https://app.example.com", "https://admin.example.com"},
-    redis_client=redis_client  # Optional
+    redis_client=redis_client,  # Optional
 )
 ```
 
@@ -109,10 +111,7 @@ security = setup_production_security(
 ```python
 from fraiseql.security import setup_development_security
 
-security = setup_development_security(
-    app=app,
-    secret_key="dev-secret-key"
-)
+security = setup_development_security(app=app, secret_key="dev-secret-key")
 ```
 
 #### Custom GraphQL Setup
@@ -125,7 +124,7 @@ config = create_security_config_for_graphql(
     environment="production",
     trusted_origins=["https://app.example.com"],
     enable_introspection=False,
-    redis_client=redis_client
+    redis_client=redis_client,
 )
 
 security = setup_security(app, custom_config=config)
@@ -158,14 +157,21 @@ curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer valid-token" \
   -H "X-CSRF-Token: $TOKEN" \
-  -d '{"query": "mutation { createPost(input: {title: \"Test\", content: \"Hello World\"}) { ... on PostSuccess { post { id } } } }"}'
+  -d '{"query": "mutation { createPost(input: {title: \"Test\", content: \"Hello World\"}) { id } }"}'
 
-# Invalid mutation without CSRF token (should fail)
+# Mutation without CSRF token: 403 in production
 curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer valid-token" \
-  -d '{"query": "mutation { createPost(input: {title: \"Test\", content: \"Hello World\"}) { ... on PostSuccess { post { id } } } }"}'
+  -d '{"query": "mutation { createPost(input: {title: \"Test\", content: \"Hello World\"}) { id } }"}'
 ```
+
+Every response also sets a `csrf_token` cookie, which counts as the token when the
+client sends it back. In development (`ENVIRONMENT=development`, the default) the
+cookie isn't `Secure`, so a browser (or `curl -c jar -b jar`) passes after its first
+request; in production it is `Secure` and `SameSite=Strict`.
+
+Without `Authorization: Bearer valid-token`, mutations return an `UNAUTHENTICATED` error.
 
 ### 3. Security Headers
 
@@ -188,14 +194,16 @@ curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer valid-token" \
   -H "X-CSRF-Token: $TOKEN" \
-  -d '{"query": "mutation { createPost(input: {title: \"Valid Title\", content: \"This is valid content with enough characters.\"}) { ... on PostSuccess { message } ... on PostError { message code } } }"}'
+  -d '{"query": "mutation { createPost(input: {title: \"Valid Title\", content: \"This is valid content with enough characters.\"}) { id title } }"}'
 
 # Invalid input (too short)
 curl -X POST http://localhost:8000/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer valid-token" \
   -H "X-CSRF-Token: $TOKEN" \
-  -d '{"query": "mutation { createPost(input: {title: \"Hi\", content: \"Short\"}) { ... on PostSuccess { message } ... on PostError { message code } } }"}'
+  -d '{"query": "mutation { createPost(input: {title: \"Hi\", content: \"Short\"}) { id title } }"}'
+
+# The response has an error with extensions.code VALIDATION_ERROR
 ```
 
 ## Advanced Configuration
@@ -203,28 +211,29 @@ curl -X POST http://localhost:8000/graphql \
 ### Custom Rate Limits
 
 ```python
-from fraiseql.security import RateLimitRule, RateLimit
+from fraiseql.security import RateLimit, RateLimitRule, SecurityConfig, setup_security
 
 custom_rules = [
     RateLimitRule(
         path_pattern="/graphql",
         rate_limit=RateLimit(requests=100, window=60),
-        message="GraphQL rate limit exceeded"
+        message="GraphQL rate limit exceeded",
     ),
     RateLimitRule(
         path_pattern="/admin/*",
         rate_limit=RateLimit(requests=10, window=60),
-        message="Admin rate limit exceeded"
-    )
+        message="Admin rate limit exceeded",
+    ),
 ]
 
-setup_security(app, custom_rate_limits=custom_rules)
+config = SecurityConfig(secret_key="your-secret-key", custom_rate_limits=custom_rules)
+setup_security(app, secret_key="your-secret-key", custom_config=config)
 ```
 
 ### Custom CSRF Configuration
 
 ```python
-from fraiseql.security import CSRFConfig, CSRFTokenStorage
+from fraiseql.security import CSRFConfig, CSRFTokenStorage, SecurityConfig, setup_security
 
 csrf_config = CSRFConfig(
     secret_key="your-secret-key",
@@ -233,16 +242,23 @@ csrf_config = CSRFConfig(
     require_for_subscriptions=False,
     storage=CSRFTokenStorage.COOKIE,
     check_referrer=True,
-    trusted_origins={"https://app.example.com"}
+    trusted_origins={"https://app.example.com"},
 )
 
-setup_security(app, custom_csrf_config=csrf_config)
+config = SecurityConfig(secret_key="your-secret-key", custom_csrf_config=csrf_config)
+setup_security(app, secret_key="your-secret-key", custom_config=config)
 ```
 
 ### Custom Security Headers
 
 ```python
-from fraiseql.security import SecurityHeadersConfig, ContentSecurityPolicy, CSPDirective
+from fraiseql.security import (
+    ContentSecurityPolicy,
+    CSPDirective,
+    SecurityConfig,
+    SecurityHeadersConfig,
+    setup_security,
+)
 
 # Create custom CSP
 csp = ContentSecurityPolicy()
@@ -254,30 +270,14 @@ headers_config = SecurityHeadersConfig(
     csp=csp,
     hsts_max_age=31536000,
     hsts_include_subdomains=True,
-    cross_origin_embedder_policy="require-corp"
+    cross_origin_embedder_policy="require-corp",
 )
 
-setup_security(app, custom_security_headers=headers_config)
+config = SecurityConfig(secret_key="your-secret-key", custom_security_headers=headers_config)
+setup_security(app, secret_key="your-secret-key", custom_config=config)
 ```
 
 ## Monitoring Security
-
-### Metrics Available
-
-The security middleware exposes Prometheus metrics:
-
-```
-# Rate limiting
-fraiseql_rate_limit_requests_total{path, status}
-fraiseql_rate_limit_violations_total{path, reason}
-
-# CSRF protection
-fraiseql_csrf_tokens_generated_total
-fraiseql_csrf_validation_failures_total{reason}
-
-# Security headers
-fraiseql_security_headers_applied_total{header}
-```
 
 ### Logging Security Events
 
@@ -370,34 +370,21 @@ async def auth_middleware(request: Request, call_next):
 ### Role-Based Access Control
 
 ```python
-@fraiseql.mutation
-async def admin_only_mutation(info: fraiseql.Info) -> str:
-    """Mutation that requires admin role."""
-    request = info.context.get("request")
+from graphql import GraphQLError, GraphQLResolveInfo
 
-    if not getattr(request.state, "is_admin", False):
-        raise fraiseql.GraphQLError(
-            "Admin access required",
-            extensions={"code": "FORBIDDEN"}
-        )
+
+@fraiseql.mutation
+async def admin_only_mutation(info: GraphQLResolveInfo) -> str:
+    """Mutation that requires admin role."""
+    # Put is_admin in the context from your context_getter
+    if not info.context.get("is_admin"):
+        raise GraphQLError("Admin access required", extensions={"code": "FORBIDDEN"})
 
     return "Admin operation successful"
 ```
 
-### Error Handling
-
-```python
-@fraiseql.union
-class MutationResult:
-    success: "SuccessType"
-    error: "ErrorType"
-
-@fraiseql.type
-class ErrorType:
-    message: str
-    code: str
-    suggestions: list[str] | None = None
-```
+fraiseql also has decorators for this: `requires_role`, `requires_permission`
+(and `requires_auth`) in `fraiseql.auth`.
 
 ## Contributing
 
