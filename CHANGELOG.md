@@ -190,6 +190,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `db.find` where, on an `ltree` column and on a JSONB field alike: `depth_gt`
   rendered `"path" depth > %s` and `nlevel_gt` rendered `"path" nlevel({}) > %s`.
   They now render `nlevel(path) > %s`, with the JSONB value cast to `ltree`.
+### Fixed
+
+- **`order_by` works on a view without a JSONB column.** For a type declared
+  with `jsonb_column=None` (or a view registered with `has_jsonb_data=False`),
+  `db.find(..., order_by=...)` and GraphQL `orderBy` sorted on `t -> 'field'`, a
+  JSONB extraction from the row itself, and failed with `operator does not exist:
+  <view> -> unknown` unless the field was listed in `column_mapping` or
+  `native_dimensions`. Top-level sort fields on such a view now sort on the
+  column, `t."field"`. A `column_mapping={"field": "field"}` added as a
+  workaround still works and can be removed.
 
 ## [1.29.1] - 2026-10-19
 

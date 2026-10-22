@@ -2977,6 +2977,7 @@ class FraiseQLRepository:
         native_columns: set[str] | None = None,
         column_mapping: dict[str, str] | None = None,
         view_name: str | None = None,
+        flat_view: bool = False,
     ) -> tuple[Any | None, bool]:
         """Resolve any accepted ``order_by`` shape to SQL, once, for every shape.
 
@@ -2989,10 +2990,20 @@ class FraiseQLRepository:
             ``(order_sql, needs_t_alias)``. A flat column renders ``t."col"``, so
             the caller must ensure the FROM clause carries that alias; raw string
             ``order_by`` is passed through untouched and reports ``(None, False)``.
+
+        ``flat_view`` is for a view without a JSONB column: it has no document to
+        extract from, so each top-level sort field is one of its columns.
         """
         order_set = self._resolve_order_by_set(order_by, view_name)
         if order_set is None:
             return None, False
+
+        if flat_view:
+            native_columns = (native_columns or set()) | {
+                instr.field
+                for instr in getattr(order_set, "instructions", ())
+                if "." not in instr.field
+            }
 
         order_sql = order_set.to_sql(
             table_ref, native_columns=native_columns, column_mapping=column_mapping
@@ -3073,6 +3084,7 @@ class FraiseQLRepository:
             native_columns=native_dimensions or None,
             column_mapping=native_dimension_mapping,
             view_name=view_name,
+            flat_view=jsonb_column is None,
         )
 
         table_identifier = qualified_identifier(view_name)
