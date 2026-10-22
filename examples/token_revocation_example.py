@@ -13,7 +13,7 @@ from redis.asyncio import Redis
 
 from fraiseql import fraise_type
 from fraiseql.auth import Auth0ProviderWithRevocation
-from fraiseql.auth.decorators import requires_auth
+from fraiseql.auth.decorators import requires_auth, requires_role
 from fraiseql.auth.token_revocation import (
     InMemoryRevocationStore,
     RedisRevocationStore,
@@ -157,7 +157,7 @@ async def logout_all_sessions(info) -> LogoutResult:
 
 
 # Admin mutation (requires admin role)
-@requires_auth(roles=["admin"])
+@requires_role("admin")
 async def revoke_user_tokens(info, user_id: str) -> LogoutResult:
     """Admin function to revoke all tokens for a specific user."""
     if not revocation_service:
@@ -171,7 +171,7 @@ async def revoke_user_tokens(info, user_id: str) -> LogoutResult:
     )
 
 
-@requires_auth(roles=["admin"])
+@requires_role("admin")
 async def revocation_stats(info) -> dict:
     """Get token revocation statistics."""
     if not revocation_service:

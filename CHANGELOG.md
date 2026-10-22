@@ -17,6 +17,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `clear()` register the scalars they use again, as they do on first
   registration. A scalar you registered by hand with `register_scalar()` must be
   registered again after `clear()`.
+### Added
+
+- **`requires_any_role` and `requires_any_permission` are exported from
+  `fraiseql.auth` and `fraiseql`** (#577). They were importable only from
+  `fraiseql.auth.decorators`, so the documented
+  `from fraiseql.auth import requires_any_role` failed with `ImportError`.
+  `requires_role` and `requires_permission` take one role or permission; use
+  these for "any of":
+
+  ```python
+  from fraiseql.auth import requires_any_role
+
+  @requires_any_role("owner", "admin")
+  async def delete_project(info, project_id: UUID) -> Project: ...
+  ```
+
+### Fixed
+
+- **The type stub declared an `optional=` keyword on `requires_auth`,
+  `requires_role` and `requires_permission`** that they don't accept (#577).
+  `fraiseql/__init__.pyi` now matches the runtime signatures, so a type checker
+  flags `requires_role("admin", optional=True)`, which fails at runtime.
 
 ## [1.29.1] - 2026-10-19
 

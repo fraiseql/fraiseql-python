@@ -72,6 +72,8 @@ try:
     from .auth import (
         AuthProvider,
         UserContext,
+        requires_any_permission,
+        requires_any_role,
         requires_auth,
         requires_permission,
         requires_role,
@@ -83,6 +85,8 @@ except ImportError:
     _auth_available = False
     AuthProvider = None
     UserContext = None
+    requires_any_permission = None
+    requires_any_role = None
     requires_auth = None
     requires_permission = None
     requires_role = None
@@ -185,6 +189,8 @@ __all__ = [
     "mutation",
     "normalize_decision",
     "query",
+    "requires_any_permission",
+    "requires_any_role",
     "requires_auth",
     "requires_permission",
     "requires_role",

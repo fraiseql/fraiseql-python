@@ -238,21 +238,11 @@ class UserContext:
     roles: list[str]
     permissions: list[str]
 
-def requires_auth(
-    func: _F | None = None,
-    *,
-    optional: bool = False,
-) -> _F | Callable[[_F], _F]: ...
-def requires_role(
-    role: str,
-    *,
-    optional: bool = False,
-) -> Callable[[_F], _F]: ...
-def requires_permission(
-    permission: str,
-    *,
-    optional: bool = False,
-) -> Callable[[_F], _F]: ...
+def requires_auth(func: _F) -> _F: ...
+def requires_role(role: str) -> Callable[[_F], _F]: ...
+def requires_permission(permission: str) -> Callable[[_F], _F]: ...
+def requires_any_role(*roles: str) -> Callable[[_F], _F]: ...
+def requires_any_permission(*permissions: str) -> Callable[[_F], _F]: ...
 
 class Auth0Config:
     domain: str
@@ -342,6 +332,8 @@ __all__ = [
     "mutation",
     "normalize_decision",
     "query",
+    "requires_any_permission",
+    "requires_any_role",
     "requires_auth",
     "requires_permission",
     "requires_role",

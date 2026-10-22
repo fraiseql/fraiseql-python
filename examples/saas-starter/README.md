@@ -558,10 +558,10 @@ CREATE POLICY users_isolation ON users
 ### 2. Role-Based Access Control
 
 ```python
-from fraiseql.auth import requires_role
+from fraiseql.auth import requires_any_role
 
 @fraiseql.mutation
-@requires_role("owner", "admin")
+@requires_any_role("owner", "admin")
 async def delete_project(info: Info, project_id: UUID):
     """Only owners and admins can delete projects."""
     return await info.context.repo.delete("projects", project_id)

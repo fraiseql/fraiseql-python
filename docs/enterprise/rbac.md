@@ -467,7 +467,6 @@ class Product:
 **Behavior**:
 
 - Role check: User must have specified role
-- Multiple roles (OR logic): `@requires_role(roles=["admin", "manager"])`
 - If denied: Graceful null return with error
 
 ### Field Filtering Response

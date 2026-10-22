@@ -194,11 +194,12 @@ The quickest gate: decorate a resolver with one of the decorators from
 ```python
 import fraiseql
 from fraiseql.auth import (
+    requires_any_permission,
+    requires_any_role,
     requires_auth,
-    requires_role,
     requires_permission,
+    requires_role,
 )
-from fraiseql.auth.decorators import requires_any_role, requires_any_permission
 from fraiseql.types import ID
 
 
