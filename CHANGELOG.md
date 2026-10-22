@@ -209,6 +209,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as the whole HTTP body. The fields' results are now merged into one response,
   each under its response key, with the errors of any field that failed. An
   operation with one root field still gets Rust's response as is.
+### Fixed
+
+- **A list query's automatic `where`, `orderBy`, `limit` and `offset` arguments
+  apply even when the resolver doesn't declare them.** fraiseql adds them to every
+  query returning `list[T]`, and the docs show
+  `async def users(info) -> list[User]: return await db.find("v_user", info=info)`
+  using them. But a resolver only receives the arguments it declares, so for one
+  like this a client's filter, sort and page were silently dropped and it got
+  every row. Now the values the resolver doesn't take are applied by `db.find` on
+  `T`'s `sql_source` view in that resolver, with or without `info=`. Arguments
+  the resolver declares are its own, as before, and a `where=`/`order_by=`/
+  `limit=`/`offset=` the resolver passes to `db.find` itself wins over the
+  client's. For a `T` without `sql_source` there is no view to apply them to:
+  fraiseql logs a warning at schema build naming the query, and a client's value
+  is still ignored. `Connection[T]` queries are unchanged.
 
 ## [1.29.1] - 2026-10-19
 

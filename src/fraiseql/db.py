@@ -1728,6 +1728,15 @@ class FraiseQLRepository:
         if info is None and "graphql_info" in self.context:
             info = self.context["graphql_info"]
 
+        # where/order_by/limit/offset the client passed to a list query whose
+        # resolver doesn't take them (fraiseql adds them to every list query).
+        # What the caller passes explicitly wins.
+        if info is not None:
+            from fraiseql.gql.list_arguments import held_list_arguments
+
+            for name, value in held_list_arguments(info, view_name).items():
+                kwargs.setdefault(name, value)
+
         # Extract mandatory_filters before any dispatch path (#344)
         mandatory_filters = self._consume_mandatory_filters(kwargs)
         mandatory_parts, mandatory_params = (
