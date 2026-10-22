@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`@app.on_event("startup")` and `("shutdown")` handlers run on an app from
+  `create_fraiseql_app`.** It gives the FastAPI app a lifespan, and Starlette
+  ignores `on_event` handlers on an app with a lifespan, so setup registered
+  that way (as several docs pages and examples did) never ran. fraiseql's
+  lifespan now runs them: startup once the database pool is open (and inside
+  your own `lifespan=`), shutdown before the pool closes.
+
+### Fixed
+
 - **A root query answers under the key the client asked for.** For a lone
   root field, `db.find` / `db.find_one`'s response is served as is, and its
   key was the `field_name` argument: `db.find("v_comment", "post_comments", info)`

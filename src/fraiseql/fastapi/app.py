@@ -1,5 +1,6 @@
 """FastAPI application factory for FraiseQL."""
 
+import inspect
 import logging
 from collections.abc import AsyncGenerator, Awaitable, Callable, Sequence
 from contextlib import asynccontextmanager
@@ -31,6 +32,26 @@ if TYPE_CHECKING:
     from fraiseql.security.decision_cache import AuthorizationCacheConfig
 
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def _on_event_handlers(app: FastAPI) -> AsyncGenerator[None]:
+    """Run the app's ``@app.on_event("startup")`` / ``("shutdown")`` handlers.
+
+    Starlette ignores them on an app with a lifespan, and create_fraiseql_app
+    always gives it one, so the lifespan runs them: startup once the pool is
+    open, shutdown before it closes.
+    """
+    for handler in app.router.on_startup:
+        result = handler()
+        if inspect.isawaitable(result):
+            await result
+    yield
+    for handler in app.router.on_shutdown:
+        result = handler()
+        if inspect.isawaitable(result):
+            await result
+
 
 # Global to store turbo registry for lifespan access
 _global_turbo_registry = None
@@ -206,7 +227,11 @@ def create_fraiseql_app(
         config: Full configuration object (overrides other params)
         auth: Authentication configuration or provider
         context_getter: Optional async function to build GraphQL context from request
-        lifespan: Optional custom lifespan context manager for the FastAPI app
+        lifespan: Optional custom lifespan context manager for the FastAPI app. It
+            runs once the database pool is open. ``@app.on_event("startup")`` and
+            ``("shutdown")`` handlers run too, inside it. fraiseql registers
+            ``GET /health`` (and ``/ready``) first, so an app's own route on
+            those paths is never reached.
         title: API title
         version: API version
         description: API description
@@ -375,7 +400,8 @@ def create_fraiseql_app(
                 set_db_pool(pool)
                 pool_created_here = True
 
-            yield
+            async with _on_event_handlers(app):
+                yield
 
             # Shutdown - only close pool if we created it
             if pool_created_here:
@@ -403,7 +429,7 @@ def create_fraiseql_app(
             set_db_pool(pool)
 
             # Call user's lifespan
-            async with lifespan(app):
+            async with lifespan(app), _on_event_handlers(app):
                 yield
 
             # Shutdown - cleanup our resources
