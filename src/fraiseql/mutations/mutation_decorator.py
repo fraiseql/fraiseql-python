@@ -306,6 +306,15 @@ def _object_type_name(annotation: Any) -> str | None:
     return annotation.__name__
 
 
+def _without_none(annotation: Any) -> tuple[Any, bool]:
+    """``(T, True)`` for ``T | None`` (or ``Optional[T]``), else ``(annotation, False)``."""
+    if get_origin(annotation) in (Union, types.UnionType):
+        members = [arg for arg in get_args(annotation) if arg is not type(None)]
+        if len(members) == 1 and len(members) < len(get_args(annotation)):
+            return members[0], True
+    return annotation, False
+
+
 def _hook_accepts_info(hook: Callable) -> bool:
     """Return whether a prepare_input hook takes info as a second positional argument."""
     try:
@@ -373,6 +382,7 @@ class MutationDefinition:
             self.function_name = _camel_to_snake(self.name)
 
         # Derive entity field name and type from success type
+        self.entity_nullable = False  # set by _derive_entity_info
         self.entity_field_name, self.entity_type = self._derive_entity_info()
 
         # Optional input hook; its signature is inspected once here, not per request
@@ -446,8 +456,15 @@ class MutationDefinition:
             # None, or an annotation member_problems reports (success: A | B)
             return None, None
 
-        # Get annotations from the success type
-        success_hints = get_type_hints(self.success_type)
+        # Get annotations from the success type; an optional entity (note: Note | None)
+        # is read as its type, and remembered as nullable
+        success_hints = {}
+        self.entity_nullable = False
+        nullable_fields = set()
+        for name, hint in get_type_hints(self.success_type).items():
+            success_hints[name], nullable = _without_none(hint)
+            if nullable:
+                nullable_fields.add(name)
 
         # Look for common entity field names
         entity_fields = [
@@ -469,6 +486,7 @@ class MutationDefinition:
                 # Get the type name (e.g., "User" from <class 'User'>)
                 type_name = getattr(field_type, "__name__", None)
                 if type_name:
+                    self.entity_nullable = field_name in nullable_fields
                     return field_name, _object_type_name(field_type)
 
         # Fallback: try to find any field that looks like an entity
@@ -479,6 +497,7 @@ class MutationDefinition:
 
             # If it's a type (class), assume it's the entity
             if hasattr(field_type, "__name__"):
+                self.entity_nullable = field_name in nullable_fields
                 return field_name, _object_type_name(field_type)
 
         return None, None
@@ -764,6 +783,7 @@ class MutationDefinition:
                         cascade_selections=cascade_selections_json,
                         success_type_class=self.success_type,
                         selections=selections_json,
+                        entity_nullable=self.entity_nullable,
                     )
                     logger.debug(f"Mutation {self.name} executed successfully")
                 except Exception as e:

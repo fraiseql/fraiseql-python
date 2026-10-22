@@ -8,7 +8,7 @@ import logging
 from typing import Any, Type
 
 from fraiseql.core.rust_pipeline import RustResponseBytes
-from fraiseql.utils.casing import dict_keys_to_snake_case
+from fraiseql.utils.casing import dict_keys_to_snake_case, to_camel_case
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +93,27 @@ def _checked_fraiseql_rs() -> Any:
     return fraiseql_rs
 
 
+def _entity_response_keys(
+    selections: str, entity_field_name: str, auto_camel_case: bool
+) -> set[str]:
+    """The response keys the entity field was selected under (its aliases)."""
+    name = to_camel_case(entity_field_name) if auto_camel_case else entity_field_name
+    try:
+        success = json.loads(selections).get("success")
+    except (json.JSONDecodeError, AttributeError):
+        success = None
+    if not isinstance(success, dict):
+        return {name}
+    fields = list(success.get("fields") or [])
+    for on_type in (success.get("__on") or {}).values():
+        fields.extend(on_type or [])
+    return {
+        field.get("alias") or name
+        for field in fields
+        if isinstance(field, dict) and field.get("name") == name
+    } or {name}
+
+
 async def execute_mutation_rust(
     conn: Any,
     function_name: str,
@@ -107,6 +128,7 @@ async def execute_mutation_rust(
     config: Any | None = None,
     success_type_class: Type | None = None,
     selections: str | None = None,
+    entity_nullable: bool = False,
 ) -> RustResponseBytes:
     """Execute mutation via Rust-first pipeline.
 
@@ -132,6 +154,9 @@ async def execute_mutation_rust(
             mutation_decorator._response_selections: what the query selected on the
             success and error types, under its response keys. None returns the
             response unfiltered, for callers without a GraphQL selection.
+        entity_nullable: Whether the success type's entity field is nullable
+            (``note: Note | None``); a success without an entity is then null there,
+            not an error.
 
     Returns:
         RustResponseBytes ready for HTTP response
@@ -301,10 +326,14 @@ async def execute_mutation_rust(
         if mutation_result and isinstance(mutation_result, dict):
             typename = mutation_result.get("__typename")
 
-            # Success type: entity must be non-null
-            if typename == success_type:
-                entity_field = entity_field_name or "entity"
-                if entity_field in mutation_result and mutation_result[entity_field] is None:
+            # Success type: a non-null entity field must not be null, under any alias
+            if typename == success_type and not entity_nullable:
+                entity_keys = _entity_response_keys(
+                    selections, entity_field_name or "entity", auto_camel_case
+                )
+                if any(
+                    key in mutation_result and mutation_result[key] is None for key in entity_keys
+                ):
                     raise ValueError(
                         f"Success type '{typename}' returned null entity. "
                         f"This indicates a logic error in the mutation or Rust pipeline. "

@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A success type's entity field can be optional.** `note: Note | None` wasn't
+  recognised as the entity field: the entity reached it only when the function
+  set `entity_type`, and a success without an entity left the key out of the
+  response. It is now filled like `note: Note`, and a missing entity answers
+  `null` there. For a non-null entity field, a success without an entity is an
+  error under any alias (`n: note` came back `null` without one); unselected,
+  it is still no error.
+
+### Fixed
+
 - **Outside HTTP mode, a mutation entity builds from a partial or wider dict.**
   With graphql-core completing the result (`schema.execute`, `graphql()` in
   tests, no `create_fraiseql_app`), an entity filtered to the selection failed
