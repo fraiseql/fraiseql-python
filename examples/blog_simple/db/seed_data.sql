@@ -1,12 +1,9 @@
 -- FraiseQL Blog Simple - Sample Data
 -- Seed data for development and testing
 
--- Disable RLS for seeding
-SET row_security = off;
-
 -- Clean existing seed data to allow re-running
 DELETE FROM tb_comment WHERE id IN ('71111111-1111-1111-1111-111111111111', '72222222-2222-2222-2222-222222222222', '73333333-3333-3333-3333-333333333333', '74444444-4444-4444-4444-444444444444', '75555555-5555-5555-5555-555555555555', '76666666-6666-6666-6666-666666666666');
-DELETE FROM post_tags WHERE fk_post IN (SELECT pk_post FROM tb_post WHERE id IN ('61111111-1111-1111-1111-111111111111', '62222222-2222-2222-2222-222222222222', '63333333-3333-3333-3333-333333333333', '64444444-4444-4444-4444-444444444444'));
+DELETE FROM tb_post_tag WHERE fk_post IN (SELECT pk_post FROM tb_post WHERE id IN ('61111111-1111-1111-1111-111111111111', '62222222-2222-2222-2222-222222222222', '63333333-3333-3333-3333-333333333333', '64444444-4444-4444-4444-444444444444'));
 DELETE FROM tb_post WHERE id IN ('61111111-1111-1111-1111-111111111111', '62222222-2222-2222-2222-222222222222', '63333333-3333-3333-3333-333333333333', '64444444-4444-4444-4444-444444444444');
 DELETE FROM tb_tag WHERE id IN ('51111111-1111-1111-1111-111111111111', '52222222-2222-2222-2222-222222222222', '53333333-3333-3333-3333-333333333333', '54444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555', '56666666-6666-6666-6666-666666666666');
 DELETE FROM tb_user WHERE id IN ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', '33333333-3333-3333-3333-333333333333', '44444444-4444-4444-4444-444444444444');
@@ -146,7 +143,7 @@ Now that you have a basic understanding of FraiseQL, you can:
 
 Happy coding!',
     'Learn how to get started with FraiseQL, a powerful framework for building GraphQL APIs with PostgreSQL.',
-    2, -- fk_author (johndoe pk_user = 2)
+    (SELECT pk_user FROM tb_user WHERE identifier = 'johndoe'),
     'published',
     NOW() - INTERVAL '2 days'
 ),
@@ -218,7 +215,7 @@ CREATE POLICY posts_visibility ON posts
 
 These patterns form the foundation of scalable, secure FraiseQL applications.',
     'Explore advanced PostgreSQL patterns that power robust FraiseQL applications, from JSONB to Row Level Security.',
-    2, -- fk_author (johndoe pk_user = 2)
+    (SELECT pk_user FROM tb_user WHERE identifier = 'johndoe'),
     'published',
     NOW() - INTERVAL '1 day'
 ),
@@ -299,7 +296,7 @@ Subscriptions are perfect for:
 
 Start building reactive applications today with FraiseQL subscriptions!',
     'Learn how to build real-time, reactive user interfaces using GraphQL subscriptions with FraiseQL.',
-    3, -- fk_author (janedoe pk_user = 3)
+    (SELECT pk_user FROM tb_user WHERE identifier = 'janedoe'),
     'published',
     NOW() - INTERVAL '6 hours'
 ),
@@ -387,75 +384,80 @@ Consider alternatives when:
 
 Each framework has its place - choose based on your specific needs and constraints.',
     'A comprehensive comparison of FraiseQL with other GraphQL frameworks to help you make the right choice.',
-    2, -- fk_author (johndoe pk_user = 2)
+    (SELECT pk_user FROM tb_user WHERE identifier = 'johndoe'),
     'draft',
     NULL
 );
 
 -- Insert post-tag relationships
-INSERT INTO post_tags (fk_post, fk_tag) VALUES
--- Getting Started with FraiseQL (pk_post = 1)
-(1, 1), -- GraphQL (pk_tag = 1)
-(1, 3), -- FraiseQL (pk_tag = 3)
-(1, 4), -- Web Development (pk_tag = 4)
+INSERT INTO tb_post_tag (fk_post, fk_tag)
+SELECT p.pk_post, t.pk_tag
+FROM (VALUES
+-- Getting Started with FraiseQL
+('61111111-1111-1111-1111-111111111111', '51111111-1111-1111-1111-111111111111'), -- GraphQL
+('61111111-1111-1111-1111-111111111111', '53333333-3333-3333-3333-333333333333'), -- FraiseQL
+('61111111-1111-1111-1111-111111111111', '54444444-4444-4444-4444-444444444444'), -- Web Development
 
--- Advanced PostgreSQL Patterns (pk_post = 2)
-(2, 2), -- PostgreSQL (pk_tag = 2)
-(2, 3), -- FraiseQL (pk_tag = 3)
-(2, 5), -- Python (pk_tag = 5)
+-- Advanced PostgreSQL Patterns
+('62222222-2222-2222-2222-222222222222', '52222222-2222-2222-2222-222222222222'), -- PostgreSQL
+('62222222-2222-2222-2222-222222222222', '53333333-3333-3333-3333-333333333333'), -- FraiseQL
+('62222222-2222-2222-2222-222222222222', '55555555-5555-5555-5555-555555555555'), -- Python
 
--- Building Reactive UIs (pk_post = 3)
-(3, 1), -- GraphQL (pk_tag = 1)
-(3, 3), -- FraiseQL (pk_tag = 3)
-(3, 4), -- Web Development (pk_tag = 4)
+-- Building Reactive UIs
+('63333333-3333-3333-3333-333333333333', '51111111-1111-1111-1111-111111111111'), -- GraphQL
+('63333333-3333-3333-3333-333333333333', '53333333-3333-3333-3333-333333333333'), -- FraiseQL
+('63333333-3333-3333-3333-333333333333', '54444444-4444-4444-4444-444444444444'), -- Web Development
 
--- FraiseQL vs Other Frameworks (pk_post = 4)
-(4, 1), -- GraphQL (pk_tag = 1)
-(4, 3), -- FraiseQL (pk_tag = 3)
-(4, 5); -- Python (pk_tag = 5)
+-- FraiseQL vs Other Frameworks
+('64444444-4444-4444-4444-444444444444', '51111111-1111-1111-1111-111111111111'), -- GraphQL
+('64444444-4444-4444-4444-444444444444', '53333333-3333-3333-3333-333333333333'), -- FraiseQL
+('64444444-4444-4444-4444-444444444444', '55555555-5555-5555-5555-555555555555') -- Python
+) AS pair(post_id, tag_id)
+JOIN tb_post p ON p.id = pair.post_id::uuid
+JOIN tb_tag t ON t.id = pair.tag_id::uuid;
 
 -- Insert sample comments
 INSERT INTO tb_comment (id, fk_post, fk_author, content, status) VALUES
 (
     '71111111-1111-1111-1111-111111111111'::uuid,
-    1, -- fk_post (Getting Started post pk_post = 1)
-    4, -- fk_author (reader pk_user = 4)
+    (SELECT pk_post FROM tb_post WHERE id = '61111111-1111-1111-1111-111111111111'), -- Getting Started post
+    (SELECT pk_user FROM tb_user WHERE identifier = 'reader'),
     'Great introduction to FraiseQL! I''ve been looking for a GraphQL framework that works well with PostgreSQL. The database-first approach really appeals to me.',
     'approved'
 ),
 (
     '72222222-2222-2222-2222-222222222222'::uuid,
-    1, -- fk_post (Getting Started post pk_post = 1)
-    3, -- fk_author (janedoe pk_user = 3)
+    (SELECT pk_post FROM tb_post WHERE id = '61111111-1111-1111-1111-111111111111'), -- Getting Started post
+    (SELECT pk_user FROM tb_user WHERE identifier = 'janedoe'),
     'Thanks for this tutorial! One question - how does FraiseQL handle complex joins and relationships? Looking forward to more advanced examples.',
     'approved'
 ),
 (
     '73333333-3333-3333-3333-333333333333'::uuid,
-    1, -- fk_post (Getting Started post pk_post = 1)
-    2, -- fk_author (johndoe pk_user = 2)
+    (SELECT pk_post FROM tb_post WHERE id = '61111111-1111-1111-1111-111111111111'), -- Getting Started post
+    (SELECT pk_user FROM tb_user WHERE identifier = 'johndoe'),
     '@janedoe Great question! FraiseQL handles relationships through field resolvers and can optimize joins automatically. I''ll cover this in detail in an upcoming post.',
     'approved'
 ),
 (
     '74444444-4444-4444-4444-444444444444'::uuid,
-    2, -- fk_post (Advanced PostgreSQL post pk_post = 2)
-    4, -- fk_author (reader pk_user = 4)
+    (SELECT pk_post FROM tb_post WHERE id = '62222222-2222-2222-2222-222222222222'), -- Advanced PostgreSQL post
+    (SELECT pk_user FROM tb_user WHERE identifier = 'reader'),
     'The JSONB examples are really helpful. I didn''t realize PostgreSQL could be so flexible while maintaining relational integrity.',
     'approved'
 ),
 (
     '75555555-5555-5555-5555-555555555555'::uuid,
-    3, -- fk_post (Reactive UIs post pk_post = 3)
-    2, -- fk_author (johndoe pk_user = 2)
+    (SELECT pk_post FROM tb_post WHERE id = '63333333-3333-3333-3333-333333333333'), -- Reactive UIs post
+    (SELECT pk_user FROM tb_user WHERE identifier = 'johndoe'),
     'Subscriptions are such a powerful feature. The WebSocket integration looks seamless. Can''t wait to try this in my next project!',
     'approved'
 ),
 -- Nested comment (reply)
 (
     '76666666-6666-6666-6666-666666666666'::uuid,
-    3, -- fk_post (Reactive UIs post pk_post = 3)
-    3, -- fk_author (janedoe pk_user = 3)
+    (SELECT pk_post FROM tb_post WHERE id = '63333333-3333-3333-3333-333333333333'), -- Reactive UIs post
+    (SELECT pk_user FROM tb_user WHERE identifier = 'janedoe'),
     '@johndoe Definitely give it a try! The real-time updates make such a difference for user experience. Let me know if you run into any issues.',
     'approved'
 );
@@ -465,5 +467,3 @@ UPDATE tb_comment
 SET fk_parent = (SELECT pk_comment FROM tb_comment WHERE id = '75555555-5555-5555-5555-555555555555'::uuid)
 WHERE id = '76666666-6666-6666-6666-666666666666'::uuid;
 
--- Re-enable RLS
-SET row_security = on;

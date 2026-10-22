@@ -321,10 +321,15 @@ async def blog_simple_graphql_client(blog_simple_client) -> None:
         def __init__(self, http_client: AsyncClient) -> None:
             self.client = http_client
 
-        async def execute(self, query: str, variables: dict[str, Any] = None) -> dict[str, Any]:
+        async def execute(
+            self,
+            query: str,
+            variables: dict[str, Any] | None = None,
+            headers: dict[str, str] | None = None,
+        ) -> dict[str, Any]:
             """Execute GraphQL query/mutation."""
             response = await self.client.post(
-                "/graphql", json={"query": query, "variables": variables or {}}
+                "/graphql", json={"query": query, "variables": variables or {}}, headers=headers
             )
             return response.json()
 

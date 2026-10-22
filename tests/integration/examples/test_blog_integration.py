@@ -85,7 +85,7 @@ def test_blog_simple_app_exists() -> None:
 
     # Try to read the file and check it has expected content
     content = app_file.read_text()
-    assert "def create_app():" in content, "create_app function not found"
+    assert "def create_app(" in content, "create_app function not found"
     assert "/health" in content, "Health endpoint not found"
     assert "blog_simple" in content, "Service name not found"
 
@@ -300,3 +300,165 @@ async def test_blog_simple_error_handling(blog_simple_graphql_client) -> None:
 
     result = await blog_simple_graphql_client.execute(malformed_query)
     assert "errors" in result
+
+
+# The sample data's users (db/seed_data.sql); app.py reads the caller from X-User-ID
+JOHNDOE = "22222222-2222-2222-2222-222222222222"
+JANEDOE = "33333333-3333-3333-3333-333333333333"
+READER = "44444444-4444-4444-4444-444444444444"
+PYTHON_TAG = "55555555-5555-5555-5555-555555555555"
+
+
+@pytest.mark.asyncio
+async def test_blog_simple_posts_embed_author_tags_and_comments(blog_simple_graphql_client) -> None:
+    """A post's author, tags and approved comments come from v_post's data."""
+    result = await blog_simple_graphql_client.execute(
+        """
+        query {
+            post(identifier: "building-reactive-uis-with-graphql-subscriptions") {
+                title
+                author { username fullName }
+                tags { name }
+                comments { content parentId author { username } }
+            }
+        }
+        """
+    )
+
+    assert "errors" not in result, result
+    post = result["data"]["post"]
+    assert post["author"]["username"] == "janedoe"
+    assert post["author"]["fullName"] == "Jane Doe"
+    assert [t["name"] for t in post["tags"]] == ["FraiseQL", "GraphQL", "Web Development"]
+    assert [c["author"]["username"] for c in post["comments"]] == ["johndoe", "janedoe"]
+    assert post["comments"][1]["parentId"] is not None  # janedoe's reply
+
+
+@pytest.mark.asyncio
+async def test_blog_simple_list_arguments_reach_the_query(blog_simple_graphql_client) -> None:
+    """where, orderBy and limit are passed on to db.find, not dropped."""
+    result = await blog_simple_graphql_client.execute(
+        """
+        query {
+            published: posts(where: {status: {eq: "published"}}, orderBy: {title: ASC}) {
+                title
+                status
+            }
+            first: posts(orderBy: {title: ASC}, limit: 1) { title }
+            authors: users(where: {role: {eq: "author"}}, orderBy: {username: ASC}) { username }
+        }
+        """
+    )
+
+    assert "errors" not in result, result
+    published = result["data"]["published"]
+    assert {p["status"] for p in published} == {"published"}
+    assert [p["title"] for p in published] == sorted(p["title"] for p in published)
+    assert len(published) == 3
+    assert [p["title"] for p in result["data"]["first"]] == [
+        "Advanced PostgreSQL Patterns in FraiseQL"
+    ]
+    assert [u["username"] for u in result["data"]["authors"]] == ["janedoe", "johndoe"]
+
+
+@pytest.mark.asyncio
+async def test_blog_simple_post_lifecycle(blog_simple_graphql_client) -> None:
+    """Create a draft, publish it, comment on it; only the author may edit it."""
+    client = blog_simple_graphql_client
+
+    created = await client.execute(
+        """
+        mutation($input: CreatePostInput!) {
+            createPost(input: $input) {
+                __typename
+                ... on PostSuccess { post { id status author { username } tags { name } } }
+                ... on BlogError { message code }
+            }
+        }
+        """,
+        variables={"input": {"title": "Test post", "content": "Body", "tagIds": [PYTHON_TAG]}},
+    )
+    assert "errors" not in created, created
+    payload = created["data"]["createPost"]
+    assert payload["__typename"] == "PostSuccess", payload
+    post = payload["post"]
+    assert post["status"] == "draft"
+    assert post["author"]["username"] == "johndoe"
+    assert [t["name"] for t in post["tags"]] == ["Python"]
+
+    update = """
+        mutation($input: UpdatePostInput!) {
+            updatePost(input: $input) {
+                __typename
+                ... on PostSuccess { post { status publishedAt } }
+                ... on BlogError { message code }
+            }
+        }
+    """
+    forbidden = await client.execute(
+        update, variables={"input": {"id": post["id"], "title": "x"}}, headers={"X-User-ID": JANEDOE}
+    )
+    assert forbidden["data"]["updatePost"]["__typename"] == "BlogError"
+    assert forbidden["data"]["updatePost"]["code"] == 403
+
+    published = await client.execute(
+        update, variables={"input": {"id": post["id"], "status": "PUBLISHED"}}
+    )
+    assert published["data"]["updatePost"]["__typename"] == "PostSuccess", published
+    assert published["data"]["updatePost"]["post"]["status"] == "published"
+    assert published["data"]["updatePost"]["post"]["publishedAt"] is not None
+
+    commented = await client.execute(
+        """
+        mutation($input: CreateCommentInput!) {
+            createComment(input: $input) {
+                __typename
+                ... on CreateCommentSuccess { comment { status postId author { username } } }
+                ... on BlogError { message code }
+            }
+        }
+        """,
+        variables={"input": {"postId": post["id"], "content": "Nice post"}},
+        headers={"X-User-ID": READER},
+    )
+    comment = commented["data"]["createComment"]
+    assert comment["__typename"] == "CreateCommentSuccess", comment
+    assert comment["comment"]["status"] == "pending"
+    assert comment["comment"]["postId"] == post["id"]
+    assert comment["comment"]["author"]["username"] == "reader"
+
+
+@pytest.mark.asyncio
+async def test_blog_simple_mutation_errors(blog_simple_graphql_client) -> None:
+    """The functions' error statuses reach the client as BlogError."""
+    duplicate = await blog_simple_graphql_client.execute(
+        """
+        mutation {
+            createTag(input: {name: "python"}) {
+                __typename
+                ... on BlogError { code status }
+            }
+        }
+        """
+    )
+    assert duplicate["data"]["createTag"] == {
+        "__typename": "BlogError",
+        "code": 409,
+        "status": "conflict:tag_name",
+    }
+
+    missing = await blog_simple_graphql_client.execute(
+        """
+        mutation {
+            updatePost(input: {id: "00000000-0000-0000-0000-000000000000", title: "x"}) {
+                __typename
+                ... on BlogError { code status }
+            }
+        }
+        """
+    )
+    assert missing["data"]["updatePost"] == {
+        "__typename": "BlogError",
+        "code": 404,
+        "status": "not_found:post",
+    }

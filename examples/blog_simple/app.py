@@ -1,95 +1,62 @@
 """FraiseQL Blog Simple - Complete Example Application
 
-A simple blog application demonstrating FraiseQL's core capabilities:
-- Real PostgreSQL database integration
-- GraphQL API with mutations and queries
-- Test-friendly architecture with database fixtures
-- Clean error handling patterns
+A small blog on PostgreSQL: posts with their author, tags and comments, read
+from JSONB views and written through SQL functions. See README.md to run it.
+
+The current user comes from the X-User-ID header (johndoe from the sample data
+by default). Replace get_context with your authentication in production.
 """
 
-import logging
 import os
-import uuid
-from contextlib import asynccontextmanager
-from typing import Any
+from uuid import UUID
 
-import psycopg
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from fraiseql.cqrs import CQRSRepository
 from fraiseql.fastapi import create_fraiseql_app
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+try:
+    # Running from the blog_simple directory
+    from models import BLOG_MUTATIONS, BLOG_QUERIES, BLOG_TYPES
+except ImportError:
+    # Running from the repository root
+    from examples.blog_simple.models import BLOG_MUTATIONS, BLOG_QUERIES, BLOG_TYPES
 
-# Database configuration from environment
-DB_NAME = os.getenv("DB_NAME", "fraiseql_blog_simple")
-DB_USER = os.getenv("DB_USER", "fraiseql")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "fraiseql")
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DEMO_USER_ID = "22222222-2222-2222-2222-222222222222"  # johndoe in db/seed_data.sql
 
 
 def get_database_url() -> str:
-    """Get database URL from environment variables."""
-    return f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    """Build the database URL from DB_* environment variables."""
+    user = os.getenv("DB_USER", "fraiseql")
+    password = os.getenv("DB_PASSWORD", "fraiseql")
+    host = os.getenv("DB_HOST", "localhost")
+    port = os.getenv("DB_PORT", "5432")
+    name = os.getenv("DB_NAME", "fraiseql_blog_simple")
+    return f"postgresql://{user}:{password}@{host}:{port}/{name}"
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan with database connection management."""
-    logger.info("🚀 Starting FraiseQL Simple Blog")
-    logger.info(f"Connecting to database: {get_database_url()}")
-    yield
-    logger.info("🔒 Simple Blog shutdown")
+async def get_context(request: Request) -> dict:
+    """Add the current user to the GraphQL context.
+
+    fraiseql merges this into its default context, which holds the database.
+    The mutations pass user_id to their SQL function (context_params).
+    """
+    return {"user_id": UUID(request.headers.get("X-User-ID", DEMO_USER_ID))}
 
 
-def _create_base_app() -> FastAPI:
-    """Create the base simple blog FastAPI application."""
-
-    # Context getter for GraphQL - use FraiseQL's database dependency
-    async def get_context(request: Request) -> dict[str, Any]:
-        """Provide context for GraphQL operations."""
-        # Import here to avoid circular imports
-        from fraiseql.fastapi.dependencies import get_db
-
-        try:
-            # Use FraiseQL's database dependency to get a connection from the pool
-            db = await get_db()
-
-            return {
-                "db": db,
-                "user_id": uuid.UUID("11111111-1111-1111-1111-111111111111"),  # Demo user
-                "tenant_id": uuid.UUID("22222222-2222-2222-2222-222222222222"),  # Demo tenant
-                "request": request,
-            }
-        except Exception as e:
-            logger.error(f"Failed to create database connection: {e}")
-            raise
-
-    # Import blog schema
-    try:
-        # Try local import first (when running from blog_simple directory)
-        from models import BLOG_MUTATIONS, BLOG_QUERIES, BLOG_TYPES
-    except ImportError:
-        # Fallback for when running from repository root (CI environment)
-        from examples.blog_simple.models import BLOG_MUTATIONS, BLOG_QUERIES, BLOG_TYPES
-
-    # Create FraiseQL app directly - this becomes our main app
+def create_app() -> FastAPI:
+    """Create the blog application."""
     app = create_fraiseql_app(
         database_url=get_database_url(),
         types=BLOG_TYPES,
-        mutations=BLOG_MUTATIONS,
         queries=BLOG_QUERIES,
-        # context_getter=get_context,  # Disable custom context for now
+        mutations=BLOG_MUTATIONS,
+        context_getter=get_context,
         title="FraiseQL Simple Blog",
         description="Simple blog built with FraiseQL",
-        production=False,  # Enable playground in development
+        production=False,  # GraphQL playground on
     )
 
-    # Add CORS for development (FraiseQL may already handle this)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -98,73 +65,21 @@ def _create_base_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Override the default home endpoint
+    # fraiseql serves GET /health itself; the service name is in this route
     @app.get("/")
     async def home():
         return {
-            "message": "🎉 FraiseQL Simple Blog",
-            "description": "A complete blog example built with FraiseQL",
-            "features": [
-                "Real PostgreSQL database integration",
-                "GraphQL API with FraiseQL",
-                "CRUD operations with error handling",
-                "Test-friendly architecture",
-            ],
-            "endpoints": {
-                "graphql": "/graphql",
-                "playground": "/graphql",
-            },
+            "message": "FraiseQL Simple Blog",
+            "service": "blog_simple",
+            "endpoints": {"graphql": "/graphql", "health": "/health"},
         }
 
     return app
 
 
-def create_app():
-    """Main application factory with custom health endpoint override."""
-    # Create the base FraiseQL app first
-    app = _create_base_app()
-
-    # Override FraiseQL's health endpoint by adding our own after app creation
-    async def custom_health():
-        import logging
-
-        logger = logging.getLogger(__name__)
-        logger.info("CUSTOM HEALTH ENDPOINT CALLED - blog_simple")
-        return {"status": "healthy", "service": "blog_simple"}
-
-    # Find and replace the existing health route
-    import logging
-
-    logger = logging.getLogger(__name__)
-    health_routes_found = 0
-    for i, route in enumerate(app.routes):
-        if hasattr(route, "path") and route.path == "/health":
-            health_routes_found += 1
-            logger.info(f"Found health route {health_routes_found} at index {i}: {route}")
-            # Create new route with our endpoint
-            from fastapi.routing import APIRoute
-
-            new_route = APIRoute("/health", custom_health, methods=["GET"])
-            # Replace the route at the same position
-            routes_list = list(app.routes)
-            routes_list[i] = new_route
-            app.router.routes = routes_list
-            logger.info(f"Replaced health route {health_routes_found} with custom endpoint")
-
-    if health_routes_found == 0:
-        logger.info("No health route found, adding custom health endpoint")
-        from fastapi.routing import APIRoute
-
-        new_route = APIRoute("/health", custom_health, methods=["GET"])
-        app.router.routes.append(new_route)
-
-    return app
-
-
-# Create the app instance
 app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", "8000")))  # noqa: S104
