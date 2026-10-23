@@ -45,8 +45,8 @@ FraiseQL enables you to write complete business logic in a single Python file th
 ```python
 # One file contains all business logic - AI models understand this perfectly
 import fraiseql
-import fraiseql
 from decimal import Decimal
+from psycopg.rows import dict_row
 from fraiseql.types import ID
 
 @fraiseql.type(sql_source="v_user")
@@ -55,15 +55,6 @@ class User:
     id: ID
     email: str
     balance: Decimal
-
-@fraiseql.type(sql_source="v_order")
-class Order:
-    """Order with all items and totals."""
-    id: ID
-    user_id: ID
-    items: list['OrderItem']
-    total: Decimal
-    status: str
 
 @fraiseql.type(sql_source="v_order_item")
 class OrderItem:
@@ -74,7 +65,16 @@ class OrderItem:
     price: Decimal
     product_name: str
 
-@input
+@fraiseql.type(sql_source="v_order")
+class Order:
+    """Order with all items and totals."""
+    id: ID
+    user_id: ID
+    items: list[OrderItem]
+    total: Decimal
+    status: str
+
+@fraiseql.input
 class ProcessOrderInput:
     """Input for processing an order."""
     order_id: ID
@@ -90,67 +90,47 @@ class ProcessOrderResult:
 @fraiseql.mutation
 async def process_order(info, input: ProcessOrderInput) -> ProcessOrderResult:
     """Process an order payment and update balances."""
-    db = info.context["db"]
 
-    # Get order with all relationships (pre-composed in view)
-    order = await db.find_one("order_with_items", where={"id": input.order_id})
-    if not order:
-        return ProcessOrderResult(
-            success=False,
-            order_id=input.order_id,
-            message="Order not found"
-        )
+    async def charge(conn) -> ProcessOrderResult:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            # Lock the order and its user until the transaction ends
+            await cur.execute(
+                "SELECT o.total, u.id AS user_id, u.balance "
+                "FROM tb_order o JOIN tb_user u ON u.id = o.user_id "
+                "WHERE o.id = %s FOR UPDATE",
+                (input.order_id,),
+            )
+            row = await cur.fetchone()
+            if row is None:
+                return ProcessOrderResult(
+                    success=False, order_id=input.order_id, message="Order not found"
+                )
 
-    # Get user balance (from view)
-    user = await repo.find_one("user_with_balance", where={"id": order["user_id"]})
-    if not user:
-        return ProcessOrderResult(
-            success=False,
-            order_id=input.order_id,
-            message="User not found"
-        )
+            # Business logic in clear Python
+            if row["balance"] < row["total"]:
+                return ProcessOrderResult(
+                    success=False,
+                    order_id=input.order_id,
+                    message=f"Insufficient balance: {row['balance']} < {row['total']}",
+                )
 
-    # Business logic in clear Python
-    user_balance = Decimal(str(user["balance"]))
-    order_total = Decimal(str(order["total"]))
+            new_balance = row["balance"] - row["total"]
+            await cur.execute(
+                "UPDATE tb_user SET balance = %s WHERE id = %s", (new_balance, row["user_id"])
+            )
+            await cur.execute(
+                "UPDATE tb_order SET status = 'processed' WHERE id = %s", (input.order_id,)
+            )
+            return ProcessOrderResult(
+                success=True,
+                order_id=input.order_id,
+                message="Order processed successfully",
+                new_balance=new_balance,
+            )
 
-    if user_balance < order_total:
-        return ProcessOrderResult(
-            success=False,
-            order_id=input.order_id,
-            message=f"Insufficient balance: {user_balance} < {order_total}"
-        )
-
-    # Atomic updates using repository
-    async with repo.transaction():
-        # Update user balance
-        await repo.update(
-            "users",
-            where={"id": order["user_id"]},
-            data={"balance": user_balance - order_total}
-        )
-
-        # Update order status
-        await repo.update(
-            "orders",
-            where={"id": input.order_id},
-            data={"status": "processed"}
-        )
-
-    return ProcessOrderResult(
-        success=True,
-        order_id=input.order_id,
-        message="Order processed successfully",
-        new_balance=user_balance - order_total
-    )
+    # One transaction: both updates commit together, or neither does
+    return await info.context["db"].run_in_transaction(charge)
 ```
-
-**AI models can:**
-
-- Read and understand the complete business logic flow
-- Modify validation rules without breaking encapsulation
-- Add new features by extending the resolver method
-- Debug issues by tracing through the Python logic
 
 **AI models can:**
 

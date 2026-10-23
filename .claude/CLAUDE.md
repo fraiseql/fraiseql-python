@@ -136,7 +136,7 @@ uv run pytest tests/ -x  # Stop on first failure
 ```python
 from fraiseql import fraise_type
 
-@fraise_type
+@fraise_type(sql_source="v_user")  # a view with an id column and a data JSONB column
 class User:
     """User in the system"""
     id: int
@@ -148,24 +148,38 @@ class User:
 **Query Definition:**
 
 ```python
-from fraiseql import query
+import fraiseql
 
-@query(sql_source="v_user")  # Maps to database view/table
-def users(limit: int = 10, offset: int = 0) -> list[User]:
+@fraiseql.query
+async def users(info, limit: int = 10, offset: int = 0) -> list[User]:
     """Get all users with pagination"""
-    pass  # Implementation provided by FraiseQL
+    return await info.context["db"].find("v_user", "users", info, limit=limit, offset=offset)
 ```
 
 **Mutation Definition:**
 
 ```python
-from fraiseql import mutation, result
+import fraiseql
 
-@mutation(sql_source="user", operation="CREATE")
-@result(User)
-def create_user(name: str, email: str) -> dict:
+@fraiseql.input
+class CreateUserInput:
+    name: str
+    email: str
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+
+@fraiseql.error
+class CreateUserError:
+    """status, message, errors and code are added by @fraiseql.error"""
+
+@fraiseql.mutation  # calls the SQL function create_user(input jsonb) -> mutation_response
+class CreateUser:
     """Create a new user"""
-    pass  # FraiseQL handles DB insertion
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: CreateUserError
 ```
 
 ### 2. Runtime Schema Generation
@@ -179,12 +193,19 @@ FraiseQL generates GraphQL schema at startup:
 5. **Execution**: Execute queries with connection pooling and caching
 
 ```python
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost/dbname",
+    types=[User],
+    queries=[users],
+    mutations=[CreateUser],
+)
+
+# Or the schema alone:
 from fraiseql import build_fraiseql_schema
 
-schema = build_fraiseql_schema(
-    module=my_schema_module,
-    database_url="postgresql://user:pass@localhost/dbname"
-)
+schema = build_fraiseql_schema(query_types=[users], mutation_resolvers=[CreateUser])
 ```
 
 ### 3. Database Abstraction
@@ -202,15 +223,10 @@ FraiseQL abstracts database differences via **SQL generation**:
 
 Use `FraiseQLError` hierarchy for all errors:
 
-```python
-from fraiseql.types.errors import Error
+A class mutation's SQL function returns a `mutation_response`; its status picks the
+`success` or the `error` type (`@fraiseql.error` adds `status`, `message`, `errors` and
+`code`), so a failure the function reports is data in the response, not a GraphQL error.
 
-# Automatic error handling in mutations
-@result(success_type=User, error_type=Error)
-def create_user(name: str) -> dict:
-    # Errors are caught and formatted as GraphQL errors
-    pass
-```
 
 ### 5. Query Optimization
 
@@ -223,12 +239,25 @@ def create_user(name: str) -> dict:
 5. **Rust Acceleration**: Optional PyO3 extension for mutations
 
 ```python
-from fraiseql import dataloader_field
+import fraiseql
+from fraiseql.optimization.dataloader import DataLoader
 
-@dataloader_field  # Prevents N+1 queries
-def author(post: Post) -> User:
-    # Loaded in batch for multiple posts
-    pass
+class UserLoader(DataLoader[int, dict]):
+    def __init__(self, db) -> None:
+        super().__init__()
+        self.db = db
+
+    async def batch_load(self, user_ids: list[int]) -> list[dict | None]:
+        ...  # one query for every id, results in the order of user_ids
+
+@fraiseql.type
+class Post:
+    id: int
+    author_id: int
+
+    @fraiseql.dataloader_field(UserLoader, key_field="author_id")  # Prevents N+1 queries
+    async def author(self, info) -> User | None:
+        """Loaded in batch for every post in the response"""
 ```
 
 ### 6. Testing Strategy
@@ -236,26 +265,30 @@ def author(post: Post) -> User:
 **Unit Tests** (in `tests/unit/`):
 
 ```python
-import pytest
+from graphql import graphql
 
-@pytest.mark.asyncio
-async def test_query_execution(mock_db):
+from fraiseql import build_fraiseql_schema
+
+async def test_query_execution():
     """Test GraphQL query without database"""
-    schema = build_fraiseql_schema(mock_db)
-    result = await schema.execute("{ users { id name } }")
-    assert result.data["users"][0]["name"] == "Alice"
+    schema = build_fraiseql_schema(query_types=[users])
+    result = await graphql(schema, "{ __type(name: \"User\") { name } }")
+    assert result.data["__type"]["name"] == "User"
 ```
 
 **Integration Tests** (in `tests/integration/`):
 
 ```python
-@pytest.mark.asyncio
-async def test_user_creation_full_flow(test_db_connection):
-    """Test end-to-end mutation with real database"""
-    result = await schema.execute(
-        'mutation { createUser(name: "Bob", email: "bob@example.com") { id } }'
-    )
-    assert result.data["createUser"]["id"]
+from fastapi.testclient import TestClient
+
+def test_user_creation_full_flow(app):
+    """Test end-to-end mutation with real database (through HTTP)"""
+    with TestClient(app) as client:  # runs the app's lifespan, which opens the pool
+        body = client.post("/graphql", json={"query": """
+            mutation { createUser(input: {name: "Bob", email: "bob@example.com"}) {
+              ... on CreateUserSuccess { user { id } }
+            } }"""}).json()
+    assert body["data"]["createUser"]["user"]["id"]
 ```
 
 **Fixtures** (in `tests/fixtures/`):
@@ -335,10 +368,10 @@ fraiseql_v1/
 
 ### Add a New Query
 
-1. Define resolver function with `@query` decorator
-2. Specify SQL source (table/view name)
+1. Define an `async def` resolver with `@fraiseql.query`, taking `info`
+2. Read the view with `info.context["db"].find(...)` / `.find_one(...)`
 3. Add parameters and type hints
-4. FraiseQL generates SQL and GraphQL automatically
+4. FraiseQL builds the GraphQL field; a list query also gets `where`, `orderBy`, `limit`, `offset`
 
 ### Add Database Support
 

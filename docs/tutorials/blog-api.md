@@ -91,8 +91,8 @@ SELECT
         'email', email,
         'name', name,
         'bio', bio,
-        'avatarUrl', avatar_url,
-        'createdAt', created_at
+        'avatar_url', avatar_url,
+        'created_at', created_at
     ) AS data
 FROM tb_user;
 
@@ -111,9 +111,9 @@ SELECT
         'content', p.content,
         'excerpt', p.excerpt,
         'tags', p.tags,
-        'isPublished', p.is_published,
-        'publishedAt', p.published_at,
-        'createdAt', p.created_at,
+        'is_published', p.is_published,
+        'published_at', p.published_at,
+        'created_at', p.created_at,
         'author', (SELECT data FROM v_user WHERE id = u.id)
     ) AS data
 FROM tb_post p
@@ -130,12 +130,12 @@ SELECT
         '__typename', 'Comment',
         'id', c.id,
         'content', c.content,
-        'createdAt', c.created_at,
+        'created_at', c.created_at,
         'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
                    WHERE u.pk_user = c.fk_author),
         'post', (
             SELECT jsonb_build_object(
-                '__typename', 'Post',
+                '__typename', 'PostSummary',
                 'id', p.id,
                 'title', p.title
             )
@@ -147,7 +147,7 @@ SELECT
                     '__typename', 'Comment',
                     'id', r.id,
                     'content', r.content,
-                    'createdAt', r.created_at,
+                    'created_at', r.created_at,
                     'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
                                WHERE u.pk_user = r.fk_author)
                 ) ORDER BY r.created_at
@@ -173,9 +173,9 @@ SELECT
         'content', p.content,
         'excerpt', p.excerpt,
         'tags', p.tags,
-        'isPublished', p.is_published,
-        'publishedAt', p.published_at,
-        'createdAt', p.created_at,
+        'is_published', p.is_published,
+        'published_at', p.published_at,
+        'created_at', p.created_at,
         'author', (SELECT v.data FROM v_user v JOIN tb_user u ON u.id = v.id
                    WHERE u.pk_user = p.fk_author),
         'comments', COALESCE(
@@ -189,6 +189,10 @@ FROM tb_post p;
 ```
 
 **Performance**: Fetching post + author + comments + replies = **1 query** (not N+1).
+
+**JSONB keys are snake_case**, like the Python field names (`created_at`).
+FraiseQL's `where` and `order_by` read these keys (`data -> 'created_at'`), and
+the response turns them into the GraphQL names (`createdAt`).
 
 ## GraphQL Types
 
@@ -206,13 +210,20 @@ class User:
     avatar_url: str | None
     created_at: datetime
 
+# The post a comment belongs to, as v_comment embeds it (id and title).
+# Comment can't name Post here: Post isn't defined yet.
+@fraiseql.type
+class PostSummary:
+    id: ID
+    title: str
+
 @fraiseql.type(sql_source="v_comment")
 class Comment:
     id: ID
     content: str
     created_at: datetime
     author: User
-    post: "Post"
+    post: PostSummary
     replies: list["Comment"]
 
 @fraiseql.type(sql_source="v_post")
@@ -228,27 +239,51 @@ class Post:
     created_at: datetime
     author: User
     comments: list[Comment]
+
+# get_post reads Post rows from v_post_full too
+from fraiseql.db import register_type_for_view
+register_type_for_view("v_post_full", Post, has_jsonb_data=True, jsonb_column="data")
 ```
 
 ## Queries
 
+A query is an `async` resolver whose first parameter is `info`. It reads a view
+through the repository in `info.context["db"]`: `find_one` for one row, `find`
+for a list. `mandatory_filters` compares view columns (`id`, `is_published`)
+for equality. A list query also gets `where` and `orderBy` arguments; leave
+`order_by` unannotated and pass it on, or the client's `orderBy` is ignored.
+
 ```python
+from graphql import GraphQLResolveInfo
 from fraiseql.types import ID
 import fraiseql
 
 @fraiseql.query
-def get_post(id: ID) -> Post | None:
+async def get_post(info: GraphQLResolveInfo, id: ID) -> Post | None:
     """Get single post with all nested data."""
-    pass  # Implementation handled by framework
+    db = info.context["db"]
+    # v_post_full embeds the comments and their replies
+    return await db.find_one("v_post_full", info=info, mandatory_filters={"id": id})
 
 @fraiseql.query
-def get_posts(
+async def get_posts(
+    info: GraphQLResolveInfo,
     is_published: bool | None = None,
+    order_by=None,
     limit: int = 20,
     offset: int = 0
 ) -> list[Post]:
-    """List posts with filtering and pagination."""
-    pass  # Implementation handled by framework
+    """List posts with filtering and pagination, newest first by default."""
+    db = info.context["db"]
+    filters = {} if is_published is None else {"is_published": is_published}
+    return await db.find(
+        "v_post",
+        info=info,
+        mandatory_filters=filters,
+        order_by=order_by or {"created_at": "DESC"},
+        limit=limit,
+        offset=offset,
+    )
 ```
 
 ## Mutations
@@ -289,7 +324,9 @@ BEGIN
     )
     VALUES (
         v_author_pk, input->>'title', v_slug, input->>'content', input->>'excerpt',
-        ARRAY(SELECT jsonb_array_elements_text(coalesce(input->'tags', '[]'))),
+        -- an omitted tags field arrives as JSON null
+        ARRAY(SELECT jsonb_array_elements_text(
+            coalesce(jsonb_strip_nulls(input)->'tags', '[]'))),
         v_is_published,
         CASE WHEN v_is_published THEN NOW() ELSE NULL END
     )
@@ -384,35 +421,30 @@ class CreateComment:
 
 ## Application Setup
 
+`create_fraiseql_app` builds the schema and the FastAPI app, and opens the
+connection pool. The repository reaches every resolver as `info.context["db"]`;
+`context_getter` adds the request's own values to that context, here the
+`user_id` the mutations pass as `p_author_id`.
+
 ```python
 import os
-from fraiseql import FraiseQL
-from psycopg_pool import AsyncConnectionPool
+from fraiseql.fastapi import create_fraiseql_app
+
+# Context setup: merged into the default context (which holds "db")
+async def get_context(request):
+    return {
+        "user_id": request.headers.get("X-User-ID"),  # From auth middleware
+    }
 
 # Initialize app
-app = FraiseQL(
+app = create_fraiseql_app(
     database_url=os.getenv("DATABASE_URL", "postgresql://localhost/blog"),
     types=[User, Post, Comment],
-    enable_playground=True
+    queries=[get_post, get_posts],
+    mutations=[CreatePost, CreateComment],
+    context_getter=get_context,
+    production=False,  # False enables the GraphQL playground
 )
-
-# Connection pool
-pool = AsyncConnectionPool(
-    conninfo=app.config.database_url,
-    min_size=5,
-    max_size=20
-)
-
-# Context setup
-@app.context
-async def get_context(request):
-    async with pool.connection() as conn:
-        repo = PsycopgRepository(pool=pool)
-        return {
-            "repo": repo,
-            "tenant_id": request.headers.get("X-Tenant-ID"),
-            "user_id": request.headers.get("X-User-ID"),  # From auth middleware
-        }
 
 if __name__ == "__main__":
     import uvicorn
@@ -468,25 +500,45 @@ query GetPosts {
 
 ### GraphQL Mutations
 
+A mutation returns a union of its success and error types, so select the
+fields with inline fragments. The author comes from the `X-User-ID` header,
+through `get_context`.
+
 ```graphql
 mutation CreatePost($input: CreatePostInput!) {
   createPost(input: $input) {
-    id
-    title
-    slug
-    author {
-      name
+    ... on CreatePostSuccess {
+      post {
+        id
+        title
+        slug
+        author {
+          name
+        }
+      }
+    }
+    ... on BlogError {
+      message
+      code
     }
   }
 }
 
 mutation AddComment($input: CreateCommentInput!) {
   createComment(input: $input) {
-    id
-    content
-    createdAt
-    author {
-      name
+    ... on CreateCommentSuccess {
+      comment {
+        id
+        content
+        createdAt
+        author {
+          name
+        }
+      }
+    }
+    ... on BlogError {
+      message
+      code
     }
   }
 }
@@ -504,11 +556,14 @@ SELECT
     COUNT(DISTINCT c.id) as comment_count,
     array_agg(DISTINCT u.name) as commenters
 FROM tb_post p
-LEFT JOIN tb_comment c ON c.fk_post = p.id
-LEFT JOIN tb_user u ON u.id = c.fk_author
+LEFT JOIN tb_comment c ON c.fk_post = p.pk_post
+LEFT JOIN tb_user u ON u.pk_user = c.fk_author
 WHERE p.is_published = true
 GROUP BY p.pk_post, p.title
 HAVING COUNT(DISTINCT c.id) > 5;
+
+-- CONCURRENTLY needs a unique index on the materialized view
+CREATE UNIQUE INDEX ON mv_popular_posts (pk_post);
 
 -- Refresh periodically
 REFRESH MATERIALIZED VIEW CONCURRENTLY mv_popular_posts;
