@@ -30,6 +30,7 @@ from fraiseql.sql.graphql_order_by_generator import create_graphql_order_by_inpu
 pytestmark = [pytest.mark.integration, pytest.mark.database]
 
 _VIEW = "v_vector_graphql_doc"
+_TYPED_VIEW = "v_vector_graphql_typed_doc"
 
 
 @pytest_asyncio.fixture(scope="class", loop_scope="class")
@@ -41,14 +42,18 @@ async def vector_docs(class_db_pool, test_schema, pgvector_available):
         await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
         await conn.execute(
             "CREATE TABLE tb_vector_graphql_doc (id INT PRIMARY KEY, category TEXT, "
-            "embedding vector(2), binary_embedding bit(4))"
+            "embedding vector(2), binary_embedding bit(4), half_embedding halfvec(2))"
         )
         await conn.execute(
             "INSERT INTO tb_vector_graphql_doc VALUES "
-            "(1, 'a', '[1,0]', '1100'), (2, 'a', '[0,1]', '0011'), "
-            "(3, 'b', '[0.6,0.8]', '1110'), (4, 'a', '[2,2]', '0111')"
+            "(1, 'a', '[1,0]', '1100', '[1,0]'), (2, 'a', '[0,1]', '0011', '[0,1]'), "
+            "(3, 'b', '[0.6,0.8]', '1110', '[0.6,0.8]'), (4, 'a', '[2,2]', '0111', '[2,2]')"
         )
         await conn.execute(f"CREATE VIEW {_VIEW} AS SELECT * FROM tb_vector_graphql_doc")
+        await conn.execute(
+            f"CREATE VIEW {_TYPED_VIEW} AS SELECT id, embedding AS vec, half_embedding AS half, "
+            "embedding AS nullable_embedding FROM tb_vector_graphql_doc"
+        )
         await conn.commit()
     yield
 
@@ -224,3 +229,56 @@ class TestVectorSearchOverGraphQL:
         variables = {"embedding": [1, 0], "category": "a", "limit": 2}
         assert _ids(client, query, variables) == [1, 4]
         assert _ids(client, query, {**variables, "category": "b"}) == [3]
+
+
+@pytest.mark.usefixtures("clear_registry_class")
+class TestVectorFieldTypes:
+    """``VectorField`` and ``HalfVectorField`` behave like ``list[float]``.
+
+    Both failed the schema build (``Unsupported output type: VectorField``), and
+    a ``where`` gave them a ``StringFilter``. The field names here match none of
+    the name patterns that make a ``list[float]`` a vector, so the type alone has
+    to. A nullable ``list[float]`` with a vector name got an ``OrderDirection``.
+    """
+
+    @pytest.fixture(scope="class")
+    def client(self, class_db_pool, vector_docs):
+        from fraiseql.fastapi.dependencies import set_db_pool
+        from fraiseql.types.scalars.vector import HalfVectorField, VectorField
+
+        @fraiseql.type(sql_source=_TYPED_VIEW, jsonb_column=None)
+        class TypedDoc:
+            id: int
+            vec: VectorField
+            half: HalfVectorField | None
+            nullable_embedding: list[float] | None
+
+        @fraiseql.query
+        async def typed_documents(info) -> list[TypedDoc]:
+            return await info.context["db"].find(_TYPED_VIEW, "typedDocuments", info)
+
+        set_db_pool(class_db_pool)
+        app = create_fraiseql_app(
+            database_url="postgresql://test/test",  # the pool above is used
+            types=[TypedDoc],
+            queries=[typed_documents],
+            production=False,
+        )
+        return TestClient(app)
+
+    def test_values_come_back_as_lists(self, client) -> None:
+        body = client.post(
+            "/graphql", json={"query": "{ typedDocuments(orderBy: {id: ASC}) { id vec half } }"}
+        ).json()
+        assert "errors" not in body, body
+        [row, *_] = body["data"]["typedDocuments"]
+        assert (row["id"], row["vec"], row["half"]) == (1, [1.0, 0.0], [1.0, 0.0])
+
+    @pytest.mark.parametrize("field", ["vec", "half", "nullableEmbedding"])
+    def test_where_and_order_by_distance(self, client, field) -> None:
+        query = (
+            f"{{ typedDocuments(where: {{{field}: {{cosineDistance: {{dense: [1, 0]}}, "
+            f"distanceWithin: 0.5}}}}, orderBy: {{{field}: {{cosineDistance: {{dense: [1, 0]}}}}}}) "
+            "{ id } }"
+        )
+        assert _ids(client, query) == [1, 4, 3]

@@ -58,7 +58,6 @@ class FieldType(Enum):
             from fraiseql.types.scalars.date import DateField
             from fraiseql.types.scalars.daterange import DateRangeField
             from fraiseql.types.scalars.datetime import DateTimeField
-            from fraiseql.types.scalars.vector import QuantizedVectorField, SparseVectorField
 
             type_mapping = {
                 IpAddress: cls.IP_ADDRESS,
@@ -68,8 +67,6 @@ class FieldType(Enum):
                 DateRangeField: cls.DATE_RANGE,
                 DateTimeField: cls.DATETIME,
                 DateField: cls.DATE,
-                SparseVectorField: cls.SPARSE_VECTOR,
-                QuantizedVectorField: cls.QUANTIZED_VECTOR,
             }
 
             if python_type in type_mapping:

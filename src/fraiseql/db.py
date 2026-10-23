@@ -22,6 +22,7 @@ from fraiseql.core.rust_pipeline import (
 )
 from fraiseql.sql.identifiers import qualified_identifier
 from fraiseql.sql.native_columns import resolve_native_column
+from fraiseql.types.scalars.vector import is_float_vector_type
 from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
 from fraiseql.where_normalization import (
@@ -3045,7 +3046,9 @@ class FraiseQLRepository:
             field_type = getattr(field, "field_type", None) or hints.get(name)
             if get_origin(field_type) in (Union, types.UnionType):
                 field_type = next((a for a in get_args(field_type) if a is not type(None)), None)
-            is_float_list = get_origin(field_type) is list and get_args(field_type) == (float,)
+            is_float_list = is_float_vector_type(field_type) or (
+                get_origin(field_type) is list and get_args(field_type) == (float,)
+            )
             if is_float_list and (known_columns is None or name in known_columns):
                 columns.append(name)
         return columns

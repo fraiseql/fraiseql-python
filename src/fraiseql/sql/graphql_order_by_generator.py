@@ -18,7 +18,7 @@ from fraiseql.sql.order_by_generator import (
     OrderBySet,
     OrderDirection,
 )
-from fraiseql.types.scalars.vector import HalfVectorField, QuantizedVectorField, SparseVectorField
+from fraiseql.types.scalars.vector import is_float_vector_type
 
 # Type variable for generic types
 T = TypeVar("T")
@@ -598,17 +598,15 @@ def create_graphql_order_by_input(cls: type, name: str | None = None) -> type:
                 "image_embedding",
                 "imageembedding",
             ]
-            if any(pattern in field_lower for pattern in vector_patterns):
-                # Check if it's actually a list type or vector field types
-                origin = get_origin(field_type)
-                if origin is list or field_type in (
-                    HalfVectorField,
-                    SparseVectorField,
-                    QuantizedVectorField,
-                ):
-                    field_definitions.append((field_name, Optional[VectorOrderBy], None))
-                    field_defaults[field_name] = None
-                    continue
+            # A list type with a vector-ish name, or a VectorField / HalfVectorField
+            leaf_type = _unwrap_annotation(field_type, into_list=False)
+            if is_float_vector_type(leaf_type) or (
+                get_origin(leaf_type) is list
+                and any(pattern in field_lower for pattern in vector_patterns)
+            ):
+                field_definitions.append((field_name, Optional[VectorOrderBy], None))
+                field_defaults[field_name] = None
+                continue
 
             # Check if this is a nested FraiseQL type
             if _is_fraiseql_type(field_type):

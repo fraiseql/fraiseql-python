@@ -134,23 +134,6 @@ class TestVectorFilterInputShapes:
             cur = await conn.execute(stmt)
             assert [row[0] async for row in cur] == [1]
 
-    async def test_sparse_vector_shape_renders(self) -> None:
-        """A sparse ``{indices, values}`` payload must not be mistaken for a dense filter."""
-        from dataclasses import dataclass
-
-        from fraiseql.types.scalars.vector import SparseVectorField
-
-        @dataclass
-        class SparseDoc:
-            sparse_emb: SparseVectorField
-
-        where = safe_create_where_type(SparseDoc)()
-        where.sparse_emb = {"cosine_distance": {"indices": [1, 3], "values": [0.1, 0.2]}}
-
-        rendered = where.to_sql()
-        assert rendered is not None
-        assert "sparsevec" in rendered.as_string(None)
-
 
 class TestVectorFilterRejectsBadInput:
     """A malformed vector filter must fail loudly, never vanish from the WHERE clause."""

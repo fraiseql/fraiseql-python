@@ -1,9 +1,12 @@
 """Vector scalar types for PostgreSQL pgvector.
 
-Supports multiple vector types:
+Supports two vector types, which read and write as ``list[float]``:
 - Vector: Standard 32-bit float vectors
 - HalfVector: 16-bit half-precision vectors (50% memory savings)
-- SparseVector: Sparse vectors for high-dimensional embeddings
+
+There is no sparse or quantized vector type. A ``sparsevec`` column reads back
+as text (``{1:0.5,3:0.2}/5``), and a sparse operand can't be filtered or sorted
+on: its literal needs the column's dimension. pgvector has no quantized type.
 
 Minimal validation following FraiseQL philosophy:
 - Verify value is list of numbers
@@ -93,208 +96,18 @@ HalfVectorScalar = GraphQLScalarType(
 )
 
 
-def serialize_sparse_vector(value: Any) -> dict[str, Any]:
-    """Serialize sparse vector to GraphQL output.
-
-    Sparse vectors are represented as dictionaries with 'indices' and 'values' keys.
-
-    Args:
-        value: The sparse vector value to serialize
-
-    Returns:
-        The sparse vector as a dict with indices and values
-
-    Raises:
-        GraphQLError: If the value is not a valid sparse vector
-    """
-    if not isinstance(value, dict):
-        msg = f"SparseVector must be a dict, got {type(value).__name__}"
-        raise GraphQLError(msg)
-
-    if "indices" not in value or "values" not in value:
-        msg = "SparseVector must have 'indices' and 'values' keys"
-        raise GraphQLError(msg)
-
-    indices = value["indices"]
-    values = value["values"]
-
-    if not isinstance(indices, list) or not isinstance(values, list):
-        msg = "SparseVector indices and values must be lists"
-        raise GraphQLError(msg)
-
-    if not all(isinstance(x, int) for x in indices):
-        msg = "SparseVector indices must be integers"
-        raise GraphQLError(msg)
-
-    if not all(isinstance(x, (int, float)) for x in values):
-        msg = "SparseVector values must be numbers"
-        raise GraphQLError(msg)
-
-    if len(indices) != len(values):
-        msg = "SparseVector indices and values must have same length"
-        raise GraphQLError(msg)
-
-    # Return normalized format
-    return {"indices": [int(x) for x in indices], "values": [float(x) for x in values]}
-
-
-def parse_sparse_vector_value(value: Any) -> dict[str, Any]:
-    """Parse GraphQL input to sparse vector.
-
-    Accepts either:
-    - Dict with 'indices' and 'values' keys
-    - String in pgvector sparse vector format
-
-    Args:
-        value: Input value from GraphQL
-
-    Returns:
-        Validated sparse vector as dict with indices and values
-
-    Raises:
-        GraphQLError: If value is not a valid sparse vector
-    """
-    if isinstance(value, str):
-        # Parse pgvector sparse vector string format like "{1:0.1,3:0.2,5:0.3}/6"
-        # This is a simplified parser - full implementation would be more complex
-        msg = "String format for sparse vectors not yet implemented"
-        raise GraphQLError(msg)
-
-    if not isinstance(value, dict):
-        msg = f"SparseVector must be a dict, got {type(value).__name__}"
-        raise GraphQLError(msg)
-
-    if "indices" not in value or "values" not in value:
-        msg = "SparseVector must have 'indices' and 'values' keys"
-        raise GraphQLError(msg)
-
-    indices = value["indices"]
-    values = value["values"]
-
-    if not isinstance(indices, list) or not isinstance(values, list):
-        msg = "SparseVector indices and values must be lists"
-        raise GraphQLError(msg)
-
-    if not all(isinstance(x, int) for x in indices):
-        msg = "SparseVector indices must be integers"
-        raise GraphQLError(msg)
-
-    if not all(isinstance(x, (int, float)) for x in values):
-        msg = "SparseVector values must be numbers"
-        raise GraphQLError(msg)
-
-    if len(indices) != len(values):
-        msg = "SparseVector indices and values must have same length"
-        raise GraphQLError(msg)
-
-    # Validate indices are non-negative
-    if any(x < 0 for x in indices):
-        msg = "SparseVector indices must be non-negative"
-        raise GraphQLError(msg)
-
-    return {"indices": [int(x) for x in indices], "values": [float(x) for x in values]}
-
-
-SparseVectorScalar = GraphQLScalarType(
-    name="SparseVector",
-    description=(
-        "PostgreSQL sparsevec type for pgvector extension. "
-        "Efficient storage for high-dimensional vectors with mostly zero values. "
-        "Represented as dict with 'indices' and 'values' arrays."
-    ),
-    serialize=serialize_sparse_vector,
-    parse_value=parse_sparse_vector_value,
-    parse_literal=None,  # Sparse vectors are typically passed as variables, not literals
-)
-
-
-def serialize_quantized_vector(value: Any) -> dict[str, Any]:
-    """Serialize quantized vector to GraphQL output.
-
-    Quantized vectors are represented as dictionaries with quantization info.
-
-    Args:
-        value: The quantized vector value to serialize
-
-    Returns:
-        The quantized vector as a dict with quantization metadata
-
-    Raises:
-        GraphQLError: If the value is not a valid quantized vector
-    """
-    if not isinstance(value, dict):
-        msg = f"QuantizedVector must be a dict, got {type(value).__name__}"
-        raise GraphQLError(msg)
-
-    # Expected format: {"codebook_id": int, "code": int, "scale": float, "offset": list[float]}
-    required_keys = ["codebook_id", "code"]
-    for key in required_keys:
-        if key not in value:
-            msg = f"QuantizedVector must have '{key}' key"
-            raise GraphQLError(msg)
-
-    return {
-        "codebook_id": int(value["codebook_id"]),
-        "code": int(value["code"]),
-        "scale": float(value.get("scale", 1.0)),
-        "offset": value.get("offset", []),
-    }
-
-
-def parse_quantized_vector_value(value: Any) -> dict[str, Any]:
-    """Parse GraphQL input to quantized vector.
-
-    Args:
-        value: Input value from GraphQL
-
-    Returns:
-        Validated quantized vector as dict
-
-    Raises:
-        GraphQLError: If value is not a valid quantized vector
-    """
-    if not isinstance(value, dict):
-        msg = f"QuantizedVector must be a dict, got {type(value).__name__}"
-        raise GraphQLError(msg)
-
-    required_keys = ["codebook_id", "code"]
-    for key in required_keys:
-        if key not in value:
-            msg = f"QuantizedVector must have '{key}' key"
-            raise GraphQLError(msg)
-
-    return {
-        "codebook_id": int(value["codebook_id"]),
-        "code": int(value["code"]),
-        "scale": float(value.get("scale", 1.0)),
-        "offset": value.get("offset", []),
-    }
-
-
-QuantizedVectorScalar = GraphQLScalarType(
-    name="QuantizedVector",
-    description=(
-        "Quantized vector type for reduced memory usage. "
-        "Vectors are represented by their closest codebook entry index. "
-        "Format: {codebook_id: int, code: int, scale: float, offset: list[float]}"
-    ),
-    serialize=serialize_quantized_vector,
-    parse_value=parse_quantized_vector_value,
-    parse_literal=None,  # Quantized vectors are typically passed as variables, not literals
-)
-
-
 # Python markers for use in dataclasses
 class VectorField(list[float], ScalarMarker):
-    """Python marker for the GraphQL Vector scalar.
+    """Python marker for a pgvector ``vector`` column, which behaves as ``list[float]``.
 
-    Use this type in your FraiseQL model fields to indicate vector embeddings:
+    It reads and writes as ``[Float]`` and gets the vector ``where`` and
+    ``orderBy`` operators, whatever the field is named:
 
     ```python
     @type(sql_source="documents")
     class Document:
         id: UUID
-        embedding: VectorField  # Will be detected as vector field
+        embedding: VectorField
     ```
     """
 
@@ -306,15 +119,16 @@ class VectorField(list[float], ScalarMarker):
 
 
 class HalfVectorField(list[float], ScalarMarker):
-    """Python marker for the GraphQL HalfVector scalar.
+    """Python marker for a pgvector ``halfvec`` column, which behaves as ``list[float]``.
 
-    Use this type in your FraiseQL model fields to indicate half-precision vector embeddings:
+    It reads and writes as ``[Float]`` and gets the vector ``where`` and
+    ``orderBy`` operators, whatever the field is named:
 
     ```python
     @type(sql_source="documents")
     class Document:
         id: UUID
-        embedding: HalfVectorField  # Will be detected as halfvec field (50% memory savings)
+        embedding: HalfVectorField  # halfvec: half the storage of vector
     ```
     """
 
@@ -325,41 +139,6 @@ class HalfVectorField(list[float], ScalarMarker):
         return "HalfVector"
 
 
-class SparseVectorField(dict, ScalarMarker):
-    """Python marker for the GraphQL SparseVector scalar.
-
-    Use this type in your FraiseQL model fields to indicate sparse vector embeddings:
-
-    ```python
-    @type(sql_source="documents")
-    class Document:
-        id: UUID
-        embedding: SparseVectorField  # Will be detected as sparsevec field
-    ```
-    """
-
-    __slots__ = ()
-
-    def __repr__(self) -> str:
-        """String representation used in type annotations and debug output."""
-        return "SparseVector"
-
-
-class QuantizedVectorField(dict, ScalarMarker):
-    """Python marker for the GraphQL QuantizedVector scalar.
-
-    Use this type in your FraiseQL model fields to indicate quantized vector embeddings:
-
-    ```python
-    @type(sql_source="documents")
-    class Document:
-        id: UUID
-        embedding: QuantizedVectorField  # Will be detected as quantized vector field
-    ```
-    """
-
-    __slots__ = ()
-
-    def __repr__(self) -> str:
-        """String representation used in type annotations and debug output."""
-        return "QuantizedVector"
+def is_float_vector_type(typ: Any) -> bool:
+    """Whether typ is ``VectorField`` or ``HalfVectorField``, which mean ``list[float]``."""
+    return isinstance(typ, type) and issubclass(typ, (VectorField, HalfVectorField))

@@ -55,7 +55,7 @@ FilterFieldSpec = tuple[type, Any, str | None]  # (field_type, default_value, gr
 from fraiseql import fraise_input
 from fraiseql.fields import fraise_field
 from fraiseql.sql.where_generator import safe_create_where_type
-from fraiseql.types.scalars.vector import HalfVectorField, QuantizedVectorField, SparseVectorField
+from fraiseql.types.scalars.vector import is_float_vector_type
 
 logger = logging.getLogger(__name__)
 
@@ -746,9 +746,9 @@ def _get_filter_type_for_field(
             "imageembedding",
         ]
         # Check if it's a vector field (pattern match + list type or vector field types)
-        if (origin is list and any(pattern in field_lower for pattern in vector_patterns)) or (
-            field_type in (HalfVectorField, SparseVectorField, QuantizedVectorField)
-        ):
+        if (
+            origin is list and any(pattern in field_lower for pattern in vector_patterns)
+        ) or is_float_vector_type(field_type):
             return VectorFilter
 
     # Check if it's a List type

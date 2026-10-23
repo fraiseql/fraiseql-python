@@ -52,6 +52,7 @@ from fraiseql.mutations.decorators import FraiseUnion
 from fraiseql.sql.where_generator import DynamicType
 from fraiseql.types.scalars.graphql_utils import convert_scalar_to_graphql
 from fraiseql.types.scalars.json import JSONScalar, parse_json_value
+from fraiseql.types.scalars.vector import is_float_vector_type
 from fraiseql.utils.annotations import (
     get_non_optional_type,
     is_optional_type,
@@ -270,6 +271,10 @@ def convert_type_to_graphql_input(
         _graphql_type_cache[cache_key] = gql_type
         return gql_type
 
+    # VectorField / HalfVectorField read and write as list[float]
+    if is_float_vector_type(typ):
+        typ = list[float]
+
     # Handle list types like list[str]
     origin = get_origin(typ)
     if origin is list:
@@ -413,6 +418,10 @@ def convert_type_to_graphql_output(
     if get_origin(typ) in (Union, UnionType):
         msg = "Use a FraiseUnion wrapper for result unions, not plain Union"
         raise TypeError(msg)
+
+    # VectorField / HalfVectorField read and write as list[float]
+    if is_float_vector_type(typ):
+        typ = list[float]
 
     # Handle list types
     if get_origin(typ) is list:

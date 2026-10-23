@@ -467,8 +467,7 @@ def build_quantized_distance_sql(path_sql: SQL, value: dict[str, Any]) -> NoRetu
     ``distance_type`` was substituted into the function name, and every element
     of ``target_vector`` was rendered with ``SQL(str(v))``.
 
-    Unlike ``FieldType.VECTOR``, this one is reachable from a plain type hint:
-    ``QuantizedVectorField`` is mapped in ``FieldType.from_python_type``.
+    Unreachable from a type hint since ``QuantizedVectorField`` was removed.
     """
     raise _reject_non_predicate("quantized_distance")
 

@@ -25,8 +25,6 @@ query would succeed and return rows the vector filter was meant to exclude.
 Several tests below pin that distinction.
 """
 
-from dataclasses import dataclass
-
 import pytest
 from psycopg.sql import SQL, Composed
 
@@ -39,7 +37,6 @@ from fraiseql.sql.where.operators.vectors import (
     build_vector_norm_sql,
 )
 from fraiseql.sql.where_generator import safe_create_where_type
-from fraiseql.types.scalars.vector import QuantizedVectorField, SparseVectorField
 
 
 class _Doc:
@@ -60,16 +57,6 @@ def render_dense(op: str, value: object) -> Composed | None:
     where = WhereType()
     where.OR = [{"embedding": {op: value}}]
     return where.to_sql()
-
-
-@dataclass
-class _SparseDoc:
-    sparse_emb: SparseVectorField
-
-
-@dataclass
-class _QuantizedDoc:
-    quantized_emb: QuantizedVectorField
 
 
 class TestNonPredicateOperatorsAreRejected:
@@ -99,34 +86,6 @@ class TestNonPredicateOperatorsAreRejected:
         not later widened into a behaviour change for null inputs.
         """
         assert render_dense("vector_norm", None) is None
-
-    @pytest.mark.parametrize(
-        ("operator", "value"),
-        [
-            ("custom_distance", {"function": "my_dist", "parameters": [1.0]}),
-            ("vector_norm", "l2"),
-        ],
-    )
-    def test_sparse_vector_operator_raises(self, operator, value) -> None:
-        """``SparseVectorField`` *is* mapped in ``from_python_type``."""
-        where = safe_create_where_type(_SparseDoc)()
-        where.sparse_emb = {operator: value}
-        with pytest.raises(WhereClauseError):
-            where.to_sql()
-
-    @pytest.mark.parametrize(
-        ("operator", "value"),
-        [
-            ("quantized_distance", {"target_vector": [0.1, 0.2], "distance_type": "cosine"}),
-            ("reconstruct", True),
-        ],
-    )
-    def test_quantized_vector_operator_raises(self, operator, value) -> None:
-        """``QuantizedVectorField`` is mapped too, so a plain type hint reaches these."""
-        where = safe_create_where_type(_QuantizedDoc)()
-        where.quantized_emb = {operator: value}
-        with pytest.raises(WhereClauseError):
-            where.to_sql()
 
     def test_error_names_the_operator(self) -> None:
         """The message must say which operator was refused, not just that one was."""
@@ -215,10 +174,8 @@ class TestNoCallerStringReachesTheStatement:
     )
     def test_quantized_distance_payload_never_renders(self, payload) -> None:
         """``quantized_distance`` carried the same two channels, unreported."""
-        where = safe_create_where_type(_QuantizedDoc)()
-        where.quantized_emb = {"quantized_distance": payload}
         with pytest.raises(WhereClauseError):
-            where.to_sql()
+            build_quantized_distance_sql(SQL("(data ->> 'quantized_emb')"), payload)
 
 
 class TestBuildersRejectDirectly:
