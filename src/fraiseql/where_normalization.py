@@ -173,6 +173,8 @@ def normalize_dict_where(
             # Scalar value, wrap in eq operator
             field_value = {"eq": field_value}  # noqa: PLW2901
 
+        field_value = _fold_vector_filter(field_value)  # noqa: PLW2901
+
         # Check if this is a nested object filter
         is_nested, use_fk = _is_nested_object_filter(
             field_name, field_value, table_columns, view_name
@@ -316,7 +318,7 @@ def normalize_dict_where(
             # Check if we know table columns
             if table_columns is not None:
                 # We have table column information - use it to decide
-                if field_name not in table_columns:
+                if field_name not in table_columns and not _is_flat_view(view_name, table_columns):
                     # Column doesn't exist in table, must be in JSONB
                     lookup_strategy = "jsonb_path"
                     target_column = jsonb_column
@@ -366,6 +368,67 @@ def normalize_dict_where(
         nested_clauses=nested_clauses,
         not_clause=not_clause,
     )
+
+
+def _is_flat_view(view_name: str, table_columns: set[str]) -> bool:
+    """Whether view_name is registered as having no JSONB column, columns unknown.
+
+    ``@fraiseql.type(sql_source=..., jsonb_column=None)`` registers the view with
+    no columns. An empty column set otherwise sends every field to the JSONB
+    column, which such a view doesn't have.
+    """
+    from fraiseql.db import _table_metadata
+
+    metadata = _table_metadata.get(view_name)
+    return (
+        not table_columns
+        and metadata is not None
+        and not metadata.get("has_jsonb_data", False)
+        and metadata.get("jsonb_column") is None
+    )
+
+
+def _fold_vector_filter(field_filter: dict) -> dict:
+    """Rewrite a GraphQL ``VectorFilter`` into the form ``FieldCondition`` reads.
+
+    GraphQL sends ``{"cosineDistance": {"dense": [...]}, "distanceWithin": 0.5}``:
+    the operator camelCased, the vector under ``dense``, and the threshold as a
+    sibling. ``FieldCondition`` reads ``{"cosine_distance": {"vector": [...],
+    "threshold": 0.5, "comparison": "lte"}}``. Without the rewrite, the
+    camelCased operator made the filter look nested and ``dense`` was rejected
+    as an unknown operator.
+    """
+    operators = {_normalize_operator(key): key for key in field_filter}
+    if not any(operator in VECTOR_OPERATORS for operator in operators):
+        return field_filter
+
+    threshold = field_filter.get(operators.get("distance_within", "distance_within"))
+    folded = {}
+    for operator, key in operators.items():
+        value = field_filter[key]
+        if operator == "distance_within":
+            continue
+        if operator not in VECTOR_OPERATORS or value is None:
+            folded[key] = value
+            continue
+        if hasattr(value, "dense") or hasattr(value, "sparse"):  # a VectorDistanceInput
+            value = {
+                "dense": getattr(value, "dense", None),
+                "sparse": getattr(value, "sparse", None),
+            }
+        if isinstance(value, dict) and ("dense" in value or "sparse" in value):
+            if value.get("dense") is None:
+                # FieldCondition casts the operand to vector, not sparsevec
+                msg = f"where: {key!r} needs a dense vector; db.find can't filter on a sparse one"
+                raise ValueError(msg)
+            value = {"vector": value["dense"]}
+        elif threshold is not None and isinstance(value, (list, str)):
+            value = {"vector": value}
+        if threshold is not None and isinstance(value, dict) and "threshold" not in value:
+            # distanceWithin is the maximum distance to include
+            value = {**value, "threshold": threshold, "comparison": "lte"}
+        folded[operator] = value
+    return folded
 
 
 def _is_nested_object_filter(

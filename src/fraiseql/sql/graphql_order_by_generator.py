@@ -47,18 +47,19 @@ class VectorOrderBy:
         jaccard_distance: Order by Jaccard distance for bit vectors
 
     Example:
-        orderBy: { embedding: { l1_distance: [0.1, 0.2, 0.3] } }
-        orderBy: {
-            sparse_embedding: { cosine_distance: { indices: [1,3,5], values: [0.1,0.2,0.3] } }
-        }
-        orderBy: { fingerprint: { hamming_distance: "101010" } }
+        orderBy: { embedding: { l1Distance: [0.1, 0.2, 0.3] } }
+        orderBy: { binaryEmbedding: { hammingDistance: "101010" } }
         # Orders by distance to the given vector (ASC = most similar first)
+
+    The float operators are ``[Float!]`` in GraphQL. In Python they also take a
+    sparse ``{"indices": [...], "values": [...]}`` dict, which GraphQL can't
+    express next to a list.
     """
 
-    cosine_distance: list[float] | dict[str, Any] | None = None
-    l2_distance: list[float] | dict[str, Any] | None = None
-    l1_distance: list[float] | dict[str, Any] | None = None
-    inner_product: list[float] | dict[str, Any] | None = None
+    cosine_distance: list[float] | None = None
+    l2_distance: list[float] | None = None
+    l1_distance: list[float] | None = None
+    inner_product: list[float] | None = None
     hamming_distance: str | None = None  # bit string like "101010"
     jaccard_distance: str | None = None  # bit string like "111000"
 

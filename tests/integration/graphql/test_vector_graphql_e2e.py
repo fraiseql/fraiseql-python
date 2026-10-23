@@ -1,0 +1,190 @@
+"""Vector search over GraphQL: ``orderBy`` by distance, ``where`` within a distance.
+
+``docs/features/pgvector.md`` shows clients sending
+``documents(where: ..., orderBy: {embedding: {cosineDistance: [...]}}, limit: 10)``.
+A list query over a type with a vector field had no ``orderBy`` argument at all
+(the query builder skipped it, as ``VectorOrderBy`` couldn't become a GraphQL
+type), and a vector ``where`` failed in ``db.find`` with ``Invalid operator
+'dense'``.
+
+The rows, against the query vector ``[1, 0]`` (and the bit string ``1100``):
+
+    id  embedding   cosine  l2     l1   <#>   binary  hamming  jaccard
+    1   [1, 0]      0       0      0    -1    1100    0        0
+    2   [0, 1]      1       1.414  2    0     0011    4        1
+    3   [0.6, 0.8]  0.4     0.894  1.2  -0.6  1110    1        0.333
+    4   [2, 2]      0.293   2.236  3    -2    0111    3        0.75
+"""
+
+import pytest
+import pytest_asyncio
+from fastapi.testclient import TestClient
+
+# Import database fixtures for this database test
+from tests.fixtures.database.database_conftest import *  # noqa: F403
+
+import fraiseql
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.sql.graphql_order_by_generator import create_graphql_order_by_input
+
+pytestmark = [pytest.mark.integration, pytest.mark.database]
+
+_VIEW = "v_vector_graphql_doc"
+
+
+@pytest_asyncio.fixture(scope="class", loop_scope="class")
+async def vector_docs(class_db_pool, test_schema, pgvector_available):
+    if not pgvector_available:
+        pytest.skip("pgvector extension not available")
+    async with class_db_pool.connection() as conn:
+        await conn.execute(f"SET search_path TO {test_schema}, public")
+        await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+        await conn.execute(
+            "CREATE TABLE tb_vector_graphql_doc (id INT PRIMARY KEY, category TEXT, "
+            "embedding vector(2), binary_embedding bit(4))"
+        )
+        await conn.execute(
+            "INSERT INTO tb_vector_graphql_doc VALUES "
+            "(1, 'a', '[1,0]', '1100'), (2, 'a', '[0,1]', '0011'), "
+            "(3, 'b', '[0.6,0.8]', '1110'), (4, 'a', '[2,2]', '0111')"
+        )
+        await conn.execute(f"CREATE VIEW {_VIEW} AS SELECT * FROM tb_vector_graphql_doc")
+        await conn.commit()
+    yield
+
+
+def _ids(client: TestClient, query: str, variables: dict | None = None) -> list[int]:
+    body = client.post("/graphql", json={"query": query, "variables": variables or {}}).json()
+    assert "errors" not in body, body
+    return [row["id"] for row in next(iter(body["data"].values()))]
+
+
+@pytest.mark.usefixtures("clear_registry_class")
+class TestVectorSearchOverGraphQL:
+    @pytest.fixture(scope="class")
+    def client(self, class_db_pool, vector_docs):
+        from fraiseql.fastapi.dependencies import set_db_pool
+
+        # A flat view: pgvector columns, no JSONB data column
+        @fraiseql.type(sql_source=_VIEW, jsonb_column=None)
+        class VectorDoc:
+            id: int
+            category: str
+            embedding: list[float]
+            binary_embedding: list[float]
+
+        doc_order_by = create_graphql_order_by_input(VectorDoc)
+
+        @fraiseql.query
+        async def documents(info) -> list[VectorDoc]:
+            # Declares none of the list arguments: they are auto-wired
+            return await info.context["db"].find(_VIEW, "documents", info)
+
+        @fraiseql.query
+        async def documents_declared(
+            info, order_by: doc_order_by | None = None, limit: int | None = None
+        ) -> list[VectorDoc]:
+            return await info.context["db"].find(
+                _VIEW, "documentsDeclared", info, order_by=order_by, limit=limit
+            )
+
+        set_db_pool(class_db_pool)
+        app = create_fraiseql_app(
+            database_url="postgresql://test/test",  # the pool above is used
+            types=[VectorDoc],
+            queries=[documents, documents_declared],
+            production=False,
+        )
+        return TestClient(app)
+
+    @pytest.mark.parametrize(
+        ("operator", "operand", "expected"),
+        [
+            ("cosineDistance", "[1, 0]", [1, 4, 3, 2]),
+            ("l2Distance", "[1, 0]", [1, 3, 2, 4]),
+            ("l1Distance", "[1, 0]", [1, 3, 2, 4]),
+            ("innerProduct", "[1, 0]", [4, 1, 3, 2]),
+        ],
+    )
+    def test_order_by_distance(self, client, operator, operand, expected) -> None:
+        query = f"{{ documents(orderBy: {{embedding: {{{operator}: {operand}}}}}) {{ id }} }}"
+        assert _ids(client, query) == expected
+
+    @pytest.mark.parametrize("operator", ["hammingDistance", "jaccardDistance"])
+    def test_order_by_bit_distance(self, client, operator) -> None:
+        query = f'{{ documents(orderBy: {{binaryEmbedding: {{{operator}: "1100"}}}}) {{ id }} }}'
+        assert _ids(client, query) == [1, 3, 4, 2]
+
+    def test_declared_order_by_argument(self, client) -> None:
+        query = (
+            "{ documentsDeclared(orderBy: {embedding: {innerProduct: [1, 0]}}, limit: 2) { id } }"
+        )
+        assert _ids(client, query) == [4, 1]
+
+    def test_vectors_come_back_as_lists(self, client) -> None:
+        body = client.post(
+            "/graphql",
+            json={
+                "query": "{ documents(where: {embedding: {cosineDistance: {dense: [1, 0]}, "
+                "distanceWithin: 0.35}}, orderBy: {embedding: {cosineDistance: [1, 0]}}) "
+                "{ id embedding } }"
+            },
+        ).json()
+        assert "errors" not in body, body
+        rows = [
+            {"id": row["id"], "embedding": row["embedding"]} for row in body["data"]["documents"]
+        ]
+        assert rows == [
+            {"id": 1, "embedding": [1.0, 0.0]},
+            {"id": 4, "embedding": [2.0, 2.0]},
+        ]
+
+    def test_plain_where(self, client) -> None:
+        assert _ids(client, '{ documents(where: {category: {eq: "b"}}) { id } }') == [3]
+
+    def test_where_within_a_distance(self, client) -> None:
+        query = (
+            "{ documents(where: {embedding: {cosineDistance: {dense: [1, 0]}, "
+            "distanceWithin: 0.5}}, orderBy: {id: DESC}) { id } }"
+        )
+        assert _ids(client, query) == [4, 3, 1]
+
+    @pytest.mark.parametrize(
+        ("operator", "threshold", "expected"),
+        [
+            ("l2Distance", 1.0, [1, 3]),
+            ("l1Distance", 1.5, [1, 3]),
+            ("innerProduct", -0.8, [1, 4]),
+        ],
+    )
+    def test_where_other_distances(self, client, operator, threshold, expected) -> None:
+        query = (
+            f"{{ documents(where: {{embedding: {{{operator}: {{dense: [1, 0]}}, "
+            f"distanceWithin: {threshold}}}}}, orderBy: {{id: ASC}}) {{ id }} }}"
+        )
+        assert _ids(client, query) == expected
+
+    def test_where_bit_distance(self, client) -> None:
+        query = (
+            '{ documents(where: {binaryEmbedding: {hammingDistance: "1100", distanceWithin: 1}}, '
+            "orderBy: {id: ASC}) { id } }"
+        )
+        assert _ids(client, query) == [1, 3]
+
+    def test_where_order_by_and_limit_as_documented(self, client) -> None:
+        # docs/features/pgvector.md, "GraphQL Client Queries"
+        query = """
+            query SearchDocuments($embedding: [Float!]!, $category: String, $limit: Int) {
+              documents(
+                where: {
+                  embedding: { cosineDistance: { dense: $embedding }, distanceWithin: 0.5 }
+                  category: { eq: $category }
+                }
+                orderBy: { embedding: { cosineDistance: $embedding } }
+                limit: $limit
+              ) { id }
+            }
+        """
+        variables = {"embedding": [1, 0], "category": "a", "limit": 2}
+        assert _ids(client, query, variables) == [1, 4]
+        assert _ids(client, query, {**variables, "category": "b"}) == [3]

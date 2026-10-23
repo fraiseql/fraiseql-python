@@ -284,3 +284,44 @@ class TestNormalizationEquivalence:
         assert (
             clause_dict.conditions[0].lookup_strategy == clause_input.conditions[0].lookup_strategy
         )
+
+
+class TestVectorFilterFolding:
+    """A GraphQL VectorFilter reaches FieldCondition as {vector, threshold, comparison}."""
+
+    @staticmethod
+    def _conditions(where):
+        repo = FraiseQLRepository(None)  # type: ignore
+        clause = repo._normalize_where(  # type: ignore
+            where, view_name="tv_vector_doc", table_columns={"id", "embedding"}
+        )
+        return [(c.field_path, c.operator, c.value) for c in clause.conditions]
+
+    def test_graphql_shape_is_one_distance_condition(self):
+        where = {"embedding": {"cosineDistance": {"dense": [1.0, 0.0]}, "distanceWithin": 0.4}}
+
+        assert self._conditions(where) == [
+            (
+                ["embedding"],
+                "cosine_distance",
+                {"vector": [1.0, 0.0], "threshold": 0.4, "comparison": "lte"},
+            )
+        ]
+
+    def test_inner_product_is_an_operator(self):
+        where = {"embedding": {"innerProduct": {"dense": [1.0, 0.0]}, "distanceWithin": -0.5}}
+
+        [(_, operator, value)] = self._conditions(where)
+        assert operator == "inner_product"
+        assert value["threshold"] == -0.5
+
+    def test_python_shapes_are_unchanged(self):
+        where = {"embedding": {"l2_distance": ([1.0, 0.0], 0.75)}}
+        assert self._conditions(where) == [(["embedding"], "l2_distance", ([1.0, 0.0], 0.75))]
+
+    def test_sparse_vector_is_refused(self):
+        import pytest
+
+        where = {"embedding": {"cosineDistance": {"sparse": {"indices": [0], "values": [1.0]}}}}
+        with pytest.raises(ValueError, match="dense vector"):
+            self._conditions(where)

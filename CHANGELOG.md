@@ -175,6 +175,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with a float-based JSON parser still rounds; the `Decimal` scalar's string
   form avoids that.
 
+- **Vector search works over GraphQL.** A list query over a type with a vector
+  field (`embedding: list[float]`) had no `orderBy` argument: the query builder
+  skipped it because `VectorOrderBy` couldn't become a GraphQL type. The float
+  operators of `VectorOrderBy` are now `[Float!]`, so
+  `documents(orderBy: {embedding: {cosineDistance: [...]}}, limit: 10)` sorts by
+  distance, auto-wired or declared as `order_by: <Type>OrderByInput`, for all six
+  operators. A vector `where` (`{embedding: {cosineDistance: {dense: [...]},
+  distanceWithin: 0.5}}`) failed in `db.find` with `Invalid operator 'dense'`;
+  it now filters, `innerProduct` included. On a type declared
+  `jsonb_column=None`, a `where` looked for every field in a `data` column the
+  view doesn't have; it now uses the view's columns. A `bit` column on a
+  `list[float]` field no longer fails the query with `invalid input syntax for
+  type json`.
+
+- `docs/features/pgvector.md`: GraphQL names are camelCase, a vector `where`
+  takes `{dense: [...]}` and `distanceWithin`, a Python `where` takes
+  `{"vector": ..., "threshold": ...}`, and the FastAPI example uses
+  `create_fraiseql_app`.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

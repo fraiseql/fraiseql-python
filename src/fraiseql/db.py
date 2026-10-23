@@ -3010,8 +3010,10 @@ class FraiseQLRepository:
 
         row_to_json writes a pgvector ``vector`` (or ``halfvec``) column through
         its text output, the string ``"[0.1,0.2]"``. That text is a JSON array, so
-        the columns the type reads as ``list[float]`` are re-read as JSON; an
-        array column comes out the same either way.
+        the columns the type reads as ``list[float]`` are re-read as JSON when
+        they hold such a string; an array column comes out the same either way.
+        A ``bit`` column, whose distance operators the docs put on a
+        ``list[float]`` field too, stays the string ``"0011"``, which isn't JSON.
         """
         from psycopg.sql import Literal
 
@@ -3019,7 +3021,11 @@ class FraiseQLRepository:
         if not columns:
             return SQL("row_to_json(t)")
         entries = SQL(", ").join(
-            SQL("{}, (to_jsonb(t) ->> {})::jsonb").format(Literal(column), Literal(column))
+            SQL(
+                "{col}, CASE WHEN left(to_jsonb(t) ->> {col}, 1) = '[' "
+                "AND jsonb_typeof(to_jsonb(t) -> {col}) = 'string' "
+                "THEN (to_jsonb(t) ->> {col})::jsonb ELSE to_jsonb(t) -> {col} END"
+            ).format(col=Literal(column))
             for column in columns
         )
         return SQL("(to_jsonb(t) || jsonb_build_object({}))").format(entries)

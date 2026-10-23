@@ -120,65 +120,10 @@ class QueryTypeBuilder:
             # the user declared `where: Any`
             gql_args["where"] = GraphQLArgument(gql_where_type)
 
-    def _has_vector_fields(self, element_type: Any) -> bool:
-        """Check if type has vector/embedding fields that use VectorOrderBy.
-
-        VectorOrderBy uses Union types (list[float] | dict[str, Any]) that cannot
-        be converted to GraphQL input types, so we skip orderBy generation for
-        types containing these fields.
-        """
-        try:
-            type_hints = get_type_hints(element_type)
-        except Exception:
-            type_hints = getattr(element_type, "__annotations__", {})
-
-        # Vector field patterns that trigger VectorOrderBy usage
-        vector_patterns = {
-            "embedding",
-            "vector",
-            "_embedding",
-            "_vector",
-            "embedding_vector",
-            "embeddingvector",
-            "text_embedding",
-            "textembedding",
-            "image_embedding",
-            "imageembedding",
-        }
-
-        # Check for vector field types
-        try:
-            from fraiseql.types.scalars.vector import (
-                HalfVectorField,
-                QuantizedVectorField,
-                SparseVectorField,
-            )
-
-            vector_types = (HalfVectorField, SparseVectorField, QuantizedVectorField)
-        except ImportError:
-            vector_types = ()
-
-        for field_name, field_type in type_hints.items():
-            field_lower = field_name.lower()
-            # Check if field name matches vector patterns
-            if any(pattern in field_lower for pattern in vector_patterns):
-                origin = get_origin(field_type)
-                if origin is list or (vector_types and field_type in vector_types):
-                    return True
-            # Check if field type is a vector type
-            if vector_types and field_type in vector_types:
-                return True
-
-        return False
-
     def _add_order_by_parameter_if_needed(
         self, gql_args: dict[str, GraphQLArgument], return_type: Any
     ) -> None:
-        """Add orderBy parameter to GraphQL args if query returns list of Fraise types.
-
-        Note: Types with vector/embedding fields are skipped because VectorOrderBy
-        uses Union types that cannot be converted to GraphQL input types.
-        """
+        """Add orderBy parameter to GraphQL args if query returns list of Fraise types."""
         from fraiseql.sql.graphql_order_by_generator import create_graphql_order_by_input
 
         # Don't add if already present (check both camelCase and snake_case)
@@ -187,15 +132,6 @@ class QueryTypeBuilder:
 
         should_add, element_type = self._should_add_where_parameter(return_type)
         if should_add and element_type:
-            # Skip types with vector fields - VectorOrderBy uses Union types
-            # that can't be converted to GraphQL input types
-            if self._has_vector_fields(element_type):
-                logger.debug(
-                    "Skipping orderBy generation for type %s (has vector fields)",
-                    element_type.__name__ if hasattr(element_type, "__name__") else element_type,
-                )
-                return
-
             try:
                 order_by_input_type = create_graphql_order_by_input(element_type)
                 self.registry.register_type(order_by_input_type)

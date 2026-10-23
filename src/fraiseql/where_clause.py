@@ -73,6 +73,7 @@ VECTOR_OPERATORS = {
     "cosine_distance": "<=>",
     "l2_distance": "<->",
     "l1_distance": "<+>",
+    "inner_product": "<#>",
     "hamming_distance": "<~>",
     "jaccard_distance": "<%>",
 }
