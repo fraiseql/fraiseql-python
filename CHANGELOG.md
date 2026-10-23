@@ -204,6 +204,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the request path (no `QueryRouter` is built, and `ModeSelector.select_mode`
   is never called), so this changes nothing for a served app yet.
 
+- **`fraiseql turbo register` registers a query whose root field takes no
+  arguments.** `query GetUsers { users { id name } }` failed with
+  `Registration failed: 'NoneType' object is not iterable`: graphql-core 3.3
+  leaves an absent argument list as `None`, and the SQL compiler iterated it.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added
