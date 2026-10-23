@@ -160,6 +160,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   error under any alias (`n: note` came back `null` without one); unselected,
   it is still no error.
 
+- **A JSONB number reaches the client with the digits PostgreSQL wrote.** In HTTP
+  mode the Rust pipeline parsed JSONB numbers as 64-bit floats, so a `numeric`
+  such as `12.345678901234567890123` arrived as `12.345678901234567`, and one
+  beyond a float's range (`-1e400`) failed the whole field with `Failed to parse
+  JSON: number out of range`. `fraiseql_rs` now enables `serde_json`'s
+  `arbitrary_precision`, so numbers pass through as written, and still as JSON
+  numbers. A mutation's entity loses no digits either: the mutation executor
+  reads the SQL function's result as JSON text and hands that text to Rust,
+  instead of loading it into Python floats first. (A result in the legacy
+  `object_data` format is still converted through Python.) Emitting
+  `'price', price::text` in a view is no longer needed to keep the digits; it
+  still makes the client receive a string. A client that parses the response
+  with a float-based JSON parser still rounds; the `Decimal` scalar's string
+  form avoids that.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

@@ -258,10 +258,11 @@ parsed to `decimal.Decimal` from a string or a number, and filtered with
 `DecimalFilter`. A `Decimal` input field reaches your SQL function as a JSON
 string; read it with `(input->>'total')::numeric`.
 
-Emit the column as text in the view, `'total', total::text`. In HTTP mode the
-Rust pipeline parses each JSONB number as a 64-bit float, so a JSONB *number*
-keeps only about 17 significant digits and reaches the client as a number. Text
-keeps every digit, and where filters still compare it as a number:
+In HTTP mode a JSONB *number* reaches the client with every digit PostgreSQL
+wrote, as a JSON number; a client whose JSON parser makes floats (JavaScript's
+`JSON.parse`) rounds it to about 17 significant digits. To send the scalar's
+string form instead, emit the column as text in the view, `'total', total::text`.
+Where filters still compare it as a number:
 
 ```sql
 CREATE VIEW v_order AS

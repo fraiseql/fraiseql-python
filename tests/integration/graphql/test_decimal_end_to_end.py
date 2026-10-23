@@ -5,19 +5,13 @@ float holds. These tests check what a client receives for it from a query, that
 where filters compare it as a number, and what a mutation's SQL function gets
 for a ``Decimal`` input field.
 
-In HTTP mode the Rust pipeline builds the response. With the schema registry on
-(the default), it parses each JSONB row with ``serde_json``, which holds numbers
-as ``f64`` (``fraiseql_rs/src/pipeline/builder.rs``, ``build_with_schema``), so a
-JSONB *number* loses digits and reaches the client as a number. A view that
-emits the value as text (``price::text``) keeps every digit. The tests marked
-``xfail`` pin the loss; they fail loudly once the Rust path keeps digits.
+In HTTP mode the Rust pipeline builds the response. It parses each JSONB row with
+``serde_json`` and its ``arbitrary_precision`` feature, so a JSONB number reaches
+the client with the digits Postgres wrote, as a number. A view that emits the
+value as text (``price::text``) gets it as a string.
 """
 
-_RUST_F64 = (
-    "the Rust response builder parses JSONB numbers into f64 (serde_json without "
-    "arbitrary_precision), so a JSONB number loses digits; emit price::text"
-)
-
+import json
 from decimal import Decimal
 
 import pytest
@@ -31,6 +25,9 @@ from fraiseql.sql import create_graphql_where_input
 pytestmark = pytest.mark.integration
 
 _EXACT = "12.345678901234567890123"
+# Wider than an f64 (a Python int), and beyond its range: -1e400.
+_BIG = "123456789012345678901234567890"
+_HUGE = "-1" + "0" * 400
 
 
 @pytest_asyncio.fixture(scope="class", loop_scope="class")
@@ -50,6 +47,12 @@ async def decimal_tables(class_db_pool, test_schema) -> None:
                 SELECT id, jsonb_build_object('id', id, 'price', price::text) AS data
                 FROM {test_schema}.tb_product;
             INSERT INTO {test_schema}.tb_product VALUES (1, {_EXACT}), (2, 9.99), (3, 100);
+
+            CREATE TABLE {test_schema}.tb_reading (id int PRIMARY KEY, value numeric NOT NULL);
+            CREATE VIEW {test_schema}.v_reading AS
+                SELECT id, jsonb_build_object('id', id, 'value', value) AS data
+                FROM {test_schema}.tb_reading;
+            INSERT INTO {test_schema}.tb_reading VALUES (1, {_BIG}), (2, -1e400), (3, 7), (4, 0.5);
 
             CREATE FUNCTION {test_schema}.set_price(input jsonb)
             RETURNS {test_schema}.mutation_response AS $$
@@ -79,6 +82,11 @@ def client(class_db_pool, test_schema, decimal_tables, clear_registry) -> TestCl
         id: int
         price: Decimal
 
+    @fraiseql.type(sql_source=f"{test_schema}.v_reading", jsonb_column="data")
+    class Reading:
+        id: int
+        value: Decimal
+
     product_where = create_graphql_where_input(Product)
     product_as_text_where = create_graphql_where_input(ProductAsText)
 
@@ -93,6 +101,11 @@ def client(class_db_pool, test_schema, decimal_tables, clear_registry) -> TestCl
     ) -> list[ProductAsText]:
         db = info.context["db"]
         return await db.find(f"{test_schema}.v_product_text", "productsAsText", info, where=where)
+
+    @fraiseql.query
+    async def readings(info) -> list[Reading]:
+        db = info.context["db"]
+        return await db.find(f"{test_schema}.v_reading", "readings", info)
 
     @fraiseql.input
     class SetPriceInput:
@@ -120,8 +133,8 @@ def client(class_db_pool, test_schema, decimal_tables, clear_registry) -> TestCl
 
     app = create_fraiseql_app(
         database_url="postgresql://test/test",
-        types=[Product, ProductAsText],
-        queries=[products, products_as_text],
+        types=[Product, ProductAsText, Reading],
+        queries=[products, products_as_text, readings],
         mutations=[SetPrice],
         production=False,
         context_getter=context_getter,
@@ -132,7 +145,7 @@ def client(class_db_pool, test_schema, decimal_tables, clear_registry) -> TestCl
 def _post(client: TestClient, query: str) -> dict:
     response = client.post("/graphql", json={"query": query})
     assert response.status_code == 200, response.text
-    body = response.json()
+    body = json.loads(response.text, parse_float=Decimal)  # response.json() makes floats
     assert "errors" not in body, body["errors"]
     return body["data"]
 
@@ -145,12 +158,17 @@ class TestDecimalEndToEnd:
         prices = {row["id"]: row["price"] for row in data["productsAsText"]}
         assert prices[1] == _EXACT
 
-    @pytest.mark.xfail(strict=True, reason=_RUST_F64)
     def test_number_in_the_view_reaches_the_client_exactly(self, client: TestClient) -> None:
         data = _post(client, "{ products { id price } }")
 
         prices = {row["id"]: row["price"] for row in data["products"]}
-        assert Decimal(str(prices[1])) == Decimal(_EXACT)
+        assert prices[1] == Decimal(_EXACT)
+
+    def test_numbers_outside_a_float_reach_the_client_exactly(self, client: TestClient) -> None:
+        data = _post(client, "{ readings { id value } }")
+
+        values = {row["id"]: row["value"] for row in data["readings"]}
+        assert values == {1: int(_BIG), 2: int(_HUGE), 3: 7, 4: Decimal("0.5")}
 
     @pytest.mark.parametrize("field", ["products", "productsAsText"])
     def test_where_compares_as_numbers(self, client: TestClient, field: str) -> None:
@@ -176,7 +194,6 @@ class TestDecimalEndToEnd:
         stored = _post(client, "{ productsAsText { id price } }")
         assert {row["id"]: row["price"] for row in stored["productsAsText"]}[2] == exact
 
-    @pytest.mark.xfail(strict=True, reason=_RUST_F64)
     def test_mutation_entity_reaches_the_client_exactly(self, client: TestClient) -> None:
         exact = "1.000000000000000000002"
         data = _post(
@@ -185,4 +202,4 @@ class TestDecimalEndToEnd:
             " ... on SetPriceSuccess { product { id price } } } }",
         )
 
-        assert Decimal(str(data["setPrice"]["product"]["price"])) == Decimal(exact)
+        assert data["setPrice"]["product"]["price"] == Decimal(exact)

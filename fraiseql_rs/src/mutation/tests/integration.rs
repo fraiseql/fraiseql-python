@@ -457,3 +457,36 @@ fn test_error_response_with_explicit_errors() {
 // ============================================================================
 // COMPREHENSIVE EDGE CASE TESTS (Phase 5)
 // ============================================================================
+
+#[test]
+fn test_entity_numbers_keep_their_digits() {
+    let mutation_json = r#"{
+        "status": "updated",
+        "message": "ok",
+        "entity_id": "3",
+        "entity_type": "Product",
+        "entity": {"id": 3, "price": 1.000000000000000000002, "stock": 18446744073709551616},
+        "updated_fields": null,
+        "cascade": null,
+        "metadata": null
+    }"#;
+
+    let result = build_mutation_response(
+        mutation_json,
+        "setPrice",
+        "SetPriceSuccess",
+        "SetPriceError",
+        Some("product"),
+        Some("Product"),
+        None,
+        true,
+        None,
+        None,
+        None,
+    )
+    .unwrap();
+
+    let response = String::from_utf8(result).unwrap();
+    assert!(response.contains(r#""price":1.000000000000000000002"#), "{response}");
+    assert!(response.contains(r#""stock":18446744073709551616"#), "{response}");
+}

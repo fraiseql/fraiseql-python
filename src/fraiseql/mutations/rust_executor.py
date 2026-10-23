@@ -188,13 +188,14 @@ async def execute_mutation_rust(
     input_json = json.dumps(input_data, separators=(",", ":"))
 
     # Build SQL query using psycopg placeholders (%s)
-    # Wrap with row_to_json() to handle composite type returns as JSON
+    # Wrap with row_to_json() to handle composite type returns as JSON, read as text so
+    # numbers keep their digits on the way to Rust (json.loads makes a numeric a float)
     if context_args:
         placeholders = ", ".join(["%s"] * len(context_args))
-        query = f"SELECT row_to_json({function_name}({placeholders}, %s::jsonb))"
+        query = f"SELECT row_to_json({function_name}({placeholders}, %s::jsonb))::text"
         params = (*context_args, input_json)
     else:
-        query = f"SELECT row_to_json({function_name}(%s::jsonb))"
+        query = f"SELECT row_to_json({function_name}(%s::jsonb))::text"
         params = (input_json,)
 
     # Execute query
@@ -234,6 +235,17 @@ async def execute_mutation_rust(
     # Get mutation result
     mutation_result = row[0]
 
+    # JSON text is parsed only to inspect it; Rust gets the text itself, unless it's
+    # converted from the legacy format below
+    raw_json: str | None = None
+    if isinstance(mutation_result, str):
+        try:
+            parsed = json.loads(mutation_result)
+        except ValueError:
+            parsed = None
+        if isinstance(parsed, dict):
+            raw_json, mutation_result = mutation_result, parsed
+
     # Handle different result types from psycopg
     if isinstance(mutation_result, dict):
         # psycopg returned a dict (from JSONB or row_to_json composite)
@@ -242,6 +254,7 @@ async def execute_mutation_rust(
             # mutation_response format from row_to_json - pass through as-is
             pass
         elif "object_data" in mutation_result:
+            raw_json = None
             # Legacy composite type format - convert to mutation_response
             mutation_result = {
                 "entity_id": str(mutation_result.get("id")) if mutation_result.get("id") else None,
@@ -260,7 +273,7 @@ async def execute_mutation_rust(
 
         if entity_type is None:
             _warn_if_untyped_entity(function_name, mutation_result)
-        mutation_json = json.dumps(mutation_result, separators=(",", ":"), default=str)
+        mutation_json = raw_json or json.dumps(mutation_result, separators=(",", ":"), default=str)
     elif isinstance(mutation_result, tuple):
         # psycopg returned a tuple from composite type
         # mutation_response order:

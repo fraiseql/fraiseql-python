@@ -936,4 +936,25 @@ mod tests {
         // user_name should NOT be present (not selected)
         assert!(result.get("userName").is_none(), "user_name should be filtered out");
     }
+
+    /// JSONB numbers keep their source digits: a `numeric` wider than an f64, and one
+    /// beyond its range, reach the response as Postgres wrote them.
+    #[test]
+    fn test_numbers_keep_their_digits() {
+        let registry = create_field_projection_test_schema();
+        let huge = format!("-1{}", "0".repeat(400));
+        let row = format!(
+            r#"{{"id":1,"price":12.345678901234567890123,"huge":{huge},"big":123456789012345678901234567890,"small":7,"half":0.5}}"#
+        );
+        let input: Value = serde_json::from_str(&row).unwrap();
+
+        let result = transform_with_schema(&input, "User", &registry);
+        let output = serde_json::to_string(&result).unwrap();
+
+        assert!(output.contains(r#""price":12.345678901234567890123"#), "{output}");
+        assert!(output.contains(&format!(r#""huge":{huge}"#)), "{output}");
+        assert!(output.contains(r#""big":123456789012345678901234567890"#), "{output}");
+        assert_eq!(result["small"], 7);
+        assert_eq!(result["half"], 0.5);
+    }
 }
