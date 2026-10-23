@@ -195,16 +195,11 @@ config = FraiseQLConfig(
 
 ### JSON Passthrough
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| json_passthrough_enabled | bool | True | Enable JSON passthrough optimization |
-| json_passthrough_in_production | bool | True | Auto-enable in production mode |
-| json_passthrough_cache_nested | bool | True | Cache wrapped nested objects |
-| passthrough_complexity_limit | int | 50 | Max complexity for passthrough mode |
-| passthrough_max_depth | int | 3 | Max query depth for passthrough |
-| passthrough_auto_detect_views | bool | True | Auto-detect database views |
-| passthrough_cache_view_metadata | bool | True | Cache view metadata |
-| passthrough_view_metadata_ttl | int | 3600 | Metadata cache TTL in seconds |
+There are no passthrough settings: query results go from PostgreSQL through the Rust
+pipeline to the response on every query (see [Rust Pipeline](#rust-pipeline-v100) below).
+`json_passthrough_enabled`, `json_passthrough_in_production`, `json_passthrough_cache_nested`
+and the `passthrough_*` options of earlier releases aren't `FraiseQLConfig` fields, and
+`FraiseQLConfig` ignores them.
 
 ### JSONB Extraction
 
@@ -466,42 +461,11 @@ config = FraiseQLConfig(
 )
 ```
 
-## Entity Routing
+## Entity Routing (deprecated)
 
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| entity_routing | EntityRoutingConfig \| dict \| None | None | Entity-aware query routing configuration |
-
-**Examples**:
-
-```python
-from fraiseql.routing.config import EntityRoutingConfig
-
-# Entity routing configuration
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    entity_routing=EntityRoutingConfig(
-        enabled=True,
-        default_schema="public",
-        entity_mapping={
-            "User": "users_schema",
-            "Post": "content_schema"
-        }
-    )
-)
-
-# Or using dict
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    entity_routing={
-        "enabled": True,
-        "default_schema": "public",
-        "entity_mapping": {
-            "User": "users_schema"
-        }
-    }
-)
-```
+`entity_routing` has no effect and will be removed. It is validated and stored, but no
+query is routed by entity: every query runs the same execution path. Setting it emits a
+`DeprecationWarning`; remove it from your configuration.
 
 ## Environment Variables
 

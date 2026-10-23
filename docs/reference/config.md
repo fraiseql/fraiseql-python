@@ -337,53 +337,10 @@ config = FraiseQLConfig(
 
 ## JSON Passthrough Settings
 
-### json_passthrough_enabled
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable JSON passthrough optimization
-
-### json_passthrough_in_production
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Auto-enable in production mode
-
-### json_passthrough_cache_nested
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Cache wrapped nested objects
-
-### passthrough_complexity_limit
-
-- **Type**: `int`
-- **Default**: `50`
-- **Description**: Max complexity for passthrough mode
-
-### passthrough_max_depth
-
-- **Type**: `int`
-- **Default**: `3`
-- **Description**: Max query depth for passthrough
-
-### passthrough_auto_detect_views
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Auto-detect database views
-
-### passthrough_cache_view_metadata
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Cache view metadata
-
-### passthrough_view_metadata_ttl
-
-- **Type**: `int`
-- **Default**: `3600`
-- **Description**: Metadata cache TTL in seconds
+None. Query results go from PostgreSQL through the Rust pipeline to the response on every
+query. `json_passthrough_enabled`, `json_passthrough_in_production`,
+`json_passthrough_cache_nested` and the `passthrough_*` options of earlier releases aren't
+`FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 
 ## JSONB Extraction Settings
 
@@ -957,34 +914,9 @@ class DeleteUser:
 
 - **Type**: `EntityRoutingConfig | dict | None`
 - **Default**: `None`
-- **Description**: Configuration for entity-aware query routing (optional)
-
-**Examples**:
-
-```python
-from fraiseql.routing.config import EntityRoutingConfig
-
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    entity_routing=EntityRoutingConfig(
-        enabled=True,
-        default_schema="public",
-        entity_mapping={
-            "User": "users_schema",
-            "Post": "content_schema"
-        }
-    )
-)
-
-# Or using dict
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    entity_routing={
-        "enabled": True,
-        "default_schema": "public"
-    }
-)
-```
+- **Description**: Deprecated, and has no effect. It is validated and stored, but no query
+  is routed by entity: every query runs the same execution path. Setting it emits a
+  `DeprecationWarning`. It will be removed.
 
 ## Properties
 

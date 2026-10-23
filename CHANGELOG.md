@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Deprecated
+
+- **`FraiseQLConfig.entity_routing`**, which has no effect. It was validated and
+  stored, but nothing built a `QueryRouter` from it and every query runs the
+  same execution path. Setting it now emits a `DeprecationWarning`; it will be
+  removed. The configuration docs no longer present it as working, and no
+  longer list the `json_passthrough_*` / `passthrough_*` settings, which
+  `FraiseQLConfig` doesn't have (it ignores them).
+
 ## [1.31.0] - 2026-10-22
 
 ### Changed

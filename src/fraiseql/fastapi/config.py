@@ -1,6 +1,7 @@
 """Configuration for FraiseQL FastAPI integration."""
 
 import logging
+import warnings
 from enum import StrEnum
 from typing import Annotated, Any, Literal
 
@@ -363,7 +364,11 @@ class FraiseQLConfig(BaseSettings):
 
     # Entity routing settings
     entity_routing: Any = None
-    """Configuration for entity-aware query routing (optional)."""
+    """Deprecated, and has no effect: no query is routed by entity.
+
+    It is validated and stored, but nothing builds a ``QueryRouter`` from it,
+    and every query runs standard execution. It will be removed.
+    """
 
     @field_validator("entity_routing", mode="before")
     @classmethod
@@ -371,6 +376,13 @@ class FraiseQLConfig(BaseSettings):
         """Validate entity routing configuration."""
         if v is None:
             return None
+
+        warnings.warn(
+            "FraiseQLConfig.entity_routing has no effect: no query is routed by entity. "
+            "It is deprecated and will be removed; remove it from your configuration.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
         from fraiseql.routing.config import EntityRoutingConfig
 

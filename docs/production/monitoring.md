@@ -500,11 +500,6 @@ class FraiseQLMetrics:
     """Custom metrics for FraiseQL operations."""
 
     def __init__(self):
-        self.passthrough_queries = Counter(
-            'fraiseql_passthrough_queries_total',
-            'Queries using JSON passthrough'
-        )
-
         self.turbo_router_hits = Counter(
             'fraiseql_turbo_router_hits_total',
             'TurboRouter cache hits'
@@ -521,12 +516,9 @@ class FraiseQLMetrics:
             ['mutation_name']
         )
 
-    def track_query_execution(self, mode: str, duration: float, complexity: int):
+    def track_query_execution(self, operation: str, duration: float, complexity: int):
         """Track query execution metrics."""
-        if mode == "passthrough":
-            self.passthrough_queries.inc()
-
-        graphql_request_duration.labels(operation=mode).observe(duration)
+        graphql_request_duration.labels(operation=operation).observe(duration)
         graphql_query_complexity.observe(complexity)
 
 metrics = FraiseQLMetrics()

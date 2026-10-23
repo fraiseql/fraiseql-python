@@ -230,7 +230,6 @@ config = FraiseQLConfig(
     apq_enabled=os.getenv("APQ_ENABLED", "true").lower() == "true",
     apq_storage_backend=os.getenv("APQ_STORAGE_BACKEND", "postgresql"),
     enable_turbo_router=True,
-    json_passthrough_enabled=True,
 
     # Security
     enable_playground=(ENV != "production"),
@@ -545,9 +544,6 @@ config = FraiseQLConfig(
     # Layer 2: TurboRouter (3-5x faster)
     enable_turbo_router=True,
     turbo_router_cache_size=500,
-
-    # Layer 3: JSON Passthrough (2-3x faster)
-    json_passthrough_enabled=True,
 
     # Combined: 0.5-2ms cached responses
 )
