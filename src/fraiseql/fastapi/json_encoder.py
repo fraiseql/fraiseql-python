@@ -86,9 +86,9 @@ class FraiseQLJSONEncoder(json.JSONEncoder):
         if isinstance(obj, uuid.UUID):
             return str(obj)
 
-        # Handle Decimal
+        # A string keeps every digit, as the Decimal scalar does; a float rounds
         if isinstance(obj, decimal.Decimal):
-            return float(obj)
+            return str(obj)
 
         # Handle IP addresses
         if isinstance(obj, (ipaddress.IPv4Address, ipaddress.IPv6Address)):

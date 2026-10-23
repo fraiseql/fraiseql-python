@@ -59,7 +59,7 @@ class TypeName:
 | list[T] | [T!]! | Non-null list of non-null items |
 | list[T] \| None | [T!] | Nullable list of non-null items |
 | list[T \| None] | [T]! | Non-null list of nullable items |
-| Decimal | Float! | High precision numbers |
+| Decimal | Decimal! | High precision numbers, serialized as a string |
 
 ## Type Mapping Flow
 

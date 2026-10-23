@@ -78,7 +78,7 @@ flowchart LR
 | `UUID` | `ID!` | `UUID` | Legacy, use `ID` instead |
 | `datetime` | `DateTime!` | `TIMESTAMP` | ISO 8601 format |
 | `date` | `Date!` | `DATE` | YYYY-MM-DD |
-| `Decimal` | `Float!` | `NUMERIC` | High precision |
+| `Decimal` | `Decimal!` | `NUMERIC` | High precision, serialized as a string |
 | `list[T]` | `[T!]!` | `ARRAY` | Non-null list of non-null items |
 | `list[T] \| None` | `[T!]` | `ARRAY` | Nullable list |
 | `list[T \| None]` | `[T]!` | `ARRAY` | List with nullable items |
