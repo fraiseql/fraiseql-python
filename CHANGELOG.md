@@ -194,6 +194,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `{"vector": ..., "threshold": ...}`, and the FastAPI example uses
   `create_fraiseql_app`.
 
+- **`EntityExtractor` finds entities again.** With graphql-core 3.3, a field
+  without arguments has `arguments=None`, and the complexity count's
+  `len(selection.arguments)` raised. A broad `except` turned that into "no
+  entities", so `QueryRouter` answered `NORMAL` for every query. An
+  unexpected failure in the extractor or the router now logs a warning; a
+  query that doesn't parse is still reported in `analysis_errors` only.
+  Note: `FraiseQLConfig(entity_routing=...)` is validated but not used by
+  the request path (no `QueryRouter` is built, and `ModeSelector.select_mode`
+  is never called), so this changes nothing for a served app yet.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

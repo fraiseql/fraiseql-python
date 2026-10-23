@@ -390,3 +390,50 @@ class TestEntityRoutingSystem:
         # Should not crash, should return NORMAL mode as fallback
         mode = router.determine_execution_mode(whitespace_query)
         assert mode == ExecutionMode.NORMAL
+
+    def test_extractor_reads_arguments_variables_directives_and_fragments(
+        self, test_schema
+    ) -> None:
+        """graphql-core 3.3 leaves an absent arguments/directives list as None."""
+        extractor = EntityExtractor(test_schema)
+
+        query = """
+            query Q($skip: Boolean!) {
+                a: allocations { id ...AllocationParts }
+                contracts @skip(if: $skip) { id }
+            }
+            fragment AllocationParts on Allocation { machine { id } }
+        """
+
+        result = extractor.extract_entities(query)
+
+        assert result.analysis_errors == []
+        assert result.root_entities == ["allocation", "contract"]
+        assert result.complexity_score > 0
+
+    def test_unexpected_analysis_failure_is_logged(
+        self, test_schema, routing_config, monkeypatch, caplog
+    ) -> None:
+        """A bug in the analysis must not pass for "no entities" in silence."""
+        extractor = EntityExtractor(test_schema)
+
+        def broken(*args, **kwargs):
+            raise RuntimeError("analysis bug")
+
+        monkeypatch.setattr(extractor, "_calculate_complexity", broken)
+
+        with caplog.at_level("WARNING", logger="fraiseql.routing"):
+            result = extractor.extract_entities("{ allocations { id } }")
+
+        assert result.entities == []
+        assert any("analysis bug" in record.getMessage() for record in caplog.records)
+
+    def test_syntax_error_is_not_logged_as_a_failure(self, test_schema, caplog) -> None:
+        """A client's malformed query is an analysis result, not a warning."""
+        extractor = EntityExtractor(test_schema)
+
+        with caplog.at_level("WARNING", logger="fraiseql.routing"):
+            result = extractor.extract_entities("not a valid graphql query {")
+
+        assert result.analysis_errors
+        assert not caplog.records
