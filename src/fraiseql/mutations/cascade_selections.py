@@ -3,10 +3,9 @@
 Extracts cascade field selections from GraphQL query and converts them
 to a format that Rust can efficiently process.
 
-This is a minimal implementation focused on the most common use cases:
-- Field selection at cascade root level
-- Type filtering (include/exclude) for updated entities
-- Entity field selection with inline fragments
+Rust filters on field names only: which cascade fields were selected, and
+which subfields of each. ``Cascade.updated`` takes no arguments and its
+``entity`` is a JSON scalar, so there is nothing else to send.
 """
 
 import json
@@ -83,67 +82,15 @@ def _parse_cascade_to_json(cascade_field: FieldNode) -> str:
         field_name = selection.name.value  # type: ignore[attr-defined]
         selections["fields"].append(field_name)
 
-        # Parse field-specific selections
-        if field_name == "updated":
-            selections["updated"] = _parse_updated_field(selection)  # type: ignore[attr-defined]
-        elif field_name in ("deleted", "invalidations", "metadata"):
+        # Rust filters each list on these field names, and reads nothing else
+        if field_name in ("updated", "deleted", "invalidations", "metadata"):
             selections[field_name] = _parse_simple_field(selection)  # type: ignore[attr-defined]
 
     return json.dumps(selections, separators=(",", ":"))
 
 
-def _parse_updated_field(field_node: FieldNode) -> dict[str, Any]:
-    """Parse 'updated' field with arguments and entity selections."""
-    result: dict[str, Any] = {"fields": []}
-
-    # Parse arguments (include/exclude)
-    if hasattr(field_node, "arguments") and field_node.arguments:
-        for arg in field_node.arguments:
-            if arg.name.value in ("include", "exclude") and hasattr(arg.value, "values"):
-                result[arg.name.value] = [v.value for v in arg.value.values]  # type: ignore[attr-defined]
-
-    # Parse field selections
-    if hasattr(field_node, "selection_set") and field_node.selection_set:
-        entity_selections = {}
-
-        for sel in field_node.selection_set.selections:
-            if hasattr(sel, "name"):
-                field_name = sel.name.value  # type: ignore[attr-defined]
-                result["fields"].append(field_name)
-
-                # Parse entity field with inline fragments
-                if field_name == "entity" and hasattr(sel, "selection_set") and sel.selection_set:  # type: ignore[attr-defined]
-                    entity_selections = _parse_entity_selections(sel)  # type: ignore[attr-defined]
-
-        if entity_selections:
-            result["entity_selections"] = entity_selections
-
-    return result
-
-
-def _parse_entity_selections(entity_field: FieldNode) -> dict[str, list[str]]:
-    """Parse entity field selections with inline fragments."""
-    selections: dict[str, list[str]] = {}
-    common_fields: list[str] = []
-
-    if not hasattr(entity_field, "selection_set") or not entity_field.selection_set:
-        return selections
-
-    for sel in entity_field.selection_set.selections:  # type: ignore[attr-defined]
-        # Regular field (not in inline fragment)
-        if hasattr(sel, "name"):
-            common_fields.append(sel.name.value)  # type: ignore[attr-defined]
-        # Inline fragment: ... on Post { id title }
-        elif isinstance(sel, InlineFragmentNode) and hasattr(sel, "type_condition"):
-            typename = sel.type_condition.name.value  # type: ignore[attr-defined]
-            fields = _get_field_names(sel) + common_fields  # type: ignore[attr-defined]
-            selections[typename] = fields
-
-    return selections
-
-
 def _parse_simple_field(field_node: FieldNode) -> dict[str, Any]:
-    """Parse simple field (deleted, invalidations, metadata)."""
+    """Parse a cascade field (updated, deleted, invalidations, metadata)."""
     return {"fields": _get_field_names(field_node)}
 
 
