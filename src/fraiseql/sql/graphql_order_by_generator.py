@@ -11,6 +11,7 @@ from functools import lru_cache
 from typing import Any, Optional, TypeVar, Union, get_args, get_origin, get_type_hints
 
 from fraiseql import fraise_input
+from fraiseql.sql.graphql_where_generator import VectorDistanceInput
 from fraiseql.sql.order_by_generator import (
     VECTOR_DISTANCE_OPERATORS,
     OrderBy,
@@ -39,27 +40,28 @@ class VectorOrderBy:
     pgvector operators. Distance values are returned raw from PostgreSQL.
 
     Fields:
-        cosine_distance: Order by cosine distance (accepts dense or sparse vectors)
-        l2_distance: Order by L2/Euclidean distance (accepts dense or sparse vectors)
-        l1_distance: Order by L1/Manhattan distance (accepts dense or sparse vectors)
-        inner_product: Order by negative inner product (accepts dense or sparse vectors)
+        cosine_distance: Order by cosine distance
+        l2_distance: Order by L2/Euclidean distance
+        l1_distance: Order by L1/Manhattan distance
+        inner_product: Order by negative inner product
         hamming_distance: Order by Hamming distance for bit vectors
         jaccard_distance: Order by Jaccard distance for bit vectors
 
     Example:
-        orderBy: { embedding: { l1Distance: [0.1, 0.2, 0.3] } }
+        orderBy: { embedding: { l1Distance: { dense: [0.1, 0.2, 0.3] } } }
         orderBy: { binaryEmbedding: { hammingDistance: "101010" } }
         # Orders by distance to the given vector (ASC = most similar first)
 
-    The float operators are ``[Float!]`` in GraphQL. In Python they also take a
-    sparse ``{"indices": [...], "values": [...]}`` dict, which GraphQL can't
-    express next to a list.
+    The float operators take a ``VectorDistanceInput``, the operand a vector
+    ``where`` takes. Only ``dense`` sorts: a ``sparse`` operand raises, as
+    the sparsevec literal would need the column's dimension. In Python they
+    also take the bare list.
     """
 
-    cosine_distance: list[float] | None = None
-    l2_distance: list[float] | None = None
-    l1_distance: list[float] | None = None
-    inner_product: list[float] | None = None
+    cosine_distance: VectorDistanceInput | None = None
+    l2_distance: VectorDistanceInput | None = None
+    l1_distance: VectorDistanceInput | None = None
+    inner_product: VectorDistanceInput | None = None
     hamming_distance: str | None = None  # bit string like "101010"
     jaccard_distance: str | None = None  # bit string like "111000"
 
@@ -292,14 +294,19 @@ _BIT_DISTANCE_OPERATORS = ("hamming_distance", "jaccard_distance")
 def _is_vector_operand(operator: str, value: Any) -> bool:
     """Whether ``{operator: value}`` in a dict ``order_by`` asks for a distance sort.
 
-    A list or tuple is a vector; for the bit-vector operators, so is a string of
-    0s and 1s. Any other value (``"desc"``) is a direction on a field that happens
-    to share the operator's name.
+    A list or tuple is a vector, and so is a ``VectorDistanceInput`` dict
+    (``{"dense": [...]}``, as GraphQL sends it) or a sparse
+    ``{"indices", "values"}`` dict; for the bit-vector operators, so is a string
+    of 0s and 1s. Any other value (``"desc"``) is a direction on a field that
+    happens to share the operator's name.
     """
     if operator not in VECTOR_DISTANCE_OPERATORS:
         return False
     if isinstance(value, (list, tuple)):
         return True
+    if isinstance(value, dict):
+        keys = set(value)
+        return bool(keys) and (keys <= {"dense", "sparse"} or keys == {"indices", "values"})
     return (
         operator in _BIT_DISTANCE_OPERATORS
         and isinstance(value, str)

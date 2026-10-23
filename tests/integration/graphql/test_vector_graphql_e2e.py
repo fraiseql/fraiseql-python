@@ -100,10 +100,10 @@ class TestVectorSearchOverGraphQL:
     @pytest.mark.parametrize(
         ("operator", "operand", "expected"),
         [
-            ("cosineDistance", "[1, 0]", [1, 4, 3, 2]),
-            ("l2Distance", "[1, 0]", [1, 3, 2, 4]),
-            ("l1Distance", "[1, 0]", [1, 3, 2, 4]),
-            ("innerProduct", "[1, 0]", [4, 1, 3, 2]),
+            ("cosineDistance", "{dense: [1, 0]}", [1, 4, 3, 2]),
+            ("l2Distance", "{dense: [1, 0]}", [1, 3, 2, 4]),
+            ("l1Distance", "{dense: [1, 0]}", [1, 3, 2, 4]),
+            ("innerProduct", "{dense: [1, 0]}", [4, 1, 3, 2]),
         ],
     )
     def test_order_by_distance(self, client, operator, operand, expected) -> None:
@@ -117,7 +117,8 @@ class TestVectorSearchOverGraphQL:
 
     def test_declared_order_by_argument(self, client) -> None:
         query = (
-            "{ documentsDeclared(orderBy: {embedding: {innerProduct: [1, 0]}}, limit: 2) { id } }"
+            "{ documentsDeclared(orderBy: {embedding: {innerProduct: {dense: [1, 0]}}}, limit: 2) "
+            "{ id } }"
         )
         assert _ids(client, query) == [4, 1]
 
@@ -126,7 +127,7 @@ class TestVectorSearchOverGraphQL:
             "/graphql",
             json={
                 "query": "{ documents(where: {embedding: {cosineDistance: {dense: [1, 0]}, "
-                "distanceWithin: 0.35}}, orderBy: {embedding: {cosineDistance: [1, 0]}}) "
+                "distanceWithin: 0.35}}, orderBy: {embedding: {cosineDistance: {dense: [1, 0]}}}) "
                 "{ id embedding } }"
             },
         ).json()
@@ -138,6 +139,41 @@ class TestVectorSearchOverGraphQL:
             {"id": 1, "embedding": [1.0, 0.0]},
             {"id": 4, "embedding": [2.0, 2.0]},
         ]
+
+    def test_a_bare_list_is_not_an_order_by_operand(self, client) -> None:
+        # orderBy takes the operand where takes, so a client learns one shape
+        body = client.post(
+            "/graphql",
+            json={"query": "{ documents(orderBy: {embedding: {cosineDistance: [1, 0]}}) { id } }"},
+        ).json()
+        assert "VectorDistanceInput" in body["errors"][0]["message"], body
+
+    def test_sparse_order_by_is_refused(self, client) -> None:
+        body = client.post(
+            "/graphql",
+            json={
+                "query": "{ documents(orderBy: {embedding: {cosineDistance: "
+                "{sparse: {indices: [1], values: [1.0]}}}}) { id } }"
+            },
+        ).json()
+        assert "needs a dense vector" in body["errors"][0]["message"], body
+
+    @pytest.mark.parametrize(
+        ("field", "operator"),
+        [
+            ("embedding", "cosineDistance: {dense: [1, 0]}"),
+            ("binaryEmbedding", 'hammingDistance: "1100"'),
+        ],
+    )
+    def test_where_needs_distance_within(self, client, field, operator) -> None:
+        # It used to filter at < 0.5 without saying so
+        body = client.post(
+            "/graphql",
+            json={"query": f"{{ documents(where: {{{field}: {{{operator}}}}}) {{ id }} }}"},
+        ).json()
+        message = body["errors"][0]["message"]
+        assert f"'{field}'" in message, body
+        assert "distanceWithin" in message, body
 
     def test_plain_where(self, client) -> None:
         assert _ids(client, '{ documents(where: {category: {eq: "b"}}) { id } }') == [3]
@@ -180,7 +216,7 @@ class TestVectorSearchOverGraphQL:
                   embedding: { cosineDistance: { dense: $embedding }, distanceWithin: 0.5 }
                   category: { eq: $category }
                 }
-                orderBy: { embedding: { cosineDistance: $embedding } }
+                orderBy: { embedding: { cosineDistance: { dense: $embedding } } }
                 limit: $limit
               ) { id }
             }

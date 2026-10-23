@@ -177,22 +177,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Vector search works over GraphQL.** A list query over a type with a vector
   field (`embedding: list[float]`) had no `orderBy` argument: the query builder
-  skipped it because `VectorOrderBy` couldn't become a GraphQL type. The float
-  operators of `VectorOrderBy` are now `[Float!]`, so
-  `documents(orderBy: {embedding: {cosineDistance: [...]}}, limit: 10)` sorts by
-  distance, auto-wired or declared as `order_by: <Type>OrderByInput`, for all six
-  operators. A vector `where` (`{embedding: {cosineDistance: {dense: [...]},
-  distanceWithin: 0.5}}`) failed in `db.find` with `Invalid operator 'dense'`;
-  it now filters, `innerProduct` included. On a type declared
-  `jsonb_column=None`, a `where` looked for every field in a `data` column the
-  view doesn't have; it now uses the view's columns. A `bit` column on a
-  `list[float]` field no longer fails the query with `invalid input syntax for
-  type json`.
+  skipped it because `VectorOrderBy` couldn't become a GraphQL type. Its float
+  operators now take a `VectorDistanceInput`, the operand a vector `where`
+  takes, so `documents(orderBy: {embedding: {cosineDistance: {dense: [...]}}},
+  limit: 10)` sorts by distance, auto-wired or declared as
+  `order_by: <Type>OrderByInput`, for all six operators (`hammingDistance` and
+  `jaccardDistance` take a bit string). In Python, `VectorOrderBy` and a dict
+  `order_by` still take the bare list. A `sparse` operand raises an error in
+  `orderBy`, as in `where`: the `sparsevec` literal guessed the column's
+  dimension from the indices. A vector `where` (`{embedding: {cosineDistance:
+  {dense: [...]}, distanceWithin: 0.5}}`) failed in `db.find` with `Invalid
+  operator 'dense'`; it now filters, `innerProduct` included. `distanceWithin`
+  is required: without it a `where` filtered at `< 0.5`, and now fails with an
+  error naming the field. On a type declared `jsonb_column=None`, a `where`
+  looked for every field in a `data` column the view doesn't have; it now uses
+  the view's columns. A `bit` column on a `list[float]` field no longer fails
+  the query with `invalid input syntax for type json`. In a Python `where`, the
+  `(vector, threshold)` pair (`{"cosine_distance": [vec, 0.5]}`) emits a
+  `DeprecationWarning`: a 2-dimensional query vector reads the same. Use
+  `{"vector": ..., "threshold": ...}`.
 
-- `docs/features/pgvector.md`: GraphQL names are camelCase, a vector `where`
-  takes `{dense: [...]}` and `distanceWithin`, a Python `where` takes
-  `{"vector": ..., "threshold": ...}`, and the FastAPI example uses
-  `create_fraiseql_app`.
+- `docs/features/pgvector.md`: GraphQL names are camelCase, a vector `orderBy`
+  and `where` both take `{dense: [...]}`, `where` needs `distanceWithin`, a
+  Python `where` takes `{"vector": ..., "threshold": ...}`, and the FastAPI
+  example uses `create_fraiseql_app`.
 
 - **`EntityExtractor` finds entities again.** With graphql-core 3.3, a field
   without arguments has `arguments=None`, and the complexity count's

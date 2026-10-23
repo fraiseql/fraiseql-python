@@ -57,6 +57,29 @@ def _bit_cast(bit_string: str) -> sql.Composed:
     return sql.SQL("::bit({})").format(sql.Literal(len(bit_string)))
 
 
+def unpack_vector_operand(value: Any) -> Any:
+    """Return the query vector inside a ``VectorDistanceInput``, or ``value`` as is.
+
+    GraphQL sends an ``orderBy`` operand as ``{"dense": [...]}`` or
+    ``{"sparse": {"indices": [...], "values": [...]}}``, the input a vector
+    ``where`` takes, either as a dict or as the input object. Python callers
+    pass the list (or the sparse dict, or a bit string) directly.
+    """
+    if isinstance(value, dict):
+        if "dense" not in value and "sparse" not in value:
+            return value
+        dense, sparse = value.get("dense"), value.get("sparse")
+    elif hasattr(value, "dense") or hasattr(value, "sparse"):
+        dense, sparse = getattr(value, "dense", None), getattr(value, "sparse", None)
+    else:
+        return value
+    if dense is not None:
+        return dense
+    if sparse is not None and not isinstance(sparse, dict):  # a SparseVectorInput
+        return {"indices": sparse.indices, "values": sparse.values}
+    return sparse
+
+
 @fraise_enum
 class OrderDirection(Enum):
     """Order direction for sorting."""
@@ -94,7 +117,8 @@ class OrderBy:
         field: The field name or nested path (e.g., 'amount' or 'profile.age')
                For vector distance: 'embedding.cosine_distance'
         direction: Sort direction ('asc' or 'desc')
-        value: Optional value for vector distance operations (list[float])
+        value: Optional value for vector distance operations (list[float], or
+               a ``VectorDistanceInput`` with a ``dense`` vector)
         collation: Optional PostgreSQL collation for text sorting (str)
 
     Examples:
@@ -107,7 +131,7 @@ class OrderBy:
 
     field: str
     direction: OrderDirection = OrderDirection.ASC
-    value: list[float] | None = None
+    value: Any = None
     collation: str | None = None
 
     def _collated(self, expr: sql.Composed | sql.SQL) -> sql.Composed | sql.SQL:
@@ -235,7 +259,7 @@ class OrderBy:
         self,
         field_name: str,
         operator: str,
-        value: list[float] | dict[str, Any],
+        value: Any,
         table_ref: str = "t",
     ) -> sql.Composed:
         """Build SQL for vector distance ordering.
@@ -245,71 +269,60 @@ class OrderBy:
         Args:
             field_name: The vector field name (e.g., 'embedding')
             operator: One of :data:`VECTOR_DISTANCE_OPERATORS`
-            value: The vector to compare against
+            value: The vector to compare against: a list, a ``VectorDistanceInput``
+                (``{"dense": [...]}``, as GraphQL sends it), or a bit string
             table_ref: Table alias or column name to use for field access
 
         Returns:
             SQL fragment for vector distance ordering
         """
-        # Map operator names to PostgreSQL operators and data types
         # Set to a function name by any operator that must render as a call rather
         # than an infix operator; pg_operator_sql is None in exactly those cases.
         pg_function_sql = None
 
-        if isinstance(value, dict):
-            # Sparse vector handling
-            indices = value["indices"]
-            vals = value["values"]
-            dimension = max(indices) + 1 if indices else 0
-            elements = ",".join(f"{idx}:{val}" for idx, val in zip(indices, vals, strict=True))
-            literal_value = f"{{{elements}}}/{dimension}"
-            type_cast = sql.SQL("::sparsevec")
+        value = unpack_vector_operand(value)
+        is_sparse = isinstance(value, dict)
+        if is_sparse:
+            # A sparsevec literal needs the column's dimension, which neither input
+            # carries: guessing it from the indices made the sort fail on any
+            # column whose dimension the guess missed.
+            msg = (
+                f"order_by: {self.field!r} needs a dense vector; "
+                "db.find can't order by a sparse one"
+            )
+            raise ValueError(msg)
 
-            if operator == "cosine_distance":
-                pg_operator_sql = sql.SQL("<=>")
-            elif operator == "l2_distance":
-                pg_operator_sql = sql.SQL("<->")
-            elif operator == "l1_distance":
-                pg_operator_sql = sql.SQL("<+>")
-            elif operator == "inner_product":
-                pg_operator_sql = sql.SQL("<#>")
-            else:
-                # hamming_distance and jaccard_distance are bit-string operators;
-                # pgvector has no sparsevec form of either.
-                raise ValueError(f"Unsupported sparse vector operator: {operator}")
+        literal_value = "[" + ",".join(str(v) for v in value) + "]"
+        if operator == "cosine_distance":
+            pg_operator_sql = sql.SQL("<=>")
+            type_cast = sql.SQL("::vector")
+        elif operator == "l2_distance":
+            pg_operator_sql = sql.SQL("<->")
+            type_cast = sql.SQL("::vector")
+        elif operator == "l1_distance":
+            pg_operator_sql = sql.SQL("<+>")
+            type_cast = sql.SQL("::vector")
+        elif operator == "inner_product":
+            pg_operator_sql = sql.SQL("<#>")
+            type_cast = sql.SQL("::vector")
+        elif operator == "hamming_distance":
+            pg_operator_sql = sql.SQL("<~>")
+            literal_value = str(value)  # value is already a string for binary operators
+            type_cast = _bit_cast(literal_value)
+        elif operator == "jaccard_distance":
+            # Rendered as jaccard_distance(col, lit), not as the <%> operator.
+            # psycopg scans a statement for placeholders whenever parameters
+            # accompany it, and rejects `%>` as one; escaping to `<%%>` only
+            # moves the failure to the no-parameter statements, which are sent
+            # verbatim and then have no such operator. The function form is the
+            # one spelling correct under both, at the cost of the
+            # bit_jaccard_ops index, which cannot match a function call (#495).
+            pg_operator_sql = None
+            pg_function_sql = sql.SQL("jaccard_distance")
+            literal_value = str(value)  # value is already a string for binary operators
+            type_cast = _bit_cast(literal_value)
         else:
-            # Dense vector handling
-            literal_value = "[" + ",".join(str(v) for v in value) + "]"
-            if operator == "cosine_distance":
-                pg_operator_sql = sql.SQL("<=>")
-                type_cast = sql.SQL("::vector")
-            elif operator == "l2_distance":
-                pg_operator_sql = sql.SQL("<->")
-                type_cast = sql.SQL("::vector")
-            elif operator == "l1_distance":
-                pg_operator_sql = sql.SQL("<+>")
-                type_cast = sql.SQL("::vector")
-            elif operator == "inner_product":
-                pg_operator_sql = sql.SQL("<#>")
-                type_cast = sql.SQL("::vector")
-            elif operator == "hamming_distance":
-                pg_operator_sql = sql.SQL("<~>")
-                literal_value = str(value)  # value is already a string for binary operators
-                type_cast = _bit_cast(literal_value)
-            elif operator == "jaccard_distance":
-                # Rendered as jaccard_distance(col, lit), not as the <%> operator.
-                # psycopg scans a statement for placeholders whenever parameters
-                # accompany it, and rejects `%>` as one; escaping to `<%%>` only
-                # moves the failure to the no-parameter statements, which are sent
-                # verbatim and then have no such operator. The function form is the
-                # one spelling correct under both, at the cost of the
-                # bit_jaccard_ops index, which cannot match a function call (#495).
-                pg_operator_sql = None
-                pg_function_sql = sql.SQL("jaccard_distance")
-                literal_value = str(value)  # value is already a string for binary operators
-                type_cast = _bit_cast(literal_value)
-            else:
-                raise ValueError(f"Unknown vector distance operator: {operator}")
+            raise ValueError(f"Unknown vector distance operator: {operator}")
 
         # Build SQL: ({table_ref}."field") <operator> 'literal'::type ASC
         # or, where pg_operator_sql is None: func({table_ref}."field", 'literal'::type) ASC

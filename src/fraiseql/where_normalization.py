@@ -173,7 +173,7 @@ def normalize_dict_where(
             # Scalar value, wrap in eq operator
             field_value = {"eq": field_value}  # noqa: PLW2901
 
-        field_value = _fold_vector_filter(field_value)  # noqa: PLW2901
+        field_value = _fold_vector_filter(field_value, original_field_name)  # noqa: PLW2901
 
         # Check if this is a nested object filter
         is_nested, use_fk = _is_nested_object_filter(
@@ -388,7 +388,7 @@ def _is_flat_view(view_name: str, table_columns: set[str]) -> bool:
     )
 
 
-def _fold_vector_filter(field_filter: dict) -> dict:
+def _fold_vector_filter(field_filter: dict, field_name: str) -> dict:
     """Rewrite a GraphQL ``VectorFilter`` into the form ``FieldCondition`` reads.
 
     GraphQL sends ``{"cosineDistance": {"dense": [...]}, "distanceWithin": 0.5}``:
@@ -397,6 +397,10 @@ def _fold_vector_filter(field_filter: dict) -> dict:
     "threshold": 0.5, "comparison": "lte"}}``. Without the rewrite, the
     camelCased operator made the filter look nested and ``dense`` was rejected
     as an unknown operator.
+
+    A ``VectorFilter`` operand (``{dense}``, ``{sparse}`` or a bit string)
+    without ``distanceWithin`` raises: it used to filter at ``< 0.5``, a
+    threshold nobody asked for.
     """
     operators = {_normalize_operator(key): key for key in field_filter}
     if not any(operator in VECTOR_OPERATORS for operator in operators):
@@ -422,13 +426,26 @@ def _fold_vector_filter(field_filter: dict) -> dict:
                 msg = f"where: {key!r} needs a dense vector; db.find can't filter on a sparse one"
                 raise ValueError(msg)
             value = {"vector": value["dense"]}
-        elif threshold is not None and isinstance(value, (list, str)):
+            if threshold is None:
+                raise ValueError(_missing_distance_within(field_name, key))
+        elif isinstance(value, str):
+            if threshold is None:
+                raise ValueError(_missing_distance_within(field_name, key))
+            value = {"vector": value}
+        elif threshold is not None and isinstance(value, list):
             value = {"vector": value}
         if threshold is not None and isinstance(value, dict) and "threshold" not in value:
             # distanceWithin is the maximum distance to include
             value = {**value, "threshold": threshold, "comparison": "lte"}
         folded[operator] = value
     return folded
+
+
+def _missing_distance_within(field_name: str, operator: str) -> str:
+    return (
+        f"where: {field_name!r} needs distanceWithin next to {operator!r}: "
+        "the maximum distance to include"
+    )
 
 
 def _is_nested_object_filter(

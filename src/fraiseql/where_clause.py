@@ -30,6 +30,7 @@ Known Limitations:
 
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any, Literal
@@ -635,6 +636,13 @@ class FieldCondition:
                     threshold = self.value.get("threshold", 0.5)
                     comparison = self.value.get("comparison", "lt")
                 elif isinstance(self.value, (list, tuple)) and len(self.value) == 2:
+                    warnings.warn(
+                        f"where: {self.operator} with a [vector, threshold] pair is "
+                        "deprecated, as it can't be told apart from a 2-dimensional "
+                        'query vector; pass {"vector": ..., "threshold": ...} instead',
+                        DeprecationWarning,
+                        stacklevel=2,
+                    )
                     vector, threshold = self.value
                     comparison = "lt"
                 else:

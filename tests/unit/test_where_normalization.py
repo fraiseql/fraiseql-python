@@ -325,3 +325,42 @@ class TestVectorFilterFolding:
         where = {"embedding": {"cosineDistance": {"sparse": {"indices": [0], "values": [1.0]}}}}
         with pytest.raises(ValueError, match="dense vector"):
             self._conditions(where)
+
+    @staticmethod
+    def _sql(where):
+        repo = FraiseQLRepository(None)  # type: ignore
+        clause = repo._normalize_where(  # type: ignore
+            where, view_name="tv_vector_doc", table_columns={"id", "embedding"}
+        )
+        return clause.to_sql()
+
+    def test_distance_within_is_required(self):
+        import pytest
+
+        where = {"embedding": {"cosineDistance": {"dense": [1.0, 0.0]}}}
+        with pytest.raises(ValueError, match=r"'embedding'.*distanceWithin"):
+            self._conditions(where)
+
+    def test_distance_within_is_required_for_a_bit_string(self):
+        import pytest
+
+        where = {"fingerprint": {"hammingDistance": "1100"}}
+        with pytest.raises(ValueError, match=r"'fingerprint'.*distanceWithin"):
+            self._conditions(where)
+
+    def test_vector_threshold_pair_is_deprecated(self):
+        import pytest
+
+        where = {"embedding": {"l2_distance": [[1.0, 0.0], 0.75]}}
+        with pytest.warns(DeprecationWarning, match=r'\{"vector": \.\.\., "threshold": \.\.\.\}'):
+            _, params = self._sql(where)
+        assert params == [[1.0, 0.0], 0.75]
+
+    def test_vector_threshold_dict_is_not_deprecated(self):
+        import warnings
+
+        where = {"embedding": {"l2_distance": {"vector": [1.0, 0.0], "threshold": 0.75}}}
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            _, params = self._sql(where)
+        assert params == [[1.0, 0.0], 0.75]

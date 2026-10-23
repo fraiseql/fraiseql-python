@@ -164,25 +164,30 @@ input VectorDistanceInput {
 }
 ```
 
-A `where` keeps the rows whose distance to the query vector is at most `distanceWithin`
-(below 0.5 if you leave it out). `db.find` filters on `dense` vectors only; a `sparse` one
-raises an error there.
+A `where` keeps the rows whose distance to the query vector is at most `distanceWithin`.
+`distanceWithin` is required next to a distance operator: without it the query fails with
+`where: 'embedding' needs distanceWithin next to 'cosineDistance'`.
 
 ### VectorOrderBy Schema
 
 ```graphql
 input VectorOrderBy {
-  cosineDistance: [Float!]
-  l2Distance: [Float!]
-  l1Distance: [Float!]
-  innerProduct: [Float!]
+  cosineDistance: VectorDistanceInput
+  l2Distance: VectorDistanceInput
+  l1Distance: VectorDistanceInput
+  innerProduct: VectorDistanceInput
   hammingDistance: String
   jaccardDistance: String
 }
 ```
 
-An `orderBy` sorts by distance to the given vector, nearest first. Names are camelCase
-in GraphQL (with the default `auto_camel_case`) and snake_case in Python.
+An `orderBy` sorts by distance to the given vector, nearest first. It takes the same
+operand as a `where`: `{ dense: [...] }` for the float operators, a bit string for
+`hammingDistance` and `jaccardDistance`. Names are camelCase in GraphQL (with the default
+`auto_camel_case`) and snake_case in Python.
+
+`db.find` filters and sorts on `dense` vectors only: a `sparse` operand raises an error in
+both, as the `sparsevec` literal would need the column's dimension.
 
 ### Distance Operators
 
@@ -197,7 +202,7 @@ FraiseQL exposes PostgreSQL pgvector's six native distance operators:
 ```graphql
 query {
   documents(
-    orderBy: { embedding: { cosineDistance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -216,7 +221,7 @@ query {
 ```graphql
 query {
   documents(
-    orderBy: { embedding: { l2Distance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { l2Distance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -235,7 +240,7 @@ query {
 ```graphql
 query {
   documents(
-    orderBy: { embedding: { innerProduct: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { innerProduct: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -254,7 +259,7 @@ query {
 ```graphql
 query {
   documents(
-    orderBy: { embedding: { l1Distance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { l1Distance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -310,7 +315,7 @@ Keep the documents within a distance, nearest first:
 query {
   documents(
     where: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] }, distanceWithin: 0.5 } }
-    orderBy: { embedding: { cosineDistance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 10
   ) {
     id
@@ -334,7 +339,7 @@ query {
       tenantId: { eq: "550e8400-e29b-41d4-a716-446655440000" }
       createdAt: { gte: "2024-01-01" }
     }
-    orderBy: { embedding: { cosineDistance: [0.1, 0.2, 0.3, ...] } }
+    orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3, ...] } } }
     limit: 20
   ) {
     id
@@ -467,21 +472,23 @@ WHERE embedding <=> '[...1536 elements...]'::vector;
 
 ### Invalid Vector Formats
 
-FraiseQL validates vector input:
-
 GraphQL validates vector input against the schema:
 
 ```graphql
 # Valid
-query { documents(orderBy: { embedding: { cosineDistance: [0.1, 0.2, 0.3] } }) { id } }
+query { documents(orderBy: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3] } } }) { id } }
 
 # Invalid - non-numeric values
-query { documents(orderBy: { embedding: { cosineDistance: ["invalid"] } }) { id } }
+query { documents(orderBy: { embedding: { cosineDistance: { dense: ["invalid"] } } }) { id } }
 # GraphQL Error: Float cannot represent non numeric value: "invalid"
 
-# Invalid - a bare list where a VectorDistanceInput is expected
-query { documents(where: { embedding: { cosineDistance: [0.1, 0.2, 0.3] } }) { id } }
+# Invalid - a bare list where a VectorDistanceInput is expected (in orderBy and in where)
+query { documents(orderBy: { embedding: { cosineDistance: [0.1, 0.2, 0.3] } }) { id } }
 # GraphQL Error: Expected value of type 'VectorDistanceInput' to be an object, found: [0.1, 0.2, 0.3].
+
+# Invalid - a distance operator without distanceWithin
+query { documents(where: { embedding: { cosineDistance: { dense: [0.1, 0.2, 0.3] } } }) { id } }
+# GraphQL Error: where: 'embedding' needs distanceWithin next to 'cosineDistance': the maximum distance to include
 ```
 
 ## Use Cases
@@ -851,7 +858,7 @@ const SEARCH_DOCUMENTS = gql`
         category: { eq: $category }
       }
       orderBy: {
-        embedding: { cosineDistance: $embedding }
+        embedding: { cosineDistance: { dense: $embedding } }
       }
       limit: $limit
     ) {

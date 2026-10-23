@@ -48,3 +48,44 @@ def test_distance_next_to_other_keys() -> None:
         ("embedding.cosine_distance", OrderDirection.ASC, [1.0]),
         ("title", OrderDirection.ASC, None),
     ]
+
+
+# GraphQL sends the operand as a VectorDistanceInput, the same input `where` takes
+_COSINE_SQL = "(t.\"embedding\") <=> '[0.1,0.2]'::vector ASC"
+
+
+@pytest.mark.parametrize(
+    "order_by",
+    [
+        {"embedding": {"cosineDistance": {"dense": [0.1, 0.2]}}},
+        [{"embedding": {"cosine_distance": {"dense": [0.1, 0.2]}}}],
+        {"embedding": {"cosineDistance": {"dense": [0.1, 0.2], "sparse": None}}},
+    ],
+)
+def test_dense_operand_renders_the_vector(order_by) -> None:
+    [instruction] = _convert_order_by_input_to_sql(order_by).instructions
+    assert instruction.to_sql().as_string(None) == _COSINE_SQL
+
+
+def test_vector_order_by_takes_a_distance_input() -> None:
+    from fraiseql.sql.graphql_order_by_generator import VectorOrderBy
+    from fraiseql.sql.graphql_where_generator import VectorDistanceInput
+
+    order_by = {"embedding": VectorOrderBy(cosine_distance=VectorDistanceInput(dense=[0.1, 0.2]))}
+    [instruction] = _convert_order_by_input_to_sql(order_by).instructions
+    assert instruction.to_sql().as_string(None) == _COSINE_SQL
+
+
+@pytest.mark.parametrize(
+    "operand",
+    [
+        {"sparse": {"indices": [1, 3], "values": [0.1, 0.2]}},
+        {"indices": [1, 3], "values": [0.1, 0.2]},
+    ],
+)
+def test_sparse_operand_is_refused(operand) -> None:
+    [instruction] = _convert_order_by_input_to_sql(
+        {"embedding": {"cosine_distance": operand}}
+    ).instructions
+    with pytest.raises(ValueError, match=r"'embedding\.cosine_distance' needs a dense vector"):
+        instruction.to_sql()
