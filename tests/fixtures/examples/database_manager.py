@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional, Any
 from dataclasses import dataclass, field
 from enum import Enum
+from urllib.parse import unquote, urlsplit
 from uuid import uuid4
 
 logger = logging.getLogger(__name__)
@@ -56,6 +57,21 @@ class DatabaseConfig:
     admin_db: str = "postgres"
     template_suffix: str = "_template"
     test_suffix: str = "_test"
+
+    @classmethod
+    def from_env(cls) -> "DatabaseConfig":
+        """The defaults, with host, port, user and password from ``TEST_DATABASE_URL``."""
+        url = os.environ.get("TEST_DATABASE_URL")
+        if not url:
+            return cls()
+        parsed = urlsplit(url)
+        defaults = cls()
+        return cls(
+            host=parsed.hostname or defaults.host,
+            port=parsed.port or defaults.port,
+            user=unquote(parsed.username) if parsed.username else defaults.user,
+            password=unquote(parsed.password) if parsed.password else defaults.password,
+        )
 
 
 @dataclass
@@ -482,5 +498,5 @@ def get_database_manager() -> ExampleDatabaseManager:
     """Get global database manager instance."""
     global _database_manager
     if _database_manager is None:
-        _database_manager = ExampleDatabaseManager()
+        _database_manager = ExampleDatabaseManager(config=DatabaseConfig.from_env())
     return _database_manager
