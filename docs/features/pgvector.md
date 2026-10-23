@@ -132,7 +132,9 @@ Fields matching these patterns with `List[float]` type get `VectorFilter` (in `w
 `VectorOrderBy` (in `orderBy`) in the GraphQL schema.
 
 The distance operators work on the view's own `vector` (or `bit`) columns, so declare the type
-over a view without a JSONB `data` column:
+over a view without a JSONB `data` column (`jsonb_column=None`). A vector stored inside the
+JSONB `data` column can't be filtered or sorted by distance: the SQL reads `t."embedding"`, a
+column such a view doesn't have. Expose the vector as a column of the view instead:
 
 ```python
 @fraise_type(sql_source="documents", jsonb_column=None)
@@ -536,12 +538,22 @@ relevant_docs = await repo.find(
     limit=3,
 )
 
-context = "\n".join(doc["content"] for doc in relevant_docs)
+# find returns a GraphQL-shaped response: the rows are under data.<view>
+rows = relevant_docs.to_json()["data"]["documents"]
+context = "\n".join(doc["content"] for doc in rows)
 ```
 
 ### Hybrid Search
 
-Combine vector similarity with full-text search:
+Combine vector similarity with full-text search. The full-text operators
+(`matches`, `plain_query`, `phrase_query`, `websearch_query`) filter on a `tsvector`
+column, so give the table one:
+
+```sql
+ALTER TABLE documents ADD COLUMN search_vector tsvector
+    GENERATED ALWAYS AS (to_tsvector('english', title || ' ' || content)) STORED;
+CREATE INDEX ON documents USING gin (search_vector);
+```
 
 ```python
 # Vector + full-text hybrid search
@@ -549,7 +561,7 @@ results = await repo.find(
     "documents",
     where={
         "embedding": {"cosine_distance": {"vector": query_embedding, "threshold": 0.5}},
-        "content": {"search": query_text}  # Full-text search
+        "search_vector": {"websearch_query": query_text},  # Full-text search
     },
     order_by={"embedding": {"cosine_distance": query_embedding}},
     limit=20,
