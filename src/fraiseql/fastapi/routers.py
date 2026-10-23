@@ -105,8 +105,8 @@ def _should_include_field(field_node: Any, variables: dict[str, Any] | None) -> 
     # Check for @skip directive first (takes precedence)
     for directive in field_node.directives:
         if directive.name.value == "skip":
-            # Extract the 'if' argument value
-            for arg in directive.arguments:
+            # Extract the 'if' argument value (graphql-core leaves none as None)
+            for arg in directive.arguments or ():
                 if arg.name.value == "if":
                     # Evaluate the condition
                     condition = _evaluate_directive_condition(arg.value, variables)
@@ -116,8 +116,8 @@ def _should_include_field(field_node: Any, variables: dict[str, Any] | None) -> 
     # Check for @include directive
     for directive in field_node.directives:
         if directive.name.value == "include":
-            # Extract the 'if' argument value
-            for arg in directive.arguments:
+            # Extract the 'if' argument value (graphql-core leaves none as None)
+            for arg in directive.arguments or ():
                 if arg.name.value == "if":
                     # Evaluate the condition
                     condition = _evaluate_directive_condition(arg.value, variables)
