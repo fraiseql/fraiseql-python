@@ -194,6 +194,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment) turns it on, unless you also set `complexity_enabled=False`.
   These limits must be at least 1.
 
+- **`include_execution_metadata=True` adds the execution timing in
+  production.** The router added `extensions.execution` outside production and
+  never read the setting. Outside production the timing is still always there.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

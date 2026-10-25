@@ -357,7 +357,12 @@ class FraiseQLConfig(BaseSettings):
 
     It will be removed.
     """
-    include_execution_metadata: bool = False  # Include timing in response
+    include_execution_metadata: bool = False
+    """Add ``extensions.execution`` (mode, ``time_ms``) to responses in production too.
+
+    Outside production the timing is always included. Responses served as raw
+    Rust bytes (the zero-copy paths) carry no extensions either way.
+    """
 
     enable_rust_endpoint: bool = False
     """Mount POST /graphql/rust (Rust passthrough, bypasses Python resolvers).

@@ -1678,8 +1678,8 @@ def create_graphql_router(
 
             # Use unified executor if available
             if unified_executor:
-                # Add execution metadata if in development
-                if not is_production_env:
+                # Execution timing in extensions: outside production, or when configured
+                if config.include_execution_metadata or not is_production_env:
                     context["include_execution_metadata"] = True
 
                 result = await unified_executor.execute(
