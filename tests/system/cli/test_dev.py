@@ -43,6 +43,7 @@ class TestDevCommand:
                 port=8000,
                 reload=True,
                 log_level="info",
+                app_dir=str(Path.cwd()),
             )
 
     def test_dev_custom_options(self, cli_runner, temp_project_dir) -> None:
@@ -74,6 +75,7 @@ class TestDevCommand:
                 port=3000,
                 reload=False,
                 log_level="info",
+                app_dir=str(Path.cwd()),
             )
 
     def test_dev_loads_env_file(self, cli_runner, temp_project_dir) -> None:
