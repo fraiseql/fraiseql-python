@@ -562,7 +562,7 @@ After resolving the incident:
 
 ## 📚 Related Resources
 
-- [Authentication Configuration](../security.md#authentication)
+- [Authentication Configuration](../security.md#authentication-security)
 - [Rate Limiting](./rate-limiting-triggered.md)
 - [Security Hardening](../security.md)
 

@@ -662,7 +662,7 @@ After resolving the incident:
 
 ## 📚 Related Resources
 
-- [GraphQL Security Best Practices](../security.md#graphql-security)
+- [GraphQL Security Best Practices](../security.md#query-complexity-limits)
 - [Query Complexity Analysis](../../performance/performance-guide.md)
 - [Database Performance](./database-performance-degradation.md)
 - [Rate Limiting](./rate-limiting-triggered.md)

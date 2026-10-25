@@ -619,8 +619,8 @@ After resolving the incident:
 
 ## 📚 Related Resources
 
-- [Container Memory Limits](../deployment.md#resource-limits)
-- [Connection Pool Configuration](./database-performance-degradation.md#connection-pool)
+- [Container Memory Limits](../deployment.md)
+- [Connection Pool Configuration](./database-performance-degradation.md#step-2-check-connection-pool-status)
 - [Caching Best Practices](../../performance/caching.md)
 - [Python Memory Management](https://docs.python.org/3/library/gc.html)
 
