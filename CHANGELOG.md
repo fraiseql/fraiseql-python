@@ -751,6 +751,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   index name. `register_cascade_rule` returns whether it registered the rule, and
   `setup_auto_cascade_rules` counts only the registered rules (0 without the
   extension, not the number of rules found).
+- **`CachedRepository` caches `find` / `find_one` results, and its writes invalidate
+  them.** The `RustResponseBytes` they return isn't JSON, so `PostgresCache` refused
+  it: every call read the database and counted a miss and an error. It is now stored
+  as its JSON text and a hit returns a `RustResponseBytes` with the same bytes. The
+  key covers the arguments and the GraphQL selection (fields, aliases, fragments,
+  variables), so queries selecting different fields of a view don't share
+  an entry. `find(view, field_name, info)` takes its arguments in the wrapped
+  repository's order: `field_name` went to `skip_cache`, so the documented
+  positional call never cached. `execute_function("fn_update_user", ...)`
+  invalidated `fraiseql:user:*`, which matched none of the keys
+  (`fraiseql:<tenant>:v_user:...`); it now invalidates the entity's views
+  (`user(s)`, `v_user(s)`, `tv_user(s)`, schema-qualified or not) for every tenant,
+  and the new `invalidate_view()` does it for one view.
 
 ## [1.30.0] - 2026-10-22
 

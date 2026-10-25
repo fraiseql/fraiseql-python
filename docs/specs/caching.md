@@ -26,7 +26,7 @@ from fraiseql.caching import (
     CacheConfig,          # enabled, default_ttl, max_ttl, cache_errors, key_prefix
     CacheKeyBuilder,      # deterministic keys, tenant id second
     CacheStats,           # hits / misses / errors, hit_rate
-    CachedRepository,     # FraiseQLRepository wrapper (see 2.6: doesn't cache find results today)
+    CachedRepository,     # FraiseQLRepository wrapper caching find / find_one (see 2.6)
     CascadeRule,          # source_domain -> target_domain
     PostgresCache,        # backend: a PostgreSQL UNLOGGED table
     PostgresCacheError,
@@ -44,8 +44,9 @@ What it gives you:
 - **TTL expiry**: each entry has an `expires_at`; expired entries are never returned.
 - **Explicit invalidation**: by key, or by a `*` pattern.
 
-What it doesn't do: it doesn't cache GraphQL responses, it doesn't invalidate
-anything when a mutation runs, and the CASCADE rules it can derive from the schema
+What it doesn't do: it doesn't cache whole GraphQL responses (`CachedRepository`
+caches each `find` / `find_one`), it doesn't invalidate anything when a class
+mutation runs (`CachedRepository.execute_function` does), and the CASCADE rules it can derive from the schema
 don't invalidate `ResultCache` entries (see [Section 4](#4-cascade-rules)).
 
 ---
@@ -176,19 +177,48 @@ mutation resolver's SQL function returns. Errors are logged, not raised.
 
 ### 2.6 `CachedRepository`
 
-`CachedRepository(base_repository, cache)` wraps a `FraiseQLRepository`: `find` and
-`find_one` take `skip_cache=False` and `cache_ttl=None`, build a key from the view
-name, the repository context's `tenant_id` and the keyword arguments, and go through
-`get_or_set`; `execute_function` invalidates afterwards; other methods are
-delegated.
+`CachedRepository(base_repository, cache)` wraps a `FraiseQLRepository`. `find` and
+`find_one` take the wrapped repository's arguments (`view_name, field_name, info,
+**kwargs`) plus keyword-only `skip_cache=False` and `cache_ttl=None`, go through
+`get_or_set`, and return what the wrapped method returns: on a hit, a
+`RustResponseBytes` with the bytes of the response that was cached (stored as its
+JSON text, so key order is kept). A `find_one` that finds nothing (None) isn't
+cached. Other methods are delegated.
 
-> **Known issue (1.31.0):** with `PostgresCache`, `find` / `find_one` never store
-> anything. They return `RustResponseBytes`, which isn't JSON-serializable, so each
-> call reads the database, logs `Cache set error ... not JSON serializable`, and
-> counts a miss and an error. And `execute_function("fn_update_user", ...)`
-> invalidates `fraiseql:user:*` and `fraiseql:users:*`, which never match the keys
-> `find` builds (`fraiseql:<tenant>:v_user:...`). Cache the data your resolvers
-> compute with `get_or_set` / `cached_query` instead.
+The key is `<prefix>:<tenant_id>:<view>:q:<hash>` (`<prefix>:<view>:q:<hash>` when the
+repository context has no `tenant_id`; `<view>:one` for `find_one`). The hash covers
+`field_name`, the keyword arguments and, with `info`, the GraphQL selection (fields,
+aliases, fragments, variables), so `{ users { id } }` and `{ users { id name } }`
+don't share an entry.
+
+```python
+from fraiseql.caching import CachedRepository, PostgresCache, ResultCache
+from fraiseql.db import FraiseQLRepository
+
+cache = ResultCache(PostgresCache(pool))
+
+
+async def context_getter(request, user=None):
+    repo = FraiseQLRepository(pool, context={"tenant_id": request.headers["x-tenant"]})
+    return {"db": CachedRepository(repo, cache), "user": user}
+
+
+@fraiseql.query
+async def users(info) -> list[User]:
+    return await info.context["db"].find("v_user", "users", info, cache_ttl=60)
+```
+
+`execute_function(name, input)` and `execute_function_with_context(...)` invalidate,
+for every tenant, the keys of the entity the function writes: `fn_update_user` (or
+`update_user`, `app.fn_update_user`) those of `user`, `users`, `v_user`, `v_users`,
+`tv_user` and `tv_users`, in any schema; a multi-word entity (`fn_create_blog_post`)
+also those of its last word (`post`). `invalidate_view("v_user", all_tenants=True)`
+does it for one view.
+
+A class mutation (`@fraiseql.mutation class CreateUser`) calls its SQL function
+without going through the repository, so it invalidates nothing: rely on the TTL,
+or call `invalidate_view("v_user")` on the `CachedRepository` from your code after
+the write.
 
 ### 2.7 Backends
 
@@ -345,9 +375,9 @@ Raise `max_ttl` for data that may live longer than an hour: it caps every TTL.
 ## 6. Troubleshooting
 
 **Nothing is cached** (`stats.misses` grows, `stats.errors` too): the values aren't
-JSON-serializable (look for `Cache set error` warnings), or they're `CachedRepository`
-reads (see [2.6](#26-cachedrepository)). Cache JSON data (dicts, lists, strings,
-numbers).
+JSON-serializable (look for `Cache set error` warnings). Cache JSON data (dicts,
+lists, strings, numbers); `CachedRepository` stores `find`'s `RustResponseBytes` as
+JSON text for you.
 
 **Low hit rate**: keys differ between calls that should share one (argument order
 doesn't matter for keyword arguments, but values do: normalize them), or the TTL
