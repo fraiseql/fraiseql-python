@@ -74,10 +74,25 @@ class QueryLimits:
 
     @classmethod
     def from_config(cls, config: FraiseQLConfig) -> QueryLimits | None:
-        """Read the limits from ``config``; ``None`` when no limit is set."""
-        if config.max_query_depth is None:
+        """Read the limits from ``config``; ``None`` when no limit is set.
+
+        ``max_query_depth`` always applies. ``complexity_max_score`` and
+        ``complexity_max_depth`` apply when ``complexity_enabled`` is true. When
+        both depth limits apply, the lower one wins.
+        """
+        depths = [config.max_query_depth] if config.max_query_depth is not None else []
+        max_complexity = None
+        if config.complexity_enabled:
+            depths.append(config.complexity_max_depth)
+            max_complexity = config.complexity_max_score
+        if not depths and max_complexity is None:
             return None
-        return cls(max_depth=config.max_query_depth)
+        return cls(
+            max_depth=min(depths) if depths else None,
+            max_complexity=max_complexity,
+            default_list_size=config.complexity_default_list_size,
+            field_multipliers=dict(config.complexity_field_multipliers),
+        )
 
     def measure(
         self,

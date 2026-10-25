@@ -120,8 +120,58 @@ def test_fragments_count_toward_the_depth() -> None:
     assert _ran == []
 
 
+def test_complexity_max_depth_is_enforced_when_set() -> None:
+    assert _codes(_post(_DEPTH_5, complexity_max_depth=4)) == ["QUERY_TOO_DEEP"]
+    assert _ran == []
+
+
+def test_the_lower_depth_limit_wins() -> None:
+    body = _post(_DEPTH_5, max_query_depth=8, complexity_max_depth=4)
+    assert body["errors"][0]["extensions"]["maxDepth"] == 4
+
+
+def test_a_query_over_complexity_max_score_is_rejected() -> None:
+    # nodes (10, the limit default) x children (10, the default list size) x parent
+    query = "{ nodes { children { parent { id name } } } }"
+    body = _post(query, complexity_max_score=100)
+    assert _codes(body) == ["QUERY_TOO_COMPLEX"]
+    assert body["errors"][0]["extensions"]["complexity"] == 311
+    assert body["errors"][0]["extensions"]["maxComplexity"] == 100
+    assert _ran == []
+
+
+def test_an_explicit_limit_lowers_the_complexity() -> None:
+    query = "{ nodes(limit: 1) { children { parent { id name } } } }"
+    body = _post(query, complexity_max_score=100)
+    assert "errors" not in body, body
+
+
+def test_a_limit_passed_as_a_variable_counts() -> None:
+    query = "query Q($n: Int) { nodes(limit: $n) { children { parent { id name } } } }"
+    app = create_fraiseql_app(
+        config=FraiseQLConfig(
+            database_url="postgresql://test:test@localhost/test",
+            environment="development",
+            complexity_max_score=100,
+        ),
+        types=[Node],
+        queries=[nodes],
+        lifespan=_noop_lifespan,
+    )
+    with TestClient(app) as client:
+        small = client.post("/graphql", json={"query": query, "variables": {"n": 1}}).json()
+        large = client.post("/graphql", json={"query": query, "variables": {"n": 50}}).json()
+    assert "errors" not in small, small
+    assert _codes(large) == ["QUERY_TOO_COMPLEX"]
+
+
+def test_complexity_enabled_false_turns_the_complexity_limits_off() -> None:
+    body = _post(_DEPTH_5, complexity_enabled=False, complexity_max_depth=2)
+    assert "errors" not in body, body
+
+
 def test_introspection_is_not_limited() -> None:
-    body = _post(get_introspection_query(), max_query_depth=2)
+    body = _post(get_introspection_query(), max_query_depth=2, complexity_max_score=10)
     assert "errors" not in body, body
     assert body["data"]["__schema"]["queryType"]["name"] == "Query"
 

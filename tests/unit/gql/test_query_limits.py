@@ -92,3 +92,45 @@ def test_check_reports_the_depth() -> None:
         "maxDepth": 1,
     }
     assert QueryLimits(max_depth=2).check(_SCHEMA, "{ node { parent { id } } }") is None
+
+
+def _complexity(query: str, **limits) -> int:
+    cost = QueryLimits(**limits).measure(_SCHEMA, query)
+    assert cost is not None
+    return cost.complexity
+
+
+@pytest.mark.parametrize(
+    ("query", "complexity"),
+    [
+        ("{ __typename }", 0),
+        ("{ node { id name } }", 3),  # 1 + (1 + 1)
+        ("{ node { parent { id } } }", 3),  # 1 + (1 + 1)
+        ("{ nodes { id } }", 11),  # 1 + 10 (the limit default) * 1
+        ("{ nodes(limit: 2) { id } }", 3),
+        ("{ node { children { id } } }", 12),  # children: 1 + 10 (default list size) * 1
+        ("{ node { children(limit: 3) { id name } } }", 8),
+        ("{ __schema { types { name } } }", 0),
+    ],
+)
+def test_complexity(query: str, complexity: int) -> None:
+    assert _complexity(query) == complexity
+
+
+def test_the_default_list_size_applies_without_a_limit() -> None:
+    assert _complexity("{ node { children { id } } }", default_list_size=4) == 6
+
+
+def test_field_multipliers_by_name_or_type_and_name() -> None:
+    assert _complexity("{ node { name } }", field_multipliers={"name": 5}) == 6
+    assert _complexity("{ node { name } }", field_multipliers={"Node.name": 7}) == 8
+
+
+def test_check_reports_the_complexity() -> None:
+    error = QueryLimits(max_complexity=10).check(_SCHEMA, "{ nodes { id } }")
+    assert error is not None
+    assert error["errors"][0]["extensions"] == {
+        "code": "QUERY_TOO_COMPLEX",
+        "complexity": 11,
+        "maxComplexity": 10,
+    }

@@ -173,6 +173,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   depth of their own; introspection (`__schema`, `__type`) is not counted. The
   default stays `None`, no limit.
 
+- **`complexity_max_score` and `complexity_max_depth` limit a query.** Nothing
+  read the `complexity_*` settings, so `complexity_enabled` (documented as on by
+  default) checked nothing. Now a query over either limit gets a
+  `QUERY_TOO_COMPLEX` or `QUERY_TOO_DEEP` GraphQL error and does not run. The
+  score is computed from the schema: a scalar costs 1, an object field 1 plus
+  its selections, a list field 1 plus its selections times its `limit` / `first`
+  argument (or `complexity_default_list_size`); `complexity_field_multipliers`
+  changes a field's cost by name or `"Type.field"`. `complexity_enabled` now
+  defaults to `False`, which is what it always did: setting
+  `complexity_max_score` or `complexity_max_depth` (in code or from the
+  environment) turns it on, unless you also set `complexity_enabled=False`.
+  These limits must be at least 1.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

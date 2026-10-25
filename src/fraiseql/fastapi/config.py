@@ -3,9 +3,9 @@
 import logging
 import warnings
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
-from pydantic import Field, PostgresDsn, ValidationInfo, field_validator
+from pydantic import Field, PostgresDsn, ValidationInfo, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from fraiseql.mutations.error_config import MutationErrorConfig
@@ -133,7 +133,7 @@ class FraiseQLConfig(BaseSettings):
     GraphQL Settings:
         introspection_policy: Schema introspection policy (PUBLIC/DISABLED/AUTHENTICATED)
         enable_playground: Enable GraphQL IDE (auto-disabled in production)
-        max_query_depth: Maximum query nesting depth
+        max_query_depth: Reject queries nested deeper than this (default: None)
         auto_camel_case: Auto-convert snake_case to camelCase (default: True)
 
     Auth Settings:
@@ -148,7 +148,7 @@ class FraiseQLConfig(BaseSettings):
         jsonb_field_limit_threshold: Fields threshold for JSONB optimization (default: 20)
 
     Security Settings:
-        complexity_enabled: Enable query complexity analysis (default: True)
+        complexity_enabled: Enforce complexity_max_score / _max_depth (default: False)
         rate_limit_enabled: Enable rate limiting (default: True)
         cors_enabled: Enable CORS (default: False - use reverse proxy)
         enable_rust_endpoint: Mount POST /graphql/rust resolver-bypass route (default: False)
@@ -268,12 +268,39 @@ class FraiseQLConfig(BaseSettings):
     revocation_store_type: str = "memory"  # "memory" or "redis"
 
     # Query complexity settings
-    complexity_enabled: bool = True
-    complexity_max_score: int = 1000
-    complexity_max_depth: int = 10
-    complexity_default_list_size: int = 10
+    complexity_enabled: bool = False
+    """Reject a query over ``complexity_max_score`` or ``complexity_max_depth``.
+
+    Off by default. Setting ``complexity_max_score`` or ``complexity_max_depth``
+    (in code or with ``FRAISEQL_COMPLEXITY_MAX_SCORE`` / ``_MAX_DEPTH``) turns it on
+    unless ``complexity_enabled`` is set too. A rejected query gets a
+    ``QUERY_TOO_COMPLEX`` (or ``QUERY_TOO_DEEP``) GraphQL error and is not executed.
+    See ``fraiseql.gql.query_limits`` for how the score is computed.
+    """
+    complexity_max_score: int = Field(default=1000, ge=1)
+    """Highest complexity score a query may have, when ``complexity_enabled``.
+
+    A scalar costs 1, an object field 1 plus its selections, and a list field 1 plus
+    its selections times the list size (its ``limit`` / ``first`` argument, else
+    ``complexity_default_list_size``). Introspection is not counted.
+    """
+    complexity_max_depth: int = Field(default=10, ge=1)
+    """Deepest query allowed when ``complexity_enabled``; see ``max_query_depth``."""
+    complexity_default_list_size: int = Field(default=10, ge=0)
+    """List size assumed for a list field the query passes no ``limit`` / ``first`` to."""
     complexity_include_in_response: bool = False
     complexity_field_multipliers: dict[str, int] = {}
+    """Cost of a field instead of 1, by field name or ``"Type.field"``."""
+
+    @model_validator(mode="after")
+    def enable_complexity_when_a_limit_is_set(self) -> Self:
+        """Turn complexity limits on when one is set and ``complexity_enabled`` is not."""
+        fields_set = self.model_fields_set
+        if "complexity_enabled" not in fields_set and (
+            {"complexity_max_score", "complexity_max_depth"} & fields_set
+        ):
+            self.complexity_enabled = True
+        return self
 
     # Rate limiting settings
     rate_limit_enabled: bool = True
