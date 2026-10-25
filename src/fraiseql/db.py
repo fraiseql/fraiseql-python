@@ -115,6 +115,13 @@ def _make_mandatory_conditions(
     return parts, params
 
 
+def _where_sql(where_parts: list[Any]) -> SQL | Composed:
+    """`` WHERE a AND b`` from a read helper's WHERE parts, or nothing."""
+    if not where_parts:
+        return SQL("")
+    return SQL(" WHERE ") + SQL(" AND ").join(where_parts)
+
+
 class _FunctionResult(dict):
     """The JSON object a function returned, read from its one column.
 
@@ -2408,6 +2415,68 @@ class FraiseQLRepository:
                 kwargs["_table_columns"] = columns
         return self._build_where_clause(view_name, **kwargs)
 
+    async def _field_sql(
+        self, view_name: str, field: str, *, numeric: bool = False
+    ) -> tuple[Composed, bool]:
+        """The SQL of a read helper's ``field``, and whether it is read from JSONB.
+
+        A column of the view is read as is. On a view with a JSONB column (a
+        registered one, or ``data`` on an unregistered one), any other field is
+        the key of that name: ``data -> 'amount'``, or ``(data ->> 'amount')::numeric``
+        with ``numeric``. When the view's columns are unknown, only ``id`` counts
+        as a column.
+        """
+        from psycopg.sql import Identifier, Literal
+
+        columns, jsonb_column = await self._view_shape(view_name)
+        is_column = field == jsonb_column or (
+            field in columns if columns is not None else field == "id"
+        )
+        if jsonb_column is None or is_column:
+            return Composed([Identifier(field)]), False
+        if numeric:
+            template = SQL("({} ->> {})::numeric")
+        else:
+            template = SQL("({} -> {})")
+        return template.format(Identifier(jsonb_column), Literal(field)), True
+
+    async def _extreme(
+        self, view_name: str, field: str, function: str, kwargs: dict[str, Any]
+    ) -> Any:
+        """``min`` / ``max``: ``MIN``/``MAX`` of a column, the first JSON value in order.
+
+        PostgreSQL has no ``MIN(jsonb)``. A JSONB field's values are ordered as
+        jsonb orders them (numbers by value, strings as text), and its JSON
+        nulls and missing keys are left out, as ``MIN`` leaves out NULL.
+        """
+        from psycopg.sql import SQL, Composed
+
+        field_sql, in_jsonb = await self._field_sql(view_name, field)
+        where_parts, params = await self._helper_where(view_name, kwargs)
+        view = qualified_identifier(view_name)
+        if in_jsonb:
+            where_parts = [*where_parts, SQL("jsonb_typeof({}) <> 'null'").format(field_sql)]
+            direction = SQL("ASC" if function == "MIN" else "DESC")
+            query = Composed(
+                [
+                    SQL("SELECT {} FROM {}").format(field_sql, view),
+                    _where_sql(where_parts),
+                    SQL(" ORDER BY 1 {} LIMIT 1").format(direction),
+                ]
+            )
+        else:
+            query = Composed(
+                [
+                    SQL("SELECT {}({}) FROM {}").format(SQL(function), field_sql, view),
+                    _where_sql(where_parts),
+                ]
+            )
+
+        async with self._session_connection() as conn, conn.cursor() as cursor:
+            await cursor.execute(query, params or None)
+            result = await cursor.fetchone()
+            return result[0] if result else None
+
     async def count(
         self,
         view_name: str,
@@ -2677,27 +2746,19 @@ class FraiseQLRepository:
                 "v_orders", "amount", mandatory_filters={"tenant_id": tenant_id}
             )
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
+        field_sql, _ = await self._field_sql(view_name, field, numeric=True)
         where_parts, params = await self._helper_where(view_name, kwargs)
+        query = Composed(
+            [
+                SQL("SELECT COALESCE(SUM({}), 0) FROM {}").format(
+                    field_sql, qualified_identifier(view_name)
+                ),
+                _where_sql(where_parts),
+            ]
+        )
 
-        table_identifier = qualified_identifier(view_name)
-
-        # Build SUM query
-        query_parts = [
-            SQL("SELECT COALESCE(SUM("),
-            Identifier(field),
-            SQL("), 0) FROM "),
-            table_identifier,
-        ]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query, params or None)
             result = await cursor.fetchone()
@@ -2730,27 +2791,19 @@ class FraiseQLRepository:
                 where={"status": {"eq": "completed"}}
             )
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
+        field_sql, _ = await self._field_sql(view_name, field, numeric=True)
         where_parts, params = await self._helper_where(view_name, kwargs)
+        query = Composed(
+            [
+                SQL("SELECT COALESCE(AVG({}), 0) FROM {}").format(
+                    field_sql, qualified_identifier(view_name)
+                ),
+                _where_sql(where_parts),
+            ]
+        )
 
-        table_identifier = qualified_identifier(view_name)
-
-        # Build AVG query
-        query_parts = [
-            SQL("SELECT COALESCE(AVG("),
-            Identifier(field),
-            SQL("), 0) FROM "),
-            table_identifier,
-        ]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query, params or None)
             result = await cursor.fetchone()
@@ -2779,26 +2832,7 @@ class FraiseQLRepository:
             # Earliest order date
             first_order = await db.min("v_orders", "created_at")
         """
-        from psycopg.sql import SQL, Composed, Identifier
-
-        where_parts, params = await self._helper_where(view_name, kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build MIN query
-        query_parts = [SQL("SELECT MIN("), Identifier(field), SQL(") FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
-        async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query, params or None)
-            result = await cursor.fetchone()
-            return result[0] if result else None
+        return await self._extreme(view_name, field, "MIN", kwargs)
 
     async def max(
         self,
@@ -2823,26 +2857,7 @@ class FraiseQLRepository:
             # Latest order date
             last_order = await db.max("v_orders", "created_at")
         """
-        from psycopg.sql import SQL, Composed, Identifier
-
-        where_parts, params = await self._helper_where(view_name, kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        # Build MAX query
-        query_parts = [SQL("SELECT MAX("), Identifier(field), SQL(") FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query = Composed(query_parts)
-
-        # Execute query
-        async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query, params or None)
-            result = await cursor.fetchone()
-            return result[0] if result else None
+        return await self._extreme(view_name, field, "MAX", kwargs)
 
     async def distinct(
         self,
@@ -2871,24 +2886,23 @@ class FraiseQLRepository:
             )
             # Returns: ["cancelled", "completed", "pending"]
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
+        field_sql, in_jsonb = await self._field_sql(view_name, field)
+        if in_jsonb:
+            # A JSON null and a missing key are one value, as NULL is for a column
+            field_sql = SQL("NULLIF({}, 'null'::jsonb)").format(field_sql)
         where_parts, params = await self._helper_where(view_name, kwargs)
+        query = Composed(
+            [
+                SQL("SELECT DISTINCT {} FROM {}").format(
+                    field_sql, qualified_identifier(view_name)
+                ),
+                _where_sql(where_parts),
+                SQL(" ORDER BY 1"),
+            ]
+        )
 
-        table_identifier = qualified_identifier(view_name)
-
-        # Build DISTINCT query
-        query_parts = [SQL("SELECT DISTINCT "), Identifier(field), SQL(" FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
-
-        query_parts.append(SQL(" ORDER BY "))
-        query_parts.append(Identifier(field))
-        query = Composed(query_parts)
-
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query, params or None)
             results = await cursor.fetchall()
@@ -2928,20 +2942,17 @@ class FraiseQLRepository:
             # Get product names with limit
             names = await db.pluck("v_products", "name", limit=10)
         """
-        from psycopg.sql import SQL, Composed, Identifier
+        from psycopg.sql import SQL, Composed
 
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
 
+        field_sql, _ = await self._field_sql(view_name, field)
         where_parts, params = await self._helper_where(view_name, kwargs)
-
-        table_identifier = qualified_identifier(view_name)
-
-        query_parts = [SQL("SELECT "), Identifier(field), SQL(" FROM "), table_identifier]
-
-        if where_parts:
-            query_parts.append(SQL(" WHERE "))
-            query_parts.append(SQL(" AND ").join(where_parts))
+        query_parts = [
+            SQL("SELECT {} FROM {}").format(field_sql, qualified_identifier(view_name)),
+            _where_sql(where_parts),
+        ]
 
         if limit is not None:
             query_parts.append(SQL(" LIMIT "))
@@ -2953,7 +2964,6 @@ class FraiseQLRepository:
 
         query = Composed(query_parts)
 
-        # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
             await cursor.execute(query, params or None)
             results = await cursor.fetchall()

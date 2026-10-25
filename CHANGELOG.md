@@ -607,6 +607,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   needs them); when it has a `jsonb` `data` column, a field that isn't a column
   is looked up in `data`, as on a registered view.
 
+- **`db.sum`, `avg`, `min`, `max`, `distinct` and `pluck` read a field that
+  lives in a view's JSONB column.** They read the column named after the
+  field, so on an `id` + `data` view they failed with `column "amount" does
+  not exist`. A field that isn't a column of the view is now read from its
+  JSONB column (the registered one, or `data` on an unregistered view):
+  `sum`/`avg` as `(data ->> 'amount')::numeric`; `min`/`max` return the
+  smallest/largest JSON value in jsonb order, leaving out JSON nulls;
+  `distinct` and `pluck` return the JSON values. A column is read as before.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't

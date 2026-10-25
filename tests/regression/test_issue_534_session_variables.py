@@ -207,9 +207,17 @@ _READS: dict[str, Read] = {
 
 
 async def _run_read(read: Read, context: dict[str, Any]) -> list[tuple[Any, Any]]:
+    """The statements of a read, once the repository has read the view's columns.
+
+    The first read of a view no type is registered for reads its columns from
+    the catalog; the second is what every later read sends.
+    """
     pool = _Pool()
+    repo = FraiseQLRepository(pool=pool, context=context)
     with patch("fraiseql.db.execute_via_rust_pipeline", new=_fake_pipeline):
-        await read(FraiseQLRepository(pool=pool, context=context))
+        await read(repo)
+        pool.conn.log.clear()
+        await read(repo)
     return pool.conn.log
 
 

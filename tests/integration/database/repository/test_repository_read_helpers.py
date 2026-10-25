@@ -94,6 +94,50 @@ class TestFieldHelpersWithWhere:
         assert await repo.distinct(table, "status", mandatory_filters=done) == ["done"]
 
 
+class TestFieldHelpersOnAJsonbView:
+    """The field lives in ``data``: it is read from there, registered type or not."""
+
+    async def test_unregistered(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+        view = f"{views}.v_order"
+
+        assert await repo.sum(view, "amount") == 35.0
+        assert await repo.avg(view, "amount", where={"status": {"eq": "done"}}) == 15.0
+        assert await repo.min(view, "amount") == 5
+        assert await repo.max(view, "amount") == 20
+        assert await repo.min(view, "placed") == "2025-01-01"
+        assert await repo.max(view, "status") == "open"
+        assert await repo.distinct(view, "status") == ["done", "open"]
+        assert sorted(await repo.pluck(view, "amount")) == [5, 10, 20]
+        assert sorted(await repo.pluck(view, "id")) == [1, 2, 3]
+
+    async def test_no_rows(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+        view = f"{views}.v_order"
+        lost = {"status": {"eq": "lost"}}
+
+        assert await repo.sum(view, "amount", where=lost) == 0.0
+        assert await repo.min(view, "amount", where=lost) is None
+        assert await repo.max(view, "amount", where=lost) is None
+        assert await repo.distinct(view, "amount", where=lost) == []
+
+    async def test_registered(self, class_db_pool, views, clear_registry) -> None:
+        import fraiseql
+
+        @fraiseql.type(sql_source=f"{views}.v_order")
+        class Order:
+            id: int
+            amount: int
+            status: str
+
+        repo = FraiseQLRepository(class_db_pool)
+        view = f"{views}.v_order"
+
+        assert await repo.sum(view, "amount", where={"status": {"eq": "done"}}) == 30.0
+        assert await repo.max(view, "amount") == 20
+        assert await repo.distinct(view, "status") == ["done", "open"]
+
+
 class TestWhereOnAnUnregisteredJsonbView:
     """A field that isn't a column of the view is read from its ``data`` column."""
 
