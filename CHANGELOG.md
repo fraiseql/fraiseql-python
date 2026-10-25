@@ -291,6 +291,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A multi-field query with a bare `@skip` or `@include` (no `if`) no longer
   logs a `TypeError` traceback before validation reports the missing argument.
 
+- **`create_fraiseql_app(app=existing_app)` opens the database pool.** An app
+  passed in kept its own lifespan, so fraiseql's never ran: no pool was opened,
+  and every GraphQL request failed with "Database pool not initialized" (the
+  `lifespan=` argument was ignored too). fraiseql's lifespan now wraps the app's
+  own lifespan, or its `@app.on_event` handlers, which still run once.
+
 - Tests: the example database manager connects where `TEST_DATABASE_URL`
   points (host, port, user, password) instead of `fraiseql:fraiseql@localhost:5432`,
   so the 16 blog_simple tests run instead of skipping against any other server.
@@ -395,6 +401,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `post_count`) was never called and its field was left out of the response
   without a word. Running them there isn't supported yet; selecting one now
   logs a warning naming the field and the view, once per field.
+
+- Tests: order-dependent and flaky tests are deterministic. Test modules left
+  queries in the schema registry (`meta_test_schema` and the nested-array `where`
+  tests didn't clear it), and the health, lifespan and CORS app tests didn't
+  clear the queries other modules register at import; under `-n 8` the workers
+  raced on one database (`CREATE EXTENSION` on a fresh database, the cascade
+  functions in `public`, and the audit and RBAC fixtures finding another class's
+  tables); and three chaos tests drew their failures with an unseeded `random` or
+  timed `time.sleep` against a tight bound.
 
 ## [1.30.0] - 2026-10-22
 

@@ -179,9 +179,11 @@ async def cascade_db_schema(
             );
         """)
 
-        # Create PostgreSQL function in public schema (for FraiseQL default)
+        # Create the PostgreSQL functions in test_schema (first on the search_path), not
+        # public: they return test_schema's mutation_response, and under xdist the other
+        # workers' classes replaced or (dropping their schema) removed a public one
         await conn.execute("""
-            CREATE OR REPLACE FUNCTION public.create_post(input_data JSONB)
+            CREATE OR REPLACE FUNCTION create_post(input_data JSONB)
             RETURNS mutation_response AS $$
             DECLARE
                 p_title TEXT;
@@ -296,7 +298,7 @@ async def cascade_db_schema(
         # Create PostgreSQL function for mutation with entity return
         # This function returns the entity in a way that FraiseQL can map to the Post field
         await conn.execute("""
-            CREATE OR REPLACE FUNCTION public.create_post_with_entity(input_data JSONB)
+            CREATE OR REPLACE FUNCTION create_post_with_entity(input_data JSONB)
             RETURNS mutation_response AS $$
             DECLARE
                 p_title TEXT;
@@ -411,7 +413,7 @@ async def cascade_db_schema(
         # Create PostgreSQL function that returns empty CASCADE
         # This simulates a mutation with no side effects
         await conn.execute("""
-            CREATE OR REPLACE FUNCTION public.update_post_title(input_data JSONB)
+            CREATE OR REPLACE FUNCTION update_post_title(input_data JSONB)
             RETURNS mutation_response AS $$
             DECLARE
                 p_title TEXT;
@@ -469,7 +471,19 @@ async def cascade_db_schema(
         """)
         await conn.commit()
 
+    # Point the cascade mutations at this class's functions for the class
+    definitions = [
+        m.__fraiseql_mutation__
+        for m in (CreatePost, CreatePostWithEntity, UpdatePostTitle, CreatePostEnriched)
+    ]
+    saved_schemas = [definition._resolved_schema for definition in definitions]
+    for definition in definitions:
+        definition.schema = test_schema
+
     yield
+
+    for definition, saved_schema in zip(definitions, saved_schemas, strict=True):
+        definition._resolved_schema = saved_schema
 
     # Note: We intentionally skip cleanup here because:
     # 1. The tables/functions are created with IF NOT EXISTS/CREATE OR REPLACE
