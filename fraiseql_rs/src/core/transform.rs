@@ -108,7 +108,13 @@ pub struct ZeroCopyTransformer<'a> {
     row_depth: usize,
     /// Reused for each camelCase key, which is copied to the output right away
     key_scratch: Vec<u8>,
+    /// Where each selected field's value starts in the input, for the objects
+    /// being projected (a stack: a nested object's entries follow its parent's)
+    value_at: Vec<usize>,
 }
+
+/// `value_at` entry of a field the object hasn't
+const ABSENT: usize = usize::MAX;
 
 impl<'a> ZeroCopyTransformer<'a> {
     pub fn new(
@@ -123,6 +129,7 @@ impl<'a> ZeroCopyTransformer<'a> {
             current_depth: 0,
             row_depth: 0,
             key_scratch: Vec::new(),
+            value_at: Vec::new(),
         }
     }
 
@@ -250,7 +257,11 @@ impl<'a> ZeroCopyTransformer<'a> {
     }
 
     /// Write the fields of an object that `projection` selects, under their
-    /// response keys; nothing else
+    /// response keys, in selection order (a GraphQL response is ordered like its
+    /// selection set); nothing else.
+    ///
+    /// A first pass over the object notes where each selected value starts; the
+    /// fields are then written in projection order, each read from there.
     fn write_projected_fields(
         &mut self,
         reader: &mut ByteReader,
@@ -259,30 +270,8 @@ impl<'a> ZeroCopyTransformer<'a> {
         type_name: Option<&str>,
         inject_typename: bool,
     ) -> Result<(), TransformError> {
-        let mut written = Written::new(projection.fields.len());
-
-        if inject_typename {
-            if let Some(typename) = self.typename {
-                writer.write_key(b"__typename")?;
-                writer.write_string(typename.as_bytes())?;
-                for (i, field) in projection.fields.iter().enumerate() {
-                    if field.is_typename() && field.output == "__typename" {
-                        written.set(i);
-                    }
-                }
-            }
-        }
-        // __typename selected: the object's type, when known; else the JSON's, below
-        for (i, field) in projection.fields.iter().enumerate() {
-            if !field.is_typename() || written.get(i) {
-                continue;
-            }
-            if let Some(name) = type_name.or(field.type_name.as_deref()) {
-                writer.write_key(field.output.as_bytes())?;
-                writer.write_string(name.as_bytes())?;
-                written.set(i);
-            }
-        }
+        let base = self.value_at.len();
+        self.value_at.resize(base + projection.fields.len(), ABSENT);
 
         let mut first = true;
         while reader.peek_byte()? != b'}' {
@@ -294,34 +283,58 @@ impl<'a> ZeroCopyTransformer<'a> {
             let key_bytes = reader.read_string()?;
             reader.expect_byte(b':')?;
 
-            // One field per alias selecting this key: each reads the value again
+            // Every alias selecting this key reads the value from here; the
+            // first spelling of a key found wins
             let start = reader.position();
-            let mut read = false;
             for i in projection.matching_or_camel(key_bytes, &mut self.key_scratch) {
-                if written.get(i) {
-                    continue;
-                }
-                written.set(i);
-                let field = &projection.fields[i];
-                if read {
-                    reader.seek(start);
-                }
-                read = true;
-                writer.write_key(field.output.as_bytes())?;
-                match &field.children {
-                    Some(children) if !field.is_typename() => self.transform_value(
-                        reader,
-                        writer,
-                        Some(children),
-                        field.type_name.as_deref(),
-                    )?,
-                    _ => writer.write_raw(reader.read_raw_value()?)?,
+                if self.value_at[base + i] == ABSENT {
+                    self.value_at[base + i] = start;
                 }
             }
-            if !read {
-                reader.skip_value()?;
+            reader.skip_value()?;
+        }
+        let end = reader.position();
+
+        let mut injected = false;
+        if inject_typename {
+            if let Some(typename) = self.typename {
+                writer.write_key(b"__typename")?;
+                writer.write_string(typename.as_bytes())?;
+                injected = true;
             }
         }
+
+        for (i, field) in projection.fields.iter().enumerate() {
+            if field.is_typename() {
+                if injected && field.output == "__typename" {
+                    continue;
+                }
+                // The object's type, when known; else the JSON's __typename
+                if let Some(name) = type_name.or(field.type_name.as_deref()) {
+                    writer.write_key(field.output.as_bytes())?;
+                    writer.write_string(name.as_bytes())?;
+                    continue;
+                }
+            }
+            let start = self.value_at[base + i];
+            if start == ABSENT {
+                continue;
+            }
+            reader.seek(start);
+            writer.write_key(field.output.as_bytes())?;
+            match &field.children {
+                Some(children) if !field.is_typename() => self.transform_value(
+                    reader,
+                    writer,
+                    Some(children),
+                    field.type_name.as_deref(),
+                )?,
+                _ => writer.write_raw(reader.read_raw_value()?)?,
+            }
+        }
+
+        reader.seek(end);
+        self.value_at.truncate(base);
         Ok(())
     }
 
@@ -392,39 +405,6 @@ impl<'a> ZeroCopyTransformer<'a> {
                 writer.write_raw(number_bytes)
             },
             other => Err(TransformError::UnexpectedByte(other)),
-        }
-    }
-}
-
-/// Which fields of a projection an object has written
-enum Written {
-    Small(u128),
-    Large(Vec<bool>),
-}
-
-impl Written {
-    #[inline]
-    fn new(len: usize) -> Self {
-        if len <= 128 {
-            Written::Small(0)
-        } else {
-            Written::Large(vec![false; len])
-        }
-    }
-
-    #[inline]
-    fn get(&self, i: usize) -> bool {
-        match self {
-            Written::Small(bits) => bits & (1u128 << i) != 0,
-            Written::Large(flags) => flags[i],
-        }
-    }
-
-    #[inline]
-    fn set(&mut self, i: usize) {
-        match self {
-            Written::Small(bits) => *bits |= 1u128 << i,
-            Written::Large(flags) => flags[i] = true,
         }
     }
 }
@@ -1028,6 +1008,37 @@ mod tests {
     }
 
     #[test]
+    fn fields_are_written_in_selection_order() {
+        // A GraphQL response map is ordered like its selection set: not like
+        // the row, whose keys PostgreSQL's jsonb sorts by length
+        let projection = selections(&[
+            ("name", "name", false),
+            ("profile", "p", true),
+            ("profile.zip_code", "p.zipCode", false),
+            ("profile.bio", "p.bio", false),
+            ("__typename", "__typename", false),
+            ("id", "id", false),
+        ]);
+        let out = project(
+            r#"{"id": 1, "name": "n", "profile": {"bio": "b", "zip_code": "z"}, "extra": [1]}"#,
+            Some("User"),
+            &projection,
+        );
+        assert_eq!(out, r#"{"__typename":"User","name":"n","p":{"zipCode":"z","bio":"b"},"id":1}"#);
+    }
+
+    #[test]
+    fn selected_typename_is_written_in_its_place() {
+        let projection = selections(&[
+            ("id", "id", false),
+            ("__typename", "kind", false),
+            ("name", "name", false),
+        ]);
+        let out = project(r#"{"name":"n","id":1}"#, Some("User"), &projection);
+        assert_eq!(out, r#"{"__typename":"User","id":1,"kind":"User","name":"n"}"#);
+    }
+
+    #[test]
     fn nested_selections_are_kept_under_their_keys() {
         let projection = selections(&[
             ("author_info", "author_info", true),
@@ -1039,7 +1050,7 @@ mod tests {
             None,
             &projection,
         );
-        assert_eq!(out, r#"{"created_at":"c","author_info":{"first_name":"f"}}"#);
+        assert_eq!(out, r#"{"author_info":{"first_name":"f"},"created_at":"c"}"#);
     }
 
     #[test]

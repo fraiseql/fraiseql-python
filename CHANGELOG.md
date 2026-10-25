@@ -638,6 +638,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   email } }` answered `{"email", "id", "name"}`. They now follow the query, at
   any depth. (serde_json keeps object keys in insertion order; projecting is
   also faster, 3.7 ms instead of 5.9 ms for 1,000 rows of eight fields.)
+  Without the registry (`enable_schema_registry=False`, or a view without a
+  registered type), Rust wrote the fields in the row's order, which jsonb
+  sorts by key length; they follow the query there too.
 
 - **Field resolvers run on `db.find` / `db.find_one` results.** `find` and
   `find_one` answer with the rows Rust builds from the view, which don't go

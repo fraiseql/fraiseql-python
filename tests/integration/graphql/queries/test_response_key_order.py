@@ -112,3 +112,9 @@ class _ResponseKeyOrder:
 
 class TestResponseKeyOrderWithRegistry(_ResponseKeyOrder):
     registry = True
+
+
+class TestResponseKeyOrderWithoutRegistry(_ResponseKeyOrder):
+    """The zero-copy transformer, which wrote each row in its JSONB key order"""
+
+    registry = False
