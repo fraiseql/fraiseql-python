@@ -3,6 +3,10 @@ import pytest
 from fraiseql.core.ast_parser import FieldPath, extract_flat_paths, parse_query_ast
 
 
+def _unaliased(*path: str) -> FieldPath:
+    return FieldPath(alias=path[-1], path=list(path), names=path, response_keys=path)
+
+
 @pytest.mark.unit
 def test_simple_flat_selection() -> None:
     query = """
@@ -15,10 +19,7 @@ def test_simple_flat_selection() -> None:
     """
     op, fragments = parse_query_ast(query)
     paths = extract_flat_paths(op.selection_set, fragments)
-    assert paths == [
-        FieldPath(alias="id", path=["user", "id"]),
-        FieldPath(alias="name", path=["user", "name"]),
-    ]
+    assert paths == [_unaliased("user", "id"), _unaliased("user", "name")]
 
 
 def test_aliasing_and_nested() -> None:
@@ -35,9 +36,38 @@ def test_aliasing_and_nested() -> None:
     op, fragments = parse_query_ast(query)
     paths = extract_flat_paths(op.selection_set, fragments)
     assert paths == [
-        FieldPath(alias="age", path=["account", "profile", "age"]),
-        FieldPath(alias="nickname", path=["account", "profile", "username"]),
+        FieldPath(
+            alias="age",
+            path=["account", "profile", "age"],
+            names=("account", "profile", "age"),
+            response_keys=("account", "user", "age"),
+        ),
+        FieldPath(
+            alias="nickname",
+            path=["account", "profile", "username"],
+            names=("account", "profile", "username"),
+            response_keys=("account", "user", "nickname"),
+        ),
     ]
+
+
+def test_path_segments_are_transformed_names_and_keys_are_not() -> None:
+    op, fragments = parse_query_ast("query { authorInfo { n: firstName } }")
+    paths = extract_flat_paths(op.selection_set, fragments, transform_path=str.upper)
+    assert paths == [
+        FieldPath(
+            alias="n",
+            path=["AUTHORINFO", "FIRSTNAME"],
+            names=("authorInfo", "firstName"),
+            response_keys=("authorInfo", "n"),
+        )
+    ]
+
+
+def test_a_field_path_without_names_still_builds() -> None:
+    path = FieldPath(alias="id", path=["user", "id"])
+    assert path.names is None
+    assert path.response_keys is None
 
 
 def test_named_fragment() -> None:
@@ -55,10 +85,7 @@ def test_named_fragment() -> None:
     """
     op, fragments = parse_query_ast(query)
     paths = extract_flat_paths(op.selection_set, fragments)
-    assert paths == [
-        FieldPath(alias="id", path=["person", "id"]),
-        FieldPath(alias="name", path=["person", "name"]),
-    ]
+    assert paths == [_unaliased("person", "id"), _unaliased("person", "name")]
 
 
 def test_inline_fragment() -> None:
@@ -74,7 +101,4 @@ def test_inline_fragment() -> None:
     """
     op, fragments = parse_query_ast(query)
     paths = extract_flat_paths(op.selection_set, fragments)
-    assert paths == [
-        FieldPath(alias="__typename", path=["node", "__typename"]),
-        FieldPath(alias="id", path=["node", "id"]),
-    ]
+    assert paths == [_unaliased("node", "__typename"), _unaliased("node", "id")]

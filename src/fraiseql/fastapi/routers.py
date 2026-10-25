@@ -675,7 +675,8 @@ def _build_field_selections_recursive(
     variables: dict[str, Any] | None,
     parent_path: str = "",
     visited_fragments: frozenset[str] | None = None,
-) -> list[dict[str, str | None]]:
+    parent_response_path: str = "",
+) -> list[dict[str, Any]]:
     """Build a flat list of field selections with full materialized dot-path keys.
 
     Unlike extract_field_selections() which only captures immediate sub-fields
@@ -701,10 +702,13 @@ def _build_field_selections_recursive(
             level (empty string at root level).
         visited_fragments: Fragment names already expanded in the current
             traversal branch (prevents infinite recursion on circular refs).
+        parent_response_path: ``parent_path`` with each field's response key.
 
     Returns:
-        Flat list of ``{"materialized_path": "...", "alias": "..."|None}``
-        dicts covering every field at every nesting depth.
+        Flat list of ``{"materialized_path": "...", "alias": "..."|None,
+        "response_path": "...", "is_nested_object": bool}`` dicts covering every
+        field at every nesting depth. ``response_path`` holds the response key of
+        each field down to this one, so a field below an alias answers under it.
     """
     from graphql import FieldNode as _FieldNode
     from graphql import FragmentSpreadNode as _FragmentSpreadNode
@@ -743,6 +747,7 @@ def _build_field_selections_recursive(
                         variables,
                         parent_path,
                         visited_fragments | {frag_name},
+                        parent_response_path,
                     )
                 )
             continue
@@ -758,6 +763,7 @@ def _build_field_selections_recursive(
                     variables,
                     parent_path,
                     visited_fragments,
+                    parent_response_path,
                 )
             )
             continue
@@ -775,10 +781,21 @@ def _build_field_selections_recursive(
         field_name = sel.name.value
         alias: str | None = sel.alias.value if sel.alias else None
         path = f"{parent_path}.{field_name}" if parent_path else field_name
-        result.append({"materialized_path": path, "alias": alias})
+        # The key of each field down to this one: an alias above it renames it too
+        key = alias or field_name
+        response_path = f"{parent_response_path}.{key}" if parent_response_path else key
+        has_selection = bool(getattr(sel, "selection_set", None))
+        result.append(
+            {
+                "materialized_path": path,
+                "alias": alias,
+                "response_path": response_path,
+                "is_nested_object": has_selection,
+            }
+        )
 
         # Recurse into nested object selections.
-        if getattr(sel, "selection_set", None):
+        if has_selection:
             result.extend(
                 _build_field_selections_recursive(
                     sel,
@@ -786,6 +803,7 @@ def _build_field_selections_recursive(
                     variables,
                     path,
                     visited_fragments,
+                    response_path,
                 )
             )
 

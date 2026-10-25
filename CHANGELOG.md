@@ -251,6 +251,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value (a JSON scalar) is written as stored. A view without a registered type is
   projected as the type its field returns.
 
+- **A nested field answers under its alias.** `db.find` / `db.find_one` honoured
+  a root field's alias only: `{ notes { x: authorInfo { firstName } } }` came back
+  as `{"authorInfo": {...}}`, with either `auto_camel_case`, and two aliases of
+  one field (`a: authorInfo { firstName } b: authorInfo { lastName }`) got one
+  entry. Each field now answers under its response key at any depth, objects and
+  lists alike, with or without the Rust schema registry, and with several root
+  fields in the operation (which also keep snake_case keys with
+  `auto_camel_case=False`). A field selected under two aliases is answered twice,
+  each with its own sub-selection. `FieldPath` gains `names` and `response_keys`
+  (the name and the response key of each segment of `path`), which
+  `extract_flat_paths` fills; both default to `None`.
+
 - **Without the Rust schema registry, a string with an escape comes back as
   stored.** The zero-copy path escaped the JSON it copied a second time, so
   `say "hi"` reached the client as `say \"hi\"`, and a string ending in a

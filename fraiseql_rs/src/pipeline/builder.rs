@@ -114,6 +114,7 @@ fn build_with_schema(
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
 ) -> PyResult<Vec<u8>> {
+    let projection = field_selections.map(|selections| Projection::from_selections(&selections));
     let transformed_items: Result<Vec<Value>, _> = json_rows
         .iter()
         .map(|row_str| {
@@ -122,9 +123,12 @@ fn build_with_schema(
                     pyo3::exceptions::PyValueError::new_err(format!("Failed to parse JSON: {}", e))
                 })
                 .map(|value| {
-                    if let Some(ref selections) = field_selections {
-                        json_transform::transform_with_selections(
-                            &value, type_name, selections, registry,
+                    if let Some(ref projection) = projection {
+                        json_transform::project_with_schema(
+                            &value,
+                            Some(type_name),
+                            projection,
+                            registry,
                         )
                     } else {
                         json_transform::transform_with_schema(&value, type_name, registry)
@@ -348,10 +352,10 @@ pub fn build_multi_field_response(fields: Vec<MultiFieldDef>) -> PyResult<Vec<u8
             _ => Vec::new(),
         };
 
-        let selections_opt = if selections_json.is_empty() {
+        let projection = if selections_json.is_empty() {
             None
         } else {
-            Some(selections_json)
+            Some(Projection::from_selections(&selections_json))
         };
 
         // Transform rows for this field
@@ -366,9 +370,12 @@ pub fn build_multi_field_response(fields: Vec<MultiFieldDef>) -> PyResult<Vec<u8
                         ))
                     })
                     .map(|value| {
-                        if let Some(ref selections) = selections_opt {
-                            json_transform::transform_with_selections(
-                                &value, &type_name, selections, &registry,
+                        if let Some(ref projection) = projection {
+                            json_transform::project_with_schema(
+                                &value,
+                                Some(&type_name),
+                                projection,
+                                &registry,
                             )
                         } else {
                             json_transform::transform_with_schema(&value, &type_name, &registry)

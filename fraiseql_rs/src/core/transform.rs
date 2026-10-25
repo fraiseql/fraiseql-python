@@ -297,7 +297,7 @@ impl<'a> ZeroCopyTransformer<'a> {
             // One field per alias selecting this key: each reads the value again
             let start = reader.position();
             let mut read = false;
-            for i in projection.matching(key_bytes) {
+            for i in projection.matching_or_camel(key_bytes, &mut self.key_scratch) {
                 if written.get(i) {
                     continue;
                 }
@@ -1068,6 +1068,14 @@ mod tests {
         let projection = selections(&[("meta", "meta", false)]);
         let out = project(r#"{"meta":{"some_key":[1, {"a_b":2}]}}"#, None, &projection);
         assert_eq!(out, r#"{"meta":{"some_key":[1, {"a_b":2}]}}"#);
+    }
+
+    #[test]
+    fn a_snake_case_key_is_found_by_its_camel_case_name() {
+        // The field dns1 (Python dns_1) is read from the key "dns_1"
+        let projection = selections(&[("dns1", "dns1", true), ("dns1.ip", "dns1.ip", false)]);
+        let out = project(r#"{"dns_1":{"ip":"1.1.1.1"},"dns_2":{}}"#, None, &projection);
+        assert_eq!(out, r#"{"dns1":{"ip":"1.1.1.1"}}"#);
     }
 
     #[test]

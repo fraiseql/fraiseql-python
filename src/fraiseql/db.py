@@ -174,6 +174,19 @@ def _root_response_key(info: Any) -> str | None:
     return path.key
 
 
+def _response_goes_out_as_is(info: Any) -> bool:
+    """Whether db.find's response reaches the client as Rust writes it.
+
+    True for a root field answered alone: its fields are keyed by their response
+    keys (aliases). Below the root, or with several root fields (the response is
+    merged and completed again), graphql-core reads the fields by name.
+    """
+    if _root_response_key(info) is None:
+        return False
+    context = getattr(info, "context", None)
+    return not (isinstance(context, dict) and context.get("__has_multiple_root_fields__"))
+
+
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
     """Check if RustResponseBytes contains empty array (null result).
 
@@ -2004,7 +2017,10 @@ class FraiseQLRepository:
                 )
                 if parent_type and info.schema:
                     field_selections_json = rust_field_selections(
-                        field_path_objects, info.schema, parent_type
+                        field_path_objects,
+                        info.schema,
+                        parent_type,
+                        by_alias=_response_goes_out_as_is(info),
                     )
 
                     # Store field selections in context for nested resolvers
@@ -2259,7 +2275,10 @@ class FraiseQLRepository:
                 )
                 if parent_type and info.schema:
                     field_selections_json = rust_field_selections(
-                        field_path_objects, info.schema, parent_type
+                        field_path_objects,
+                        info.schema,
+                        parent_type,
+                        by_alias=_response_goes_out_as_is(info),
                     )
 
         # 2. Get JSONB column from cached metadata

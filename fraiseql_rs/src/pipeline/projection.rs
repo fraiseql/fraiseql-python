@@ -9,7 +9,7 @@
 
 use serde_json::Value;
 
-use crate::camel_case::to_camel_case;
+use crate::{camel_case::to_camel_case, core::camel::snake_to_camel};
 
 /// The field name GraphQL answers with the object's type name
 pub const TYPENAME: &str = "__typename";
@@ -55,10 +55,17 @@ impl ProjectedField {
         self.source == TYPENAME
     }
 
-    /// The field's value in a JSON object: under `source`, else an alternate spelling
+    /// The field's value in a JSON object: under `source`, else an alternate
+    /// spelling, else a snake_case key that camelCases like it (`dns_1` for `dns1`)
     pub fn value_in<'v>(&self, map: &'v serde_json::Map<String, Value>) -> Option<&'v Value> {
         map.get(&self.source)
             .or_else(|| self.alternates.iter().find_map(|key| map.get(key)))
+            .or_else(|| {
+                let camel = to_camel_case(&self.source);
+                map.iter()
+                    .find(|(key, _)| key.contains('_') && to_camel_case(key) == camel)
+                    .map(|(_, value)| value)
+            })
     }
 }
 
@@ -216,14 +223,33 @@ impl Projection {
     /// matches nothing.
     #[inline]
     pub fn matching(&self, key: &[u8]) -> impl Iterator<Item = usize> + '_ {
-        let matches = if self.filter & key_bit(key) == 0 {
-            &self.index[..0]
-        } else {
-            let start = self.index.partition_point(|(k, _)| &**k < key);
-            let end = start + self.index[start..].partition_point(|(k, _)| &**k == key);
-            &self.index[start..end]
-        };
-        matches.iter().map(|(_, i)| *i)
+        self.entries(key).iter().map(|(_, i)| *i)
+    }
+
+    /// Like [`matching`](Self::matching), and a snake_case key nothing matches is
+    /// looked up camelCased: `dns_1` is the field `dns1`. `scratch` holds the
+    /// camelCased key.
+    #[inline]
+    pub fn matching_or_camel(
+        &self,
+        key: &[u8],
+        scratch: &mut Vec<u8>,
+    ) -> impl Iterator<Item = usize> + '_ {
+        let mut entries = self.entries(key);
+        if entries.is_empty() && key.contains(&b'_') {
+            entries = self.entries(snake_to_camel(key, scratch));
+        }
+        entries.iter().map(|(_, i)| *i)
+    }
+
+    #[inline]
+    fn entries(&self, key: &[u8]) -> &[(Box<[u8]>, usize)] {
+        if self.filter & key_bit(key) == 0 {
+            return &self.index[..0];
+        }
+        let start = self.index.partition_point(|(k, _)| &**k < key);
+        let end = start + self.index[start..].partition_point(|(k, _)| &**k == key);
+        &self.index[start..end]
     }
 
     /// Whether nothing is selected
