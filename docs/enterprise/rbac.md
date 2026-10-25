@@ -120,7 +120,7 @@ repository's pool when you don't pass one.
 
 `has_permission(user_id, resource, action, tenant_id=None)` returns a bool, and
 `check_permission(..., raise_on_deny=True)` raises `PermissionError("Permission
-denied: requires post.delete")`. Both go through the cache (see the caveats below).
+denied: requires post.delete")`. Both go through the cache (see [Caching](#caching)).
 `RoleHierarchy(repo)` (`fraiseql.enterprise.rbac.hierarchy`) has
 `get_inherited_roles(role_id)` (the role and its ancestors), `get_hierarchy_depth`,
 `get_role_ancestors` and `get_role_descendants`.
@@ -146,19 +146,24 @@ async def publish_post(info, id: UUID) -> bool:
     return True
 ```
 
-### Caching Caveats
+### Caching
 
-`PermissionCache` keeps two layers: an in-memory dict on the `PermissionCache`
-instance, and rows in a `fraiseql_cache` table (`PostgresCache`). In this release:
+`PermissionCache` keeps two layers:
 
-- The in-memory layer is never cleared on its own: a resolver kept for the app's
-  lifetime keeps answering with the permissions it first computed. Call
-  `resolver.cache.clear_request_cache()` per request if you use it.
-- `get_role_permissions(role_id)` fails (`TypeError: positional placeholders (%s)
-  require a sequence of parameters`).
+- an in-memory dict on the `PermissionCache` instance. An entry answers for
+  `request_cache_ttl` (`PermissionCache(pool, request_cache_ttl=timedelta(seconds=1))`
+  by default), then the next call goes back to PostgreSQL; `timedelta(0)` turns the
+  layer off. `resolver.cache.clear_request_cache()` empties it.
+- rows in a `fraiseql_cache` table (`PostgresCache`), kept 5 minutes, and shared by
+  every resolver, request and process on the database.
 
-Until these are fixed, call `get_user_permissions(..., use_cache=False)` and check the
-result yourself, as above.
+A change to a user's roles or permissions therefore shows within 5 minutes, or at
+once with the extension below, or after `await resolver.invalidate_user_cache(user_id,
+tenant_id)` (within `request_cache_ttl` for other resolvers). Pass `use_cache=False`
+where that delay is too long.
+
+In this release `get_role_permissions(role_id)` fails (`TypeError: positional
+placeholders (%s) require a sequence of parameters`).
 
 With the `pg_fraiseql_cache` extension, `await setup_rbac_cache(pool)`
 (`fraiseql.enterprise.rbac`) installs version triggers on the four tables, so cached

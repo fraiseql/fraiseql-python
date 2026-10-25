@@ -939,6 +939,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request or process) failed with a pydantic `ValidationError`. Every field is now
   stored, and a row that doesn't validate (such as one an earlier version wrote) is a
   cache miss: the permissions are computed again and the row replaced.
+- **The in-memory layer of `PermissionCache` expires.** Nothing cleared it outside
+  the Strawberry `RbacMiddleware`, so a `PermissionResolver` kept for the app's
+  lifetime answered each user with the permissions it first computed: a role or
+  permission taken away from a user kept working in that process until it
+  restarted, whatever the `fraiseql_cache` table or its version triggers said. (It
+  is keyed by user and tenant: one user never got another's permissions.) An
+  entry now answers for `request_cache_ttl` (new `PermissionCache` argument,
+  default 1 second, `timedelta(0)` turns the layer off), then the next call reads
+  PostgreSQL again; expired entries are dropped.
 
 ## [1.30.0] - 2026-10-22
 

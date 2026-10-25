@@ -1,9 +1,12 @@
 """PermissionResolver built from a FraiseQLRepository alone, against PostgreSQL."""
 
+import time
+from datetime import timedelta
 from uuid import UUID, uuid4
 
 import pytest
 
+from fraiseql.enterprise.rbac import cache as cache_module
 from fraiseql.enterprise.rbac.cache import PermissionCache
 from fraiseql.enterprise.rbac.resolver import PermissionResolver
 
@@ -70,3 +73,39 @@ class TestPermissionsReadBackFromPostgreSQL:
         assert await resolver.cache.get(user_id, None) is None
         found = await resolver.get_user_permissions(user_id)
         assert {(p.resource, p.action) for p in found} == {("user", "read")}
+
+
+class TestInMemoryLayerOfALongLivedResolver:
+    async def test_a_removed_role_stops_counting_after_the_in_memory_ttl(
+        self, rbac_pool, rbac_repo, monkeypatch
+    ) -> None:
+        """A resolver kept for the app's lifetime doesn't answer from memory forever."""
+        user_id = await _viewer_with_user_read(rbac_pool)
+        app_resolver = PermissionResolver(rbac_repo)
+        assert await app_resolver.has_permission(user_id, "user", "read")
+
+        # The role is taken away, and another resolver (another process) drops the
+        # user's fraiseql_cache row.
+        async with rbac_pool.connection() as conn:
+            await conn.execute("DELETE FROM user_roles WHERE user_id = %s", (user_id,))
+        await PermissionResolver(rbac_repo).invalidate_user_cache(user_id)
+
+        now = time.monotonic()
+        monkeypatch.setattr(cache_module.time, "monotonic", lambda: now + 60)
+
+        assert not await app_resolver.has_permission(user_id, "user", "read")
+
+    async def test_the_in_memory_layer_can_be_turned_off(self, rbac_pool, rbac_repo) -> None:
+        user_id = await _viewer_with_user_read(rbac_pool)
+        resolver = PermissionResolver(
+            rbac_repo, PermissionCache(rbac_pool, request_cache_ttl=timedelta(0))
+        )
+        assert await resolver.has_permission(user_id, "user", "read")
+
+        async with rbac_pool.connection() as conn:
+            await conn.execute("DELETE FROM user_roles WHERE user_id = %s", (user_id,))
+        await resolver.invalidate_user_cache(user_id)
+        await PermissionResolver(rbac_repo).invalidate_user_cache(user_id)
+
+        assert not await resolver.has_permission(user_id, "user", "read")
+        assert (await resolver.cache.get_stats())["request_cache_size"] == 0
