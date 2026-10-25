@@ -43,6 +43,11 @@ _type_registry: dict[str, type] = {}
 # This avoids expensive runtime introspection
 _table_metadata: dict[str, dict[str, Any]] = {}
 
+# Development mode: the multi-word JSONB keys already probed for a camelCase
+# spelling, as (view, JSONB column, parent path, snake_case key). Each is probed
+# once per process; see FraiseQLRepository._warn_on_camel_case_keys.
+_camel_case_key_probes: set[tuple[str, str, tuple[str, ...], str]] = set()
+
 # Null response cache for RustResponseBytes optimization
 # Preloaded with common field name patterns (90%+ hit rate expected)
 _NULL_RESPONSE_CACHE: set[bytes] = {
@@ -1520,6 +1525,129 @@ class FraiseQLRepository:
                     await self._set_session_variables(cursor)
             yield conn
 
+    def _jsonb_key_paths(
+        self, view_name: str, jsonb_column: str | None, kwargs: Mapping[str, Any]
+    ) -> set[tuple[str, tuple[str, ...]]]:
+        """``(JSONB column, key path)`` of each JSONB key the query filters or sorts on.
+
+        Paths are spelled as the SQL looks them up: snake_case, as ``where`` and
+        ``order_by`` convert every field name before extracting it.
+        """
+        paths: set[tuple[str, tuple[str, ...]]] = set()
+
+        where = kwargs.get("where")
+        if where:
+            table_columns = None
+            introspected = getattr(self, "_introspected_columns", {})
+            if view_name in introspected:
+                table_columns = introspected[view_name]
+            elif view_name in _table_metadata:
+                table_columns = _table_metadata[view_name].get("columns")
+            try:
+                clauses = [self._normalize_where(where, view_name, table_columns)]
+            except Exception:
+                clauses = []  # the query itself reports an unusable where
+            while clauses:
+                clause = clauses.pop()
+                paths.update(
+                    (condition.target_column, tuple(condition.jsonb_path))
+                    for condition in clause.conditions
+                    if condition.lookup_strategy == "jsonb_path" and condition.jsonb_path
+                )
+                clauses.extend(clause.nested_clauses)
+                if clause.not_clause is not None:
+                    clauses.append(clause.not_clause)
+
+        order_by = kwargs.get("order_by")
+        if order_by and jsonb_column is not None:
+            from fraiseql.sql.where.operators.vectors import VECTOR_DISTANCE_OPERATORS
+
+            try:
+                order_set = self._resolve_order_by_set(order_by, view_name)
+            except Exception:
+                order_set = None
+            native_columns = kwargs.get("native_dimensions") or None
+            column_mapping = _view_column_mapping(view_name) or None
+            for instruction in getattr(order_set, "instructions", ()):
+                if instruction._flat_column(native_columns, column_mapping) is not None:
+                    continue
+                path = instruction.field.split(".")
+                if instruction.value is not None and path[-1] in VECTOR_DISTANCE_OPERATORS:
+                    path = path[:-1]  # 'embedding.cosine_distance' sorts on 'embedding'
+                paths.add((jsonb_column, tuple(path)))
+
+        return paths
+
+    async def _warn_on_camel_case_keys(
+        self,
+        conn: AsyncConnection,
+        view_name: str,
+        jsonb_column: str | None,
+        kwargs: Mapping[str, Any],
+    ) -> None:
+        """In development, warn when a view's JSONB spells a filtered key in camelCase.
+
+        ``where`` and ``order_by`` read ``data ->> 'created_at'``. A view built
+        with ``jsonb_build_object('createdAt', ...)`` has no such key, so the
+        filter matches nothing and the sort does nothing, without an error. The
+        first query on each multi-word key probes one row of the view for the
+        camelCase key without the snake_case one, and logs a warning if so.
+        Every key is probed once per process; outside development, never.
+        """
+        config = self.context.get("config")
+        if getattr(config, "environment", None) != "development":
+            return
+
+        from psycopg.sql import Identifier, Literal
+
+        from fraiseql.utils.casing import to_camel_case
+
+        probes = []
+        for column, path in self._jsonb_key_paths(view_name, jsonb_column, kwargs):
+            for depth, key in enumerate(path):
+                probe = (view_name, column, path[:depth], key)
+                if "_" in key.strip("_") and probe not in _camel_case_key_probes:
+                    _camel_case_key_probes.add(probe)
+                    probes.append(probe)
+        if not probes:
+            return
+
+        # NULL (no such parent object) reads as "no warning"
+        checks = [
+            SQL("{obj} ? {camel} AND NOT {obj} ? {snake}").format(
+                obj=SQL("({} #> {})").format(Identifier(column), Literal(list(parent))),
+                camel=Literal(to_camel_case(key)),
+                snake=Literal(key),
+            )
+            for _, column, parent, key in probes
+        ]
+        statement = SQL("SELECT {} FROM {} LIMIT 1").format(
+            SQL(", ").join(checks), qualified_identifier(view_name)
+        )
+        try:
+            # A savepoint inside the query's transaction: a failed probe rolls
+            # back alone and leaves the query to run.
+            async with conn.transaction(), conn.cursor() as cursor:
+                await cursor.execute(statement)
+                row = await cursor.fetchone()
+        except Exception:
+            logger.debug("camelCase key probe failed for %s", view_name, exc_info=True)
+            return
+
+        for (_, column, parent, key), camel_only in zip(probes, row or (), strict=False):
+            if camel_only:
+                logger.warning(
+                    "View %r has the JSONB key %r in %s but not %r, the key where and "
+                    "orderBy on %r look up: they match nothing. Build the view's JSONB "
+                    "with snake_case keys (jsonb_build_object(%r, ...)).",
+                    view_name,
+                    ".".join((*parent, to_camel_case(key))),
+                    column,
+                    key,
+                    ".".join((*parent, key)),
+                    key,
+                )
+
     async def run(self, query: DatabaseQuery) -> list[dict[str, object]]:
         """Execute a SQL query using a connection from the pool.
 
@@ -2045,6 +2173,7 @@ class FraiseQLRepository:
             include_wrapper = not info.context.get("__has_multiple_root_fields__", False)
 
         async with self._session_connection() as conn:
+            await self._warn_on_camel_case_keys(conn, view_name, jsonb_column, kwargs)
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
@@ -2172,6 +2301,7 @@ class FraiseQLRepository:
             include_wrapper = not info.context.get("__has_multiple_root_fields__", False)
 
         async with self._session_connection() as conn:
+            await self._warn_on_camel_case_keys(conn, view_name, jsonb_column, kwargs)
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,

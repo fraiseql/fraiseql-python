@@ -64,6 +64,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Rust filters the cascade on field names only and never read them
   (`Cascade.updated` takes no arguments, and the entity is a JSON scalar).
   Responses are unchanged.
+- **In development, a view with camelCase JSONB keys is reported.** `where`
+  and `orderBy` look a multi-word field up by its snake_case key
+  (`data ->> 'created_at'`), so a view built with
+  `jsonb_build_object('createdAt', ...)` matched nothing, silently. With
+  `environment="development"`, the first `find` / `find_one` that filters or
+  sorts on such a field reads one row of the view and, if it has the camelCase
+  key but not the snake_case one, logs a warning naming the view and the key.
+  Each key is checked once per process, and never outside development.
 
 - **The docs, the examples and the `fraiseql migrate init` scaffold build views
   with snake_case JSONB keys** (`'created_at', created_at`, not `'createdAt'`).
