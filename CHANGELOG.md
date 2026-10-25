@@ -623,6 +623,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   variables when the context has some, otherwise as one `set_config` call
   before the read. `query_timeout=0` sets none.
 
+- **The loaders of `fraiseql.optimization` (`UserLoader`, `ProjectLoader`,
+  `TasksByProjectLoader`, `GenericForeignKeyLoader`) load.** They called
+  `db.fetch_all`, which the repository doesn't have, so every `load` failed.
+  They now run one query per batch through `db.run`. `UserLoader`,
+  `ProjectLoader` and `TasksByProjectLoader` take a `table=` (default `users`,
+  `projects`, `tasks`; a schema-qualified name works).
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't
