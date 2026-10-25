@@ -8,6 +8,23 @@ from psycopg.sql import SQL, Composable, Composed, Literal
 from fraiseql.sql.operators.base import BaseOperatorStrategy
 
 
+def _distance_method() -> str:
+    """The ``distance_within`` method: the app's config, else the environment, else haversine.
+
+    ``FraiseQLConfig.coordinate_distance_method`` counts when it was set (in code or
+    from ``FRAISEQL_COORDINATE_DISTANCE_METHOD`` when the config was built). Without
+    such a config, the environment variable is read at query time.
+    """
+    from fraiseql.gql.builders.registry import SchemaRegistry
+
+    config = SchemaRegistry.get_instance().config
+    if config is not None and "coordinate_distance_method" in getattr(
+        config, "model_fields_set", ()
+    ):
+        return str(config.coordinate_distance_method).lower()
+    return os.environ.get("FRAISEQL_COORDINATE_DISTANCE_METHOD", "haversine").lower()
+
+
 class CoordinateOperatorStrategy(BaseOperatorStrategy):
     """Strategy for geographic coordinate operators with PostgreSQL POINT type casting.
 
@@ -159,8 +176,7 @@ class CoordinateOperatorStrategy(BaseOperatorStrategy):
                     f"distance_within distance must be a positive number, got {distance_meters}"
                 )
 
-            # Get distance method from environment or use default
-            method = os.environ.get("FRAISEQL_COORDINATE_DISTANCE_METHOD", "haversine").lower()
+            method = _distance_method()
 
             # Build SQL based on configured method
             if method == "postgis":

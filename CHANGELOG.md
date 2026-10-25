@@ -198,6 +198,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   production.** The router added `extensions.execution` outside production and
   never read the setting. Outside production the timing is still always there.
 
+- **`FraiseQLConfig(coordinate_distance_method=...)` picks the `distance_within`
+  SQL.** Only the `FRAISEQL_COORDINATE_DISTANCE_METHOD` environment variable was
+  read, so `coordinate_distance_method="postgis"` in code still built Haversine
+  SQL. The app's config now wins when it sets the method; without it, the
+  environment variable is read as before.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was
