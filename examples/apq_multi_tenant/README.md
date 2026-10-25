@@ -129,26 +129,10 @@ globex-inc   - Hits:   3, Misses:   2, Hit Rate: 60.0%
 
 ### Tenant Context Extraction
 
-FraiseQL extracts `tenant_id` from the request context:
-
-```python
-# Example: JWT middleware
-@app.middleware("http")
-async def add_tenant_context(request, call_next):
-    """Extract tenant_id from JWT and add to context."""
-    token = request.headers.get("Authorization", "").replace("Bearer ", "")
-    payload = jwt.decode(token, SECRET_KEY)
-
-    # FraiseQL automatically uses this for APQ caching
-    request.state.user = {
-        "metadata": {
-            "tenant_id": payload.get("tenant_id")
-        }
-    }
-
-    response = await call_next(request)
-    return response
-```
+The APQ backends read the tenant from the request context: `context["tenant_id"]`,
+`context["user"]["tenant_id"]` or `context["user"]["metadata"]["tenant_id"]`. Put it
+there with a `context_getter`, from the verified token (see
+[Production Configuration](#production-configuration)).
 
 ### Cache Key Format
 
@@ -162,43 +146,28 @@ abc123... → { users: [...] }  # All tenants share same cache
 **With tenant isolation (FraiseQL):**
 
 ```
-Key: hash@tenant_id
-abc123...@acme-corp  → { users: [...acme data...] }
-abc123...@globex-inc → { users: [...globex data...] }
+Key: tenant_id:hash
+acme-corp:abc123...  → { users: [...acme data...] }
+globex-inc:abc123... → { users: [...globex data...] }
 ```
+
+The response cache built from `apq_cache_responses` also keys on the variables and,
+for an authenticated request, the user's id (`user_id`, `id` or `sub` of
+`context["user"]`).
 
 ### Built-in Backend Support
 
-FraiseQL includes tenant-aware APQ backends out of the box:
-
-**Memory Backend (Development/Testing):**
-
-```python
-config = FraiseQLConfig(
-    apq_storage_backend="memory",
-    apq_cache_responses=True,
-    apq_cache_ttl=3600  # 1 hour
-)
-```
-
-**Redis Backend (Production):**
+`apq_storage_backend` is `"memory"` (one process; development, testing, a single
+instance), `"postgresql"` (tables `apq_queries` / `apq_responses` in the app's
+database, created on first use, shared between instances) or `"custom"` (your own
+class, named in `apq_backend_config["backend_class"]`, for Redis say):
 
 ```python
 config = FraiseQLConfig(
-    apq_storage_backend="redis",
-    apq_redis_url="redis://localhost:6379/0",
-    apq_cache_responses=True,
-    apq_cache_ttl=3600
-)
-```
-
-**PostgreSQL Backend (Production with JSONB):**
-
-```python
-config = FraiseQLConfig(
+    database_url="postgresql://localhost/myapp",
     apq_storage_backend="postgresql",
     apq_cache_responses=True,
-    apq_cache_ttl=3600
+    apq_response_cache_ttl=3600,  # 1 hour; 0 keeps responses
 )
 ```
 
@@ -235,47 +204,39 @@ class APQBackendWithStats(MemoryAPQBackend):
 ### Complete FastAPI Setup
 
 ```python
-from fraiseql import FraiseQL, FraiseQLConfig
-from fraiseql.fastapi import create_app
+import jwt
+from fastapi import Request
 
-# Configure FraiseQL with APQ
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
+
 config = FraiseQLConfig(
     database_url="postgresql://localhost/myapp",
-
-    # APQ Settings
-    apq_storage_backend="redis",
-    apq_redis_url="redis://localhost:6379/0",
+    apq_storage_backend="memory",  # or "postgresql" to share it between instances
     apq_cache_responses=True,
-    apq_cache_ttl=3600,  # 1 hour
-
-    # Multi-tenant settings
-    tenant_id_path="user.metadata.tenant_id",  # Where to find tenant_id in context
+    apq_response_cache_ttl=3600,  # 1 hour
 )
 
-app = FraiseQL(config=config)
 
-# Create FastAPI app
-fastapi_app = create_app(app)
-
-# Add tenant extraction middleware
-@fastapi_app.middleware("http")
-async def extract_tenant(request, call_next):
-    # Extract from JWT
-    token = request.headers.get("Authorization", "").replace("Bearer ", "")
-
+async def get_context(request: Request) -> dict:
+    """Tenant and user from the verified JWT."""
+    token = request.headers.get("Authorization", "").removeprefix("Bearer ")
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        request.state.user = {
-            "id": payload["user_id"],
-            "metadata": {
-                "tenant_id": payload["tenant_id"]
-            }
-        }
     except jwt.InvalidTokenError:
-        request.state.user = None
+        return {}
+    return {"tenant_id": payload["tenant_id"], "user_id": payload["sub"]}
 
-    return await call_next(request)
+
+app = create_fraiseql_app(
+    config=config,
+    types=[User, Product],
+    queries=[users, products],
+    context_getter=get_context,
+)
 ```
+
+`tenant_id` keys the APQ cache and is also set as `app.tenant_id` for each query, so a
+view or an RLS policy can filter on `current_setting('app.tenant_id')`.
 
 ### Apollo Client Integration
 
@@ -358,24 +319,27 @@ query GetUserDashboard($filters: UserFilters!) {
 
 ### Track Cache Performance
 
+Subclass the backend you use and count in its `get_cached_response`, as
+`APQBackendWithStats` in `main.py` does, then run it with
+`apq_storage_backend="custom"` and
+`apq_backend_config={"backend_class": "myapp.apq.MonitoredAPQBackend"}`. A custom
+backend class is called with `apq_backend_config`:
+
 ```python
-from prometheus_client import Counter, Histogram
+from prometheus_client import Counter
 
-apq_cache_hits = Counter(
-    'apq_cache_hits_total',
-    'APQ cache hits',
-    ['tenant_id']
-)
+from fraiseql.storage.backends.memory import MemoryAPQBackend
 
-apq_cache_misses = Counter(
-    'apq_cache_misses_total',
-    'APQ cache misses',
-    ['tenant_id']
-)
+apq_cache_hits = Counter("apq_cache_hits_total", "APQ cache hits", ["tenant_id"])
+apq_cache_misses = Counter("apq_cache_misses_total", "APQ cache misses", ["tenant_id"])
 
-class MonitoredAPQBackend(RedisAPQBackend):
-    def get_cached_response(self, hash_value, context):
-        tenant_id = self.extract_tenant_id(context)
+
+class MonitoredAPQBackend(MemoryAPQBackend):
+    def __init__(self, backend_config: dict) -> None:
+        super().__init__(response_ttl=backend_config.get("response_ttl"))
+
+    def get_cached_response(self, hash_value, context=None):
+        tenant_id = self.extract_tenant_id(context) or "global"
         response = super().get_cached_response(hash_value, context)
 
         if response:
@@ -413,19 +377,20 @@ Monitor per-tenant cache performance:
 
 ### 2. Cache Poisoning Prevention
 
-```python
-# Bad: Don't trust client-provided hashes
-client_hash = request.json.get("hash")  # ❌ Can be manipulated
-
-# Good: Server calculates hash
-server_hash = hashlib.sha256(query.encode()).hexdigest()  # ✅ Trusted
-```
+FraiseQL hashes a query's text itself: a request whose query doesn't hash to its
+`sha256Hash` gets HTTP 400 (`provided sha does not match query`) and nothing is stored.
+With `apq_mode="required"`, only hashes the server already knows run (register them
+with `apq_queries_dir`).
 
 ### 3. TTL Configuration
 
 ```python
 # Production recommendation
-apq_cache_ttl=3600  # 1 hour
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/myapp",
+    apq_cache_responses=True,
+    apq_response_cache_ttl=3600,  # 1 hour
+)
 
 # Considerations:
 # - Too short: Low hit rate
@@ -442,8 +407,8 @@ apq_cache_ttl=3600  # 1 hour
 **Possible causes:**
 
 1. **Queries not stable** - Use fragments, avoid inline queries
-2. **TTL too short** - Increase `apq_cache_ttl`
-3. **Too many tenants** - Scale Redis/storage
+2. **TTL too short** - Increase `apq_response_cache_ttl`
+3. **Too many tenants** - Scale the storage backend
 4. **Development mode** - Expected, ignore
 
 ### Data Leakage
@@ -482,45 +447,15 @@ def extract_tenant_id(self, context):
 
 ### Cache Warming
 
-Pre-populate cache with common queries:
-
-```python
-async def warm_cache_for_tenant(tenant_id: str):
-    """Pre-warm APQ cache with common queries."""
-    common_queries = [
-        "query GetUsers { users { id name email } }",
-        "query GetProducts { products { id name price } }",
-    ]
-
-    context = {"user": {"metadata": {"tenant_id": tenant_id}}}
-
-    for query in common_queries:
-        query_hash = hashlib.sha256(query.encode()).hexdigest()
-        # Execute once to cache
-        await execute_graphql(query, context)
-```
-
-### Multi-Region Caching
-
-```python
-# Primary region
-apq_redis_url = "redis://us-east-1:6379/0"
-
-# Replicate to other regions
-apq_redis_replicas = [
-    "redis://eu-west-1:6379/0",
-    "redis://ap-southeast-1:6379/0"
-]
-```
+Pre-populate the cache by sending the common queries once per tenant, from CI/CD or a
+startup task, with a token for that tenant: the first APQ request with a query's text
+stores it, and with `apq_cache_responses` stores its response for the tenant.
 
 ### Cache Invalidation
 
-```python
-async def invalidate_tenant_cache(tenant_id: str):
-    """Invalidate all APQ cache for a tenant."""
-    pattern = f"*@{tenant_id}"
-    await redis.delete(*redis.keys(pattern))
-```
+`apq_response_cache_ttl` expires cached responses. To drop them all, clear the
+backend's storage (`clear_storage()` on the memory backend), or, with the
+`postgresql` backend, delete rows from `apq_responses`.
 
 ## Testing
 

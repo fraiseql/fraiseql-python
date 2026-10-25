@@ -7,10 +7,12 @@
 **Basic Pattern (todo_quickstart.py):**
 
 ```python
+@fraiseql.mutation
 async def create_user(info, input: CreateUserInput) -> User:
-    # Simple success/error handling
-    user_id = await db.call_function("create_user", ...)
-    return User.from_dict(result)
+    # Simple success/error handling: an exception becomes a GraphQL error
+    db = info.context["db"]
+    result = await db.execute_function("create_user", {"email": input.email, "name": input.name})
+    return await db.find_one("v_user", "createUser", info, where={"id": result["id"]})
 ```
 
 **Enterprise Pattern:**
@@ -76,12 +78,14 @@ CREATE FUNCTION core.create_user(...) RETURNS app.mutation_result;
 # Simple, direct approach
 @fraiseql.query
 async def users(info) -> list[User]:
-    return await info.context["db"].find("users")
+    return await info.context["db"].find("v_user", "users", info)
 
 @fraiseql.mutation
 async def create_user(info, input: CreateUserInput) -> User:
-    result = await info.context["db"].call_function("create_user", input.dict())
-    return User.from_dict(result)
+    db = info.context["db"]
+    # create_user(input_data jsonb) RETURNS jsonb: {"id": ...}
+    result = await db.execute_function("create_user", {"email": input.email, "name": input.name})
+    return await db.find_one("v_user", "createUser", info, where={"id": result["id"]})
 ```
 
 ### Stage 2: Structured Responses

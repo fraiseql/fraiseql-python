@@ -4,7 +4,7 @@ This directory contains examples and test schemas for the FraiseQL DDL generatio
 
 ## Overview
 
-The fraiseql_tools package provides utilities to generate production-ready PostgreSQL DDL for table-backed views:
+The fraiseql_tools package provides utilities to generate production-ready PostgreSQL DDL for table-backed views. It lives in the repository's `tools/` directory and is not part of the installed `fraiseql` package: put `tools/` on `sys.path` (or `PYTHONPATH`) before importing it, as the example scripts do:
 
 - **tv_\* (JSON Views)**: Store entities as JSONB for efficient JSON queries
 - **ta_\* (Arrow Views)**: Store entities as Arrow IPC RecordBatches for columnar analytics

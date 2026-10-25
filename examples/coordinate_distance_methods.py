@@ -43,38 +43,31 @@ config_from_env = FraiseQLConfig(
 )
 
 
-# Usage in queries (same for all methods)
-"""
-GraphQL query with distance filtering:
+# What the method changes: the SQL of the `distance_within` operator
+#
+# `distance_within` takes ((latitude, longitude), meters) and is rendered by
+# FraiseQL's operator registry with the configured method. It isn't offered in
+# the GraphQL `where` inputs (a Coordinate field gets a StringFilter there), and
+# `db.find(where={"coordinates": {"distance_within": ...}})` doesn't render it
+# yet, so the example below prints the SQL each method produces.
+def print_distance_sql() -> None:
+    from psycopg.sql import SQL
 
-query {
-  locations(where: {
-    coordinates: {
-      distance_within: {
-        center: [37.7749, -122.4194]  # San Francisco
-        radius: 5000                   # 5km
-      }
-    }
-  }) {
-    name
-    coordinates
-  }
-}
-"""
+    from fraiseql.sql.operators import get_default_registry
+    from fraiseql.types import Coordinate
 
-# Python API usage
-"""
-from fraiseql.db import Repository
-
-repo = Repository(Location, db_conn)
-results = repo.find_many(
-    where={
-        "coordinates": {
-            "distance_within": ((37.7749, -122.4194), 5000)
-        }
-    }
-)
-"""
+    registry = get_default_registry()
+    san_francisco = (37.7749, -122.4194)
+    for method in ("haversine", "postgis", "earthdistance"):
+        # Without an app config, the method is read from the environment
+        os.environ["FRAISEQL_COORDINATE_DISTANCE_METHOD"] = method
+        sql = registry.build_sql(
+            "distance_within",
+            (san_francisco, 5000),  # 5 km
+            SQL("data->>'coordinates'"),
+            field_type=Coordinate,
+        )
+        print(f"{method}: {sql.as_string(None)}")
 
 
 # Accuracy Comparison
@@ -133,3 +126,7 @@ To install earthdistance:
        coordinate_distance_method="earthdistance"
    )
 """
+
+
+if __name__ == "__main__":
+    print_distance_sql()

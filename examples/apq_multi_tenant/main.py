@@ -120,26 +120,29 @@ def simulate_multi_tenant_requests():
 
 def create_multi_tenant_app():
     """Create a FraiseQL app with multi-tenant APQ support."""
+    import fraiseql
+
+    @fraiseql.query
+    async def tenant(info) -> str | None:
+        """The tenant of the request (keys the APQ cache)."""
+        return info.context.get("tenant_id")
+
+    async def get_context(request) -> dict[str, Any]:
+        """Tenant from the request; in production, decode and verify the JWT:
+
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return {"tenant_id": payload["tenant_id"], "user_id": payload["sub"]}
+        """
+        return {"tenant_id": request.headers.get("X-Tenant-ID")}
+
     config = FraiseQLConfig(
         database_url="postgresql://localhost/multi_tenant_db",
         apq_storage_backend="memory",  # Built-in tenant support
         apq_cache_responses=True,
-        apq_cache_ttl=3600,  # 1 hour
+        apq_response_cache_ttl=3600,  # 1 hour
     )
 
-    app = create_fraiseql_app(config)
-
-    @app.middleware("http")
-    async def add_tenant_context(request, call_next):
-        """Extract tenant_id from JWT and add to request context."""
-        # In production: decode JWT and extract tenant_id
-        # token = request.headers.get("Authorization", "").replace("Bearer ", "")
-        # payload = jwt.decode(token, SECRET_KEY)
-        # request.state.tenant_id = payload.get("tenant_id")
-        response = await call_next(request)
-        return response
-
-    return app
+    return create_fraiseql_app(config=config, queries=[tenant], context_getter=get_context)
 
 
 if __name__ == "__main__":

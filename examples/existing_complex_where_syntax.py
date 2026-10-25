@@ -79,7 +79,7 @@ OrderWhereInput = create_graphql_where_input(Order)
 
 
 @fraiseql.query
-async def advanced_user_search(where: UserWhereInput | None = None) -> list[User]:
+async def advanced_user_search(info, where: UserWhereInput | None = None) -> list[User]:
     """Advanced user search with EXISTING complex logical operators.
 
     **🎉 ALREADY SUPPORTED Complex Where Clause Syntax:**
@@ -184,7 +184,7 @@ async def advanced_user_search(where: UserWhereInput | None = None) -> list[User
 
 
 @fraiseql.query
-async def complex_order_analysis(where: OrderWhereInput | None = None) -> list[Order]:
+async def complex_order_analysis(info, where: OrderWhereInput | None = None) -> list[Order]:
     """Complex order analysis with advanced logical filtering.
 
     **Business Intelligence Queries Made Easy:**
@@ -282,6 +282,7 @@ async def complex_order_analysis(where: OrderWhereInput | None = None) -> list[O
 
 @fraiseql.query
 async def cross_entity_insights(
+    info,
     user_where: UserWhereInput | None = None,
     order_where: OrderWhereInput | None = None
 ) -> dict:
@@ -342,14 +343,15 @@ async def cross_entity_insights(
 
 
 if __name__ == "__main__":
-    app = fraiseql.create_app(
-        title="EXISTING Complex Where Clause Syntax",
-        description="FraiseQL ALREADY supports complex nested logical operators!",
-        version="1.0.0"
+    schema = fraiseql.build_fraiseql_schema(
+        query_types=[advanced_user_search, complex_order_analysis, cross_entity_insights],
     )
+    where_input = schema.type_map[UserWhereInput.__name__]
+    for op in ("AND", "OR", "NOT"):
+        print(f"{where_input.name}.{op}: {where_input.fields[op].description}")
 
     print("🚀 **FraiseQL Already Has Complex Where Clause Support!**")
-    print("👀 Visit http://localhost:8000/graphql to see it in action")
+    print("👀 Serve it with create_fraiseql_app (see the end of this file) to try it")
     print()
     print("✅ **ALREADY IMPLEMENTED Features:**")
     print("   • Logical operators: AND, OR, NOT")
@@ -359,17 +361,11 @@ if __name__ == "__main__":
     print("   • Full type safety with GraphQL schema")
     print()
     print("🎯 **NEW Enhancement (Just Added):**")
-    print("   • Automatic descriptions for ALL operators")
-    print("   • Apollo Studio tooltips for logical operations")
+    print("   • Operator descriptions in the schema (the ones printed above)")
     print("   • Self-documenting complex query syntax")
     print("   • Enhanced developer experience")
     print()
-    print("📚 **What You Get in Apollo Studio NOW:**")
-    print("   • AND: 'Logical AND - all conditions in the list must be true'")
-    print("   • OR: 'Logical OR - at least one condition in the list must be true'")
-    print("   • NOT: 'Logical NOT - negates the given condition'")
-    print("   • Plus all 35+ field operations with detailed explanations")
-    print()
     print("🎉 **The syntax was already there - now it's beautifully documented!**")
 
-    # In a real application: uvicorn existing_complex_where_syntax:app --reload
+    # To serve it: app = create_fraiseql_app(database_url=..., queries=[...]) from
+    # fraiseql.fastapi, then uvicorn existing_complex_where_syntax:app --reload
