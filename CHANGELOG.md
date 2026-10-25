@@ -124,6 +124,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Cached APQ responses expire after `apq_response_cache_ttl` seconds** (default 600;
+  0 keeps them). Nothing read the setting, so a cached response was served until the
+  process stopped (`memory`) or forever (`postgresql`). The `memory` and `postgresql`
+  backends take it from the config; a custom backend still gets only
+  `apq_backend_config`.
 - **`apq_queries_dir` registers the operations of its `.graphql`/`.gql` files.**
   Nothing read it, so `apq_mode="required"` had no configured way to approve queries.
   The APQ backend now registers each operation under the SHA-256 of its text when the

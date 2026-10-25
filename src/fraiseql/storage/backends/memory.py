@@ -1,6 +1,7 @@
 """Memory-based APQ storage backend for FraiseQL."""
 
 import logging
+import time
 from typing import Any, Optional
 
 from .base import APQStorageBackend
@@ -18,10 +19,17 @@ class MemoryAPQBackend(APQStorageBackend):
     is not shared between different backend instances.
     """
 
-    def __init__(self) -> None:
-        """Initialize the memory backend with empty storage."""
+    def __init__(self, response_ttl: int | None = None) -> None:
+        """Initialize the memory backend with empty storage.
+
+        Args:
+            response_ttl: Seconds a cached response stays valid; ``None`` or 0 means it
+                does not expire
+        """
         self._query_storage: dict[str, str] = {}
         self._response_storage: dict[str, dict[str, Any]] = {}
+        self._response_stored_at: dict[str, float] = {}
+        self._response_ttl = response_ttl or None
 
     def _get_cache_key(self, hash_value: str, context: Optional[dict[str, Any]] = None) -> str:
         """Generate cache key with tenant isolation.
@@ -86,6 +94,11 @@ class MemoryAPQBackend(APQStorageBackend):
 
         # Use tenant-aware cache key
         cache_key = self._get_cache_key(hash_value, context)
+        if self._response_ttl and cache_key in self._response_storage:
+            stored_at = self._response_stored_at.get(cache_key, 0.0)
+            if time.monotonic() - stored_at >= self._response_ttl:
+                self._response_storage.pop(cache_key, None)
+                self._response_stored_at.pop(cache_key, None)
         response = self._response_storage.get(cache_key)
 
         if response:
@@ -109,6 +122,7 @@ class MemoryAPQBackend(APQStorageBackend):
         # Use tenant-aware cache key
         cache_key = self._get_cache_key(hash_value, context)
         self._response_storage[cache_key] = response
+        self._response_stored_at[cache_key] = time.monotonic()
 
         tenant_info = f" (tenant: {cache_key.split(':')[0]})" if ":" in cache_key else ""
         logger.debug(f"Stored cached response for hash {hash_value[:8]}...{tenant_info}")
@@ -124,6 +138,7 @@ class MemoryAPQBackend(APQStorageBackend):
 
         self._query_storage.clear()
         self._response_storage.clear()
+        self._response_stored_at.clear()
 
         logger.debug(
             f"Cleared {query_count} APQ queries and "

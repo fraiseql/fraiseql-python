@@ -929,8 +929,9 @@ config = FraiseQLConfig(
 ```
 <!-- Code example in TEXT -->
 
-`apq_response_cache_ttl` is accepted but nothing reads it: cached responses don't
-expire.
+A cached response is served for `apq_response_cache_ttl` seconds after it was stored
+(default 600; 0 means it does not expire), then the query runs again and its new
+response is stored.
 
 A response is cached when an APQ request runs a query (never a mutation or a
 subscription) without errors, whichever execution path built it. The key is the

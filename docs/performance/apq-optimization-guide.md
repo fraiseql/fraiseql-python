@@ -326,9 +326,9 @@ config = FraiseQLConfig(
 )
 ```
 
-Cached responses have no TTL: one stays in the backend until the backend is
-cleared or the process stops. (`apq_response_cache_ttl` is a `FraiseQLConfig` field,
-but nothing reads it.)
+A cached response is served for `apq_response_cache_ttl` seconds after it was stored
+(default 600; 0 means it does not expire), then the query runs again and its new
+response is stored.
 
 A response is cached when an APQ request runs a query (never a mutation or a
 subscription) without errors, whichever execution path built it. The key is the

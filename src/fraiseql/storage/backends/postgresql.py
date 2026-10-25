@@ -38,6 +38,7 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         pool: Optional[Any] = None,
         *,
         database_url: str | None = None,
+        response_ttl: int | None = None,
     ) -> None:
         """Initialize the PostgreSQL backend with configuration.
 
@@ -55,6 +56,8 @@ class PostgreSQLAPQBackend(APQStorageBackend):
             pool: Optional synchronous ``psycopg_pool.ConnectionPool`` to use instead of
                 opening one
             database_url: Database URL used when ``config`` has none
+            response_ttl: Seconds a cached response stays valid; ``None`` or 0 means it
+                does not expire
         """
         self._config = config
         self._table_prefix = config.get("table_prefix", "apq_")
@@ -65,6 +68,7 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         self._auto_create_tables = config.get("auto_create_tables", True)
         self._connection_timeout = config.get("connection_timeout", 30)
         self._database_url = config.get("database_url") or database_url
+        self._response_ttl = response_ttl or None
         self._pool_max_size = config.get("pool_max_size", 4)
 
         if pool is not None:
@@ -159,7 +163,7 @@ class PostgreSQLAPQBackend(APQStorageBackend):
             context: Optional request context containing user/tenant information
 
         Returns:
-            Cached GraphQL response dict if found, None otherwise
+            Cached GraphQL response dict if found and not expired, None otherwise
         """
         if not hash_value:
             return None
@@ -183,6 +187,10 @@ class PostgreSQLAPQBackend(APQStorageBackend):
                 )
                 params = (hash_value,)
                 log_suffix = " (global)"
+            if self._response_ttl:
+                sql += " AND updated_at > NOW() - make_interval(secs => %s)"
+                params = (*params, self._response_ttl)
+
             result = self._fetch_one(sql, params)
 
             if result:
