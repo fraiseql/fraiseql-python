@@ -129,38 +129,53 @@ query {
 
 ## 5. Batch Queries with DataLoader (if needed)
 
-For N+1 query problems, use DataLoader pattern:
+For N+1 query problems, use the DataLoader pattern: subclass
+`fraiseql.optimization.dataloader.DataLoader` and implement `batch_load`, which gets
+every key requested in the same tick and returns the values in the order of the keys.
 
 ```python
-from fraiseql.utils import DataLoader
+import asyncio
 
-user_loader = DataLoader(load_fn=batch_load_users)
+from psycopg.sql import SQL
 
-# Batches multiple user lookups into single query
-users = await asyncio.gather(*[
-    user_loader.load(id) for id in user_ids
-])
+from fraiseql.db import DatabaseQuery
+from fraiseql.optimization.dataloader import DataLoader
+
+
+class UserLoader(DataLoader[str, dict]):
+    def __init__(self, db) -> None:
+        super().__init__()
+        self.db = db
+
+    async def batch_load(self, user_ids: list[str]) -> list[dict | None]:
+        rows = await self.db.run(DatabaseQuery(
+            SQL("SELECT id::text AS id, data FROM v_user WHERE id = ANY(%(ids)s::uuid[])"),
+            {"ids": user_ids},
+        ))
+        by_id = {row["id"]: row["data"] for row in rows}
+        return [by_id.get(user_id) for user_id in user_ids]
+
+
+user_loader = UserLoader(db)
+
+# Batches multiple user lookups into a single query
+users = await asyncio.gather(*[user_loader.load(user_id) for user_id in user_ids])
 ```
 
 ## 6. Monitor Rust Performance
 
-Track Rust pipeline metrics:
+FraiseQL exports no Rust-specific metrics. Time the requests with the Prometheus
+metrics of `setup_metrics` (`fraiseql_http_request_duration_seconds`,
+`fraiseql_response_time_seconds`), or the `extensions.execution.time_ms` of a
+response outside production (see `include_execution_metadata`).
 
-```python
-from fraiseql.monitoring import get_metrics
-
-metrics = get_metrics()
-print(f"Rust transform avg: {metrics['rust_transform_avg_ms']}ms")
-print(f"Rust transform p95: {metrics['rust_transform_p95_ms']}ms")
-```
-
-**Normal values:**
+Typical Rust transformation times, for comparison with your own measurements:
 
 - Simple objects: 0.1-0.5ms
 - Complex nested: 0.5-2ms
 - Large arrays: 1-5ms
 
-**If higher:** Check JSONB size or field projection settings
+**If higher:** Check the JSONB size of the rows and how many fields the query selects
 
 ## 7. PostgreSQL Configuration
 

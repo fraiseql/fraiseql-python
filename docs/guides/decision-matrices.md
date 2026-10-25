@@ -8,15 +8,20 @@ Quick visual guides to help you make the right architectural decisions for your 
 
 ## Database Methods Comparison
 
-### find() vs find_one() vs find_required()
+### find() vs find_one() vs exists()
 
-**Choose the right method based on your use case:**
+**Choose the right method based on your use case.** `find` and `find_one` take the
+view name, the GraphQL field name and `info`, and return the field's response, ready
+for the client: return it from the resolver as is.
 
-| Method | Returns | Raises on Not Found? | Use When | Example |
-|--------|---------|---------------------|----------|---------|
-| **`find()`** | `list[T]` | ❌ No (empty list) | Multiple results expected | `users = await db.find(User, where={"status": "active"})` |
-| **`find_one()`** | `T \| None` | ❌ No (returns None) | Result is optional | `user = await db.find_one(User, id=user_id)` |
-| **`find_required()`** | `T` | ✅ Yes (ValueError) | Result must exist | `user = await db.find_required(User, id=user_id)` |
+| Method | Answers | No match | Use When | Example |
+|--------|---------|----------|----------|---------|
+| **`find()`** | a list field | `[]` | Multiple results expected | `await db.find("v_user", "users", info, where={"status": {"eq": "active"}})` |
+| **`find_one()`** | an optional field | `null` | Result is optional | `await db.find_one("v_user", "user", info, mandatory_filters={"id": user_id})` |
+| **`exists()`** | a `bool` | `False` | Check before answering, e.g. to raise when a row must exist | `await db.exists("v_user", mandatory_filters={"id": user_id})` |
+
+There is no `find_required()`: to make a missing row an error, check with `exists()`
+(or `count()`) and raise, which answers with a GraphQL error.
 
 **Decision tree:**
 
@@ -25,11 +30,11 @@ flowchart TD
     A[Need to query database?] -->|Yes| B{How many results?}
     A -->|No| Z[Don't query]
 
-    B -->|Multiple/List| C[Use find<br/>Returns list[T]]
+    B -->|Multiple/List| C[Use find<br/>list field]
     B -->|Single| D{Is result optional?}
 
-    D -->|Yes, can be None| E[Use find_one<br/>Returns T | None]
-    D -->|No, must exist| F[Use find_required<br/>Raises if not found]
+    D -->|Yes, can be null| E[Use find_one<br/>optional field]
+    D -->|No, must exist| F[Check with exists<br/>raise if missing, then find_one]
 
     style C fill:#90EE90
     style E fill:#87CEEB
@@ -39,27 +44,42 @@ flowchart TD
 **Code examples:**
 
 ```python
-# find() - Get multiple results
-users = await db.find(User, where={"status": "active"})
-if not users:
-    print("No active users")  # Empty list, not None
-for user in users:
-    print(user.name)
+import fraiseql
+from fraiseql.types import ID
 
-# find_one() - Optional single result
-user = await db.find_one(User, mandatory_filters={"id": "some-uuid"})
-if user is None:
-    print("User not found")  # Handle None
-else:
-    print(user.name)
 
-# find_required() - Required single result
-try:
-    user = await db.find_required(User, id="some-uuid")
-    print(user.name)  # Always has value if we get here
-except ValueError:
-    print("User not found - exception raised")
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    name: str
+    status: str
+
+
+# find() - a list field: the rows that match, [] when none do
+@fraiseql.query
+async def active_users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user", "activeUsers", info, where={"status": {"eq": "active"}})
+
+
+# find_one() - an optional field: null when no row matches
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", "user", info, mandatory_filters={"id": id})
+
+
+# A row that must exist: check first, and raise to answer with a GraphQL error
+@fraiseql.query
+async def user_required(info, id: ID) -> User:
+    db = info.context["db"]
+    if not await db.exists("v_user", mandatory_filters={"id": id}):
+        raise ValueError(f"User {id} not found")
+    return await db.find_one("v_user", "userRequired", info, mandatory_filters={"id": id})
 ```
+
+`{ user(id: "...") { name } }` answers `{"user": null}` for an unknown id;
+`userRequired` answers `null` with the error `User ... not found`.
 
 ---
 

@@ -153,6 +153,9 @@ PostgreSQL → Rust transformation → HTTP bytes (zero Python overhead)
 
 ### Methods
 
+The entity-class methods read the view named after the class: `vw_` plus the class
+name in snake_case (`User` → `vw_user`), not the type's `sql_source`.
+
 #### count()
 
 ```python
@@ -172,8 +175,9 @@ from fraiseql import CQRSRepository
 
 @fraiseql.query
 async def users_count(info, where: UserWhereInput | None = None) -> int:
-    repo = CQRSRepository(info.context["connection"])
-    return await repo.count(User, where=where)  # Entity-class based
+    async with info.context["db"].get_pool().connection() as conn:
+        repo = CQRSRepository(conn)  # takes a psycopg AsyncConnection
+        return await repo.count(User, where=where)  # Entity-class based
 ```
 
 #### find_by_id()
@@ -213,13 +217,14 @@ from fraiseql import CQRSRepository
 
 @fraiseql.query
 async def users(info, where: UserWhereInput | None = None) -> list[User]:
-    repo = CQRSRepository(info.context["connection"])
-    return await repo.list_entities(User, where=where)  # Returns list[dict]
+    async with info.context["db"].get_pool().connection() as conn:
+        repo = CQRSRepository(conn)
+        return await repo.list_entities(User, where=where)  # Returns list[dict]
 
 @fraiseql.query
 async def users_count(info, where: UserWhereInput | None = None) -> int:
-    repo = CQRSRepository(info.context["connection"])
-    return await repo.count(User, where=where)
+    async with info.context["db"].get_pool().connection() as conn:
+        return await CQRSRepository(conn).count(User, where=where)
 ```
 
 **After (Modern)**:
@@ -271,7 +276,7 @@ async def total_users(info) -> int:
 
 ```python
 async def cleanup_old_records():
-    async with get_db_connection() as conn:
+    async with await psycopg.AsyncConnection.connect(DATABASE_URL) as conn:
         repo = CQRSRepository(conn)
         old_records = await repo.list_entities(
             OldRecord,
@@ -288,7 +293,7 @@ async def cleanup_old_records():
 ```python
 # scripts/export_users.py
 async def export_users_to_csv():
-    async with get_db_connection() as conn:
+    async with await psycopg.AsyncConnection.connect(DATABASE_URL) as conn:
         repo = CQRSRepository(conn)
         users = await repo.list_entities(User)
         # Write to CSV file

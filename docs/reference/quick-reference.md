@@ -549,34 +549,43 @@ CREATE TRIGGER tr_user_updated_at
 
 ### Basic App
 
+`create_fraiseql_app` returns a FastAPI app serving `POST /graphql`, and opens the
+database pool when the app starts:
+
 ```python
-from fastapi import FastAPI
-from fraiseql.fastapi import FraiseQLRouter
-from fraiseql.db import FraiseQLRepository
-import asyncpg
+from fraiseql.fastapi import create_fraiseql_app
 
-# Database connection
-pool = await asyncpg.create_pool("postgresql://user:pass@localhost/mydb")
-repo = FraiseQLRepository(pool)
-
-# FastAPI app
-app = FastAPI()
-router = FraiseQLRouter(repo=repo, schema=fraiseql.build_schema())
-app.include_router(router, prefix="/graphql")
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost/mydb",
+    types=[User],
+    queries=[users],
+)
+# uvicorn app:app
 ```
 
 ### With Custom Context
 
 ```python
-from fraiseql.fastapi import FraiseQLRouter
+from fastapi import Request
 
-# Add custom context
-router = FraiseQLRouter(
-    repo=repo,
-    schema=fraiseql.build_schema(),
-    context={"user_id": "current_user"}  # Available in resolvers
+from fraiseql.fastapi import create_fraiseql_app
+
+
+async def get_context(request: Request) -> dict:
+    # Merged into the default context (which holds "db"); available as info.context
+    return {"request_id": request.headers.get("x-request-id")}
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://user:pass@localhost/mydb",
+    types=[User],
+    queries=[users],
+    context_getter=get_context,
 )
 ```
+
+To add FraiseQL to an existing FastAPI app, pass it as
+`create_fraiseql_app(..., app=existing_app)`.
 
 ## File Structure
 
@@ -601,7 +610,7 @@ import fraiseql
 from fraiseql.db import FraiseQLRepository
 
 # FastAPI integration
-from fraiseql.fastapi import FraiseQLRouter
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
 # Types
 from fraiseql.types import ID

@@ -145,7 +145,7 @@ scripts), build the psycopg pool and the repository directly. The repository tak
 psycopg `AsyncConnectionPool` and an optional context dict.
 
 ```python
-from fraiseql.fastapi import create_db_pool
+from fraiseql.fastapi.app import create_db_pool
 from fraiseql.db import FraiseQLRepository
 
 # create_db_pool returns a psycopg_pool.AsyncConnectionPool, configured for FraiseQL
@@ -310,7 +310,7 @@ query still runs through psycopg.
 
 ```python
 import pytest
-from fraiseql.fastapi import create_db_pool
+from fraiseql.fastapi.app import create_db_pool
 from fraiseql.db import FraiseQLRepository
 from fraiseql.core.rust_pipeline import RustResponseBytes
 

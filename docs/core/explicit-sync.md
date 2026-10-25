@@ -483,18 +483,21 @@ async def test_sync_integration(db_pool):
 
 ### Debugging Sync Issues
 
+The sync functions on this page are your own code: FraiseQL logs nothing for them.
+Log in them with a logger of your own:
+
 ```python
-# Enable sync logging
 import logging
+import time
 
-logging.getLogger("fraiseql.sync").setLevel(logging.DEBUG)
+logger = logging.getLogger("myapp.sync")
 
-# Log output:
-# [SYNC] sync_post: Syncing post 123...
-# [SYNC] → Fetching from tb_post
-# [SYNC] → Building JSONB structure
-# [SYNC] → Upserting to tv_post
-# [SYNC] ✓ Sync complete in 5.2ms
+
+async def sync_posts_logged(sync: EntitySync, post_ids: list[UUID]) -> None:
+    start = time.perf_counter()
+    logger.debug("syncing posts %s", post_ids)
+    await sync.sync_post(post_ids)
+    logger.debug("synced %d posts in %.1fms", len(post_ids), (time.perf_counter() - start) * 1000)
 ```
 
 ---

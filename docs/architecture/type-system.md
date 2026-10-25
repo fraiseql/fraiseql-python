@@ -424,23 +424,19 @@ flowchart TD
 FraiseQL supports advanced PostgreSQL types:
 
 ```python
-from fraiseql.types.postgres import (
-    JSONB,      # JSON with indexing
-    INET,       # IP addresses
-    MACADDR,    # MAC addresses
-    LTREE,      # Hierarchical labels
-    DATERANGE,  # Date ranges
-    Vector,     # pgvector for embeddings
-)
+import fraiseql
+from fraiseql.types import ID, JSON, DateRange, IpAddress, LTree, MacAddress
+
 
 @fraiseql.type(sql_source="v_device")
 class Device:
     id: ID
-    ip_address: INET
-    mac_address: MACADDR
-    config: JSONB
-    path: LTREE
-    warranty: DATERANGE
+    ip_address: IpAddress    # inet: IP addresses
+    mac_address: MacAddress  # macaddr: MAC addresses
+    config: JSON             # jsonb: arbitrary JSON
+    path: LTree              # ltree: hierarchical labels
+    warranty: DateRange      # daterange
+    embedding: list[float]   # pgvector vector (see pgvector docs)
 ```
 
 ---
