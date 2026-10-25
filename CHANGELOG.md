@@ -82,6 +82,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   removed. The configuration docs no longer present it as working, and no
   longer list the `json_passthrough_*` / `passthrough_*` settings, which
   `FraiseQLConfig` doesn't have (it ignores them).
+- **A Python `where` vector filter without `"threshold"`.**
+  `{"embedding": {"cosine_distance": {"vector": [...]}}}` filtered at a
+  distance `< 0.5` without saying so. It still does, and now emits a
+  `DeprecationWarning` naming the field and operator; the default will be
+  removed. Pass `{"vector": ..., "threshold": ...}`. Over GraphQL,
+  `distanceWithin` is already required.
 
 ### Removed
 

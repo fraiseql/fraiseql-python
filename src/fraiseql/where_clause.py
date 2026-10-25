@@ -40,6 +40,10 @@ from psycopg.sql import SQL, Composed, Identifier
 from psycopg.sql import Literal as SQLLiteral
 
 from fraiseql.sql.operators import get_default_registry
+from fraiseql.sql.where.operators.vectors import (
+    DEFAULT_DISTANCE_THRESHOLD,
+    warn_missing_threshold,
+)
 
 # Supported operators
 COMPARISON_OPERATORS = {
@@ -670,7 +674,12 @@ class FieldCondition:
                 # Value format: {"vector": [...], "threshold": 0.5, "comparison": "lt"}
                 if isinstance(self.value, dict):
                     vector = self.value.get("vector")
-                    threshold = self.value.get("threshold", 0.5)
+                    threshold = self.value.get("threshold")
+                    if threshold is None:
+                        warn_missing_threshold(
+                            ".".join(self.field_path), self.operator, stacklevel=2
+                        )
+                        threshold = DEFAULT_DISTANCE_THRESHOLD
                     comparison = self.value.get("comparison", "lt")
                 elif isinstance(self.value, (list, tuple)) and len(self.value) == 2:
                     warnings.warn(

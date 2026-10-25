@@ -9,6 +9,7 @@ FraiseQL exposes these operators transparently without abstraction.
 Distance values are returned raw from PostgreSQL (no conversion to similarity).
 """
 
+import warnings
 from typing import Any, NoReturn
 
 from psycopg.sql import SQL, Composed, Literal
@@ -71,7 +72,25 @@ VECTOR_COMPARISON_SQL = {
 }
 
 #: Applied when a filter names no threshold at all, as ``where_clause.py`` does.
+#: Deprecated: :func:`warn_missing_threshold` says so, and the default will go.
 DEFAULT_DISTANCE_THRESHOLD = 0.5
+
+
+def warn_missing_threshold(field_name: str | None, operator: str, *, stacklevel: int) -> None:
+    """Warn that a distance filter fell back to :data:`DEFAULT_DISTANCE_THRESHOLD`.
+
+    The GraphQL ``VectorFilter`` refuses a distance operator without
+    ``distanceWithin``. The Python ``where`` dict still accepts one without a
+    ``"threshold"`` and filters at ``< 0.5``, a distance nobody asked for.
+    """
+    field = f"{field_name!r} " if field_name else ""
+    warnings.warn(
+        f'where: {field}{operator} without a "threshold" filters at a distance '
+        f"< {DEFAULT_DISTANCE_THRESHOLD}; this default is deprecated and will be removed, "
+        'pass {"vector": ..., "threshold": ...}',
+        DeprecationWarning,
+        stacklevel=stacklevel + 1,
+    )
 
 
 def _reject(message: str, operator: str, value: object) -> WhereClauseError:
@@ -109,6 +128,7 @@ def unpack_distance_filter(
     *,
     operator: str,
     distance_within: float | None = None,
+    field_name: str | None = None,
 ) -> tuple[Any, float, str]:
     """Normalise a vector distance filter into ``(query_vector, threshold, comparison)``.
 
@@ -125,6 +145,9 @@ def unpack_distance_filter(
     ``(vector, threshold)`` 2-tuple form: it cannot be told apart from a
     two-dimensional query vector, so ``[0.1, 0.2]`` would silently filter on a
     0.1-dimensional vector with a 0.2 threshold.
+
+    With no threshold at all, :data:`DEFAULT_DISTANCE_THRESHOLD` applies and a
+    ``DeprecationWarning`` naming ``field_name`` and ``operator`` is emitted.
 
     Raises:
         WhereClauseError: If the payload, threshold or comparison is unusable.
@@ -166,6 +189,7 @@ def unpack_distance_filter(
             # 'distance_within' reads as "maximum distance to include".
             comparison = "lte"
     if threshold is None:
+        warn_missing_threshold(field_name, operator, stacklevel=2)
         threshold = DEFAULT_DISTANCE_THRESHOLD
     if comparison is None:
         comparison = "lt"

@@ -62,6 +62,7 @@ def build_operator_composed(
     field_type: type | None = None,
     detected_field_type: FieldType | None = None,
     distance_within: float | None = None,
+    field_name: str | None = None,
 ) -> Composed:
     """Build parameterized SQL for a specific operator using psycopg Composed.
 
@@ -74,6 +75,7 @@ def build_operator_composed(
         field_type: Optional type hint for proper casting.
         detected_field_type: Optional pre-detected field type (overrides detection).
         distance_within: Optional sibling threshold from the GraphQL ``VectorFilter``.
+        field_name: Optional field name, for the missing-threshold deprecation warning.
 
     Returns:
         A psycopg Composed object with properly parameterized SQL.
@@ -89,7 +91,7 @@ def build_operator_composed(
         FieldType.SPARSE_VECTOR,
     ):
         query_vector, threshold, comparison = unpack_distance_filter(
-            val, operator=op, distance_within=distance_within
+            val, operator=op, distance_within=distance_within, field_name=field_name
         )
         distance_sql = get_operator_function(detected_field_type, op)(path_sql, query_vector)
         return Composed(
@@ -179,7 +181,13 @@ def _make_filter_field_composed(
                 )
 
             condition = build_operator_composed(
-                path_sql, op, val, field_type, detected_field_type, distance_within
+                path_sql,
+                op,
+                val,
+                field_type,
+                detected_field_type,
+                distance_within,
+                field_name=name,
             )
             conditions.append(condition)
         except ValueError:
