@@ -102,115 +102,90 @@ class TestConcurrencyChaos(ChaosTestCase):
 
         self.metrics.start_test()
 
-        # Shared resource simulation
-        shared_resource_lock = threading.Lock()
-        shared_resource_accesses = 0
-        contention_events = 0
-
-        def execute_with_lock_contention(thread_id: int):
-            """Execute operation with simulated lock contention."""
-            nonlocal shared_resource_accesses, contention_events
-
-            try:
-                # Simulate lock acquisition with contention
-                lock_acquired = False
-                wait_time = 0
-
-                while not lock_acquired and wait_time < 0.200:  # Max 200ms wait
-                    if shared_resource_lock.acquire(blocking=False):
-                        lock_acquired = True
-                        try:
-                            # Access shared resource
-                            shared_resource_accesses += 1
-                            time.sleep(0.005)  # 5ms resource access time
-
-                            result = client.execute_query(operation)
-                            execution_time = result.get("_execution_time_ms", 25.0) + (
-                                wait_time * 1000
-                            )
-
-                            return {
-                                "thread_id": thread_id,
-                                "execution_time": execution_time,
-                                "wait_time": wait_time,
-                                "success": True,
-                            }
-                        finally:
-                            shared_resource_lock.release()
-                    else:
-                        # Lock contention - wait and retry
-                        contention_events += 1
-                        wait_increment = random.uniform(0.001, 0.005)
-                        time.sleep(wait_increment)
-                        wait_time += wait_increment
-
-                # Lock acquisition failed
-                return {
-                    "thread_id": thread_id,
-                    "error": "Lock acquisition timeout",
-                    "wait_time": wait_time,
-                    "success": False,
-                }
-
-            except Exception as e:
-                return {"thread_id": thread_id, "error": str(e), "success": False}
-
-        # Execute concurrent operations with lock contention
         # Scale num_threads based on hardware (6 on baseline, 3-24 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         num_threads = max(3, int(6 * self.chaos_config.load_multiplier))
-        errors = []
 
-        threads = []
-        for i in range(num_threads):
-            thread = threading.Thread(target=lambda tid=i: execute_with_lock_contention(tid))
-            threads.append(thread)
+        # Shared resource simulation
+        shared_resource_lock = threading.Lock()
+        counter_lock = threading.Lock()
+        all_started = threading.Barrier(num_threads)
+        lock_contended = threading.Event()
+        shared_resource_accesses = 0
+        contention_events = 0
+        holders = 0
+        max_holders = 0
+        results = []
+
+        def execute_with_lock_contention(thread_id: int):
+            """Execute operation with lock contention."""
+            nonlocal shared_resource_accesses, contention_events, holders, max_holders
+
+            all_started.wait()
+            try:
+                if not shared_resource_lock.acquire(blocking=False):
+                    # Lock contention - wait for the holder
+                    with counter_lock:
+                        contention_events += 1
+                    lock_contended.set()
+                    if not shared_resource_lock.acquire(timeout=30):
+                        results.append(
+                            {"thread_id": thread_id, "error": "Lock timeout", "success": False}
+                        )
+                        return
+                try:
+                    holders += 1
+                    max_holders = max(max_holders, holders)
+                    shared_resource_accesses += 1
+                    # Hold the resource until another thread has found it taken, so
+                    # the threads contend whatever order the scheduler runs them in
+                    lock_contended.wait(timeout=10)
+
+                    result = client.execute_query(operation)
+                    holders -= 1
+                    results.append(
+                        {
+                            "thread_id": thread_id,
+                            "execution_time": result["_execution_time_ms"],
+                            "success": True,
+                        }
+                    )
+                finally:
+                    shared_resource_lock.release()
+
+            except Exception as e:
+                results.append({"thread_id": thread_id, "error": str(e), "success": False})
+
+        # Execute concurrent operations with lock contention
+        threads = [
+            threading.Thread(target=execute_with_lock_contention, args=(i,))
+            for i in range(num_threads)
+        ]
+        for thread in threads:
             thread.start()
-
         for thread in threads:
             thread.join()
 
-        # Collect results (this is a simplified version - in practice we'd use a queue)
-        # For this test, we'll simulate the results
-        simulated_results = []
-        for i in range(num_threads):
-            if random.random() < 0.8:  # 80% success rate
-                simulated_results.append(
-                    {
-                        "thread_id": i,
-                        "execution_time": 25.0 + random.uniform(-5, 15),
-                        "wait_time": random.uniform(0, 0.050),
-                        "success": True,
-                    }
-                )
-                self.metrics.record_query_time(simulated_results[-1]["execution_time"])
-            else:
-                errors.append(
-                    {"thread_id": i, "error": "Lock contention timeout", "success": False}
-                )
-                self.metrics.record_error()
+        # The threads' own outcomes (were drawn afterwards with an unseeded
+        # random.random() at an 80% success rate, whatever the threads did)
+        successes = [r for r in results if r["success"]]
+        errors = [r for r in results if not r["success"]]
+        for r in successes:
+            self.metrics.record_query_time(r["execution_time"])
+        for _ in errors:
+            self.metrics.record_error()
 
         self.metrics.end_test()
 
         # Validate lock contention handling
-        assert len(simulated_results) + len(errors) == num_threads, (
-            "All concurrent operations should complete"
-        )
-        assert shared_resource_accesses > 0, "Shared resource should be accessed"
+        assert len(results) == num_threads, "All concurrent operations should complete"
+        assert errors == [], f"Lock contention caused failures: {errors}"
+        assert shared_resource_accesses == num_threads, "Each thread should access the resource"
         assert contention_events > 0, "Should experience lock contention"
-
-        success_rate = len(simulated_results) / num_threads
-        # Lowered threshold from 0.7 to 0.65 to reduce flakiness (was failing at 0.6956)
-        assert success_rate >= 0.65, f"Lock contention caused too many failures: {success_rate:.2f}"
-
-        if simulated_results:
-            wait_times = [r["wait_time"] for r in simulated_results]
-            statistics.mean(wait_times)
-            max_wait = max(wait_times)
-            assert max_wait < 0.100, f"Excessive lock wait times: max {max_wait:.3f}s"
+        assert max_holders == 1, f"{max_holders} threads held the lock at once"
 
         print(
-            f"Lock contention test: {contention_events} contention events, {len(simulated_results)} successes"
+            f"Lock contention test: {contention_events} contention events, {len(successes)} successes"
         )
 
     @pytest.mark.chaos
@@ -585,29 +560,37 @@ class TestConcurrencyChaos(ChaosTestCase):
 
         self.metrics.start_test()
 
+        # Scale num_threads based on hardware (6 on baseline, 3-24 adaptive)
+        # Uses multiplier-based formula to ensure meaningful test on all hardware
+        num_threads = max(3, int(6 * self.chaos_config.load_multiplier))
+
         # Simulate atomic operations that must be isolated
         shared_state = {"counter": 0, "operations": []}
         state_lock = threading.Lock()
+        all_started = threading.Barrier(num_threads)
         isolation_violations = 0
+        results = []
 
         def execute_atomic_operation(thread_id: int):
             """Execute an atomic operation with isolation requirements."""
             nonlocal isolation_violations
 
+            all_started.wait()
             try:
-                # Phase 1: Read current state
+                # The read, the modification and the write hold the lock together:
+                # that is what makes the operation atomic
                 with state_lock:
+                    # Phase 1: Read current state
                     current_counter = shared_state["counter"]
                     shared_state["operations"].append(f"read_{thread_id}_{current_counter}")
 
-                # Phase 2: Modify state (should be atomic)
-                new_counter = current_counter + 1
+                    # Phase 2: Modify state
+                    new_counter = current_counter + 1
 
-                # Simulate processing time (isolation test window)
-                time.sleep(random.uniform(0.001, 0.005))
+                    # Simulate processing time (isolation test window)
+                    time.sleep(0.001)
 
-                # Phase 3: Write back state
-                with state_lock:
+                    # Phase 3: Write back state
                     # Check for isolation violation (another thread modified counter)
                     if shared_state["counter"] != current_counter:
                         isolation_violations += 1
@@ -617,83 +600,48 @@ class TestConcurrencyChaos(ChaosTestCase):
 
                 # Phase 4: Execute actual operation
                 result = client.execute_query(operation)
-                execution_time = result.get("_execution_time_ms", 25.0)
-
-                return {
-                    "thread_id": thread_id,
-                    "execution_time": execution_time,
-                    "isolation_violation": False,
-                    "success": True,
-                }
-
-            except Exception as e:
-                return {
-                    "thread_id": thread_id,
-                    "error": str(e),
-                    "isolation_violation": False,
-                    "success": False,
-                }
-
-        # Execute concurrent atomic operations
-        # Scale num_threads based on hardware (6 on baseline, 3-24 adaptive)
-        # Uses multiplier-based formula to ensure meaningful test on all hardware
-        num_threads = max(3, int(6 * self.chaos_config.load_multiplier))
-        results = []
-        errors = []
-
-        threads = []
-        for i in range(num_threads):
-            thread = threading.Thread(target=lambda tid=i: execute_atomic_operation(tid))
-            threads.append(thread)
-            thread.start()
-
-        for thread in threads:
-            thread.join()
-
-        # Simulate results
-        for i in range(num_threads):
-            if random.random() < 0.95:  # 95% success rate for atomic operations
                 results.append(
                     {
-                        "thread_id": i,
-                        "execution_time": 25.0 + random.uniform(-5, 10),
-                        "isolation_violation": random.random() < 0.05,  # 5% isolation violations
+                        "thread_id": thread_id,
+                        "execution_time": result["_execution_time_ms"],
                         "success": True,
                     }
                 )
-                if results[-1]["isolation_violation"]:
-                    isolation_violations += 1
-                self.metrics.record_query_time(results[-1]["execution_time"])
-            else:
-                errors.append(
-                    {"thread_id": i, "error": "Atomic operation failed", "success": False}
-                )
-                self.metrics.record_error()
+
+            except Exception as e:
+                results.append({"thread_id": thread_id, "error": str(e), "success": False})
+
+        # Execute concurrent atomic operations
+        threads = [
+            threading.Thread(target=execute_atomic_operation, args=(i,)) for i in range(num_threads)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        # The threads' own outcomes (were drawn afterwards with an unseeded
+        # random.random(): 95% successes, 5% isolation violations)
+        successes = [r for r in results if r["success"]]
+        errors = [r for r in results if not r["success"]]
+        for r in successes:
+            self.metrics.record_query_time(r["execution_time"])
+        for _ in errors:
+            self.metrics.record_error()
 
         self.metrics.end_test()
 
         # Validate atomic operation isolation
-        assert len(results) + len(errors) == num_threads, "All atomic operations should complete"
+        assert len(results) == num_threads, "All atomic operations should complete"
+        assert errors == [], f"Atomic operation failures: {errors}"
+        assert isolation_violations == 0, f"{isolation_violations} isolation violations"
 
-        success_rate = len(results) / num_threads
-        # With more threads, expect slightly lower success rate due to contention
-        # Relaxed from 0.9 to 0.85 to account for adaptive scaling
-        assert success_rate >= 0.85, f"Atomic operation failures: {success_rate:.2f}"
-
-        # Isolation violations should be minimal in aggregate
-        # Each operation has 5% random violation chance (independent)
-        # With adaptive scaling and more threads, we see more violations
-        # The simulation is random, so we just verify no systemic issues
-        # (i.e., don't assert strict threshold, as random variance is expected)
-
-        # Final state validation
-        # Note: This test has a design limitation - threads execute and increment counter,
-        # but results are simulated separately, so final_counter may not match len(results)
-        # With adaptive scaling, this mismatch becomes more apparent
-        # We verify counter is within reasonable range (not checking exact equality)
+        # Every increment is kept: none was lost to another thread's write
         final_counter = shared_state["counter"]
-        assert final_counter >= 1, "Counter should be incremented by at least one thread"
-        assert final_counter <= num_threads, "Counter should not exceed number of threads"
+        assert final_counter == num_threads, (
+            f"Counter {final_counter} after {num_threads} atomic increments"
+        )
+        assert len(shared_state["operations"]) == 2 * num_threads
 
         print(
             f"Atomic isolation test: final counter {final_counter}, {isolation_violations} violations"

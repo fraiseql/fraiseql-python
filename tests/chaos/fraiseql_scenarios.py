@@ -5,6 +5,7 @@ operations, making chaos engineering tests more valuable and representative.
 """
 
 import random
+import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
@@ -189,6 +190,8 @@ class MockFraiseQLClient:
         self.base_url = base_url
         self.connection_pool_size = 10
         self.active_connections = 0
+        # The concurrency tests call one client from several threads
+        self._connections_lock = threading.Lock()
         # Chaos simulation state
         self.connection_disabled = False
         self.latency_ms = 0
@@ -258,16 +261,18 @@ class MockFraiseQLClient:
 
     def _acquire_connection(self) -> float:
         """Simulate connection pool acquisition; return its simulated cost in ms."""
-        if self.active_connections >= self.connection_pool_size:
-            raise ConnectionError("Connection pool exhausted")
+        with self._connections_lock:
+            if self.active_connections >= self.connection_pool_size:
+                raise ConnectionError("Connection pool exhausted")
 
-        self.active_connections += 1
+            self.active_connections += 1
         return 5.0  # 5ms connection acquisition time
 
     def _release_connection(self):
         """Simulate connection release."""
-        if self.active_connections > 0:
-            self.active_connections -= 1
+        with self._connections_lock:
+            if self.active_connections > 0:
+                self.active_connections -= 1
 
     def _calculate_execution_time(self, complexity: int) -> float:
         """Calculate realistic execution time based on query complexity.
