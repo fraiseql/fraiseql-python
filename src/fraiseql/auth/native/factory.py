@@ -89,18 +89,29 @@ async def apply_native_auth_schema(
         await conn.execute(migration_sql)
 
 
-def get_native_auth_router() -> APIRouter:
+def get_native_auth_router(auth_provider: NativeAuthProvider | None = None) -> APIRouter:
     """Get the FastAPI router for native auth endpoints.
 
-    This is a convenience function that returns the pre-configured
-    router with all the auth endpoints (register, login, refresh, etc.).
+    The endpoints (register, login, refresh, ...) sign and verify tokens with the
+    provider's token manager, and read users from the provider's pool and schema, so
+    the tokens they issue are the ones the provider accepts on ``/graphql``.
+
+    Args:
+        auth_provider: The ``NativeAuthProvider`` (from ``create_native_auth_provider``)
+            to bind the endpoints to. Without it, the provider given to
+            ``create_fraiseql_app(auth=...)`` is used, else a token manager keyed by
+            the ``JWT_SECRET_KEY`` environment variable.
 
     Returns:
         FastAPI APIRouter with native auth endpoints
-    """
-    from fraiseql.auth.native.router import auth_router
 
-    return auth_router
+    Raises:
+        ValueError: If no provider is given or registered and ``JWT_SECRET_KEY`` is
+            unset: there is no default signing key.
+    """
+    from fraiseql.auth.native.router import build_native_auth_router
+
+    return build_native_auth_router(auth_provider)
 
 
 def add_security_middleware(

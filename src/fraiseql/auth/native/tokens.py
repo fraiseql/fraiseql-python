@@ -38,6 +38,8 @@ class TokenManager:
             refresh_token_ttl: Refresh token time-to-live
             algorithm: JWT signing algorithm
         """
+        if not secret_key:
+            raise ValueError("TokenManager needs a non-empty secret_key")
         self.secret_key = secret_key
         self.access_token_ttl = access_token_ttl
         self.refresh_token_ttl = refresh_token_ttl

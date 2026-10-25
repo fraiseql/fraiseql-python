@@ -1,7 +1,9 @@
 """Native authentication REST API router."""
 
 import hashlib
+import logging
 import os
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, AsyncGenerator, Optional
 from uuid import UUID, uuid4
@@ -147,12 +149,62 @@ security = HTTPBearer(auto_error=False)
 auth_router = APIRouter(tags=["auth"])
 
 
+logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class NativeAuthSettings:
+    """What the router's endpoints sign tokens with and read users from.
+
+    ``get_native_auth_router`` builds one from a ``NativeAuthProvider`` (its token
+    manager, pool and schema), so the router and the provider guarding ``/graphql``
+    share one secret.
+    """
+
+    token_manager: TokenManager
+    db_pool: AsyncConnectionPool | None = None
+    schema: str = "public"
+
+
+_SETTINGS_STATE_ATTR = "fraiseql_native_auth"
+
+
+def _settings_from_provider(provider: object) -> NativeAuthSettings | None:
+    from fraiseql.auth.native.provider import NativeAuthProvider
+
+    if not isinstance(provider, NativeAuthProvider):
+        return None
+    return NativeAuthSettings(
+        token_manager=provider.token_manager,
+        db_pool=provider.db_pool,
+        schema=provider.schema,
+    )
+
+
+def _app_provider_settings() -> NativeAuthSettings | None:
+    """Settings of the NativeAuthProvider given to ``create_fraiseql_app``, if any."""
+    from fraiseql.fastapi.dependencies import get_auth_provider
+
+    return _settings_from_provider(get_auth_provider())
+
+
+def _settings(request: Request) -> NativeAuthSettings | None:
+    """The settings bound to the router serving the request, or the app's provider's."""
+    bound = getattr(request.state, _SETTINGS_STATE_ATTR, None)
+    if bound is not None:
+        return bound
+    return _app_provider_settings()
+
+
 def _request_pool(request: Request) -> AsyncConnectionPool | None:
     """The psycopg pool the endpoints take their connection from.
 
-    ``app.state.db_pool`` when the app sets one, else the pool ``create_fraiseql_app``
-    opened.
+    The provider's pool, else ``app.state.db_pool`` when the app sets one, else the
+    pool ``create_fraiseql_app`` opened.
     """
+    settings = _settings(request)
+    if settings is not None and settings.db_pool is not None:
+        return settings.db_pool
     pool = getattr(request.app.state, "db_pool", None)
     if pool is not None:
         return pool
@@ -188,20 +240,79 @@ async def get_db(request: Request) -> AsyncGenerator[AsyncConnection]:
 
 # Dependency to get schema (for multi-tenant support)
 async def get_schema(request: Request) -> str:
-    """Get database schema from request."""
-    # In production, this might come from tenant context
-    # For tests, we use the test schema
-    if hasattr(request.app.state, "test_schema"):
-        return request.app.state.test_schema
-    return "public"  # Default schema
+    """Get the database schema holding the auth tables (the provider's schema)."""
+    settings = _settings(request)
+    return settings.schema if settings is not None else "public"
 
 
 # Dependency to get token manager
-def get_token_manager() -> TokenManager:
-    """Get token manager instance."""
-    # In production, this would use a real secret from config
-    secret_key = os.environ.get("JWT_SECRET_KEY", "test-secret-key-change-in-production")
-    return TokenManager(secret_key=secret_key)
+def get_token_manager(request: Request) -> TokenManager:
+    """Get the token manager that signs and verifies this router's tokens.
+
+    It is the one of the ``NativeAuthProvider`` the router is bound to (or the one
+    given to ``create_fraiseql_app``), else one keyed by ``JWT_SECRET_KEY``. With
+    neither, the request fails: there is no default key.
+    """
+    settings = _settings(request)
+    if settings is not None:
+        return settings.token_manager
+
+    secret_key = os.environ.get("JWT_SECRET_KEY")
+    if secret_key:
+        return TokenManager(secret_key=secret_key)
+
+    logger.error(
+        "Native auth router has no signing key: build it with "
+        "get_native_auth_router(auth_provider) or set JWT_SECRET_KEY"
+    )
+    raise HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="Native authentication is not configured",
+    )
+
+
+def build_native_auth_router(auth_provider: object | None = None) -> APIRouter:
+    """Return the auth endpoints bound to a NativeAuthProvider.
+
+    Args:
+        auth_provider: The ``NativeAuthProvider`` whose token manager, pool and schema
+            the endpoints use. Without it, the provider given to
+            ``create_fraiseql_app`` is used if it is a ``NativeAuthProvider``, else a
+            token manager keyed by ``JWT_SECRET_KEY``.
+
+    Raises:
+        TypeError: If ``auth_provider`` is not a ``NativeAuthProvider``.
+        ValueError: If there is no provider and ``JWT_SECRET_KEY`` is unset or empty.
+    """
+    if auth_provider is not None:
+        settings = _settings_from_provider(auth_provider)
+        if settings is None:
+            msg = (
+                "get_native_auth_router() takes a NativeAuthProvider, got "
+                f"{type(auth_provider).__name__}"
+            )
+            raise TypeError(msg)
+    else:
+        settings = _app_provider_settings()
+        if settings is None:
+            secret_key = os.environ.get("JWT_SECRET_KEY")
+            if not secret_key:
+                msg = (
+                    "The native auth router needs a signing key: pass the "
+                    "NativeAuthProvider (get_native_auth_router(auth_provider)), give it "
+                    "to create_fraiseql_app(auth=...) first, or set JWT_SECRET_KEY."
+                )
+                raise ValueError(msg)
+            settings = NativeAuthSettings(token_manager=TokenManager(secret_key=secret_key))
+
+    async def bind_settings(request: Request) -> None:
+        setattr(request.state, _SETTINGS_STATE_ATTR, settings)
+
+    # Path-level dependencies run before the endpoint's own, so every dependency
+    # above sees the bound settings.
+    router = APIRouter()
+    router.include_router(auth_router, dependencies=[Depends(bind_settings)])
+    return router
 
 
 # Dependency to get current user
@@ -243,6 +354,7 @@ async def register(
     request: RegisterRequest,
     db: Annotated[AsyncConnection, Depends(get_db)],
     schema: Annotated[str, Depends(get_schema)],
+    token_manager: Annotated[TokenManager, Depends(get_token_manager)],
 ) -> AuthResponse:
     """Register a new user."""
     # Check if email already exists
@@ -265,7 +377,6 @@ async def register(
         await db.commit()  # Ensure user is committed
 
     # Generate initial tokens to get family_id
-    token_manager = get_token_manager()
     initial_tokens = token_manager.generate_tokens(str(user.id))
 
     # Store session info
@@ -312,6 +423,7 @@ async def login(
     request: LoginRequest,
     db: Annotated[AsyncConnection, Depends(get_db)],
     schema: Annotated[str, Depends(get_schema)],
+    token_manager: Annotated[TokenManager, Depends(get_token_manager)],
 ) -> AuthResponse:
     """Login with email and password."""
     # Get user by email
@@ -326,7 +438,6 @@ async def login(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is disabled")
 
     # Generate initial tokens to get family_id
-    token_manager = get_token_manager()
     initial_tokens = token_manager.generate_tokens(str(user.id))
 
     # Store session info

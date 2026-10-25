@@ -543,26 +543,30 @@ app = create_fraiseql_app(
   the user from `tb_user`, built by `await create_native_auth_provider(db_pool,
   schema="public", secret_key=None, access_token_ttl_minutes=15,
   refresh_token_ttl_days=30)` (`secret_key` falls back to `JWT_SECRET_KEY`).
-- `get_native_auth_router()`, a FastAPI router with `POST /register` (`{"email",
-  "password", "name"}`; the password needs 8 characters with an upper-case letter, a
-  lower-case letter, a digit and a special character), `POST /login` (`{"email",
+- `get_native_auth_router(auth_provider=None)`, a FastAPI router with `POST /register`
+  (`{"email", "password", "name"}`; the password needs 8 characters with an upper-case
+  letter, a lower-case letter, a digit and a special character), `POST /login` (`{"email",
   "password"}`, answering `{"user": {...}, "access_token", "refresh_token",
   "token_type": "bearer"}`), `POST /refresh` (`{"refresh_token"}`), `GET /me`,
   `POST /logout` (`{"refresh_token"}`, with the bearer token), `POST /forgot-password`,
   `POST /reset-password`, `GET /sessions` and `DELETE /sessions/{session_id}`.
 
 ```python
+import os
+
 from fraiseql.auth.native import create_native_auth_provider, get_native_auth_router
 
 # db_pool: a psycopg AsyncConnectionPool you opened
-auth_provider = await create_native_auth_provider(db_pool, secret_key="your-secret-key")
+auth_provider = await create_native_auth_provider(
+    db_pool, secret_key=os.environ["JWT_SECRET_KEY"]
+)
 
 app = create_fraiseql_app(
     database_url="postgresql://localhost/mydb",
     types=[User],
     auth=auth_provider,
 )
-app.include_router(get_native_auth_router(), prefix="/auth")
+app.include_router(get_native_auth_router(auth_provider), prefix="/auth")
 ```
 
 `await apply_native_auth_schema(db_pool, schema="public")` creates the tables these
@@ -575,16 +579,20 @@ EXISTS`. To apply it with your own migrations instead:
 python -c "import fraiseql.auth.native, pathlib; print(pathlib.Path(fraiseql.auth.native.__file__).parent / 'migrations' / '001_native_auth_schema.sql')"
 ```
 
-The router's endpoints borrow a connection from `app.state.db_pool` (a psycopg
-`AsyncConnectionPool`) when your app sets one, else from the pool
-`create_fraiseql_app` opens. A connection a middleware of yours puts in
-`request.state.db_connection` is used instead.
+The router's endpoints sign and verify tokens with the provider's `TokenManager`, and
+read users from its pool and schema, so `/graphql` accepts the tokens `POST /login`
+issues. `get_native_auth_router(auth_provider)` binds them to that provider; without
+an argument it takes the provider given to `create_fraiseql_app(auth=...)`, else a
+key from the `JWT_SECRET_KEY` environment variable. There is no default key: with
+neither, `get_native_auth_router()` raises `ValueError`, and the bare
+`fraiseql.auth.native.router.auth_router` included without one answers 500 wherever
+it would sign or check a token. Use a long random secret (`python -c "import secrets;
+print(secrets.token_urlsafe(64))"`) and keep it out of the code.
 
-In this release these don't make a working login flow on their own:
-
-- The router signs and checks tokens with the `JWT_SECRET_KEY` environment variable
-  (falling back to a fixed test key), not with the provider's `secret_key`: set
-  `JWT_SECRET_KEY`, and give the provider the same value.
+Without a provider, the endpoints borrow connections from `app.state.db_pool` (a
+psycopg `AsyncConnectionPool`) when your app sets one, else from the pool
+`create_fraiseql_app` opens, and use the `public` schema. A connection a middleware of
+yours puts in `request.state.db_connection` is used instead of any pool.
 
 See `examples/native_auth_app.py`.
 

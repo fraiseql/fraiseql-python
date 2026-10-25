@@ -146,7 +146,7 @@ async def create_app() -> FastAPI:
     )
 
     # Add native auth REST endpoints
-    auth_router = get_native_auth_router()
+    auth_router = get_native_auth_router(auth_provider)
     app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 
     # Add security middleware

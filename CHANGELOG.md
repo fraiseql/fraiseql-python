@@ -893,6 +893,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   descriptions were applied, and dropped them; only `NOT` kept its description. They
   now read "Logical AND - all conditions in the list must be true" and "Logical OR -
   at least one condition in the list must be true".
+- **The native auth router no longer has a built-in signing key.** Without the
+  `JWT_SECRET_KEY` environment variable, its endpoints signed and accepted tokens
+  with a fixed key published in the source, so a deployment that relied on the
+  provider's `secret_key` accepted tokens anyone could make. **Upgrade if you
+  mount `get_native_auth_router()`.** The router now signs and verifies with the
+  `NativeAuthProvider`'s token manager, and reads users from its pool and schema,
+  so the router and `/graphql` share one key: pass the provider
+  (`get_native_auth_router(auth_provider)`), or give it to
+  `create_fraiseql_app(auth=...)` first. Without a provider it uses
+  `JWT_SECRET_KEY`; with neither, `get_native_auth_router()` raises `ValueError`
+  at startup, and the bare `router.auth_router` answers 500 wherever it would sign
+  or check a token. `TokenManager` refuses an empty `secret_key`. The router's
+  schema is the provider's (it was `public`, whatever the provider's `schema`).
 - **`apply_native_auth_schema()` creates the native auth tables.** It read
   `fraiseql/auth/native/migrations/001_native_auth_schema.sql`, which didn't exist,
   and raised `FileNotFoundError`. The file is now in the package (and the wheel): it
