@@ -170,8 +170,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cached APQ responses expire after `apq_response_cache_ttl` seconds** (default 600;
   0 keeps them). Nothing read the setting, so a cached response was served until the
   process stopped (`memory`) or forever (`postgresql`). The `memory` and `postgresql`
-  backends take it from the config; a custom backend still gets only
-  `apq_backend_config`.
+  backends take it from the config. A custom backend (`apq_storage_backend="custom"`)
+  still gets `apq_backend_config` as its first argument, and now also gets
+  `response_ttl=` (and `database_url=`) when its constructor has a parameter of that
+  name. A subclass of `MemoryAPQBackend` keeping its `__init__` used to get the config
+  dict as its `response_ttl`, so every cached response failed; it now gets the TTL.
+  A constructor without parameters is called without arguments instead of failing.
 - **`apq_queries_dir` registers the operations of its `.graphql`/`.gql` files.**
   Nothing read it, so `apq_mode="required"` had no configured way to approve queries.
   The APQ backend now registers each operation under the SHA-256 of its text when the

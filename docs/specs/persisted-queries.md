@@ -630,7 +630,13 @@ Custom backends must implement the APQ storage interface with the following meth
 
 - FraiseQL dynamically imports backend class via reflection
 - Class must be importable from full path (module.ClassName)
-- Receives `apq_backend_config` dict in constructor
+- Receives the `apq_backend_config` dict as the constructor's first argument
+- Also receives `response_ttl=` (`apq_response_cache_ttl`) and `database_url=` (the
+  app's `database_url`) if the constructor has a parameter of that name; `**kwargs`
+  gets neither
+- A subclass of `MemoryAPQBackend` that keeps its `__init__(response_ttl=None)` gets
+  only `response_ttl=`, and a constructor without parameters is called without
+  arguments
 
 ---
 

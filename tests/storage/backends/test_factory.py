@@ -173,3 +173,76 @@ def test_factory_with_cache_enabled() -> None:
     assert isinstance(backend, MemoryAPQBackend)
     # The backend itself doesn't need to know about caching settings
     # Those are handled at the middleware level
+
+
+# Custom backends for the tests below; importable as f"{__name__}.<name>".
+class SubclassedMemoryBackend(MemoryAPQBackend):
+    """A custom backend that keeps MemoryAPQBackend's __init__."""
+
+
+class ConfigAndTTLBackend(MemoryAPQBackend):
+    """A custom backend whose __init__ takes the config dict and the TTL."""
+
+    def __init__(self, config: dict, response_ttl: int | None = None) -> None:
+        super().__init__(response_ttl=response_ttl)
+        self.config = config
+
+
+class NoArgumentBackend(MemoryAPQBackend):
+    """A custom backend whose __init__ takes nothing."""
+
+    def __init__(self) -> None:
+        super().__init__()
+
+
+def _custom_config(class_name: str, **kwargs) -> FraiseQLConfig:
+    return FraiseQLConfig(
+        database_url="postgresql://test@localhost/test",
+        apq_storage_backend="custom",
+        apq_backend_config={"backend_class": f"{__name__}.{class_name}", "setting": "x"},
+        **kwargs,
+    )
+
+
+def test_custom_memory_subclass_gets_the_response_ttl_not_the_config_dict() -> None:
+    config = _custom_config("SubclassedMemoryBackend", apq_response_cache_ttl=120)
+
+    backend = create_apq_backend(config)
+
+    assert isinstance(backend, SubclassedMemoryBackend)
+    assert backend._response_ttl == 120
+    backend.store_cached_response("h", {"data": {"ok": True}})
+    assert backend.get_cached_response("h") == {"data": {"ok": True}}
+
+
+def test_custom_backend_taking_config_and_response_ttl_gets_both() -> None:
+    backend = create_apq_backend(_custom_config("ConfigAndTTLBackend", apq_response_cache_ttl=90))
+
+    assert isinstance(backend, ConfigAndTTLBackend)
+    assert backend.config["setting"] == "x"
+    assert backend._response_ttl == 90
+
+
+def test_custom_backend_taking_no_arguments_is_created() -> None:
+    backend = create_apq_backend(_custom_config("NoArgumentBackend"))
+
+    assert isinstance(backend, NoArgumentBackend)
+
+
+def test_custom_postgresql_subclass_gets_config_database_url_and_ttl() -> None:
+    import sys
+
+    from fraiseql.storage.backends.postgresql import PostgreSQLAPQBackend
+
+    class SubclassedPostgreSQLBackend(PostgreSQLAPQBackend):
+        pass
+
+    sys.modules[__name__].SubclassedPostgreSQLBackend = SubclassedPostgreSQLBackend  # type: ignore[attr-defined]
+
+    config = _custom_config("SubclassedPostgreSQLBackend", apq_response_cache_ttl=45)
+    backend = create_apq_backend(config)
+
+    assert isinstance(backend, SubclassedPostgreSQLBackend)
+    assert backend._config["setting"] == "x"
+    assert backend._database_url == "postgresql://test@localhost/test"
+    assert backend._response_ttl == 45
