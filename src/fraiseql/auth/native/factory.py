@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, FastAPI
+from psycopg import sql
 from psycopg_pool import AsyncConnectionPool
 
 from fraiseql.auth.native.provider import NativeAuthProvider
@@ -62,8 +63,10 @@ async def apply_native_auth_schema(
 ) -> None:
     """Apply the native auth database schema to the given schema.
 
-    This function reads and executes the migration SQL to set up the
-    required tables for native authentication.
+    This function reads and executes ``migrations/001_native_auth_schema.sql``
+    (shipped in this package) to create the tables native authentication uses:
+    ``tb_user``, ``tb_session``, ``tb_used_refresh_token`` and ``tb_password_reset``.
+    It is idempotent.
 
     Args:
         db_pool: PostgreSQL connection pool
@@ -77,14 +80,13 @@ async def apply_native_auth_schema(
 
     migration_sql = migration_path.read_text()
 
-    # Apply migration
-    async with db_pool.connection() as conn:
-        # Set search path to target schema
-        await conn.execute(f"SET search_path TO {schema}, public")
-
-        # Execute migration
+    # Apply migration in one transaction. SET LOCAL keeps the search_path change to
+    # that transaction, so the pooled connection goes back with its own.
+    async with db_pool.connection() as conn, conn.transaction():
+        await conn.execute(
+            sql.SQL("SET LOCAL search_path TO {}, public").format(sql.Identifier(schema))
+        )
         await conn.execute(migration_sql)
-        await conn.commit()
 
 
 def get_native_auth_router() -> APIRouter:

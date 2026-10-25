@@ -565,13 +565,18 @@ app = create_fraiseql_app(
 app.include_router(get_native_auth_router(), prefix="/auth")
 ```
 
+`await apply_native_auth_schema(db_pool, schema="public")` creates the tables these
+use (`tb_user`, `tb_session`, `tb_used_refresh_token` and `tb_password_reset`) in
+`schema`. It runs `migrations/001_native_auth_schema.sql`, shipped in the
+`fraiseql.auth.native` package, and can be run again: every statement is `IF NOT
+EXISTS`. To apply it with your own migrations instead:
+
+```bash
+python -c "import fraiseql.auth.native, pathlib; print(pathlib.Path(fraiseql.auth.native.__file__).parent / 'migrations' / '001_native_auth_schema.sql')"
+```
+
 In this release these don't make a working login flow on their own:
 
-- The tables aren't shipped. `apply_native_auth_schema(db_pool)` reads
-  `migrations/001_native_auth_schema.sql`, which the package doesn't contain, and
-  raises `FileNotFoundError`. Create `tb_user`, `tb_session`, `tb_used_refresh_token`
-  and `tb_password_reset` yourself, with the columns `fraiseql/auth/native/models.py`
-  and `router.py` read.
 - The router's endpoints take their connection from `request.app.state.db_pool.acquire()`,
   which a psycopg pool doesn't have (the request fails with a 500), or from
   `request.state.db_connection`, which a middleware of yours must set.

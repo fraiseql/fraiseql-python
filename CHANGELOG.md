@@ -893,6 +893,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   descriptions were applied, and dropped them; only `NOT` kept its description. They
   now read "Logical AND - all conditions in the list must be true" and "Logical OR -
   at least one condition in the list must be true".
+- **`apply_native_auth_schema()` creates the native auth tables.** It read
+  `fraiseql/auth/native/migrations/001_native_auth_schema.sql`, which didn't exist,
+  and raised `FileNotFoundError`. The file is now in the package (and the wheel): it
+  creates `tb_user`, `tb_session`, `tb_used_refresh_token` and `tb_password_reset`
+  with `IF NOT EXISTS`, so it can be applied at every startup. It now runs in one
+  transaction with `SET LOCAL search_path`, so the pooled connection no longer keeps
+  the schema in its `search_path` afterwards.
 
 ## [1.30.0] - 2026-10-22
 
