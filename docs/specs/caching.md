@@ -206,7 +206,9 @@ class CacheBackend(Protocol):
 ```
 
 **`PostgresCache(connection_pool, table_name="fraiseql_cache", auto_initialize=True)`**
-creates its table on first use (whatever `auto_initialize` says):
+creates its table on first use (`table_name` may be schema-qualified, e.g.
+`"app.fraiseql_cache"`). With `auto_initialize=False` it doesn't: create the table
+yourself, or call `await backend.initialize()` once (which always creates it):
 
 ```sql
 CREATE UNLOGGED TABLE IF NOT EXISTS fraiseql_cache (
@@ -291,8 +293,13 @@ await setup_auto_cascade_rules(postgres_cache, schema)
 `PostgresCache.register_cascade_rule`, which stores it in the
 `fraiseql_cache.cascade_rules` table of the `pg_fraiseql_cache` PostgreSQL extension
 (a separate project; see [PostgreSQL Extensions](../core/postgresql-extensions.md)).
-Without the extension, `register_cascade_rule` logs a warning and does nothing, and
-`setup_auto_cascade_rules` still returns the number of rules.
+Without the extension, `register_cascade_rule` logs a warning, does nothing and
+returns `False`, and `setup_auto_cascade_rules` returns 0 (it counts the rules
+registered).
+
+`PostgresCache` detects the extension (`has_domain_versioning`,
+`extension_version`) on its first operation, whichever it is (`register_cascade_rule`,
+`setup_table_trigger` and `ping()` included), or on `initialize()`.
 
 Even with the extension, `ResultCache`, `cached_query` and `CachedRepository` don't
 check domain versions: the rules invalidate none of their entries. Only the RBAC

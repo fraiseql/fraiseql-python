@@ -337,7 +337,8 @@ async def setup_auto_cascade_rules(
         verbose: If True, print detailed analysis report
 
     Returns:
-        Number of CASCADE rules registered
+        Number of CASCADE rules registered (0 when pg_fraiseql_cache isn't
+        installed, as every registration is then skipped)
 
     Example:
         ```python
@@ -361,12 +362,14 @@ async def setup_auto_cascade_rules(
     registered_count = 0
     for rule in rules:
         try:
-            await cache.register_cascade_rule(
+            registered = await cache.register_cascade_rule(
                 source_domain=rule.source_domain,
                 target_domain=rule.target_domain,
                 rule_type=rule.rule_type,
             )
-            registered_count += 1
+            # False: skipped (no pg_fraiseql_cache). A backend returning None counts.
+            if registered is not False:
+                registered_count += 1
         except Exception as e:
             logger.error(
                 "Failed to register CASCADE rule %s -> %s: %s",

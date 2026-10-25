@@ -740,6 +740,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   timed `time.sleep` against a tight bound; and the memory-pressure chaos test
   and the Rust auth provider timing tests held a single run of a sub-10ms
   operation to a bound that one scheduler delay on a loaded machine exceeded.
+- **`PostgresCache` detects `pg_fraiseql_cache` before its first operation, whichever
+  it is, and `auto_initialize=False` works.** `register_cascade_rule`,
+  `clear_cascade_rules`, `setup_table_trigger` and `get_domain_versions` checked for the
+  extension before the cache had looked, so called first they skipped their work with
+  the extension installed; they now look first, and so does `ping()`.
+  `auto_initialize` had no effect: with `False` the first operation no longer creates
+  the table (call the new `initialize()`, or create it yourself). A schema-qualified
+  `table_name` (`"app.fraiseql_cache"`) no longer makes the table setup fail on the
+  index name. `register_cascade_rule` returns whether it registered the rule, and
+  `setup_auto_cascade_rules` counts only the registered rules (0 without the
+  extension, not the number of rules found).
 
 ## [1.30.0] - 2026-10-22
 

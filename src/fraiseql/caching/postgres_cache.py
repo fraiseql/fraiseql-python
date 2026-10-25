@@ -40,80 +40,98 @@ class PostgresCache:
 
         Args:
             connection_pool: psycopg connection pool
-            table_name: Name of the cache table (default: fraiseql_cache)
-            auto_initialize: Whether to automatically create table if missing
+            table_name: Name of the cache table (default: fraiseql_cache), which
+                may be schema-qualified (``"app.fraiseql_cache"``)
+            auto_initialize: Whether the first operation creates the table if
+                missing. With False, create it yourself or call ``initialize()``.
         """
         self.pool = connection_pool
         self.table_name = table_name
+        self.auto_initialize = auto_initialize
         self._initialized = False
 
         # pg_fraiseql_cache extension detection
         self.has_domain_versioning: bool = False
         self.extension_version: str | None = None
 
-        if auto_initialize:
-            # Note: Initialization should be done async, but we defer to first operation
-            pass
+    async def initialize(self) -> None:
+        """Create the cache table (if missing) and detect pg_fraiseql_cache.
+
+        With ``auto_initialize=True`` (the default) the first operation does this;
+        with ``auto_initialize=False`` the first operation only detects the
+        extension, and the table must exist or be created by calling this.
+        """
+        await self._setup(create_table=True)
 
     async def _ensure_initialized(self) -> None:
-        """Ensure cache table exists and detect pg_fraiseql_cache extension."""
+        """Run the first-use setup once: the table (if auto_initialize) and detection."""
         if self._initialized:
             return
+        await self._setup(create_table=self.auto_initialize)
 
+    async def _setup(self, *, create_table: bool) -> None:
         async with self.pool.connection() as conn, conn.cursor() as cur:
-            # Create UNLOGGED table for cache
-            # UNLOGGED = no WAL = faster writes, but data lost on crash (acceptable for cache)
-            await cur.execute(
-                f"""
-                CREATE UNLOGGED TABLE IF NOT EXISTS {self.table_name} (
-                    cache_key TEXT PRIMARY KEY,
-                    cache_value JSONB NOT NULL,
-                    expires_at TIMESTAMPTZ NOT NULL
-                )
-            """
-            )
-
-            # Index on expiry for efficient cleanup
-            await cur.execute(
-                f"""
-                CREATE INDEX IF NOT EXISTS {self.table_name}_expires_idx
-                ON {self.table_name} (expires_at)
-            """
-            )
-
-            # Detect pg_fraiseql_cache extension
-            try:
-                await cur.execute(
-                    """
-                    SELECT extversion
-                    FROM pg_extension
-                    WHERE extname = 'pg_fraiseql_cache'
-                """
-                )
-                result = await cur.fetchone()
-
-                if result:
-                    self.has_domain_versioning = True
-                    self.extension_version = result[0]
-                    logger.info("✓ Detected pg_fraiseql_cache v%s", self.extension_version)
-                else:
-                    self.has_domain_versioning = False
-                    self.extension_version = None
-                    logger.info("pg_fraiseql_cache not installed, using TTL-only caching")
-            except psycopg.Error as e:
-                # If extension detection fails (e.g., permissions issue), fall back gracefully
-                self.has_domain_versioning = False
-                self.extension_version = None
-                logger.warning(
-                    "Failed to detect pg_fraiseql_cache extension: %s. "
-                    "Falling back to TTL-only caching.",
-                    e,
-                )
-
+            if create_table:
+                await self._create_table(cur)
+            await self._detect_extension(cur)
             await conn.commit()
 
         self._initialized = True
         logger.info("PostgreSQL cache table '%s' initialized", self.table_name)
+
+    async def _create_table(self, cur: Any) -> None:
+        # Create UNLOGGED table for cache
+        # UNLOGGED = no WAL = faster writes, but data lost on crash (acceptable for cache)
+        await cur.execute(
+            f"""
+            CREATE UNLOGGED TABLE IF NOT EXISTS {self.table_name} (
+                cache_key TEXT PRIMARY KEY,
+                cache_value JSONB NOT NULL,
+                expires_at TIMESTAMPTZ NOT NULL
+            )
+        """
+        )
+
+        # Index on expiry for efficient cleanup. An index takes the table's
+        # schema, so its name can't be schema-qualified.
+        index_name = f"{self.table_name.rsplit('.', 1)[-1]}_expires_idx"
+        await cur.execute(
+            f"""
+            CREATE INDEX IF NOT EXISTS {index_name}
+            ON {self.table_name} (expires_at)
+        """
+        )
+
+    async def _detect_extension(self, cur: Any) -> None:
+        """Set has_domain_versioning / extension_version from pg_extension."""
+        # Detect pg_fraiseql_cache extension
+        try:
+            await cur.execute(
+                """
+                SELECT extversion
+                FROM pg_extension
+                WHERE extname = 'pg_fraiseql_cache'
+            """
+            )
+            result = await cur.fetchone()
+
+            if result:
+                self.has_domain_versioning = True
+                self.extension_version = result[0]
+                logger.info("✓ Detected pg_fraiseql_cache v%s", self.extension_version)
+            else:
+                self.has_domain_versioning = False
+                self.extension_version = None
+                logger.info("pg_fraiseql_cache not installed, using TTL-only caching")
+        except psycopg.Error as e:
+            # If extension detection fails (e.g., permissions issue), fall back gracefully
+            self.has_domain_versioning = False
+            self.extension_version = None
+            logger.warning(
+                "Failed to detect pg_fraiseql_cache extension: %s. "
+                "Falling back to TTL-only caching.",
+                e,
+            )
 
     async def get(self, key: str) -> Any | None:
         """Get value from cache, unwrapping metadata if present.
@@ -227,16 +245,16 @@ class PostgresCache:
         Raises:
             PostgresCacheError: If database operation fails
         """
-        # If extension not available, return empty dict
-        if not self.has_domain_versioning:
-            return {}
-
         # Early return for empty domains list
         if not domains:
             return {}
 
         try:
             await self._ensure_initialized()
+
+            # If extension not available, return empty dict
+            if not self.has_domain_versioning:
+                return {}
 
             async with self.pool.connection() as conn, conn.cursor() as cur:
                 # Query fraiseql_cache.domain_version table
@@ -424,6 +442,9 @@ class PostgresCache:
     async def ping(self) -> bool:
         """Check if PostgreSQL connection is alive.
 
+        The first ping also runs the first-use setup (see ``initialize``), so a
+        ping at startup detects pg_fraiseql_cache.
+
         Returns:
             True if connection is alive
 
@@ -431,6 +452,8 @@ class PostgresCache:
             PostgresCacheError: If connection check fails
         """
         try:
+            await self._ensure_initialized()
+
             async with self.pool.connection() as conn, conn.cursor() as cur:
                 await cur.execute("SELECT 1")
                 result = await cur.fetchone()
@@ -544,7 +567,7 @@ class PostgresCache:
 
     async def register_cascade_rule(
         self, source_domain: str, target_domain: str, rule_type: str = "invalidate"
-    ) -> None:
+    ) -> bool:
         """Register CASCADE rule for automatic cache invalidation.
 
         When source_domain data changes, target_domain caches are invalidated.
@@ -554,25 +577,29 @@ class PostgresCache:
             target_domain: Domain name to invalidate
             rule_type: Either 'invalidate' or 'notify' (default: 'invalidate')
 
+        Returns:
+            True if the rule was registered, False if it was skipped because
+            pg_fraiseql_cache isn't installed
+
         Raises:
-            PostgresCacheError: If extension not available or database operation fails
+            PostgresCacheError: If database operation fails
 
         Example:
             # When user data changes, invalidate post caches
             await cache.register_cascade_rule("user", "post")
         """
-        # CASCADE rules require pg_fraiseql_cache extension
-        if not self.has_domain_versioning:
-            logger.warning(
-                "CASCADE rules require pg_fraiseql_cache extension. "
-                "Skipping registration of %s -> %s",
-                source_domain,
-                target_domain,
-            )
-            return
-
         try:
             await self._ensure_initialized()
+
+            # CASCADE rules require pg_fraiseql_cache extension
+            if not self.has_domain_versioning:
+                logger.warning(
+                    "CASCADE rules require pg_fraiseql_cache extension. "
+                    "Skipping registration of %s -> %s",
+                    source_domain,
+                    target_domain,
+                )
+                return False
 
             async with self.pool.connection() as conn, conn.cursor() as cur:
                 # Insert CASCADE rule (using ON CONFLICT for idempotency)
@@ -594,6 +621,7 @@ class PostgresCache:
                     target_domain,
                     rule_type,
                 )
+                return True
 
         except psycopg.Error as e:
             logger.error(
@@ -617,13 +645,15 @@ class PostgresCache:
         Raises:
             PostgresCacheError: If extension not available or database operation fails
         """
-        # CASCADE rules require pg_fraiseql_cache extension
-        if not self.has_domain_versioning:
-            logger.warning("CASCADE rules require pg_fraiseql_cache extension. Nothing to clear.")
-            return 0
-
         try:
             await self._ensure_initialized()
+
+            # CASCADE rules require pg_fraiseql_cache extension
+            if not self.has_domain_versioning:
+                logger.warning(
+                    "CASCADE rules require pg_fraiseql_cache extension. Nothing to clear."
+                )
+                return 0
 
             async with self.pool.connection() as conn, conn.cursor() as cur:
                 if source_domain:
@@ -674,16 +704,17 @@ class PostgresCache:
             # Setup with custom domain name
             await cache.setup_table_trigger("tb_users", domain_name="user")
         """
-        # Trigger setup requires pg_fraiseql_cache extension
-        if not self.has_domain_versioning:
-            logger.warning(
-                "Trigger setup requires pg_fraiseql_cache extension. Skipping setup for table %s",
-                table_name,
-            )
-            return
-
         try:
             await self._ensure_initialized()
+
+            # Trigger setup requires pg_fraiseql_cache extension
+            if not self.has_domain_versioning:
+                logger.warning(
+                    "Trigger setup requires pg_fraiseql_cache extension. "
+                    "Skipping setup for table %s",
+                    table_name,
+                )
+                return
 
             async with self.pool.connection() as conn, conn.cursor() as cur:
                 # Call extension's setup function

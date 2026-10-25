@@ -228,10 +228,8 @@ class TestExtensionDetection:
         async def mock_execute(query, *args) -> None:
             nonlocal call_count
             call_count += 1
-            # First two calls are CREATE TABLE queries (succeed)
-            if call_count <= 2:
-                return
-            # Third call is pg_extension query (fail with permission error)
+            # auto_initialize=False: no CREATE TABLE, the first call is the
+            # pg_extension query (fail with permission error)
             raise psycopg.errors.InsufficientPrivilege("permission denied for table pg_extension")
 
         mock_cursor.execute = mock_execute
