@@ -171,11 +171,40 @@ reads the events) but not `UPDATE` or `DELETE`.
 
 ## GraphQL Types
 
-`fraiseql.enterprise.audit` also has `AuditEvent`, `AuditEventFilter`,
-`AuditEventConnection`, `AuditQueries` and a `LogAuditEvent` mutation. They are
-placeholders: `AuditQueries.audit_events` returns an empty connection,
-`verify_audit_chain` returns `true`, and `LogAuditEvent` writes nothing. Expose your
-own queries and mutations over the table instead.
+FraiseQL exposes no audit queries or mutations: who may read which tenant's audit
+trail is your application's decision. `fraiseql.enterprise.audit.types` has an
+`AuditEvent` GraphQL type (with `AuditEvent.from_db_row(row)`) you can return from
+your own resolvers:
+
+```python
+import fraiseql
+from fraiseql.db import DatabaseQuery
+from fraiseql.enterprise.audit.types import AuditEvent
+
+
+@fraiseql.query
+async def audit_trail(info, limit: int = 50) -> list[AuditEvent]:
+    # Check here that the caller may read this tenant's audit trail.
+    rows = await info.context["db"].run(
+        DatabaseQuery(
+            statement="SELECT * FROM audit_events WHERE tenant_id = %(tenant_id)s "
+            "ORDER BY timestamp DESC LIMIT %(limit)s",
+            params={"tenant_id": info.context["tenant_id"], "limit": limit},
+            fetch_result=True,
+        )
+    )
+    return [AuditEvent.from_db_row(row) for row in rows]
+```
+
+`AuditEvent` has no `sql_source`, so the `where`, `orderBy` and `offset` arguments
+every list query gets aren't applied: the resolver doesn't take them, and FraiseQL logs
+a warning saying so at startup. Add the parameters you want to support to the resolver.
+
+`fraiseql.enterprise.audit.queries.AuditQueries` is deprecated (importing it warns) and
+will be removed: it was a placeholder whose fields weren't exposed, with `audit_events`
+returning an empty connection and `verify_audit_chain` returning `true`. The
+`LogAuditEvent` placeholder mutation (`fraiseql.enterprise.audit.mutations`, which
+couldn't be imported) was removed in 1.31.0; log events with `AuditLogger`.
 
 ---
 

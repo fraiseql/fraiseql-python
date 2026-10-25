@@ -128,7 +128,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or `cache_ttl`, as working, and describe `max_query_depth` and the
   `complexity_*` limits as they now behave.
 
+- **`fraiseql.enterprise.audit.queries.AuditQueries`**, a placeholder that serves no
+  data: its fields were never added to `Query`, `audit_events` returned an empty
+  connection and `verify_audit_chain` returned `true`. Importing the module now emits
+  a `DeprecationWarning`; it will be removed. `docs/enterprise/audit-logging.md`
+  shows a query over `audit_events` returning the `AuditEvent` type.
+
 ### Removed
+
+- **`fraiseql.enterprise.audit.mutations` (the `LogAuditEvent` placeholder
+  mutation).** The module couldn't be imported (it imported a `mutation` that
+  `fraiseql.mutations.decorators` doesn't have), and its resolver wrote nothing. Log
+  audit events with `AuditLogger`.
 
 - **`examples/blog_enterprise/`.** It registered no types and one
   `health_status` query behind a README describing APIs fraiseql doesn't have;
