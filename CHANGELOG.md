@@ -165,6 +165,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   knows run, with the text the server stored.
   `POST /graphql/rust` (opt-in, query text only) refuses every request in this mode
   with `ARBITRARY_QUERY_NOT_ALLOWED`. `optional` and `disabled` are unchanged.
+- **`max_query_depth` limits the query depth.** It was validated and stored,
+  but no request checked it, so a query of any depth ran. Now `POST` and
+  `GET /graphql` (and `/graphql/rust`) answer a deeper query with a
+  `QUERY_TOO_DEEP` GraphQL error, before any resolver or SQL runs, APQ
+  persisted queries included. `{ users { id } }` has depth 1; fragments add no
+  depth of their own; introspection (`__schema`, `__type`) is not counted. The
+  default stays `None`, no limit.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

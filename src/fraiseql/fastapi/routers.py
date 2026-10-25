@@ -35,6 +35,7 @@ from fraiseql.fastapi.config import FraiseQLConfig, IntrospectionPolicy
 from fraiseql.fastapi.dependencies import build_graphql_context
 from fraiseql.fastapi.json_encoder import FraiseQLJSONResponse, clean_unset_values
 from fraiseql.fastapi.turbo import TurboRegistry, TurboRouter
+from fraiseql.gql.query_limits import QueryLimits
 from fraiseql.graphql.execute import execute_graphql
 from fraiseql.optimization.n_plus_one_detector import (
     N1QueryDetectedError,
@@ -1319,6 +1320,9 @@ def create_graphql_router(
             config.environment,
         )
 
+    # max_query_depth / complexity_*: None when no limit is set
+    query_limits = QueryLimits.from_config(config)
+
     # Create context dependency
     if context_getter:
         # Merge custom context with default
@@ -1580,6 +1584,14 @@ def create_graphql_router(
                 apq_cache_target.update(
                     hash_value=sha256_hash, backend=apq_backend, query_text=request.query
                 )
+
+        # Depth and complexity limits: after APQ resolved the query, before any execution path.
+        if query_limits is not None and request.query:
+            limit_error = query_limits.check(
+                schema, request.query, request.operationName, request.variables
+            )
+            if limit_error is not None:
+                return limit_error
 
         try:
             # Determine execution mode from headers and config
@@ -1991,6 +2003,15 @@ def create_graphql_router(
                     content=json.dumps(_forbidden_error_payload(exc)).encode(),
                     media_type="application/json",
                 )
+
+            if query_limits is not None and request.query:
+                limit_error = query_limits.check(
+                    schema, request.query, request.operationName, request.variables
+                )
+                if limit_error is not None:
+                    return Response(
+                        content=json.dumps(limit_error).encode(), media_type="application/json"
+                    )
 
             # Import the unified Rust function
             from fraiseql._fraiseql_rs import execute_graphql_query
