@@ -102,6 +102,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `cache_ttl=` per call). Setting it to anything but 300, in code or with
   `FRAISEQL_CACHE_TTL`, now emits a `DeprecationWarning`; it will be removed.
 
+- **`FraiseQLConfig.database_echo`, `complexity_include_in_response`,
+  `execution_timeout_ms` and `default_query_schema`**, which have no effect:
+  nothing reads them. No SQL is echoed, no response carries the complexity
+  score, the statement timeout is `query_timeout` (seconds), and a query reads
+  the view its `sql_source` names (qualify it to pick a schema). Setting one to
+  anything but its default, in code or from the environment, now emits a
+  `DeprecationWarning`; they will be removed.
+
 ### Removed
 
 - **`examples/blog_enterprise/`.** It registered no types and one

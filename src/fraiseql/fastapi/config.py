@@ -109,6 +109,17 @@ def validate_postgres_url(v: Any) -> str:
         return v
 
 
+# Settings nothing reads: setting one warns (see FraiseQLConfig.warn_settings_with_no_effect)
+_NO_EFFECT_REASONS = {
+    "database_echo": "nothing reads it",
+    "complexity_include_in_response": "no response carries the complexity score",
+    "execution_timeout_ms": "use query_timeout (seconds), the statement timeout of each query",
+    "default_query_schema": (
+        "a query reads the view its sql_source names; qualify the name to pick a schema"
+    ),
+}
+
+
 # Type alias for the validated database URL
 PostgresUrl = Annotated[str, Field(description="PostgreSQL connection URL (supports Unix sockets)")]
 
@@ -144,7 +155,7 @@ class FraiseQLConfig(BaseSettings):
 
     Performance Settings:
         cache_ttl: Deprecated, and has no effect (nothing reads it)
-        execution_timeout_ms: Query timeout in milliseconds (default: 30000)
+        query_timeout: Statement timeout in seconds for each query (default: 30)
         jsonb_field_limit_threshold: Fields threshold for JSONB optimization (default: 20)
 
     Security Settings:
@@ -181,6 +192,7 @@ class FraiseQLConfig(BaseSettings):
     database_pool_timeout: int = 30
     database_pool_recycle: int = 3600  # Recycle connections after 1 hour
     database_echo: bool = False
+    """Deprecated, and has no effect: nothing reads it. It will be removed."""
 
     # Application settings
     app_name: str = "FraiseQL API"
@@ -289,6 +301,7 @@ class FraiseQLConfig(BaseSettings):
     complexity_default_list_size: int = Field(default=10, ge=0)
     """List size assumed for a list field the query passes no ``limit`` / ``first`` to."""
     complexity_include_in_response: bool = False
+    """Deprecated, and has no effect: no response carries the score. It will be removed."""
     complexity_field_multipliers: dict[str, int] = {}
     """Cost of a field instead of 1, by field name or ``"Type.field"``."""
 
@@ -339,7 +352,11 @@ class FraiseQLConfig(BaseSettings):
     cors_headers: list[str] = ["Content-Type", "Authorization"]
 
     # Execution settings (Rust-first: single execution path)
-    execution_timeout_ms: int = 30000  # 30 seconds
+    execution_timeout_ms: int = 30000
+    """Deprecated, and has no effect: ``query_timeout`` (seconds) is the statement timeout.
+
+    It will be removed.
+    """
     include_execution_metadata: bool = False  # Include timing in response
 
     enable_rust_endpoint: bool = False
@@ -350,7 +367,12 @@ class FraiseQLConfig(BaseSettings):
 
     # Default schema settings
     default_mutation_schema: str = "public"  # Default schema for mutations when not specified
-    default_query_schema: str = "public"  # Default schema for queries when not specified
+    default_query_schema: str = "public"
+    """Deprecated, and has no effect: a query reads the view its ``sql_source`` names.
+
+    An unqualified view name resolves through the connection's ``search_path``;
+    qualify it (``sql_source="app.v_user"``) to pick a schema. It will be removed.
+    """
     # Schema for tb_* entity tables (needed by descendant_of_id / ancestor_of_id operators)
     default_entity_schema: str | None = None
 
@@ -418,6 +440,25 @@ class FraiseQLConfig(BaseSettings):
         This enables locale-aware PostgreSQL views:
             WHERE code = COALESCE(current_setting('app.locale', true), 'fr-FR')
     """
+
+    @field_validator(
+        "database_echo",
+        "complexity_include_in_response",
+        "execution_timeout_ms",
+        "default_query_schema",
+    )
+    @classmethod
+    def warn_settings_with_no_effect(cls, v: Any, info: ValidationInfo) -> Any:
+        """Warn that a setting nothing reads, set to anything but its default, changes nothing."""
+        name = info.field_name
+        if name is not None and v != cls.model_fields[name].default:
+            warnings.warn(
+                f"FraiseQLConfig.{name} has no effect: {_NO_EFFECT_REASONS[name]}. "
+                "It is deprecated and will be removed; remove it from your configuration.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return v
 
     # Entity routing settings
     entity_routing: Any = None

@@ -52,7 +52,6 @@ class TestDefaultSchemaIntegration:
         config = FraiseQLConfig(
             database_url="postgresql://test@localhost/test",
             default_mutation_schema="app",
-            default_query_schema="queries",
         )
 
         # Set config in registry
