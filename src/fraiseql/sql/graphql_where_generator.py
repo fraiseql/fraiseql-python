@@ -1146,8 +1146,12 @@ def create_graphql_where_input(cls: type, name: str | None = None) -> type:
                 if hasattr(WhereInputClass, "__gql_fields__"):
                     from fraiseql.fields import fraise_field
 
-                    # Create a FraiseQLField with the correct type
-                    gql_field = fraise_field(default=None)
+                    # Create a FraiseQLField with the correct type, keeping the
+                    # description fraise_input gave the field it replaces
+                    replaced = WhereInputClass.__gql_fields__.get(logical_field)
+                    gql_field = fraise_field(
+                        default=None, description=getattr(replaced, "description", None)
+                    )
                     gql_field.name = logical_field
                     gql_field.field_type = self_ref_list_type
                     WhereInputClass.__gql_fields__[logical_field] = gql_field

@@ -377,3 +377,33 @@ class TestApolloStudioIntegration:
         # User fields should not get filter descriptions (not a filter type)
         assert fields["name"].description is None
         assert fields["age"].description is None
+
+
+class TestWhereInputLogicalOperatorDescriptions:
+    """AND, OR and NOT of a generated WhereInput keep their descriptions."""
+
+    async def test_and_or_not_have_descriptions_in_introspection(self, clear_registry) -> None:
+        from graphql import graphql
+
+        from fraiseql import build_fraiseql_schema
+
+        @fraiseql.type(sql_source="v_described_item")
+        class DescribedItem:
+            id: UUID
+            name: str
+
+        @fraiseql.query
+        async def described_items(info) -> list[DescribedItem]:
+            return []
+
+        schema = build_fraiseql_schema(query_types=[described_items])
+        result = await graphql(
+            schema,
+            '{ __type(name: "DescribedItemWhereInput") { inputFields { name description } } }',
+        )
+
+        assert result.errors is None
+        descriptions = {f["name"]: f["description"] for f in result.data["__type"]["inputFields"]}
+        assert descriptions["AND"] == OPERATOR_DESCRIPTIONS["AND"]
+        assert descriptions["OR"] == OPERATOR_DESCRIPTIONS["OR"]
+        assert descriptions["NOT"] == OPERATOR_DESCRIPTIONS["NOT"]

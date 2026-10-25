@@ -880,6 +880,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before it, and returns a new `tenant_id` column (in `001_audit_tables.sql`; run the
   file again to replace the function). `002_unified_audit.sql`'s
   `verify_audit_chain(p_tenant_id, ...)` gets the same fix.
+- **`AND` and `OR` of a generated `WhereInput` have their descriptions in the
+  schema.** The generator replaced both fields with self-referencing ones after the
+  descriptions were applied, and dropped them; only `NOT` kept its description. They
+  now read "Logical AND - all conditions in the list must be true" and "Logical OR -
+  at least one condition in the list must be true".
 
 ## [1.30.0] - 2026-10-22
 
