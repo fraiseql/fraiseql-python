@@ -486,54 +486,58 @@ from fraiseql.monitoring import init_error_tracker
 
 tracker = init_error_tracker(db_pool, environment="production")
 await tracker.capture_exception(error, context={
-    "user_id": user.id,
-    "request_id": request_id,
-    "operation": "create_order"
+    "user": {"user_id": str(user.id)},
+    "request": {"request_id": request_id, "operation": "create_order"},
 })
 
 # Features:
-# - Automatic error fingerprinting and grouping (like Sentry)
+# - Error fingerprinting and grouping (like Sentry)
 # - Full stack trace capture
 # - Request/user context preservation
-# - OpenTelemetry trace correlation
+# - OpenTelemetry trace ids (trace_id=, span_id=) stored with each error
 # - Issue management (resolve, ignore, assign)
-# - Notification triggers (Email, Slack, Webhook)
+# - Notification rules (email, Slack, webhook)
 ```
 
-**Observability:** All errors stored in PostgreSQL with automatic grouping. Query directly for debugging:
+**Observability:** Errors are rows in PostgreSQL (`tb_error_log`, one per fingerprint,
+and `tb_error_occurrence`, one per capture), created by the `schema.sql` of
+`fraiseql.monitoring`. Query them directly for debugging:
 
 ```sql
 -- Find all errors for a user
-SELECT * FROM monitoring.errors
-WHERE context->>'user_id' = '123'
-ORDER BY occurred_at DESC;
+SELECT e.error_type, e.error_message, o.occurred_at
+FROM tb_error_occurrence o
+JOIN tb_error_log e ON e.error_id = o.error_id
+WHERE o.user_context->>'user_id' = '123'
+ORDER BY o.occurred_at DESC;
 
--- Correlate errors with traces
-SELECT e.*, t.*
-FROM monitoring.errors e
-JOIN monitoring.traces t ON e.trace_id = t.trace_id
-WHERE e.fingerprint = 'order_creation_failed';
+-- Most frequent unresolved errors
+SELECT error_type, error_message, occurrence_count, last_seen
+FROM v_top_errors
+LIMIT 10;
 ```
 
 ### Integrated Observability Stack
 
-**OpenTelemetry Integration:**
+**OpenTelemetry Integration:** `fraiseql.tracing.setup_tracing` opens a span per HTTP
+request and sends spans to an exporter (OTLP, Jaeger, Zipkin or the console), not to
+PostgreSQL. Pass a span's `trace_id` to `capture_exception` and an error row links to
+its trace in your tracing backend:
 
-```python
-# Traces and metrics automatically stored in PostgreSQL
-# Full correlation with errors and business events
-
-SELECT
-    e.message as error,
-    t.duration_ms as trace_duration,
-    c.entity_name as affected_entity
-FROM monitoring.errors e
-JOIN monitoring.traces t ON e.trace_id = t.trace_id
-JOIN tb_entity_change_log c ON t.trace_id = c.trace_id::text
-WHERE e.fingerprint = 'payment_processing_error'
-ORDER BY e.occurred_at DESC
+```sql
+-- Errors of the last hour, with the trace to open in your tracing backend
+SELECT e.error_type, e.error_message, o.occurred_at, o.trace_id
+FROM tb_error_occurrence o
+JOIN tb_error_log e ON e.error_id = o.error_id
+WHERE o.occurred_at > NOW() - INTERVAL '1 hour'
+  AND o.trace_id IS NOT NULL
+ORDER BY o.occurred_at DESC
 LIMIT 10;
 ```
+
+**Metrics:** `fraiseql.monitoring.setup_metrics` exports Prometheus metrics
+(`fraiseql_http_requests_total`, `fraiseql_http_request_duration_seconds`,
+`fraiseql_errors_total`, ...) on `/metrics`.
 
 **Grafana Dashboards:**
 Pre-built dashboards in `grafana/`:
@@ -549,7 +553,7 @@ Pre-built dashboards in `grafana/`:
 **2. Operational Simplicity**: One database to manage, backup, and monitor
 **3. Consistent Performance**: No external network calls for caching or error tracking
 **4. Full Control**: Self-hosted, no vendor lock-in, complete data ownership
-**5. Correlation**: Errors + traces + metrics + business events in one query
+**5. Correlation**: Errors and business events in one query, each error carrying its trace id
 **6. ACID Guarantees**: All observability data benefits from PostgreSQL transactions
 
 ## Composable Over Opinionated

@@ -147,89 +147,50 @@ tracker = init_error_tracker(
 
 ### Metric Types
 
-FraiseQL exports 15+ metrics covering all operational aspects:
+`setup_metrics(app, config)` adds `MetricsMiddleware` and the `/metrics` endpoint.
+Names below use the default `namespace="fraiseql"`; a counter is exported with a
+`_total` suffix.
 
-#### Query Metrics
+#### Recorded on Every Request
 
-| Metric | Type | Labels | Description |
-|--------|------|--------|---|
-| `fraiseql_graphql_queries_total` | Counter | operation_type, operation_name | Total queries executed |
-| `fraiseql_graphql_query_duration_seconds` | Histogram | operation_type, operation_name | Query execution time (includes distribution) |
-| `fraiseql_graphql_queries_success` | Counter | operation_type | Successful queries |
-| `fraiseql_graphql_queries_errors` | Counter | operation_type | Failed queries |
-
-**Labels**:
-
-- `operation_type`: `query`, `mutation`, `subscription`
-- `operation_name`: GraphQL operation name (if named)
-
-#### Mutation Metrics
+Every request except the `exclude_paths` (`/metrics`, `/health`, `/ready`, `/startup`
+by default) records:
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|---|
-| `fraiseql_graphql_mutations_total` | Counter | mutation_name | Total mutations |
-| `fraiseql_graphql_mutations_success` | Counter | mutation_name, result_type | Successful mutations |
-| `fraiseql_graphql_mutations_errors` | Counter | mutation_name, error_type | Failed mutations |
-| `fraiseql_graphql_mutation_duration_seconds` | Histogram | mutation_name | Mutation execution time |
-
-#### Database Metrics
-
-| Metric | Type | Labels | Description |
-|--------|------|--------|---|
-| `fraiseql_db_connections_active` | Gauge | - | Active database connections |
-| `fraiseql_db_connections_idle` | Gauge | - | Idle connections in pool |
-| `fraiseql_db_connections_total` | Gauge | - | Total pool size |
-| `fraiseql_db_queries_total` | Counter | query_type, table_name | Total database queries |
-| `fraiseql_db_query_duration_seconds` | Histogram | query_type | Query duration |
-
-**Labels**:
-
-- `query_type`: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`
-- `table_name`: Database table name
-
-#### Cache Metrics
-
-| Metric | Type | Labels | Description |
-|--------|------|--------|---|
-| `fraiseql_cache_hits_total` | Counter | cache_type | Cache hits |
-| `fraiseql_cache_misses_total` | Counter | cache_type | Cache misses |
-| `fraiseql_cache_hit_rate` | Gauge | cache_type | Hit rate percentage (0-100) |
-
-**Labels**:
-
-- `cache_type`: `result_cache`, `query_cache` (APQ), `http_cache`
-
-#### Error Metrics
-
-| Metric | Type | Labels | Description |
-|--------|------|--------|---|
-| `fraiseql_errors_total` | Counter | error_type, error_code, operation | Total errors |
-| `fraiseql_error_rate` | Gauge | error_type | Error rate percentage |
-
-**Labels**:
-
-- `error_type`: `validation`, `authorization`, `database`, `timeout`, `internal`
-- `error_code`: HTTP or GraphQL error code
-- `operation`: Operation type causing error
-
-#### HTTP Metrics
-
-| Metric | Type | Labels | Description |
-|--------|------|--------|---|
-| `fraiseql_http_requests_total` | Counter | method, endpoint, status | HTTP requests |
+| `fraiseql_http_requests_total` | Counter | method, endpoint, status | HTTP requests (`endpoint` is the path) |
 | `fraiseql_http_request_duration_seconds` | Histogram | method, endpoint | HTTP duration |
+| `fraiseql_response_time_seconds` | Histogram | - | Overall response time |
+| `fraiseql_errors_total` | Counter | error_type, error_code, operation | An exception that escaped the app (`error_code="HTTP_ERROR"`, counted as status `500`) |
 
-**Labels**:
+A GraphQL error in the response body (a failed resolver, a query over the depth or
+complexity limit) doesn't change the HTTP status, so none of these counts it.
 
-- `method`: `GET`, `POST`, `PUT`, `DELETE`
-- `endpoint`: Request path
-- `status`: HTTP status code
+#### Recorded Only When Your Code Records Them
 
-#### Performance Metrics
+Nothing in FraiseQL records these; they read 0 until your code does:
 
-| Metric | Type | Description |
-|--------|------|---|
-| `fraiseql_response_time_seconds` | Histogram | Overall response time |
+| Metric | Type | Labels | How it gets values |
+|--------|------|--------|---|
+| `fraiseql_graphql_queries_total` | Counter | operation_type, operation_name | `@with_metrics("query")` / `@with_metrics("mutation")` on a function, or `metrics.record_query(...)` |
+| `fraiseql_graphql_query_duration_seconds` | Histogram | operation_type, operation_name | same |
+| `fraiseql_graphql_queries_success_total` | Counter | operation_type | same |
+| `fraiseql_graphql_queries_errors_total` | Counter | operation_type | same |
+| `fraiseql_graphql_mutations_total` | Counter | mutation_name | `metrics.record_mutation(...)` |
+| `fraiseql_graphql_mutations_success_total` | Counter | mutation_name, result_type | same |
+| `fraiseql_graphql_mutations_errors_total` | Counter | mutation_name, error_type | same |
+| `fraiseql_graphql_mutation_duration_seconds` | Histogram | mutation_name | same |
+| `fraiseql_db_connections_active`, `_idle`, `_total` | Gauge | - | `metrics.update_db_connections(active, idle, total)` |
+| `fraiseql_db_queries_total` | Counter | query_type, table_name | `metrics.record_db_query(...)` |
+| `fraiseql_db_query_duration_seconds` | Histogram | query_type | same |
+| `fraiseql_cache_hits_total` | Counter | cache_type | `metrics.record_cache_hit(cache_type)` |
+| `fraiseql_cache_misses_total` | Counter | cache_type | `metrics.record_cache_miss(cache_type)` |
+
+`metrics` is what `setup_metrics` returns. There is no hit-rate or error-rate gauge:
+compute rates in PromQL, for example
+`sum(rate(fraiseql_cache_hits_total[5m])) / (sum(rate(fraiseql_cache_hits_total[5m])) + sum(rate(fraiseql_cache_misses_total[5m])))`.
+The [runbooks' metrics reference](../production/runbooks/README.md#metrics-quick-reference)
+shows how to feed the pool gauges from the app's pool.
 
 ### Histogram Buckets
 
@@ -324,33 +285,30 @@ groups:
   - name: FraiseQL
     interval: 30s
     rules:
-      # High error rate
+      # High share of 5xx responses
       - alert: FraiseQLHighErrorRate
-        expr: rate(fraiseql_graphql_queries_errors_total[5m]) > 0.05
+        expr: |
+          sum(rate(fraiseql_http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(fraiseql_http_requests_total[5m])) > 0.05
         for: 5m
         annotations:
-          summary: "FraiseQL error rate > 5%"
+          summary: "More than 5% of FraiseQL responses are 5xx"
 
-      # Slow queries
-      - alert: FraiseQLSlowQueries
-        expr: histogram_quantile(0.95, fraiseql_graphql_query_duration_seconds) > 1
+      # Slow requests
+      - alert: FraiseQLSlowRequests
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{endpoint="/graphql"}[5m]))) > 1
         for: 5m
         annotations:
-          summary: "95th percentile query time > 1s"
+          summary: "95th percentile /graphql time > 1s"
 
-      # Database connection pool exhaustion
+      # Database connection pool exhaustion (needs metrics.update_db_connections)
       - alert: FraiseQLPoolNearFull
         expr: fraiseql_db_connections_active / fraiseql_db_connections_total > 0.8
         for: 5m
         annotations:
           summary: "Database connection pool > 80% utilized"
-
-      # Low cache hit rate
-      - alert: FraiseQLLowCacheHitRate
-        expr: fraiseql_cache_hit_rate < 50
-        for: 10m
-        annotations:
-          summary: "Cache hit rate < 50%"
 ```
 
 ---
@@ -644,6 +602,15 @@ Automatic Persisted Queries (APQ) metrics track query caching performance and hi
 
 ### Endpoints
 
+`create_fraiseql_app` doesn't mount these endpoints; include their router yourself
+(and protect it, as it is an admin surface):
+
+```python
+from fraiseql.fastapi.apq_metrics_router import router as apq_metrics_router
+
+app.include_router(apq_metrics_router)
+```
+
 #### Dashboard (`/admin/apq/dashboard`)
 
 Interactive HTML dashboard with charts and statistics.
@@ -672,38 +639,21 @@ Response:
 
 ```json
 {
-  "query_cache": {
-    "hits": 15000,
-    "misses": 2000,
-    "hit_rate": 0.88,
-    "stores": 2000
+  "current": {
+    "timestamp": "2026-10-25T11:25:41.634429+00:00",
+    "query_cache": {"hits": 150, "misses": 10, "stores": 10, "hit_rate": 0.9375},
+    "response_cache": {"hits": 0, "misses": 0, "stores": 0, "hit_rate": 0.0},
+    "storage": {"stored_queries": 10, "cached_responses": 0, "total_bytes": 5432},
+    "performance": {"total_requests": 160, "overall_hit_rate": 0.9375, "avg_parse_time_ms": null}
   },
-  "response_cache": {
-    "hits": 8000,
-    "misses": 7000,
-    "hit_rate": 0.53,
-    "stores": 7000
-  },
-  "storage": {
-    "stored_queries": 45,
-    "cached_responses": 120,
-    "storage_bytes": 5242880
-  },
-  "performance": {
-    "total_requests": 17000,
-    "avg_query_parse_time_ms": 2.1,
-    "overall_hit_rate": 0.72
-  },
-  "health": {
-    "status": "healthy",
-    "assessment": "Good hit rate"
-  }
+  "top_queries": [],
+  "health": {"status": "healthy", "warnings": []}
 }
 ```
 
 #### Top Queries (`/admin/apq/top-queries`)
 
-Most frequently accessed queries.
+Most frequently accessed queries (`limit` from 1 to 100).
 
 ```bash
 GET /admin/apq/top-queries?limit=10
@@ -713,17 +663,18 @@ Response:
 
 ```json
 {
-  "queries": [
+  "top_queries": [
     {
       "hash": "a1b2c3d4...",
-      "hit_count": 5000,
-      "miss_count": 500,
-      "hit_rate": 0.91,
-      "avg_parse_time_ms": 1.5,
-      "first_seen": "2025-01-10T10:00:00Z",
-      "last_seen": "2025-01-11T15:30:00Z"
+      "total_requests": 50,
+      "hit_count": 48,
+      "miss_count": 2,
+      "avg_parse_time_ms": 25.5,
+      "first_seen": "2026-10-25T10:00:00+00:00",
+      "last_seen": "2026-10-25T10:44:00+00:00"
     }
-  ]
+  ],
+  "count": 1
 }
 ```
 
@@ -766,7 +717,12 @@ GET /admin/apq/health
 
 ### Query Complexity Scoring
 
-Analyze GraphQL query complexity before execution.
+Analyze GraphQL query complexity before execution. This analyzer scores a query for
+caching decisions; it doesn't reject anything. To reject a query over a limit, set
+`complexity_max_score` / `complexity_max_depth` (or `max_query_depth`) on
+`FraiseQLConfig`: those use their own score (see
+[Configuration](../core/configuration.md#complexity-settings)) and answer
+`QUERY_TOO_COMPLEX` / `QUERY_TOO_DEEP`.
 
 ```python
 from fraiseql.analysis.query_complexity import analyze_query_complexity
@@ -924,12 +880,16 @@ except Exception as e:
     error_id = await tracker.capture_exception(
         e,
         context={
-            "user_id": "user-123",
-            "request_id": "req-456"
+            "user": {"user_id": "user-123"},
+            "request": {"request_id": "req-456"},
         },
         tags=["critical", "graphql"]
     )
 ```
+
+The `context` keys the tracker reads are `request`, `user` and `application` (stored
+in `request_context`, `user_context` and `application_context`), `breadcrumbs` and
+`fingerprint`; other keys are dropped.
 
 ### Error Grouping
 
@@ -1080,26 +1040,26 @@ Example Grafana JSON configuration:
     "title": "FraiseQL Monitoring",
     "panels": [
       {
-        "title": "Query Success Rate",
+        "title": "Request Rate by Status",
         "targets": [
           {
-            "expr": "rate(fraiseql_graphql_queries_success[5m]) / rate(fraiseql_graphql_queries_total[5m])"
+            "expr": "sum by (status) (rate(fraiseql_http_requests_total[5m]))"
           }
         ]
       },
       {
-        "title": "P95 Query Latency",
+        "title": "P95 /graphql Latency",
         "targets": [
           {
-            "expr": "histogram_quantile(0.95, fraiseql_graphql_query_duration_seconds)"
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{endpoint=\"/graphql\"}[5m])))"
           }
         ]
       },
       {
-        "title": "Cache Hit Rate",
+        "title": "Errors Escaping the App",
         "targets": [
           {
-            "expr": "fraiseql_cache_hit_rate{cache_type=\"result_cache\"}"
+            "expr": "sum by (error_type) (rate(fraiseql_errors_total[5m]))"
           }
         ]
       },
@@ -1210,9 +1170,9 @@ MetricsConfig(enabled=True)      # All metrics
 
 ### High Latency Detected
 
-1. Check `GET /health` for pool/cache issues
-2. Identify slow queries: `monitor.get_slow_queries()`
-3. Analyze query complexity: `analyze_query_complexity(query)`
+1. Check `GET /ready` for database and schema issues
+2. Identify slow queries: `await collector.get_stats(order_by="mean_exec_time")` (see [Query Statistics](#query-statistics))
+3. Analyze query complexity: `analyze_query_complexity(query, schema)`
 4. Review database metrics and indexes
 
 ---
