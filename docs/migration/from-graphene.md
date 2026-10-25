@@ -148,6 +148,8 @@ class PostType(DjangoObjectType):
 **After (FraiseQL):**
 
 ```python
+from datetime import datetime
+
 import fraiseql
 from fraiseql.types import ID
 
@@ -156,7 +158,7 @@ class User:
     id: ID
     email: str
     name: str
-    created_at: str  # ISO 8601 timestamp
+    created_at: datetime
 
 @fraiseql.type(sql_source="v_post")
 class Post:
@@ -164,12 +166,12 @@ class Post:
     title: str
     content: str
     author_id: ID
-    created_at: str
+    created_at: datetime
 
     @fraiseql.field
     async def author(self, info) -> User:
         """Resolve author from database"""
-        db = fraiseql.get_db(info.context)
+        db = info.context["db"]
         return await db.find_one("v_user", where={"id": self.author_id})
 ```
 
@@ -183,8 +185,8 @@ class Post:
    - Explicit async resolver
    - Type hints for return type
 
-3. **`graphene.ID`** → **`UUID`**
-   - PostgreSQL native UUID type
+3. **`graphene.ID`** → **`ID`** (from `fraiseql.types`)
+   - A UUID by default (`IDPolicy.UUID`), PostgreSQL native
 
 ---
 
@@ -208,20 +210,22 @@ class Query(graphene.ObjectType):
 
 **After (FraiseQL):**
 
+Each query is an `async` function decorated with `@fraiseql.query`; its name is the
+field name:
+
 ```python
 @fraiseql.query
-class Query:
-    @fraiseql.field
-    async def user(self, info, id: ID) -> User | None:
-        """Get user by ID"""
-        db = fraiseql.get_db(info.context)
-        return await db.find_one("v_user", where={"id": id})
+async def user(info, id: ID) -> User | None:
+    """Get user by ID"""
+    db = info.context["db"]
+    return await db.find_one("v_user", "user", info, where={"id": id})
 
-    @fraiseql.field
-    async def users(self, info, limit: int = 100) -> list[User]:
-        """List users"""
-        db = fraiseql.get_db(info.context)
-        return await db.find("v_user", limit=limit)
+
+@fraiseql.query
+async def users(info, limit: int = 100) -> list[User]:
+    """List users"""
+    db = info.context["db"]
+    return await db.find("v_user", "users", info, limit=limit)
 ```
 
 ### 3.2 Queries with Filtering
@@ -250,25 +254,22 @@ query {
 
 **After (FraiseQL):**
 
+A query returning `list[User]` gets `where`, `orderBy`, `limit` and `offset`
+arguments, and `find` applies the ones the client passes:
+
 ```python
 @fraiseql.query
-class Query:
-    @fraiseql.field
-    async def users(
-        self,
-        info,
-        where: dict | None = None,
-        limit: int = 100
-    ) -> list[User]:
-        """List users with filtering"""
-        db = fraiseql.get_db(info.context)
-        return await db.find("v_user", where=where, limit=limit)
+async def users(info, limit: int = 100) -> list[User]:
+    """List users"""
+    db = info.context["db"]
+    return await db.find("v_user", "users", info, limit=limit)
+```
 
-# GraphQL (more powerful filtering)
+```graphql
 query {
   users(where: {
     email: { endswith: "@example.com" }
-    created_at: { gte: "2025-01-01" }
+    createdAt: { gte: "2025-01-01T00:00:00Z" }
   }) {
     id
     email
@@ -328,13 +329,11 @@ class CreateUserInput:
 @fraiseql.success
 class CreateUserSuccess:
     user: User
-    message: str
 
 
 @fraiseql.error
 class CreateUserError:
-    message: str
-    code: str
+    """status, message, errors and code are added by @fraiseql.error"""
 
 
 @fraiseql.mutation(function="fn_create_user", name="createUser")
@@ -414,7 +413,7 @@ class CreatePostSuccess:
 
 @fraiseql.error
 class CreatePostError:
-    message: str
+    """status, message, errors and code are added by @fraiseql.error"""
 
 
 @fraiseql.mutation(
@@ -563,35 +562,47 @@ urlpatterns = [
 **After (FraiseQL):**
 
 ```python
-from fraiseql import create_fraiseql_app
+from fraiseql.fastapi import create_fraiseql_app
 
 app = create_fraiseql_app(
     database_url="postgresql://user:pass@localhost/db",
-    enable_rust_pipeline=True,  # 7-10x JSON performance
-    enable_cascade=True,  # Automatic cache invalidation
-    allow_introspection=True,  # GraphiQL
+    types=[User, Post],
+    queries=[user, users],
+    mutations=[CreateUser, CreatePost],
 )
 ```
+
+The Rust pipeline is always on, a mutation's cascade is turned on per mutation
+(`enable_cascade=True`), and GraphiQL is served in development
+(`enable_playground`, `introspection_policy` on `FraiseQLConfig`).
 
 **With Django (Hybrid Approach):**
 
+`create_fraiseql_app` returns an ASGI (FastAPI) app, which Django's `urlpatterns`
+can't route to. Serve both from one ASGI process instead: mount Django's ASGI app
+under the FraiseQL app, which keeps `/graphql` (and `/health`, `/ready`) and hands
+every other path to Django.
+
 ```python
-# Keep Django for admin, auth, etc.
-# Add FraiseQL for GraphQL API
+# asgi.py: keep Django for admin, auth, etc.; FraiseQL serves the GraphQL API
+import os
 
-from django.urls import path
-from fraiseql import create_fraiseql_app
+from django.core.asgi import get_asgi_application
 
-fraiseql_app = create_fraiseql_app(
-    database_url=settings.DATABASES['default']['URL'],
-    enable_rust_pipeline=True,
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "mysite.settings")
+django_app = get_asgi_application()
+
+from fraiseql.fastapi import create_fraiseql_app  # noqa: E402
+
+app = create_fraiseql_app(
+    database_url=os.environ["DATABASE_URL"],
+    types=[User, Post],
+    queries=[user, users],
 )
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('graphql/', fraiseql_app),  # FraiseQL endpoint
-]
+app.mount("/", django_app)  # /admin/ and the rest go to Django
 ```
+
+Run it with `uvicorn asgi:app`.
 
 ---
 
@@ -629,22 +640,22 @@ def test_create_user():
 **After (FraiseQL):**
 
 ```python
-import pytest
-from fraiseql.testing import GraphQLClient
+from fastapi.testclient import TestClient
 
-@pytest.mark.asyncio
-async def test_create_user(graphql_client: GraphQLClient):
-    result = await graphql_client.execute("""
-        mutation {
-            createUser(input: {email: "test@example.com", name: "Test"}) {
-                id
-                email
-                name
+
+def test_create_user(app):
+    """`app` is your create_fraiseql_app(...) app, against a test database"""
+    with TestClient(app) as client:  # runs the app's lifespan, which opens the pool
+        body = client.post("/graphql", json={"query": """
+            mutation {
+                createUser(input: {email: "test@example.com", name: "Test"}) {
+                    ... on CreateUserSuccess { user { id email name } }
+                    ... on CreateUserError { message }
+                }
             }
-        }
-    """)
-    assert result.errors is None
-    assert result.data['createUser']['email'] == "test@example.com"
+        """}).json()
+    assert "errors" not in body
+    assert body["data"]["createUser"]["user"]["email"] == "test@example.com"
 ```
 
 ---
@@ -663,8 +674,9 @@ def resolve_user(self, info, id):
     return db.find_one("v_user", where={"id": id})
 
 # ✅ Correct
-async def user(self, info, id: ID) -> User | None:
-    return await db.find_one("v_user", where={"id": id})
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    return await info.context["db"].find_one("v_user", "user", info, where={"id": id})
 ```
 
 ### 2. Using Django ORM Patterns
@@ -683,7 +695,7 @@ users = await db.find("v_user", where={"is_active": True})
 
 ### 3. Missing Database Functions
 
-**Symptom:** `MutationError: Function fn_create_user does not exist`
+**Symptom:** the mutation fails with `function fn_create_user(jsonb) does not exist`
 
 **Fix:** Create PostgreSQL function before mutation:
 
@@ -710,10 +722,11 @@ mutation {
   }
 }
 
-# ✅ FraiseQL (clean)
+# ✅ FraiseQL (no clientMutationId)
 mutation {
-  createUser(input: {email: "test@example.com"}) {
-    id
+  createUser(input: {email: "test@example.com", name: "Test"}) {
+    ... on CreateUserSuccess { user { id } }
+    ... on CreateUserError { message }
   }
 }
 ```
@@ -767,29 +780,11 @@ Requests per second: 1,500  # 10x improvement
 
 You can keep Django for admin/auth and use FraiseQL for GraphQL:
 
-```python
-# settings.py
-INSTALLED_APPS = [
-    'django.contrib.admin',  # Keep Django admin
-    'django.contrib.auth',   # Keep Django auth
-    # ... other Django apps
-]
-
-# urls.py
-from django.contrib import admin
-from django.urls import path
-from fraiseql import create_fraiseql_app
-
-fraiseql_app = create_fraiseql_app(
-    database_url=settings.DATABASES['default']['URL'],
-    enable_rust_pipeline=True,
-)
-
-urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/graphql/', fraiseql_app),
-]
-```
+Keep `django.contrib.admin` and `django.contrib.auth` in `INSTALLED_APPS`, and serve
+Django and FraiseQL from one ASGI app, as in
+[With Django (Hybrid Approach)](#application-configuration) above: the FraiseQL app
+answers `/graphql`, and the Django app mounted under it answers `/admin/` and every
+other path.
 
 **Benefits:**
 

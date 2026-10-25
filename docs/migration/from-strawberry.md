@@ -145,6 +145,8 @@ class Post:
 **After (FraiseQL):**
 
 ```python
+from datetime import datetime
+
 import fraiseql
 from fraiseql.types import ID
 
@@ -153,7 +155,7 @@ class User:
     id: ID
     email: str
     name: str | None
-    created_at: str  # ISO 8601 timestamp
+    created_at: datetime
 
 @fraiseql.type(sql_source="v_post")
 class Post:
@@ -161,13 +163,12 @@ class Post:
     title: str
     content: str
     author_id: ID
-    created_at: str
+    created_at: datetime
 
     @fraiseql.field
     async def author(self, info) -> User:
         """Resolve author from database"""
-        from fraiseql.database import get_db
-        db = get_db(info.context)
+        db = info.context["db"]
         return await db.find_one("v_user", where={"id": self.author_id})
 ```
 
@@ -176,8 +177,8 @@ class Post:
 1. **`@strawberry.type`** → **`@fraiseql.type(sql_source="v_user")`**
    - Add `sql_source` parameter pointing to database view
 
-2. **`strawberry.ID`** → **`UUID`**
-   - FraiseQL uses proper UUID type (PostgreSQL native)
+2. **`strawberry.ID`** → **`ID`** (from `fraiseql.types`)
+   - A UUID by default (`IDPolicy.UUID`), PostgreSQL native
 
 3. **`Optional[str]`** → **`str | None`**
    - Modern Python 3.10+ union syntax
@@ -210,14 +211,15 @@ class Query:
 
 **After (FraiseQL):**
 
+Each query is an `async` function decorated with `@fraiseql.query`, not a method of a
+`Query` class:
+
 ```python
 @fraiseql.query
-class Query:
-    @fraiseql.field
-    async def user(self, info, id: ID) -> User | None:
-        """Get user by ID"""
-        db = fraiseql.get_db(info.context)
-        return await db.find_one("v_user", where={"id": id})
+async def user(info, id: ID) -> User | None:
+    """Get user by ID"""
+    db = info.context["db"]
+    return await db.find_one("v_user", "user", info, where={"id": id})
 ```
 
 ### 3.2 List Queries with Filtering
@@ -253,23 +255,10 @@ class Query:
 
 ```python
 @fraiseql.query
-class Query:
-    @fraiseql.field
-    async def users(
-        self,
-        info,
-        limit: int = 10,
-        offset: int = 0,
-        where: dict | None = None
-    ) -> list[User]:
-        """List users with filtering"""
-        db = fraiseql.get_db(info.context)
-        return await db.find(
-            "v_user",
-            where=where,
-            limit=limit,
-            offset=offset
-        )
+async def users(info, limit: int = 10, offset: int = 0) -> list[User]:
+    """List users; `where` and `orderBy` are added to the field automatically"""
+    db = info.context["db"]
+    return await db.find("v_user", "users", info, limit=limit, offset=offset)
 ```
 
 **GraphQL Query:**
@@ -289,8 +278,8 @@ query {
   users(
     limit: 10
     where: {
-      is_active: { _eq: true }
-      email: { _like: "%@example.com" }
+      isActive: { eq: true }
+      email: { like: "%@example.com" }
     }
   ) {
     id
@@ -343,13 +332,11 @@ class CreateUserInput:
 @fraiseql.success
 class CreateUserSuccess:
     user: User
-    message: str
 
 
 @fraiseql.error
 class CreateUserError:
-    message: str
-    code: str
+    """status, message, errors and code are added by @fraiseql.error"""
 
 
 @fraiseql.mutation(
@@ -446,7 +433,7 @@ class CreatePostSuccess:
 
 @fraiseql.error
 class CreatePostError:
-    message: str
+    """status, message, errors and code are added by @fraiseql.error"""
 
 
 @fraiseql.mutation(
@@ -572,27 +559,48 @@ app.include_router(graphql_app, prefix="/graphql")
 **After (FraiseQL):**
 
 ```python
-from fraiseql import create_fraiseql_app
+from fraiseql.fastapi import create_fraiseql_app
 
 app = create_fraiseql_app(
     database_url="postgresql://user:pass@localhost/db",
-    enable_rust_pipeline=True,  # 7-10x JSON performance
-    enable_cascade=True,  # Automatic cache invalidation
+    types=[User, Post],
+    queries=[user, users],
+    mutations=[CreateUser, CreatePost],
 )
 ```
 
-**Configuration Options:**
+The Rust pipeline is always on, a mutation's cascade is turned on per mutation
+(`enable_cascade=True`), and GraphiQL is served in development
+(`enable_playground`, `introspection_policy` on `FraiseQLConfig`).
+
+**Configuration Options:** settings go in a `FraiseQLConfig` (or `FRAISEQL_*`
+environment variables), and per-request values such as the tenant come from a
+`context_getter`:
 
 ```python
-app = create_fraiseql_app(
-    database_url=os.environ["DATABASE_URL"],
-    enable_rust_pipeline=True,
-    enable_cascade=True,
-    allow_introspection=True,  # GraphiQL in development
-    cors_origins=["https://example.com"],
+import os
 
-    # Multi-tenancy (if needed)
-    tenant_id_header="X-Tenant-ID",
+from fastapi import Request
+
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
+
+
+async def get_context(request: Request) -> dict:
+    # Multi-tenancy: FraiseQL sets app.tenant_id from it (take it from the verified token)
+    return {"tenant_id": request.state.tenant_id}
+
+
+config = FraiseQLConfig(
+    database_url=os.environ["DATABASE_URL"],
+    cors_enabled=True,
+    cors_origins=["https://example.com"],
+)
+app = create_fraiseql_app(
+    config=config,
+    types=[User, Post],
+    queries=[user, users],
+    mutations=[CreateUser, CreatePost],
+    context_getter=get_context,
 )
 ```
 
@@ -633,22 +641,22 @@ async def test_create_user():
 **After (FraiseQL):**
 
 ```python
-import pytest
-from fraiseql.testing import GraphQLClient
+from fastapi.testclient import TestClient
 
-@pytest.mark.asyncio
-async def test_create_user(graphql_client: GraphQLClient):
-    result = await graphql_client.execute("""
-        mutation {
-            createUser(input: {email: "test@example.com", name: "Test"}) {
-                id
-                email
-                name
+
+def test_create_user(app):
+    """`app` is your create_fraiseql_app(...) app, against a test database"""
+    with TestClient(app) as client:  # runs the app's lifespan, which opens the pool
+        body = client.post("/graphql", json={"query": """
+            mutation {
+                createUser(input: {email: "test@example.com", name: "Test"}) {
+                    ... on CreateUserSuccess { user { id email name } }
+                    ... on CreateUserError { message }
+                }
             }
-        }
-    """)
-    assert result.errors is None
-    assert result.data['createUser']['email'] == "test@example.com"
+        """}).json()
+    assert "errors" not in body
+    assert body["data"]["createUser"]["user"]["email"] == "test@example.com"
 ```
 
 ---
@@ -657,21 +665,14 @@ async def test_create_user(graphql_client: GraphQLClient):
 
 ### 1. Forgetting to Create Database Functions for Mutations
 
-**Symptom:** `MutationError: Function fn_create_user does not exist`
+**Symptom:** the mutation fails with `function fn_create_user(jsonb) does not exist`
 
-**Fix:** Create PostgreSQL function before defining mutation:
-
-```sql
-CREATE OR REPLACE FUNCTION fn_create_user(...) RETURNS UUID AS $$
-BEGIN
-    -- Implementation
-END;
-$$ LANGUAGE plpgsql;
-```
+**Fix:** Create the PostgreSQL function the mutation calls: it takes the input as one
+`jsonb` and returns a `mutation_response` (see [4.1](#41-simple-mutations)).
 
 ### 2. Using Wrong View Names
 
-**Symptom:** `ViewNotFoundError: View v_users not found`
+**Symptom:** the query fails with `relation "v_users" does not exist`
 
 **Fix:** Ensure view name matches `sql_source` parameter:
 
@@ -686,16 +687,6 @@ class User:
 **Symptom:** Multi-tenancy doesn't work, queries return all data
 
 **Fix:** Adopt trinity pattern with `tb_`, `v_`, `tv_` prefixes.
-
-### 4. Not Enabling Rust Pipeline
-
-**Symptom:** Performance is similar to Strawberry
-
-**Fix:** Enable Rust pipeline:
-
-```python
-app = create_fraiseql_app(enable_rust_pipeline=True)
-```
 
 ---
 

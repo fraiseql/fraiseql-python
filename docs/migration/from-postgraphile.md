@@ -187,26 +187,23 @@ query {
 
 **After (FraiseQL - Same auto-generation + customization):**
 
-```python
-# If you need custom query logic
-@fraiseql.query
-class Query:
-    @fraiseql.field
-    async def user(self, info, id: ID) -> User | None:
-        """Get user by ID"""
-        db = fraiseql.get_db(info.context)
-        return await db.find_one("v_user", where={"id": id})
+FraiseQL doesn't generate queries from the schema: each one is an `async` function.
+A query returning `list[User]` gets `where`, `orderBy`, `limit` and `offset`
+arguments, applied by `find`:
 
-    @fraiseql.field
-    async def users(
-        self,
-        info,
-        where: dict | None = None,
-        limit: int = 100
-    ) -> list[User]:
-        """List users with filtering"""
-        db = fraiseql.get_db(info.context)
-        return await db.find("v_user", where=where, limit=limit)
+```python
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    """Get user by ID"""
+    db = info.context["db"]
+    return await db.find_one("v_user", "user", info, where={"id": id})
+
+
+@fraiseql.query
+async def users(info, limit: int = 100) -> list[User]:
+    """List users"""
+    db = info.context["db"]
+    return await db.find("v_user", "users", info, limit=limit)
 ```
 
 **GraphQL Query:**
@@ -262,14 +259,35 @@ $$ LANGUAGE plpgsql VOLATILE;
 ```
 
 ```python
-@fraiseql.mutation(function="create_user")  # or function="fn_create_user", name="createUser"
-class CreateUser:
-    """Create a new user"""
+@fraiseql.input
+class CreateUserInput:
     email: str
     name: str
+
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+
+
+@fraiseql.error
+class CreateUserError:
+    """status, message, errors and code are added by @fraiseql.error"""
+
+
+@fraiseql.mutation(function="fn_create_user", name="createUser")
+class CreateUser:
+    """Create a new user"""
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: CreateUserError
 ```
 
-**Key Insight:** Your PostgreSQL functions work as-is! Just point FraiseQL to them.
+**Key Insight:** your logic stays in PostgreSQL functions. FraiseQL calls a
+mutation's function with the input as one `jsonb` argument and reads a
+`mutation_response` back (`migrations/trinity/005_add_mutation_response.sql` has the
+type and the `mutation_*` helpers), so a PostGraphile function taking separate
+arguments needs a thin `fn_create_user(input jsonb)` wrapper.
 
 ### 4.2 Mutations with CASCADE
 
@@ -315,17 +333,37 @@ const CreatePostPlugin = makeExtendSchemaPlugin({
 **After (FraiseQL with CASCADE):**
 
 ```python
-@fraiseql.mutation(
-    function="fn_create_post",
-    name="createPost",
-    enable_cascade=True  # Automatic cache invalidation!
-)
-class CreatePost:
-    """Create a new post"""
+@fraiseql.input
+class CreatePostInput:
     title: str
     content: str
     author_id: ID
+
+
+@fraiseql.success
+class CreatePostSuccess:
+    post: Post
+
+
+@fraiseql.error
+class CreatePostError:
+    """status, message, errors and code are added by @fraiseql.error"""
+
+
+@fraiseql.mutation(
+    function="fn_create_post",
+    name="createPost",
+    enable_cascade=True  # the response carries the function's cascade
+)
+class CreatePost:
+    """Create a new post"""
+    input: CreatePostInput
+    success: CreatePostSuccess
+    error: CreatePostError
 ```
+
+`fn_create_post` returns the cascade with the `cascade_*` helpers; see the
+[Graphene guide](from-graphene.md#42-complex-mutations-with-cascade) for the function.
 
 **CASCADE Benefits:**
 
@@ -364,12 +402,29 @@ USING (tenant_id = current_setting('app.tenant_id')::uuid);
 ```
 
 ```python
-# FraiseQL handles session variables automatically
+from fastapi import Request
+
+from fraiseql.fastapi import create_fraiseql_app
+
+
+async def get_context(request: Request) -> dict:
+    # In production, take the tenant from the verified token, never from the client
+    return {"tenant_id": request.headers.get("X-Tenant-ID")}
+
+
 app = create_fraiseql_app(
     database_url="postgresql://...",
-    tenant_id_header="X-Tenant-ID",  # Auto-set session variable
+    types=[User],
+    queries=[user, users],
+    context_getter=get_context,
 )
 ```
+
+Before each query and mutation, FraiseQL runs `SET LOCAL app.tenant_id` (and
+`app.user_id`, `app.contact_id`) from the request context, so the policy's
+`current_setting('app.tenant_id')` sees the request's tenant. Map other context keys
+with `FraiseQLConfig(session_variables=...)`. See
+[Multi-tenant SaaS](../patterns/saas-multi-tenant.md).
 
 **Key Insight:** Your RLS policies work identically in FraiseQL!
 
@@ -416,18 +471,22 @@ app.listen(5000);
 **After (FraiseQL):**
 
 ```python
-from fraiseql import create_fraiseql_app
+from fraiseql.fastapi import create_fraiseql_app
 
 app = create_fraiseql_app(
     database_url="postgresql://...",
-    enable_rust_pipeline=True,  # 7-10x JSON performance
-    enable_cascade=True,  # Automatic cache invalidation
-    allow_introspection=True,  # GraphiQL
+    types=[User, Post],
+    queries=[user, users],
+    mutations=[CreateUser, CreatePost],
 )
 
 # Run with:
 # uvicorn app:app --port 5000
 ```
+
+The Rust pipeline is always on, cascades are turned on per mutation
+(`enable_cascade=True`), and GraphiQL is served in development
+(`enable_playground`, `introspection_policy` on `FraiseQLConfig`).
 
 **Simpler:** No plugin system, just Python configuration.
 
@@ -460,22 +519,18 @@ describe("User queries", () => {
 **After (FraiseQL + pytest):**
 
 ```python
-import pytest
-from fraiseql.testing import GraphQLClient
+from fastapi.testclient import TestClient
 
-@pytest.mark.asyncio
-async def test_user_by_id(graphql_client: GraphQLClient):
-    result = await graphql_client.execute(f'''
-        query {{
-            user(id: "{user_id}") {{
-                id
-                email
-            }}
-        }}
-    ''')
 
-    assert result.errors is None
-    assert result.data['user']['email'] == "test@example.com"
+def test_user_by_id(app, user_id):
+    """`app` is your create_fraiseql_app(...) app, against a test database"""
+    with TestClient(app) as client:  # runs the app's lifespan, which opens the pool
+        body = client.post("/graphql", json={
+            "query": "query ($id: ID!) { user(id: $id) { id email } }",
+            "variables": {"id": user_id},
+        }).json()
+    assert "errors" not in body
+    assert body["data"]["user"]["email"] == "test@example.com"
 ```
 
 **Similar complexity, different language.**
@@ -492,8 +547,9 @@ PostGraphile uses promises, FraiseQL uses async/await.
 
 ```python
 # ✅ Correct
-async def user(self, info, id: ID) -> User | None:
-    return await db.find_one("v_user", where={"id": id})
+@fraiseql.query
+async def user(info, id: ID) -> User | None:
+    return await info.context["db"].find_one("v_user", "user", info, where={"id": id})
 ```
 
 ### 2. Smart Comments/Tags
