@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -309,6 +310,25 @@ def _as_numeric(expr: Composed) -> Composed:
     return Composed([SQL("("), expr, SQL(")::numeric")])
 
 
+# Operators that compare a value with a date or timestamp
+TEMPORAL_CAST_OPERATORS = COMPARISON_OPERATORS.keys() | CONTAINMENT_OPERATORS.keys()
+
+
+def temporal_cast_of_value(value: Any) -> str | None:
+    """``timestamptz`` for a datetime, ``date`` for a date, else None.
+
+    A list (for in/nin) answers for its values when they all agree.
+    """
+    if isinstance(value, list | tuple):
+        casts = {temporal_cast_of_value(v) for v in value}
+        return casts.pop() if len(casts) == 1 else None
+    if isinstance(value, datetime):
+        return "timestamptz"
+    if isinstance(value, date):
+        return "date"
+    return None
+
+
 @dataclass
 class FieldCondition:
     """Single filter condition on a field.
@@ -329,6 +349,11 @@ class FieldCondition:
             - For SQL: "status"
         jsonb_path: For JSONB lookups, the path within the data column
             - e.g., ["machine", "id"] → data->'machine'->>'id'
+        temporal_cast: ``"timestamptz"`` or ``"date"`` when the field is declared
+            as a datetime or date: a JSONB comparison then casts both sides,
+            ``(data->>'created_at')::timestamptz >= %s::timestamptz``, instead
+            of comparing ISO strings as text. A datetime or date value casts
+            without it.
 
     Examples:
         # FK lookup: machine.id = '123'
@@ -368,6 +393,7 @@ class FieldCondition:
     lookup_strategy: Literal["fk_column", "jsonb_path", "sql_column"]
     target_column: str
     jsonb_path: list[str] | None = None
+    temporal_cast: Literal["timestamptz", "date"] | None = None
 
     def __post_init__(self):
         """Validate the condition after initialization."""
@@ -523,7 +549,18 @@ class FieldCondition:
             if self.operator in LTREE_FUNCTION_FILTERS:
                 return self._ltree_function_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
 
-            if self.operator in CONTAINMENT_OPERATORS:
+            cast = self.temporal_cast or temporal_cast_of_value(self.value)
+            if cast and self.operator in TEMPORAL_CAST_OPERATORS:
+                # As text, '...00+00:00' < '...00Z': compare dates as dates
+                values_list = self.value if isinstance(self.value, list) else [self.value]
+                if self.operator in CONTAINMENT_OPERATORS:
+                    placeholders = ", ".join([f"%s::{cast}"] * len(values_list))
+                    rhs = SQL(f" {sql_op} ({placeholders})")
+                else:
+                    rhs = SQL(f" {sql_op} %s::{cast}")
+                sql = Composed([SQL("("), jsonb_expr, SQL(f")::{cast}"), rhs])
+                params.extend(values_list)
+            elif self.operator in CONTAINMENT_OPERATORS:
                 # IN/NOT IN: psycopg3 requires individual placeholders
                 values_list = self.value if isinstance(self.value, list) else [self.value]
                 placeholders = ", ".join(["%s"] * len(values_list))

@@ -27,6 +27,7 @@ from fraiseql.utils.casing import to_snake_case
 from fraiseql.where_clause import WhereClause
 from fraiseql.where_normalization import (
     _apply_column_mapping,
+    annotate_temporal_casts,
     normalize_dict_where,
     normalize_whereinput,
 )
@@ -2915,7 +2916,11 @@ class FraiseQLRepository:
                 f"Got: {type(where).__name__}"
             )
 
-        return _apply_view_column_mapping(result, view_name, table_columns)
+        result = _apply_view_column_mapping(result, view_name, table_columns)
+        annotate_temporal_casts(
+            result, _type_registry.get(view_name) or getattr(where, "_target_class", None)
+        )
+        return result
 
     def _build_where_clause(self, view_name: str, **kwargs: Any) -> tuple[list[Any], list[Any]]:
         """Build WHERE clause parts from kwargs.

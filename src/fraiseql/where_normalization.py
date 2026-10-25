@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import replace
-from typing import Any
+from typing import Any, Literal
 
 from fraiseql.where_clause import (
     ALL_OPERATORS,
@@ -571,6 +571,50 @@ def normalize_whereinput(
 
     # Use dict normalization logic
     return normalize_dict_where(where_dict, view_name, table_columns, jsonb_column)
+
+
+def _declared_temporal_cast(
+    source_type: type, field_path: list[str]
+) -> Literal["timestamptz", "date"] | None:
+    """``timestamptz`` or ``date`` when *field_path* names a datetime or date field.
+
+    The path is walked through the annotations of *source_type* and its nested
+    types (``author.created_at``), unwrapping ``X | None``. Anything that does
+    not resolve answers None, which keeps the text comparison.
+    """
+    from datetime import date, datetime
+
+    from fraiseql.sql.graphql_order_by_generator import _resolve_field_type
+    from fraiseql.types.scalars.date import DateField
+    from fraiseql.types.scalars.datetime import DateTimeField
+
+    field_type = _resolve_field_type(source_type, tuple(field_path))
+    if not isinstance(field_type, type):
+        return None
+    if issubclass(field_type, datetime | DateTimeField):
+        return "timestamptz"
+    if issubclass(field_type, date | DateField):
+        return "date"
+    return None
+
+
+def annotate_temporal_casts(clause: WhereClause, source_type: type | None) -> None:
+    """Mark the JSONB conditions on datetime / date fields of *source_type*.
+
+    A JSONB field holds an ISO string, and ``->>`` compares it as text:
+    ``'2025-01-01T00:00:00+00:00' >= '2025-01-01T00:00:00Z'`` is false. A
+    condition on a field the type declares as ``datetime`` or ``date`` gets
+    ``temporal_cast`` set, and compares as ``timestamptz`` / ``date``.
+    """
+    if source_type is None:
+        return
+    for condition in clause.conditions:
+        if condition.lookup_strategy == "jsonb_path" and condition.temporal_cast is None:
+            condition.temporal_cast = _declared_temporal_cast(source_type, condition.field_path)
+    for nested in clause.nested_clauses:
+        annotate_temporal_casts(nested, source_type)
+    if clause.not_clause:
+        annotate_temporal_casts(clause.not_clause, source_type)
 
 
 def _mapped_lookup_strategy(column: str, value: Any) -> str:

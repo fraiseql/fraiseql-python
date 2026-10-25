@@ -5,6 +5,7 @@ for the canonical WHERE representation.
 """
 
 import uuid
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import cast
 
@@ -635,3 +636,62 @@ class TestJsonbNumericComparison:
         sql, _params = self._sql("in", ["a", 1])
 
         assert sql == "\"data\" ->> 'price' IN (%s, %s)"
+
+
+class TestJsonbTemporalComparison:
+    """A datetime or date compared with a JSONB field is compared as one, not as text.
+
+    As text, ``'2025-01-01T00:00:00+00:00' < '2025-01-01T00:00:00Z'``.
+    """
+
+    @staticmethod
+    def _sql(operator: str, value: object, temporal_cast=None) -> tuple[str, list]:
+        condition = FieldCondition(
+            field_path=["created_at"],
+            operator=operator,
+            value=value,
+            lookup_strategy="jsonb_path",
+            target_column="data",
+            jsonb_path=["created_at"],
+            temporal_cast=temporal_cast,
+        )
+        sql, params = condition.to_sql()
+        return sql.as_string(None), params
+
+    @pytest.mark.parametrize(
+        ("operator", "sql_op"),
+        [("eq", "="), ("neq", "!="), ("gt", ">"), ("gte", ">="), ("lt", "<"), ("lte", "<=")],
+    )
+    def test_declared_datetime_string_casts_to_timestamptz(
+        self, operator: str, sql_op: str
+    ) -> None:
+        sql, params = self._sql(operator, "2025-01-01T00:00:00Z", "timestamptz")
+
+        assert sql == f"(\"data\" ->> 'created_at')::timestamptz {sql_op} %s::timestamptz"
+        assert params == ["2025-01-01T00:00:00Z"]
+
+    def test_declared_date_in_list_casts_to_date(self) -> None:
+        sql, params = self._sql("nin", ["2025-01-01", "2025-01-02"], "date")
+
+        assert sql == "(\"data\" ->> 'created_at')::date NOT IN (%s::date, %s::date)"
+        assert params == ["2025-01-01", "2025-01-02"]
+
+    @pytest.mark.parametrize(
+        ("value", "cast"),
+        [(datetime(2025, 1, 1, tzinfo=UTC), "timestamptz"), (date(2025, 1, 1), "date")],
+    )
+    def test_temporal_value_casts_without_a_declared_type(self, value, cast: str) -> None:
+        sql, params = self._sql("gte", value)
+
+        assert sql == f"(\"data\" ->> 'created_at')::{cast} >= %s::{cast}"
+        assert params == [value]
+
+    def test_undeclared_string_stays_text(self) -> None:
+        sql, _params = self._sql("gte", "2025-01-01T00:00:00Z")
+
+        assert sql == "\"data\" ->> 'created_at' >= %s"
+
+    def test_declared_datetime_isnull_is_not_cast(self) -> None:
+        sql, _params = self._sql("isnull", True, "timestamptz")
+
+        assert sql == "\"data\" ->> 'created_at' IS NULL"

@@ -276,6 +276,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   points (host, port, user, password) instead of `fraiseql:fraiseql@localhost:5432`,
   so the 16 blog_simple tests run instead of skipping against any other server.
 
+- **A `where` on a datetime or date field compares dates, not text.** A JSONB
+  field holds an ISO string, and `"2025-01-01T00:00:00+00:00"` is smaller than
+  `"2025-01-01T00:00:00Z"` as text, so `where: {createdAt: {gte:
+  "2025-01-01T00:00:00Z"}}` left that row out, `"2025-01-01T01:00:00+01:00"`
+  (the same instant) compared by its digits, and `eq` / `in` with a datetime
+  matched nothing or failed (`operator does not exist: text = timestamp with
+  time zone`). On a field the view's type declares as `datetime` or `date`
+  (`| None` and nested fields like `author.createdAt` too), and for any
+  `datetime` / `date` value, `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in` and
+  `nin` now cast both sides: `(data ->> 'created_at')::timestamptz >= %s::timestamptz`.
+  This covers GraphQL and `db.find(where={...})`; a real `timestamptz` column
+  already compared correctly.
+
 - Docs: examples no longer call repository methods fraiseql doesn't have
   (`update_one`, `create_one`, `delete_one`, `transaction()`, `fetchrow`,
   `fetchval`, `delete`): they use `execute_function`, `find_one`, `count` and
