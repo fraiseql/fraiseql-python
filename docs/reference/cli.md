@@ -473,9 +473,15 @@ CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at) WHERE delet
 -- Updated_at trigger
 CREATE OR REPLACE FUNCTION update_users_updated_at()...
 
--- View for FraiseQL
+-- View for FraiseQL: id and the timestamps go in data, where find() reads them
 CREATE OR REPLACE VIEW v_users AS
-SELECT id, data, created_at, updated_at
+SELECT
+    id,
+    data || jsonb_build_object(
+        'id', id, 'created_at', created_at, 'updated_at', updated_at
+    ) AS data,
+    created_at,
+    updated_at
 FROM users
 WHERE deleted_at IS NULL;
 ```

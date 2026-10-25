@@ -103,11 +103,16 @@ CREATE TRIGGER trigger_update_{table}_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_{table}_updated_at();
 
--- Create view for FraiseQL
+-- Create view for FraiseQL: find() reads a type's fields from data,
+-- so the columns a type reads (id, the timestamps) go in it too
 CREATE OR REPLACE VIEW v_{table} AS
 SELECT
     id,
-    data,
+    data || jsonb_build_object(
+        'id', id,
+        'created_at', created_at,
+        'updated_at', updated_at
+    ) AS data,
     created_at,
     updated_at
 FROM {table}

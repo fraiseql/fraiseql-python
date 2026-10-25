@@ -639,6 +639,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provider are also closed when startup or the app's own lifespan raises.
   `set_db_pool(None)` unsets the pool.
 
+- **The view `fraiseql generate migration` writes has `id` in `data`.** `find`
+  reads a type's fields from the view's `data` column, and the generated view
+  passed the table's `data` through, which has no `id` (nor `created_at` /
+  `updated_at`), so a type's `id: ID` came back null. The view's `data` is now
+  `data || jsonb_build_object('id', id, 'created_at', created_at, 'updated_at',
+  updated_at)`. The functions `generate crud` writes still add `id` to the
+  entity they return themselves: they return the table's row, which the view's
+  `data` doesn't reach (a deleted row isn't in the view).
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't
