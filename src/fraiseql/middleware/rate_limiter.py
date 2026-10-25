@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Awaitable, Callable, Optional, Protocol
 
 from fastapi import HTTPException, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from starlette.types import ASGIApp
 
 from fraiseql.audit import get_security_logger
@@ -635,17 +636,28 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             # Default to IP address
             key = request.client.host if request.client else "anonymous"
 
+        # The rejections are returned, not raised: an HTTPException raised in a
+        # BaseHTTPMiddleware never reaches FastAPI's exception handlers, which
+        # sit inside it, so it would become a 500.
+
         # Check blacklist first
         if hasattr(self.rate_limiter, "config") and key in self.rate_limiter.config.blacklist:
-            raise HTTPException(status_code=403, detail="Forbidden")
+            return JSONResponse(status_code=403, content={"detail": "Forbidden"})
 
         # Check rate limit
         rate_limit_info = await self.rate_limiter.check_rate_limit(key)
 
         if not rate_limit_info.allowed:
-            raise RateLimitExceeded(
-                retry_after=rate_limit_info.retry_after,
-                detail=f"Rate limit exceeded. Retry after {rate_limit_info.retry_after} seconds.",
+            retry_after = max(1, rate_limit_info.retry_after)
+            return JSONResponse(
+                status_code=429,
+                content={"detail": f"Rate limit exceeded. Retry after {retry_after} seconds."},
+                headers={
+                    "Retry-After": str(retry_after),
+                    "X-RateLimit-Limit": str(rate_limit_info.minute_limit),
+                    "X-RateLimit-Remaining": "0",
+                    "X-RateLimit-Reset": str(int(time.time()) + retry_after),
+                },
             )
 
         # Process request

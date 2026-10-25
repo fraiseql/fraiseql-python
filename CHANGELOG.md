@@ -214,6 +214,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BaseHTTPMiddleware`; `app.add_middleware(BodySizeLimiterMiddleware,
   config=...)` is unchanged.
 
+- **`RateLimiterMiddleware` answers a request over the limit with 429.** It
+  raised `HTTPException`, which a `BaseHTTPMiddleware` passes outside FastAPI's
+  exception handlers, so the client got a 500. Now it returns 429 with
+  `Retry-After` (seconds, at least 1) and the `X-RateLimit-*` headers, and a
+  blacklisted client gets 403 instead of a 500.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was
