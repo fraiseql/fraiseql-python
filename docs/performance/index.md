@@ -16,13 +16,16 @@ FraiseQL achieves exceptional performance through:
 
 ### 1. Rust-Powered JSON Processing
 
-FraiseQL uses a Rust extension for JSON operations:
+FraiseQL uses a Rust extension, shipped inside the `fraiseql` package, for JSON
+operations. `db.find` / `db.find_one` and class mutations call it; applications don't
+need to. On its own:
 
 ```python
-from fraiseql_rs import build_graphql_response, transform_json
+from fraiseql import fraiseql_rs
 
-# Fast JSON transformation
-result = transform_json(data, transform_func)
+# snake_case keys to camelCase, without loading the JSON into Python objects
+print(fraiseql_rs.transform_json('{"user_name": "John", "email_address": "john@example.com"}'))
+# {"userName":"John","emailAddress":"john@example.com"}
 ```
 
 **Performance Benchmarks** (fraiseql_rs v0.2.0):
@@ -48,11 +51,19 @@ Read queries use PostgreSQL views for optimal performance:
 
 ```python
 import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.type(sql_source="v_user")
+class User:
+    id: ID
+    name: str
+
 
 @fraiseql.query
-def get_users(info: Info) -> list[User]:
-    # Automatically uses optimized view
-    return info.context.repo.find("users_view")
+async def users(info, limit: int = 100) -> list[User]:
+    # Reads the view's data column; Rust builds the response
+    return await info.context["db"].find("v_user", "users", info, limit=limit)
 ```
 
 **Best Practices**:
@@ -63,17 +74,12 @@ def get_users(info: Info) -> list[User]:
 
 ### 3. Efficient N+1 Query Prevention
 
-FraiseQL includes DataLoader integration:
-
-```python
-from fraiseql import dataloader
-
-@field
-@dataloader
-async def posts(user: User, info: Info) -> list[Post]:
-    # Automatically batched
-    return await info.context["db"].find("posts_view", mandatory_filters={"user_id": user.id})
-```
+The first defence is the view itself: compose related data into the parent's
+`data` column (a `jsonb_agg` of a user's posts in `v_user`), so one query answers the
+whole tree. For fields that can't be composed in the view, FraiseQL has DataLoader
+integration (`@fraiseql.dataloader_field` with a `DataLoader` subclass from
+`fraiseql.optimization.dataloader`); see
+[Avoid N+1 Query Problem](../guides/performance-optimization.md#1-avoid-n1-query-problem).
 
 ### 4. Query Complexity Analysis
 
@@ -131,17 +137,20 @@ CREATE INDEX idx_posts_user_id ON posts(user_id);
 
 ### 2. Connection Pooling
 
-Configure optimal pool size:
+Configure the pool size of the app's connection pool:
 
 ```python
-from fraiseql import FraiseQLRepository
+from fraiseql.fastapi import FraiseQLConfig
 
-repo = FraiseQLRepository(
-    pool,
-    pool_size=20,  # Adjust based on load
-    max_overflow=10
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=20,  # Adjust based on load
+    database_max_overflow=10,
 )
 ```
+
+`create_fraiseql_app(config=config, ...)` opens the pool; `connection_pool_size=` and
+`connection_pool_max_overflow=` on `create_fraiseql_app` set the same values.
 
 ### 3. Caching
 
@@ -170,15 +179,15 @@ query {
 Always paginate large result sets:
 
 ```python
-import fraiseql
-
-@connection
-def users(
-    info: Info,
-    first: int = 100
-) -> Connection[User]:
-    return info.context.repo.find("users_view", limit=first)
+@fraiseql.query
+async def users_page(info, limit: int = 100, offset: int = 0) -> list[User]:
+    return await info.context["db"].find(
+        "v_user", "usersPage", info, limit=limit, offset=offset, order_by=[{"id": "ASC"}]
+    )
 ```
+
+For cursor pagination, `@fraiseql.connection` pages a view with `first` / `after`
+(see [`paginate()`](../reference/database.md#paginate)).
 
 ## Monitoring
 
@@ -186,12 +195,16 @@ def users(
 
 Monitor query execution time:
 
-```python
-import logging
+Time the SQL in PostgreSQL itself, where every statement FraiseQL sends shows up:
 
-logging.basicConfig(level=logging.DEBUG)
-# Logs all SQL queries with timing
+```sql
+-- Log every statement slower than 100 ms
+ALTER SYSTEM SET log_min_duration_statement = '100ms';
+SELECT pg_reload_conf();
 ```
+
+or read `pg_stat_statements` (`fraiseql.monitoring.init_query_stats` reads it for
+you).
 
 ### Metrics
 
@@ -226,20 +239,6 @@ Track key metrics:
 4. Monitor connection lifecycle
 
 ## Advanced Topics
-
-### Custom Rust Extensions
-
-For maximum performance, write custom Rust functions:
-
-```rust
-use pyo3::prelude::*;
-
-#[pyfunction]
-fn custom_transform(data: &PyAny) -> PyResult<String> {
-    // Your high-performance logic
-    Ok(result)
-}
-```
 
 ### Query Planning
 

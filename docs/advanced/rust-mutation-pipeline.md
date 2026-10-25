@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Rust mutation pipeline provides ultra-fast GraphQL mutation response building from PostgreSQL JSON data. It supports two JSON formats and handles complex GraphQL response construction including cascade data, __typename injection, and camelCase conversion.
+The Rust mutation pipeline provides ultra-fast GraphQL mutation response building from PostgreSQL JSON data. It supports two JSON formats and handles complex GraphQL response construction including cascade data, `__typename`, aliases, field selection and camelCase conversion.
+
+Applications don't call it: a class mutation (`@fraiseql.mutation`) runs the SQL function and hands its result to this pipeline with the request's selection. The Python API below is for tests and for seeing what the pipeline does with a given result.
 
 ## Architecture
 
@@ -68,22 +70,27 @@ The Rust mutation pipeline provides ultra-fast GraphQL mutation response buildin
 
 ## Status Taxonomy
 
+The code is the error type's `code` field (and each `errors[].code`), not the HTTP
+status of the response, which is 200.
+
 ### Success States
 
-- `success`, `created`, `updated`, `deleted` → HTTP 200
+- `success`, `new`, `created`, `updated`, `deleted`, `completed`, `ok` → the success type
 
-### Error States (with HTTP codes)
+### Error States (with codes)
 
-- `failed:*` → HTTP 422 (validation) or 500 (generic)
-- `unauthorized:*` → HTTP 401
-- `forbidden:*` → HTTP 403
-- `not_found:*` → HTTP 404
-- `conflict:*` → HTTP 409
-- `timeout:*` → HTTP 408
+- `validation:*` → 422
+- `unauthorized:*` → 401
+- `forbidden:*` → 403
+- `not_found:*` → 404
+- `conflict:*` → 409
+- `timeout:*` → 408
+- `failed:<reason>` → read like `<reason>:` (`failed:validation` 422,
+  `failed:not_found` 404, `failed:duplicate` 409, ...); any other `failed:*` → 500
 
 ### Noop States
 
-- `noop:*` → HTTP 200 (success with no changes)
+- `noop:*` → the error type, code 422 (nothing changed)
 
 ## Cascade Data Handling
 
@@ -98,7 +105,7 @@ Cascade data represents side effects of mutations:
 }
 ```
 
-**Important**: Cascade data is **never** placed inside entity objects. It always appears at the mutation response level.
+**Important**: Cascade data is **never** placed inside entity objects. It always appears at the mutation response level, and only when the query selects `cascade`.
 
 ## Response Structure
 
@@ -160,20 +167,31 @@ Cascade data represents side effects of mutations:
 ### Python API
 
 ```python
-from fraiseql_rs import build_mutation_response
+import json
 
-result = build_mutation_response(
+from fraiseql import fraiseql_rs
+
+result = fraiseql_rs.build_mutation_response(
     mutation_json='{"id": "123", "name": "John"}',
     field_name="createUser",
     success_type="CreateUserSuccess",
     error_type="CreateUserError",
     entity_field_name="user",
     entity_type="User",
-    cascade_selections=None,
+    cascade_selections=None,  # the query doesn't select cascade
     auto_camel_case=True,
-    success_type_fields=None
+    # Required: what the query selected; None for both types is unfiltered
+    entity_selections=json.dumps({"format": 2, "success": None, "error": None}),
 )
+print(json.loads(result))
+# {'data': {'createUser': {'__typename': 'CreateUserSuccess', 'id': '123', 'message': 'Success',
+#  'status': 'success', 'user': {'__typename': 'User', 'id': '123', 'name': 'John'}}}}
 ```
+
+`result` is the response body as bytes. The selection document's `format` is
+`fraiseql_rs.MUTATION_SELECTION_FORMAT`; a class mutation builds it from the query, with
+`"typename": "selected"` so that `__typename` appears only where the query selects it.
+See [Rust Mutation Pipeline Examples](./examples.md) for more.
 
 ### GraphQL Schema Integration
 

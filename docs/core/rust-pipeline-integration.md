@@ -151,28 +151,32 @@ async def users(info) -> list[User]:
 
 ### Under the Hood
 
+`FraiseQLRepository.find()` reads the view's `data` column as JSON text, one string per
+row, and hands the strings to the Rust extension (shipped inside the `fraiseql` package)
+with the selection of the query; it returns the bytes as a `RustResponseBytes`, which
+the `/graphql` route sends as the HTTP response. The call, on its own (applications
+don't make it; `find` does):
+
 ```python
-# In FraiseQLRepository.find():
-async def find(self, source: str):
-    # 1. Execute PostgreSQL query
-    rows = await conn.fetch(f"SELECT data FROM {source}")
+from fraiseql import fraiseql_rs
 
-    # 2. Extract JSONB strings
-    json_strings = [row["data"] for row in rows]
+# What the view's data column holds, one JSON string per row
+json_strings = ['{"id": 1, "first_name": "Ada"}']
 
-    # 3. Call Rust pipeline
-    import fraiseql_rs
-
-    response_bytes = fraiseql_rs.build_graphql_response(
-        json_strings=json_strings,
-        field_name="users",
-        type_name="User",
-        field_paths=None,
-    )
-
-    # 4. Return RustResponseBytes (FastAPI sends as HTTP response)
-    return RustResponseBytes(response_bytes)
+response_bytes = fraiseql_rs.build_graphql_response(
+    json_strings=json_strings,
+    field_name="users",
+    type_name="User",
+    field_paths=None,
+)
+print(response_bytes)
+# b'{"data":{"users":[{"__typename":"User","id":1,"firstName":"Ada"}]}}'
 ```
+
+Without a selection, as here, every key is kept and the row gets its `__typename`.
+`find` passes the query's `field_selections`, and `inject_typename=False` when the
+response goes to the client as is (HTTP mode), so it holds exactly the selected fields,
+`__typename` included only where selected.
 
 ### Rust Side (fraiseql_rs crate)
 
