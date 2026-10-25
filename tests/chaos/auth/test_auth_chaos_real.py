@@ -119,12 +119,24 @@ async def test_rbac_policy_failure(
 
     iterations = max(6, int(12 * chaos_config.load_multiplier))
 
-    for _i in range(iterations):
+    # DETERMINISTIC SCHEDULE: 20% policy evaluation failures, then 30% of the other
+    # checks denied, in an order shuffled with a fixed seed (was two unseeded
+    # random.random() draws per operation)
+    evaluation_failures = max(1, round(iterations * 0.2))
+    denials = max(1, round((iterations - evaluation_failures) * 0.3))
+    checks = (
+        ["evaluation_failure"] * evaluation_failures
+        + ["denied"] * denials
+        + ["allowed"] * (iterations - evaluation_failures - denials)
+    )
+    random.Random("rbac_policy_failure").shuffle(checks)
+
+    for check in checks:
         try:
             # Simulate RBAC policy check
-            if random.random() < 0.2:  # 20% chance of policy evaluation failure
+            if check == "evaluation_failure":  # 20% policy evaluation failures
                 raise Exception("RBAC policy evaluation failed")
-            if random.random() < 0.3:  # 30% chance of authorization denial
+            if check == "denied":  # 30% authorization denials
                 raise Exception("Access denied by RBAC policy")
 
             # Policy check passed - proceed with operation
@@ -151,8 +163,10 @@ async def test_rbac_policy_failure(
     )
 
     summary = metrics.get_summary()
-    # RBAC failures should not crash the system
-    assert summary.get("query_count", 0) >= 10, (
+    # RBAC failures should not crash the system: every operation the policy allowed
+    # ran (was >= 10 queries, which the random draws missed about 1 run in 13 and
+    # which 12 iterations, a load multiplier of 1, expected 6.7 of)
+    assert summary.get("query_count", 0) == policy_successes == checks.count("allowed"), (
         "Should maintain operation throughput despite RBAC issues"
     )
 
