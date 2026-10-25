@@ -616,6 +616,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   smallest/largest JSON value in jsonb order, leaving out JSON nulls;
   `distinct` and `pluck` return the JSON values. A column is read as before.
 
+- **`query_timeout` applies to every read.** It was the statement timeout of
+  `db.run()` and `execute_function` only, so a slow `find`, `find_one`,
+  `count`, `sum`... ran unbounded. They now set `statement_timeout`
+  (transaction-local) before the query: in the same statement as the session
+  variables when the context has some, otherwise as one `set_config` call
+  before the read. `query_timeout=0` sets none.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't

@@ -27,6 +27,8 @@ class TestFraiseQLRepositoryCount:
 
         connection.cursor.return_value.__aenter__ = AsyncMock(return_value=cursor)
         connection.cursor.return_value.__aexit__ = AsyncMock(return_value=None)
+        # The statement timeout is set on the connection before the read
+        connection.execute = AsyncMock()
 
         # Setup cursor methods
         cursor.execute = AsyncMock()

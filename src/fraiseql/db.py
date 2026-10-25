@@ -1487,7 +1487,9 @@ class FraiseQLRepository:
 
         return settings
 
-    async def _set_session_variables(self, cursor_or_conn: Any) -> None:
+    async def _set_session_variables(
+        self, cursor_or_conn: Any, extra_settings: list[tuple[str, str]] | None = None
+    ) -> None:
         """Set this context's PostgreSQL session variables in a single round trip.
 
         Every setting from :meth:`_session_settings`, then ``fraiseql.started_at``, is
@@ -1501,8 +1503,10 @@ class FraiseQLRepository:
 
         Args:
             cursor_or_conn: Either a psycopg cursor or an asyncpg connection
+            extra_settings: ``(name, value)`` settings applied first, the same way
+                (``statement_timeout`` for :meth:`_session_connection`)
         """
-        settings = self._session_settings()
+        settings = [*(extra_settings or []), *self._session_settings()]
         params = [part for setting in settings for part in setting]
 
         # Check if this is a cursor (psycopg) or connection (asyncpg)
@@ -1524,16 +1528,28 @@ class FraiseQLRepository:
     async def _session_connection(self) -> AsyncIterator[AsyncConnection]:
         """Check out a pool connection with this context's session variables set on it.
 
-        The settings are transaction-local. A pool connection is not in autocommit, so
-        they open the transaction the caller's query then runs in, which ends when the
-        connection goes back to the pool. Nothing extra is sent when the context maps
-        no session variable.
+        ``statement_timeout`` (from ``query_timeout``) goes first, in the same
+        statement. The settings are transaction-local. A pool connection is not in
+        autocommit, so they open the transaction the caller's query then runs in,
+        which ends when the connection goes back to the pool. Nothing extra is sent
+        when there is no timeout and the context maps no session variable.
         """
         async with self._pool.connection() as conn:
+            timeout = self._statement_timeout_settings()
             if self._session_settings():
                 async with conn.cursor() as cursor:
-                    await self._set_session_variables(cursor)
+                    await self._set_session_variables(cursor, timeout)
+            elif timeout:
+                await conn.execute(
+                    "SELECT set_config(%s, %s, true)", [part for pair in timeout for part in pair]
+                )
             yield conn
+
+    def _statement_timeout_settings(self) -> list[tuple[str, str]]:
+        """``statement_timeout`` from ``query_timeout`` (seconds), unless it is unset or 0."""
+        if not self.query_timeout:
+            return []
+        return [("statement_timeout", f"{int(self.query_timeout * 1000)}ms")]
 
     def _jsonb_key_paths(
         self, view_name: str, jsonb_column: str | None, kwargs: Mapping[str, Any]

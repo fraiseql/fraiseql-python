@@ -138,6 +138,53 @@ class TestFieldHelpersOnAJsonbView:
         assert await repo.distinct(view, "status") == ["done", "open"]
 
 
+class TestQueryTimeout:
+    """``query_timeout`` (seconds) is the statement timeout of every read."""
+
+    @pytest.fixture
+    async def slow_view(self, class_db_pool, views) -> str:
+        async with class_db_pool.connection() as conn:
+            await conn.execute(
+                f"CREATE OR REPLACE VIEW {views}.v_slow_order AS "
+                f"SELECT id, data FROM {views}.tb_order, pg_sleep(1)"
+            )
+            await conn.commit()
+        return f"{views}.v_slow_order"
+
+    @pytest.mark.parametrize(
+        "read",
+        [
+            lambda repo, view: repo.find(view, "orders"),
+            lambda repo, view: repo.find_one(view, "order", where={"id": {"eq": 1}}),
+            lambda repo, view: repo.count(view),
+            lambda repo, view: repo.exists(view),
+            lambda repo, view: repo.sum(view, "amount"),
+            lambda repo, view: repo.aggregate(view, {"n": "COUNT(*)"}),
+        ],
+        ids=["find", "find_one", "count", "exists", "sum", "aggregate"],
+    )
+    async def test_a_slow_read_is_cancelled(self, class_db_pool, slow_view, read) -> None:
+        import psycopg
+
+        repo = FraiseQLRepository(class_db_pool, context={"query_timeout": 0.2})
+
+        with pytest.raises(psycopg.errors.QueryCanceled):
+            await read(repo, slow_view)
+
+    async def test_a_read_within_the_timeout_runs(self, class_db_pool, slow_view) -> None:
+        repo = FraiseQLRepository(class_db_pool, context={"query_timeout": 5})
+
+        assert await repo.count(slow_view) == 3
+
+    async def test_the_timeout_ends_with_the_read(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool, context={"query_timeout": 0.2})
+        await repo.count(f"{views}.v_order")
+
+        async with class_db_pool.connection() as conn:
+            cursor = await conn.execute("SHOW statement_timeout")
+            assert (await cursor.fetchone())[0] == "0"
+
+
 class TestWhereOnAnUnregisteredJsonbView:
     """A field that isn't a column of the view is read from its ``data`` column."""
 
