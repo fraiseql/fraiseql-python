@@ -7,15 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Deprecated
-
-- **`FraiseQLConfig.entity_routing`**, which has no effect. It was validated and
-  stored, but nothing built a `QueryRouter` from it and every query runs the
-  same execution path. Setting it now emits a `DeprecationWarning`; it will be
-  removed. The configuration docs no longer present it as working, and no
-  longer list the `json_passthrough_*` / `passthrough_*` settings, which
-  `FraiseQLConfig` doesn't have (it ignores them).
-
 ## [1.31.0] - 2026-10-22
 
 ### Changed
@@ -56,6 +47,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `where`.** They compute a path or a number, not a condition, and rendered
   invalid SQL. The error names the operator and what to use instead.
 
+- **A `Decimal` in a JSON value is written as a string.** `FraiseQLJSONEncoder`
+  wrote it as a `float`, so a `Decimal` inside a JSON scalar lost the digits a
+  float can't hold (`12.345678901234567890123` became `12.345678901234567`), and
+  `1E+400` failed the response. It now writes `"12.345678901234567890123"`, as
+  the `Decimal` scalar does. **This changes the output for clients that read a
+  number there**: a JSON-scalar field holding a `Decimal` now returns a string.
+  `CQRSExecutor.execute_function` sends a `Decimal` in its input as a string
+  too, as the mutation path already does; a SQL function reading it with
+  `(input->>'price')::numeric` is unaffected, one using `(input->'price')::numeric`
+  needs `->>`. `docs/core/types-and-schema.md` and `docs/architecture/type-system.md`
+  map `Decimal` to `Decimal!`, not `Float!`.
+
+- A mutation no longer parses `include`, `exclude` and the `entity` inline
+  fragments of a selected `cascade.updated` into the selections it hands Rust:
+  Rust filters the cascade on field names only and never read them
+  (`Cascade.updated` takes no arguments, and the entity is a JSON scalar).
+  Responses are unchanged.
+
+### Deprecated
+
+- **`FraiseQLConfig.entity_routing`**, which has no effect. It was validated and
+  stored, but nothing built a `QueryRouter` from it and every query runs the
+  same execution path. Setting it now emits a `DeprecationWarning`; it will be
+  removed. The configuration docs no longer present it as working, and no
+  longer list the `json_passthrough_*` / `passthrough_*` settings, which
+  `FraiseQLConfig` doesn't have (it ignores them).
+
 ### Removed
 
 - **`examples/blog_enterprise/`.** It registered no types and one
@@ -67,6 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `migrations/clickhouse/`, `migrations/elasticsearch/`, and the Makefile's
   `demo-*`, `examples-*` and `prod-*` targets. `make db-up` now starts the
   PostgreSQL the test suite uses, from the new `docker-compose.test.yml`.
+
+- **`SparseVectorField` and `QuantizedVectorField`** (`fraiseql.types.scalars.vector`),
+  with `SparseVectorScalar` and `QuantizedVectorScalar`. Neither could be used:
+  a type with one failed the schema build. A `sparsevec` column reads back as
+  text (`{1:0.5,3:0.2}/5`), not the `{indices, values}` the scalar serialized,
+  and a sparse operand can't be filtered or sorted on (`where` and `orderBy`
+  refuse it: the literal needs the column's dimension). pgvector has no
+  quantized type.
 
 ### Fixed
 
@@ -225,6 +251,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   arguments.** `query GetUsers { users { id name } }` failed with
   `Registration failed: 'NoneType' object is not iterable`: graphql-core 3.3
   leaves an absent argument list as `None`, and the SQL compiler iterated it.
+
+- **`VectorField` and `HalfVectorField` work.** A type with either failed the
+  schema build (`Unsupported output type: VectorField`), and a `where` gave
+  them a `StringFilter`. They now behave as `list[float]`: `[Float]` in and
+  out, the vector `where` and `orderBy` operators whatever the field is named,
+  and a flat view's `vector`/`halfvec` column read back as a list. A nullable
+  vector field (`embedding: list[float] | None`) got an `OrderDirection` in
+  `orderBy` instead of `VectorOrderBy`.
+
+- A multi-field query with a bare `@skip` or `@include` (no `if`) no longer
+  logs a `TypeError` traceback before validation reports the missing argument.
+
+- Tests: the example database manager connects where `TEST_DATABASE_URL`
+  points (host, port, user, password) instead of `fraiseql:fraiseql@localhost:5432`,
+  so the 16 blog_simple tests run instead of skipping against any other server.
 
 ## [1.30.0] - 2026-10-22
 
