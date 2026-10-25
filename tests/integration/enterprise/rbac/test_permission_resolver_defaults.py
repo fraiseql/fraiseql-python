@@ -38,3 +38,35 @@ class TestPermissionResolverWithItsDefaultCache:
         assert isinstance(resolver.cache, PermissionCache)
         assert await resolver.has_permission(user_id, "user", "read")
         assert not await resolver.has_permission(user_id, "user", "delete")
+
+
+class TestPermissionsReadBackFromPostgreSQL:
+    async def test_a_second_resolver_reads_the_cached_permissions(
+        self, rbac_pool, rbac_repo
+    ) -> None:
+        user_id = await _viewer_with_user_read(rbac_pool)
+        first = await PermissionResolver(rbac_repo).get_user_permissions(user_id)
+
+        # Another resolver (another request, another process) has an empty
+        # in-memory layer and reads the fraiseql_cache row.
+        second = PermissionResolver(rbac_repo)
+        cached = await second.cache.get(user_id, None)
+
+        assert cached == first
+        assert await second.get_user_permissions(user_id) == first
+
+    async def test_a_cached_row_that_doesnt_validate_is_recomputed(
+        self, rbac_pool, rbac_repo
+    ) -> None:
+        user_id = await _viewer_with_user_read(rbac_pool)
+        resolver = PermissionResolver(rbac_repo)
+        # A row in the shape 1.30 wrote: no created_at.
+        await resolver.cache.pg_cache.set(
+            key=resolver.cache._make_key(user_id, None),
+            value=[{"id": str(uuid4()), "resource": "user", "action": "delete"}],
+            ttl=300,
+        )
+
+        assert await resolver.cache.get(user_id, None) is None
+        found = await resolver.get_user_permissions(user_id)
+        assert {(p.resource, p.action) for p in found} == {("user", "read")}

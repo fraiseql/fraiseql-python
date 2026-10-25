@@ -14,6 +14,7 @@ from typing import Optional
 from uuid import UUID
 
 from psycopg_pool import AsyncConnectionPool
+from pydantic import ValidationError
 
 from fraiseql.caching import PostgresCache
 
@@ -103,8 +104,13 @@ class PermissionCache:
                     )
                     return None
 
-        # Deserialize to Permission objects
-        permissions = [Permission(**p) for p in result]
+        # Deserialize to Permission objects. A row that doesn't validate (written by an
+        # older version, or altered) is a miss: the caller recomputes and overwrites it.
+        try:
+            permissions = [Permission.model_validate(p) for p in result]
+        except (ValidationError, TypeError) as e:
+            logger.warning("Ignoring invalid cached permissions for %s: %s", key, e)
+            return None
 
         # Populate request cache
         self._request_cache[key] = permissions
@@ -127,17 +133,8 @@ class PermissionCache:
         """
         key = self._make_key(user_id, tenant_id)
 
-        # Serialize permissions
-        serialized = [
-            {
-                "id": str(p.id),
-                "resource": p.resource,
-                "action": p.action,
-                "description": p.description,
-                "constraints": p.constraints,
-            }
-            for p in permissions
-        ]
+        # Serialize permissions (every field, so get() can validate them back)
+        serialized = [p.model_dump(mode="json") for p in permissions]
 
         # Get current domain versions
         versions = None

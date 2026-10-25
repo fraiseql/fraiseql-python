@@ -151,9 +151,6 @@ async def publish_post(info, id: UUID) -> bool:
 `PermissionCache` keeps two layers: an in-memory dict on the `PermissionCache`
 instance, and rows in a `fraiseql_cache` table (`PostgresCache`). In this release:
 
-- A permission set read back from the `fraiseql_cache` table fails with a pydantic
-  `ValidationError` (`created_at` missing), so a cached call made by a second
-  `PermissionCache` (another request, another process) raises.
 - The in-memory layer is never cleared on its own: a resolver kept for the app's
   lifetime keeps answering with the permissions it first computed. Call
   `resolver.cache.clear_request_cache()` per request if you use it.

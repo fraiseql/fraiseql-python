@@ -934,6 +934,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   default `PermissionCache` from `repo.pool`, which `FraiseQLRepository` doesn't have,
   so it raised `AttributeError` (and so did `RbacMiddleware` and the RBAC directives,
   which build one that way). It now uses `repo.get_pool()`.
+- **Permissions cached in PostgreSQL are read back.** `PermissionCache` stored them
+  without `created_at`, so reading the `fraiseql_cache` row (from another resolver,
+  request or process) failed with a pydantic `ValidationError`. Every field is now
+  stored, and a row that doesn't validate (such as one an earlier version wrote) is a
+  cache miss: the permissions are computed again and the row replaced.
 
 ## [1.30.0] - 2026-10-22
 
