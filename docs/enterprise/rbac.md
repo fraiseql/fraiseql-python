@@ -48,11 +48,16 @@ psql "$DATABASE_URL" -f "$DIR/002_rbac_tables.sql"
 `002_rbac_tables.sql` creates the four tables, the `get_inherited_roles(role_id)`
 function, and seeds five system roles and eight permissions (`user.create`,
 `user.read`, `user.update`, `user.delete`, `role.assign`, `role.create`, `audit.read`,
-`settings.update`). The seeded roles are chained `viewer` → `user` → `manager` →
-`admin` → `super_admin`, each one the *parent* of the one before it: since a role
-inherits its parent's permissions, `viewer` gets every permission granted to
-`super_admin`. Give the seeded roles permissions with that in mind, or create your own
-hierarchy with the most privileged roles at the bottom.
+`settings.update`), granted to no role. Each seeded role's parent is the one below
+it: `super_admin` → `admin` → `manager` → `user` → `viewer`. Since a role inherits
+its parent's permissions, `admin` has what you grant `manager`, `user` and `viewer`,
+and `viewer` has only its own.
+
+Before 1.31.0 the file seeded this chain the other way round (`viewer`'s parent was
+`user`, ..., `admin`'s was `super_admin`), so `viewer` had every permission granted to
+`super_admin`. Applying the current file again rewires a database that still has
+exactly that seed. If you changed the parent of a seeded role, it leaves the hierarchy
+alone: check it with `SELECT name, parent_role_id FROM roles WHERE is_system`.
 
 `003_rbac_cache_setup.sql` needs the `pg_fraiseql_cache` extension (see below).
 `004_rbac_row_level_security.sql` adds RLS policies to tables named `users`, `orders`

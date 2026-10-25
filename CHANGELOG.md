@@ -918,6 +918,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `POST /auth/register`, `/auth/login` and every other endpoint answered 500. They
   now use `pool.connection()`, on `app.state.db_pool` or else on the pool
   `create_fraiseql_app` opens (503 when there is none).
+- **The RBAC system roles inherit from the less privileged ones.**
+  `002_rbac_tables.sql` seeded `viewer` with `user` as its parent, `user` with
+  `manager`, and so on up to `super_admin`; since a role inherits its parent's
+  permissions, `viewer` had every permission granted to `admin` and `super_admin`.
+  The seed is now `super_admin` → `admin` → `manager` → `user` → `viewer` (each
+  role's parent first), so `admin` inherits `viewer`'s permissions and not the
+  reverse. **Apply the file again** to fix an existing database: it rewires the five
+  system roles when they still have exactly the old seed, and leaves a hierarchy you
+  changed alone (check it then).
 
 ## [1.30.0] - 2026-10-22
 

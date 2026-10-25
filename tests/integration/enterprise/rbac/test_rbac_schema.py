@@ -278,19 +278,19 @@ async def test_seed_data_exists(db_repo) -> None:
 @pytest.mark.asyncio
 async def test_role_hierarchy_function_works(db_repo) -> None:
     """Test that the role hierarchy function works with seed data."""
-    # Get the viewer role ID
-    viewer_role = await db_repo.run(
+    # Get the super_admin role ID
+    super_admin_role = await db_repo.run(
         DatabaseQuery(
             statement="""
-            SELECT id FROM roles WHERE name = 'viewer' AND is_system = TRUE
+            SELECT id FROM roles WHERE name = 'super_admin' AND is_system = TRUE
         """,
             params={},
             fetch_result=True,
         )
     )
 
-    assert len(viewer_role) == 1
-    viewer_id = viewer_role[0]["id"]
+    assert len(super_admin_role) == 1
+    super_admin_id = super_admin_role[0]["id"]
 
     # Get inherited roles
     inherited = await db_repo.run(
@@ -299,13 +299,13 @@ async def test_role_hierarchy_function_works(db_repo) -> None:
             SELECT role_id, depth FROM get_inherited_roles(%(role_id)s)
             ORDER BY depth
         """,
-            params={"role_id": str(viewer_id)},
+            params={"role_id": str(super_admin_id)},
             fetch_result=True,
         )
     )
 
-    # Should inherit from viewer -> user -> manager -> admin -> super_admin
-    assert len(inherited) == 5  # viewer + 4 parents
+    # Should inherit from super_admin -> admin -> manager -> user -> viewer
+    assert len(inherited) == 5  # super_admin + 4 parents
 
     # Check depths
     depths = [row["depth"] for row in inherited]

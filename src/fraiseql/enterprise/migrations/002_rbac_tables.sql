@@ -79,14 +79,47 @@ RETURNS TABLE(role_id UUID, depth INT) AS $$
     ORDER BY depth;
 $$ LANGUAGE SQL STABLE;
 
--- Seed common system roles
+-- Seed common system roles.
+-- A role has the permissions of its parent (get_inherited_roles above), so each role's
+-- parent is the less privileged one: super_admin -> admin -> manager -> user -> viewer.
+-- super_admin has every permission granted to the roles below it; viewer only its own.
 INSERT INTO roles (id, name, description, parent_role_id, is_system) VALUES
-    ('00000000-0000-0000-0000-000000000001', 'super_admin', 'Full system access', NULL, TRUE),
-    ('00000000-0000-0000-0000-000000000002', 'admin', 'Tenant administrator', '00000000-0000-0000-0000-000000000001', TRUE),
-    ('00000000-0000-0000-0000-000000000003', 'manager', 'Department manager', '00000000-0000-0000-0000-000000000002', TRUE),
-    ('00000000-0000-0000-0000-000000000004', 'user', 'Standard user', '00000000-0000-0000-0000-000000000003', TRUE),
-    ('00000000-0000-0000-0000-000000000005', 'viewer', 'Read-only access', '00000000-0000-0000-0000-000000000004', TRUE)
+    ('00000000-0000-0000-0000-000000000005', 'viewer', 'Read-only access', NULL, TRUE),
+    ('00000000-0000-0000-0000-000000000004', 'user', 'Standard user', '00000000-0000-0000-0000-000000000005', TRUE),
+    ('00000000-0000-0000-0000-000000000003', 'manager', 'Department manager', '00000000-0000-0000-0000-000000000004', TRUE),
+    ('00000000-0000-0000-0000-000000000002', 'admin', 'Tenant administrator', '00000000-0000-0000-0000-000000000003', TRUE),
+    ('00000000-0000-0000-0000-000000000001', 'super_admin', 'Full system access', '00000000-0000-0000-0000-000000000002', TRUE)
 ON CONFLICT (id) DO NOTHING;
+
+-- Before FraiseQL 1.31.0 this file seeded the chain the other way round (viewer's
+-- parent was user, ..., admin's was super_admin), so viewer had every permission
+-- granted to super_admin. Re-applying the file rewires a database that still has
+-- exactly that seed; a hierarchy that differs from it in any role is left alone.
+UPDATE roles r
+SET parent_role_id = seed.parent_role_id, updated_at = NOW()
+FROM (VALUES
+    ('00000000-0000-0000-0000-000000000005'::uuid, NULL::uuid),
+    ('00000000-0000-0000-0000-000000000004'::uuid, '00000000-0000-0000-0000-000000000005'::uuid),
+    ('00000000-0000-0000-0000-000000000003'::uuid, '00000000-0000-0000-0000-000000000004'::uuid),
+    ('00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000003'::uuid),
+    ('00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000002'::uuid)
+) AS seed(id, parent_role_id)
+WHERE r.id = seed.id
+AND r.is_system
+AND (
+    SELECT count(*)
+    FROM roles o
+    INNER JOIN (VALUES
+        ('00000000-0000-0000-0000-000000000005'::uuid, '00000000-0000-0000-0000-000000000004'::uuid),
+        ('00000000-0000-0000-0000-000000000004'::uuid, '00000000-0000-0000-0000-000000000003'::uuid),
+        ('00000000-0000-0000-0000-000000000003'::uuid, '00000000-0000-0000-0000-000000000002'::uuid),
+        ('00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000001'::uuid),
+        ('00000000-0000-0000-0000-000000000001'::uuid, NULL::uuid)
+    ) AS old_seed(id, parent_role_id)
+        ON o.id = old_seed.id
+        AND o.is_system
+        AND o.parent_role_id IS NOT DISTINCT FROM old_seed.parent_role_id
+) = 5;
 
 -- Seed common permissions
 INSERT INTO permissions (resource, action, description) VALUES
