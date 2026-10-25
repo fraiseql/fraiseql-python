@@ -67,3 +67,28 @@ class TestAggregate:
         )
 
         assert stats == {"total": 30, "orders": 2}
+
+
+class TestFieldHelpersWithWhere:
+    """The where's values are bind parameters: they have to reach the query."""
+
+    async def test_on_columns(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+        table = f"{views}.tb_order"
+        done = {"status": {"eq": "done"}}
+
+        assert await repo.sum(table, "amount", where=done) == 30.0
+        assert await repo.avg(table, "amount", where=done) == 15.0
+        assert await repo.min(table, "amount", where=done) == 10
+        assert await repo.max(table, "amount", where=done) == 20
+        assert await repo.distinct(table, "amount", where=done) == [10, 20]
+        assert sorted(await repo.pluck(table, "amount", where=done)) == [10, 20]
+
+    async def test_with_mandatory_filters(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+        table = f"{views}.tb_order"
+        done = {"status": "done"}
+
+        assert await repo.sum(table, "amount", mandatory_filters=done) == 30.0
+        assert await repo.max(table, "amount", mandatory_filters=done) == 20
+        assert await repo.distinct(table, "status", mandatory_filters=done) == ["done"]

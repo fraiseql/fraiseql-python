@@ -2638,7 +2638,7 @@ class FraiseQLRepository:
             kwargs["_mandatory_parts"] = mandatory_parts
             kwargs["_mandatory_params"] = mandatory_params
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2658,7 +2658,7 @@ class FraiseQLRepository:
 
         # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             result = await cursor.fetchone()
             return float(result[0]) if result and result[0] is not None else 0.0
 
@@ -2697,7 +2697,7 @@ class FraiseQLRepository:
             kwargs["_mandatory_parts"] = m_parts
             kwargs["_mandatory_params"] = m_params
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2717,7 +2717,7 @@ class FraiseQLRepository:
 
         # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             result = await cursor.fetchone()
             return float(result[0]) if result and result[0] is not None else 0.0
 
@@ -2752,7 +2752,7 @@ class FraiseQLRepository:
             kwargs["_mandatory_parts"] = m_parts
             kwargs["_mandatory_params"] = m_params
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2767,7 +2767,7 @@ class FraiseQLRepository:
 
         # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             result = await cursor.fetchone()
             return result[0] if result else None
 
@@ -2802,7 +2802,7 @@ class FraiseQLRepository:
             kwargs["_mandatory_parts"] = m_parts
             kwargs["_mandatory_params"] = m_params
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2817,7 +2817,7 @@ class FraiseQLRepository:
 
         # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             result = await cursor.fetchone()
             return result[0] if result else None
 
@@ -2856,7 +2856,7 @@ class FraiseQLRepository:
             kwargs["_mandatory_parts"] = m_parts
             kwargs["_mandatory_params"] = m_params
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2873,7 +2873,7 @@ class FraiseQLRepository:
 
         # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             results = await cursor.fetchall()
             return [row[0] for row in results] if results else []
 
@@ -2922,7 +2922,7 @@ class FraiseQLRepository:
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
 
-        where_parts, _params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = self._build_where_clause(view_name, **kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2944,7 +2944,7 @@ class FraiseQLRepository:
 
         # Execute query
         async with self._session_connection() as conn, conn.cursor() as cursor:
-            await cursor.execute(query)
+            await cursor.execute(query, params or None)
             results = await cursor.fetchall()
             return [row[0] for row in results] if results else []
 

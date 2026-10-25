@@ -594,6 +594,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`SELECT SUM(amount) AS totalCOUNT(*) AS n`), a syntax error. They are now
   comma-separated, and each result name is quoted, so it comes back as written.
 
+- **`db.sum`, `avg`, `min`, `max`, `distinct` and `pluck` apply `where` and
+  `mandatory_filters`.** They built the condition but ran the query without its
+  values, so any filter failed with a syntax error at the `%s` placeholder.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't
