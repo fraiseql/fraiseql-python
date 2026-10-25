@@ -129,6 +129,12 @@ class TestSchemaRegistryAppStartup:
         """Test that schema registry initialization adds minimal overhead to startup.
 
         Target: < 100ms added to startup time (from plan)
+
+        The overhead is the fastest startup with the registry minus the fastest
+        without it, measured in the same run after a warm-up startup. One timed
+        startup (the previous check) also measured whatever the startup was the
+        first in the process to import or build (240ms cold against 10-20ms warm),
+        and any preemption on a loaded machine.
         """
 
         @fraise_type
@@ -140,18 +146,30 @@ class TestSchemaRegistryAppStartup:
         async def simple_query(info) -> list[SimpleType]:
             return []
 
-        # Measure startup time with registry initialization
-        start = time.time()
-        create_fraiseql_app(
-            database_url="postgresql://test@localhost/test",
-            types=[SimpleType],
-            queries=[simple_query],
-        )
-        startup_time_ms = (time.time() - start) * 1000
+        def startup_ms(*, enable_schema_registry: bool) -> float:
+            start = time.perf_counter()
+            create_fraiseql_app(
+                database_url="postgresql://test@localhost/test",
+                types=[SimpleType],
+                queries=[simple_query],
+                enable_schema_registry=enable_schema_registry,
+            )
+            return (time.perf_counter() - start) * 1000
 
-        # Should be very fast (< 100ms for simple schema)
+        startup_ms(enable_schema_registry=True)  # Warm-up: imports, first-use caches
+
+        with_registry = []
+        without_registry = []
+        for _ in range(5):
+            with_registry.append(startup_ms(enable_schema_registry=True))
+            without_registry.append(startup_ms(enable_schema_registry=False))
+
         # Note: This is just the Python side, not including DB connection
-        assert startup_time_ms < 100, f"Startup took {startup_time_ms:.2f}ms (target: < 100ms)"
+        overhead_ms = min(with_registry) - min(without_registry)
+        assert overhead_ms < 100, (
+            f"Schema registry added {overhead_ms:.2f}ms to startup "
+            f"({min(with_registry):.2f}ms vs {min(without_registry):.2f}ms, target: < 100ms)"
+        )
 
     def test_feature_flag_can_disable_registry(self, clean_registries) -> None:
         """Test that schema registry can be disabled via feature flag.
