@@ -295,10 +295,10 @@ class TestUnwrapType:
         assert unwrap_type(Optional[uuid.UUID]) is uuid.UUID
 
     def test_unwrap_union_with_none(self) -> None:
-        """Test unwrapping Union types with None."""
-        # The unwrap_type function doesn't unwrap Union types, it returns them unchanged
-        assert unwrap_type(str | None) == (str | None)
-        assert unwrap_type(int | None) == (int | None)
+        """``T | None`` unwraps like ``Optional[T]`` (one type on Python 3.14, two on 3.13)."""
+        assert unwrap_type(str | None) is str
+        assert unwrap_type(int | None) is int
+        assert unwrap_type(None | uuid.UUID) is uuid.UUID
 
     def test_no_unwrap_needed(self) -> None:
         """Test types that don't need unwrapping."""

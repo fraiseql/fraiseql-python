@@ -9,6 +9,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import is_dataclass
 from enum import Enum
 from inspect import isclass, signature
+from types import UnionType
 from typing import Any, Union, cast, get_args, get_origin
 
 from graphql import (
@@ -101,8 +102,8 @@ def wrap_resolver(fn: Callable[..., Awaitable[object]]) -> GraphQLField:
             actual_type = expected_type
             if expected_type is not None:
                 origin = get_origin(expected_type)
-                if origin is Union:
-                    # Handle Optional[T] which is Union[T, None]
+                if origin in (Union, UnionType):
+                    # Optional[T] or T | None
                     args = get_args(expected_type)
                     # Find the non-None type
                     for arg in args:

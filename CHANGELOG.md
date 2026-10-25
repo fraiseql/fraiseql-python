@@ -657,6 +657,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   give them an `__annotate__` too, so a `functools.wraps` decorator from your own
   code keeps them as well.
 
+- **`T | None` is read as optional `T` on Python 3.13 too.** Three places
+  unwrapped `Optional[T]` but not `T | None`, which are one type only on 3.14,
+  so they behaved differently on 3.13 and 3.14: `SQLHelper` (`fraiseql sql`)
+  wrote a `created_at: datetime | None` field as `created_at TEXT NOT NULL`
+  (3.14: `TIMESTAMP`, nullable) and `FieldMapping.is_compatible` rejected it;
+  `wrap_resolver` passed a dict argument annotated `Input | None` through
+  instead of building the input; and `where_generator.unwrap_type` returned
+  `T | None` unchanged.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't

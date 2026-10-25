@@ -14,6 +14,7 @@ and similar query builders.
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from functools import cache
+from types import UnionType
 from typing import (
     Any,
     Protocol,
@@ -408,7 +409,7 @@ def _build_where_to_sql(
 
 
 def unwrap_type(typ: type[Any]) -> type[Any]:
-    """Unwrap Optional[T] to T, or return type as is.
+    """Unwrap Optional[T] (or T | None) to T, or return type as is.
 
     Args:
         typ: A type annotation to unwrap.
@@ -416,7 +417,7 @@ def unwrap_type(typ: type[Any]) -> type[Any]:
     Returns:
         The inner type if `typ` is Optional[T], else `typ` unchanged.
     """
-    if get_origin(typ) is Union:
+    if get_origin(typ) in (Union, UnionType):
         args = [arg for arg in get_args(typ) if arg is not type(None)]
         if len(args) == 1:
             return args[0]

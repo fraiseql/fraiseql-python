@@ -249,6 +249,10 @@ class TestSQLHelper:
         assert "id SERIAL PRIMARY KEY" in setup
         assert "email VARCHAR(255) NOT NULL UNIQUE" in setup
 
+        # A `T | None` field is a nullable column of T's type
+        columns = [line.strip().rstrip(",") for line in setup.splitlines()]
+        assert "created_at TIMESTAMP" in columns
+
         # Should include indexes
         assert "CREATE INDEX" in setup
         assert "idx_users_email" in setup
@@ -393,6 +397,9 @@ class TestFieldMapping:
         assert mapper.is_compatible("BOOLEAN", bool)
         assert mapper.is_compatible("TIMESTAMP", datetime)
         assert mapper.is_compatible("NUMERIC(10,2)", Decimal)
+
+        # T | None is T, nullable (Optional[T] and T | None are one type only on 3.14)
+        assert mapper.is_compatible("TIMESTAMP", datetime | None)
 
         # Check incompatible types
         assert not mapper.is_compatible("VARCHAR(255)", int)

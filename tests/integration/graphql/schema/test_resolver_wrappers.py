@@ -112,6 +112,26 @@ class TestWrapResolver:
         assert result.name == "Jane"
         assert result.age is None
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("spelling", ["pipe", "optional"])
+    async def test_optional_input_argument_is_coerced(
+        self, sample_input_type, sample_output_type, spelling: str
+    ) -> None:
+        """``Input | None`` and ``Optional[Input]`` coerce a dict alike (3.13 and 3.14)."""
+        from typing import Optional
+
+        annotation = sample_input_type | None if spelling == "pipe" else Optional[sample_input_type]
+        received: list[Any] = []
+
+        async def create_user(info: GraphQLResolveInfo, input: annotation) -> sample_output_type:  # type: ignore[valid-type]
+            received.append(input)
+            return sample_output_type(id="1", name=input.name, age=input.age)
+
+        field = wrap_resolver(create_user)
+        await field.resolve(None, MagicMock(spec=GraphQLResolveInfo), input={"name": "Ann"})
+
+        assert isinstance(received[0], sample_input_type)
+
     def test_wrap_resolver_with_no_arguments(self) -> None:
         """Test wrapping a resolver with no arguments except info."""
 
