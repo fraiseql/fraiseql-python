@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "create_apq_error_response",
     "create_arbitrary_query_rejected_error",
+    "create_query_not_in_list_error",
     "execute_persisted_query",
     "get_apq_hash",
     "get_persisted_query",
@@ -214,6 +215,26 @@ def create_arbitrary_query_rejected_error() -> dict[str, Any]:
         "Persisted queries required. Arbitrary queries are not allowed.",
         details="Configure your client to use Automatic Persisted Queries (APQ) "
         "or register queries at build time.",
+    )
+
+
+def create_query_not_in_list_error() -> dict[str, Any]:
+    """Create the error response for a hash the server doesn't know in 'required' mode.
+
+    In ``apq_mode='required'`` a client cannot register a query by sending its text with
+    its hash: only hashes already stored (loaded from ``apq_queries_dir`` or registered by
+    the operator) run. The code is not ``PERSISTED_QUERY_NOT_FOUND``, so an Apollo client
+    does not retry by sending the query again (it would be refused the same way), and not
+    ``PERSISTED_QUERY_NOT_SUPPORTED``, so it does not stop sending hashes.
+
+    Returns:
+        Standardized GraphQL error response
+    """
+    return create_apq_error_response(
+        "PERSISTED_QUERY_NOT_IN_LIST",
+        "PersistedQueryNotInList",
+        details="This server only runs pre-registered persisted queries "
+        "(apq_mode='required'); this hash is not registered.",
     )
 
 

@@ -124,6 +124,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`apq_mode="required"` no longer lets a client register a new query.** A request
+  carrying an unknown hash together with its query text was stored and run, so any
+  client could get any query approved. Now it is refused with
+  `PERSISTED_QUERY_NOT_IN_LIST` and nothing is stored; only hashes the server already
+  knows run, and a known hash runs the stored text, not the text sent with it.
+  `POST /graphql/rust` (opt-in, query text only) refuses every request in this mode
+  with `ARBITRARY_QUERY_NOT_ALLOWED`. `optional` and `disabled` are unchanged.
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

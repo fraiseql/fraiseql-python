@@ -148,31 +148,22 @@ config = FraiseQLConfig(
 
 **Behavior**:
 
-- ✅ Only accepts persisted query hashes
+- ✅ Only runs persisted queries the server already knows: loaded from
+  `apq_queries_dir` at startup, registered by the operator
+  (`register_queries` / `store_persisted_query`), or already in the `postgresql`
+  backend's table
 - ❌ Rejects all arbitrary (non-hash) queries
-- ✅ Requires all queries pre-registered (either at build-time or runtime)
+- ❌ Clients cannot register queries: a request with a hash the server doesn't know
+  and the query text is refused (`PERSISTED_QUERY_NOT_IN_LIST`), and nothing is stored
+- ✅ A known hash sent with a query text runs the stored text; the text in the
+  request is ignored
 - ✅ Prevents query injection attacks and unauthorised GraphQL exploration
-- ⚠️ Clients must send hash + query on first request to register
+- ❌ `POST /graphql/rust` (when `enable_rust_endpoint=True`) takes query text only, so
+  it refuses every request with `ARBITRARY_QUERY_NOT_ALLOWED`
 
 **Request Examples**:
 
-*Registration request (requires both)*:
-
-```json
-<!-- Code example in JSON -->
-{
-  "extensions": {
-    "persistedQuery": {
-      "version": 1,
-      "sha256Hash": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1"
-    }
-  },
-  "query": "query { products { id name price } }"
-}
-```
-<!-- Code example in TEXT -->
-
-*Subsequent request (hash only)*:
+*Hash-only request (runs if the hash is registered)*:
 
 ```json
 <!-- Code example in JSON -->
@@ -186,6 +177,28 @@ config = FraiseQLConfig(
 }
 ```
 <!-- Code example in TEXT -->
+
+An unknown hash gets the usual `PERSISTED_QUERY_NOT_FOUND`. An Apollo client then
+sends the hash with the query text once; in `required` mode that request gets:
+
+```json
+<!-- Code example in JSON -->
+{
+  "errors": [
+    {
+      "message": "PersistedQueryNotInList",
+      "extensions": {
+        "code": "PERSISTED_QUERY_NOT_IN_LIST",
+        "details": "This server only runs pre-registered persisted queries (apq_mode='required'); this hash is not registered."
+      }
+    }
+  ]
+}
+```
+<!-- Code example in TEXT -->
+
+The code is neither `PERSISTED_QUERY_NOT_FOUND` (the client would send the text again)
+nor `PERSISTED_QUERY_NOT_SUPPORTED` (the client would stop sending hashes).
 
 *Arbitrary query (REJECTED)*:
 
@@ -1083,14 +1096,15 @@ fraiseql_apq_response_cache_size_bytes
 **Causes**:
 
 1. Query hash mismatch between client and server
-2. Query not registered (in required mode)
+2. Query not registered
 3. Storage backend lost data (memory backend restart)
 4. Whitespace differences in query string
 
 **Solutions**:
 
 1. Verify hash matches: recompute SHA-256 of query string
-2. In `optional` mode, send query with hash to register
+2. In `optional` mode, send query with hash to register; in `required` mode, register
+   it on the server
 3. Use persistent backend (PostgreSQL) instead of memory
 4. Ensure query strings are identical (whitespace sensitive!)
 
@@ -1118,13 +1132,22 @@ fraiseql_apq_response_cache_size_bytes
 
 1. Client not configured for APQ
 2. Client APQ support disabled
-3. Query not pre-registered
 
 **Solutions**:
 
 1. Configure client for APQ (Apollo Client, Relay, etc.)
 2. Enable APQ in client SDK
-3. Register query: send hash + query to register
+
+### PERSISTED_QUERY_NOT_IN_LIST Error
+
+**Symptom**: In `required` mode, a client sends a hash with its query text and gets
+`PersistedQueryNotInList`
+
+**Cause**: the hash is not registered on the server; `required` mode doesn't let
+clients register queries.
+
+**Solution**: register the operation on the server (put it in `apq_queries_dir`, or call
+`register_queries` at startup), with the exact text the client hashes.
 
 ### Backend Storage Issues (Database)
 
@@ -1267,7 +1290,10 @@ cache_key_b = sha256(f"{query_hash}:{json.dumps(variables)}")
 ### Enforcement (Week 4)
 
 1. Switch to `required` mode on staging
-2. Test that only registered queries execute
+2. Test that only registered queries execute. With the `postgresql` backend, every hash
+   clients registered while in `optional` mode is still in `apq_queries` and keeps
+   running: empty the table (or use a new `table_prefix`) and register only the
+   approved operations
 3. Verify client handles ARBITRARY_QUERY_NOT_ALLOWED
 4. Plan rollout schedule
 

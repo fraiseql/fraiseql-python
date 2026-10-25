@@ -1412,7 +1412,21 @@ def create_graphql_router(
             apq_backend = get_apq_backend(config)
 
             # Check if this is a registration request (has both hash and query)
-            if request.query:
+            if request.query and not apq_mode.allows_arbitrary_queries():
+                # 'required' mode: clients cannot register queries. Only a hash the server
+                # already knows (apq_queries_dir, or registered by the operator) runs, and
+                # it runs the stored text, never the text the client sent with it.
+                from fraiseql.middleware.apq import create_query_not_in_list_error
+
+                approved_query = apq_backend.get_persisted_query(
+                    sha256_hash
+                ) or get_persisted_query(sha256_hash)
+                if not approved_query:
+                    logger.debug(f"APQ required mode: refusing unknown hash {sha256_hash[:8]}...")
+                    return create_query_not_in_list_error()
+                request.query = approved_query
+
+            elif request.query:
                 # This is a registration request - store the query
                 logger.debug(f"APQ registration: storing query with hash {sha256_hash[:8]}...")
 
@@ -1890,6 +1904,16 @@ def create_graphql_router(
             moving all database operations to Rust. All work happens in a
             single Rust function call.
             """
+            # This endpoint takes a query's text, never a persisted-query hash: in
+            # apq_mode='required' every request to it is an arbitrary query.
+            if not config.apq_mode.allows_arbitrary_queries():
+                from fraiseql.middleware.apq import create_arbitrary_query_rejected_error
+
+                return Response(
+                    content=json.dumps(create_arbitrary_query_rejected_error()).encode(),
+                    media_type="application/json",
+                )
+
             # Operation authorization gate (issue #362). This endpoint hands off to Rust
             # and never runs a Python resolver, so enforcement happens here, before the
             # Rust call. Per-operation decorator overrides do not apply on this path.

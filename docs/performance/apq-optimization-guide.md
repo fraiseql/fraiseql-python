@@ -144,6 +144,12 @@ config = FraiseQLConfig(
 app = create_fraiseql_app(config=config, types=[User, Post])
 ```
 
+In `required` mode a client cannot get a query approved: a hash the server doesn't
+know is refused even when the request carries the query text (`PERSISTED_QUERY_NOT_IN_LIST`,
+nothing is stored), and a known hash runs the text the server stored, never the text sent
+with it. The queries that run are the ones you register (below) and, with the
+`postgresql` backend, whatever is already in its table.
+
 **Benefits of `required` mode:**
 
 - ✅ **Prevent arbitrary queries** - Block query exploration/introspection attacks
