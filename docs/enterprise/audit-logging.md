@@ -132,18 +132,29 @@ ORDER BY timestamp DESC;
 ## Verifying the Chain
 
 ```sql
-SELECT event_id, event_timestamp, chain_valid, expected_hash, actual_hash
+SELECT event_id, event_timestamp, tenant_id, chain_valid, expected_hash, actual_hash
 FROM verify_audit_chain();                       -- or verify_audit_chain(start, end)
 
 -- Only the problems
 SELECT * FROM verify_audit_chain() WHERE NOT chain_valid;
+
+-- One tenant
+SELECT * FROM verify_audit_chain()
+WHERE tenant_id = '11111111-1111-1111-1111-111111111111';
 ```
 
-`verify_audit_chain(start_timestamp, end_timestamp)` walks the events in time order and
-recomputes each `event_hash` from the one before it. It doesn't separate tenants, while
-the trigger chains each tenant on its own: with events of more than one tenant (or with
-a time range that starts mid-chain), rows are reported invalid that aren't. It doesn't
-check the signatures either.
+`verify_audit_chain(start_timestamp, end_timestamp)` checks each tenant's chain on its
+own, as the trigger builds them (events without a tenant form one more chain): it walks
+a tenant's events in time order and recomputes each `event_hash` from the tenant's
+event before it. With a `start_timestamp`, a tenant's first event in the range is
+checked against that tenant's latest event before the range. An event whose data was
+changed is reported invalid; so is the event after a deleted one. It doesn't check the
+signatures. It returns the events tenant by tenant; add `ORDER BY event_timestamp` for
+a single timeline.
+
+Before 1.31.0 it walked all tenants as one chain, and reported valid events invalid as
+soon as there was more than one tenant; running the 1.31.0 `001_audit_tables.sql` again
+replaces it (the `tenant_id` column is new).
 
 ---
 

@@ -861,6 +861,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trigger and its `create_audit_partition()` function are gone, and running the file
   again drops them from an existing database. `docs/enterprise/audit-logging.md`
   says how to partition the table yourself.
+- **`verify_audit_chain()` checks each tenant's chain on its own.** The insert trigger
+  links each event to the latest event of the same tenant, but the function walked
+  every tenant's events as one chain, so with two tenants valid events were reported
+  invalid, and so were the first events of a range given a `start_timestamp`. It now
+  walks each tenant's events in time order, starting a range from the tenant's event
+  before it, and returns a new `tenant_id` column (in `001_audit_tables.sql`; run the
+  file again to replace the function). `002_unified_audit.sql`'s
+  `verify_audit_chain(p_tenant_id, ...)` gets the same fix.
 
 ## [1.30.0] - 2026-10-22
 

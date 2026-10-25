@@ -309,6 +309,10 @@ $$ LANGUAGE plpgsql;
 -- CHAIN VERIFICATION
 -- ============================================================================
 
+-- The trigger chains each tenant's events on their own: walk each tenant's events in
+-- time order and recompute each event_hash from the event before it in the same
+-- tenant. With p_start_timestamp, a tenant's first event in the range is checked
+-- against the tenant's latest event before it. Signatures are not checked.
 CREATE OR REPLACE FUNCTION verify_audit_chain(
     p_tenant_id UUID DEFAULT NULL,
     p_start_timestamp TIMESTAMPTZ DEFAULT NULL,
@@ -325,6 +329,8 @@ DECLARE
     rec RECORD;
     prev_hash TEXT := NULL;
     expected TEXT;
+    first_row BOOLEAN := TRUE;
+    current_tenant UUID := NULL;
 BEGIN
     FOR rec IN
         SELECT
@@ -335,8 +341,20 @@ BEGIN
         WHERE (p_tenant_id IS NULL OR tenant_id = p_tenant_id)
           AND (p_start_timestamp IS NULL OR timestamp >= p_start_timestamp)
           AND (p_end_timestamp IS NULL OR timestamp <= p_end_timestamp)
-        ORDER BY timestamp ASC, id ASC
+        ORDER BY tenant_id, timestamp ASC, id ASC
     LOOP
+        IF first_row OR rec.tenant_id IS DISTINCT FROM current_tenant THEN
+            -- A new tenant chain: start from the tenant's event before this one, if any
+            first_row := FALSE;
+            current_tenant := rec.tenant_id;
+            SELECT p.event_hash INTO prev_hash
+            FROM audit_events p
+            WHERE p.tenant_id = rec.tenant_id
+              AND (p.timestamp, p.id) < (rec.timestamp, rec.id)
+            ORDER BY p.timestamp DESC, p.id DESC
+            LIMIT 1;
+        END IF;
+
         -- Calculate expected hash
         expected := generate_event_hash(
             rec.tenant_id, rec.entity_type, rec.entity_id,

@@ -118,8 +118,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Function to verify chain integrity
-CREATE OR REPLACE FUNCTION verify_audit_chain(
+-- Function to verify chain integrity.
+-- The trigger chains each tenant's events on their own (events without a tenant
+-- form one more chain), so this walks each tenant's events in time order and
+-- recomputes each event_hash from the event before it in the same tenant. With a
+-- start_timestamp, a tenant's first event in the range is checked against the
+-- tenant's latest event before it. Signatures are not checked.
+-- Earlier versions returned no tenant_id column; the return type changed, hence the DROP.
+DROP FUNCTION IF EXISTS verify_audit_chain(TIMESTAMPTZ, TIMESTAMPTZ);
+CREATE FUNCTION verify_audit_chain(
     start_timestamp TIMESTAMPTZ DEFAULT NULL,
     end_timestamp TIMESTAMPTZ DEFAULT NULL
 )
@@ -128,30 +135,46 @@ RETURNS TABLE(
     event_timestamp TIMESTAMPTZ,
     chain_valid BOOLEAN,
     expected_hash TEXT,
-    actual_hash TEXT
+    actual_hash TEXT,
+    tenant_id UUID
 ) AS $$
 DECLARE
     rec RECORD;
     prev_hash TEXT := NULL;
     expected TEXT;
+    first_row BOOLEAN := TRUE;
+    current_tenant UUID := NULL;
 BEGIN
-    -- Query events in chronological order
+    -- Each tenant's events in chronological order (the order the trigger links them in)
     FOR rec IN
-        SELECT id, timestamp, event_data, event_hash, previous_hash
-        FROM audit_events
-        WHERE (start_timestamp IS NULL OR timestamp >= start_timestamp)
-          AND (end_timestamp IS NULL OR timestamp <= end_timestamp)
-        ORDER BY timestamp ASC, id ASC
+        SELECT e.id, e.timestamp AS ts, e.tenant_id AS tid, e.event_data, e.event_hash
+        FROM audit_events e
+        WHERE (start_timestamp IS NULL OR e.timestamp >= start_timestamp)
+          AND (end_timestamp IS NULL OR e.timestamp <= end_timestamp)
+        ORDER BY e.tenant_id NULLS LAST, e.timestamp ASC, e.id ASC
     LOOP
+        IF first_row OR rec.tid IS DISTINCT FROM current_tenant THEN
+            -- A new tenant chain: start from the tenant's event before this one, if any
+            first_row := FALSE;
+            current_tenant := rec.tid;
+            SELECT p.event_hash INTO prev_hash
+            FROM audit_events p
+            WHERE p.tenant_id IS NOT DISTINCT FROM rec.tid
+              AND (p.timestamp, p.id) < (rec.ts, rec.id)
+            ORDER BY p.timestamp DESC, p.id DESC
+            LIMIT 1;
+        END IF;
+
         -- Calculate expected hash
         expected := generate_event_hash(rec.event_data, prev_hash);
 
         -- Return verification result
         event_id := rec.id;
-        event_timestamp := rec.timestamp;
+        event_timestamp := rec.ts;
         chain_valid := (expected = rec.event_hash);
         expected_hash := expected;
         actual_hash := rec.event_hash;
+        tenant_id := rec.tid;
 
         RETURN NEXT;
 
