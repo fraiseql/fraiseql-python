@@ -31,9 +31,14 @@ async def meta_test_pool(postgres_url):
 def meta_test_schema():
     """Shared schema registry for integration tests.
 
-    This registry is cleared before each test class to ensure isolation.
+    This registry is cleared before and after each test class to ensure isolation.
     Individual tests should register their own types/queries/mutations.
+
+    The teardown clear matters as much as the setup one: the class fixtures built on
+    this one register types and queries, and a later test module on the same
+    worker that builds a schema would otherwise pick them up.
     """
     registry = SchemaRegistry.get_instance()
     registry.clear()  # Start fresh
-    return registry
+    yield registry
+    registry.clear()
