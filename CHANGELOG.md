@@ -124,6 +124,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The `postgresql` APQ storage backend stores persisted queries in PostgreSQL.** It had
+  no database connection, so every read missed and every write was dropped: queries
+  registered with it were lost on restart and not shared between instances, and its
+  responses table could not have been created (its `PRIMARY KEY` held an expression).
+  It now opens its own small connection pool to `database_url` (or
+  `apq_backend_config["database_url"]`) on first use, creates `apq_queries` and
+  `apq_responses` if they don't exist, and `register_queries` raises if it can't store
+  them. Passing an async pool as `pool=` raises `TypeError`.
 - **`apq_mode="required"` no longer lets a client register a new query.** A request
   carrying an unknown hash together with its query text was stored and run, so any
   client could get any query approved. Now it is refused with

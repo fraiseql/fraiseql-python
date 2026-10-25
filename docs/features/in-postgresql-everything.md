@@ -173,9 +173,12 @@ config = FraiseQLConfig(
 )
 ```
 
-> **Note:** the `postgresql` backend doesn't open a database connection of its own
-> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
-> don't survive a restart and aren't shared between instances.
+> **Note:** the `postgresql` backend opens its own small connection pool to
+> `database_url` (or `apq_backend_config["database_url"]`) on the first APQ request,
+> and creates its tables if they don't exist (`auto_create_tables`, default on).
+> Persisted queries survive a restart and are shared by every instance using that
+> database. Its lookups are synchronous: each holds the event loop for one indexed
+> query (a persisted query's text is kept in process once read).
 
 ### Phase 2: Replace Error Tracking
 

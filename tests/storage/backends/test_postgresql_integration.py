@@ -51,7 +51,9 @@ def test_postgresql_backend_table_creation() -> None:
     # Responses table now has composite key for tenant support
     assert "hash VARCHAR(64) NOT NULL" in create_responses_sql
     assert "tenant_id VARCHAR(255)" in create_responses_sql
-    assert "PRIMARY KEY (hash, COALESCE(tenant_id, ''))" in create_responses_sql
+    # One row per (hash, tenant): a unique index, since a primary key can't hold an expression
+    assert "PRIMARY KEY" not in create_responses_sql
+    assert "ON apq_responses (hash, COALESCE(tenant_id, ''))" in create_responses_sql
 
 
 @patch("fraiseql.storage.backends.postgresql.PostgreSQLAPQBackend._execute_query")

@@ -2,54 +2,90 @@
 
 import json
 import logging
+import re
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any, Optional
 
 from .base import APQStorageBackend
 
 logger = logging.getLogger(__name__)
 
+_TABLE_PREFIX_PATTERN = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*\.)?[A-Za-z_][A-Za-z0-9_]*$")
+
 
 class PostgreSQLAPQBackend(APQStorageBackend):
     """PostgreSQL APQ storage backend with tenant isolation.
 
-    This backend stores persisted queries and cached responses in PostgreSQL,
-    with automatic tenant isolation using a composite primary key.
+    Stores persisted queries and cached responses in two PostgreSQL tables, so they
+    survive restarts and are shared by every instance that uses the same database.
+
+    The backend interface is synchronous, so the backend uses its own small synchronous
+    connection pool (``psycopg_pool.ConnectionPool``), opened on first use, not the
+    application's async pool. Each lookup is one indexed query; the text of a persisted
+    query is also kept in process once read, since a hash always names the same text.
 
     Features:
-    - Automatic table creation with tenant support
+    - Tables created on first use (``auto_create_tables``)
     - Tenant-isolated response caching
-    - JSON response serialization
-    - Connection pooling support
-    - Graceful error handling
+    - Graceful error handling: a failed read is a miss, a failed write is logged
     """
 
-    def __init__(self, config: dict[str, Any], pool: Optional[Any] = None) -> None:
+    def __init__(
+        self,
+        config: dict[str, Any],
+        pool: Optional[Any] = None,
+        *,
+        database_url: str | None = None,
+    ) -> None:
         """Initialize the PostgreSQL backend with configuration.
 
+        Nothing connects here: the pool is opened, and the tables created, on first use.
+
         Args:
-            config: Backend configuration including database settings
-                - table_prefix: Prefix for APQ tables (default: "apq_")
+            config: Backend configuration (``apq_backend_config``)
+                - database_url: Database to store APQ data in (default: the
+                  ``database_url`` argument, i.e. the app's ``database_url``)
+                - table_prefix: Prefix for the APQ table names, optionally with a
+                  schema (``"myschema.apq_"``) (default: "apq_")
                 - auto_create_tables: Whether to create tables automatically (default: True)
-                - connection_timeout: Database connection timeout in seconds (default: 30)
-            pool: Optional database connection pool (for testing)
+                - connection_timeout: Seconds to wait for a connection (default: 30)
+                - pool_max_size: Maximum connections in the backend's pool (default: 4)
+            pool: Optional synchronous ``psycopg_pool.ConnectionPool`` to use instead of
+                opening one
+            database_url: Database URL used when ``config`` has none
         """
         self._config = config
-        self._pool = pool
         self._table_prefix = config.get("table_prefix", "apq_")
+        if not _TABLE_PREFIX_PATTERN.match(self._table_prefix):
+            raise ValueError(f"Invalid APQ table_prefix: {self._table_prefix!r}")
         self._queries_table = f"{self._table_prefix}queries"
         self._responses_table = f"{self._table_prefix}responses"
         self._auto_create_tables = config.get("auto_create_tables", True)
         self._connection_timeout = config.get("connection_timeout", 30)
+        self._database_url = config.get("database_url") or database_url
+        self._pool_max_size = config.get("pool_max_size", 4)
+
+        if pool is not None:
+            from psycopg_pool import AsyncConnectionPool
+
+            if isinstance(pool, AsyncConnectionPool):
+                raise TypeError(
+                    "PostgreSQLAPQBackend needs a synchronous psycopg_pool.ConnectionPool; "
+                    "pass database_url to let it open one"
+                )
+        self._pool = pool
+        self._owns_pool = False
+        self._lock = threading.Lock()
+        self._tables_ready = not self._auto_create_tables
+        self._query_text_cache: dict[str, str] = {}
 
         logger.debug(
             f"PostgreSQL APQ backend initialized: "
             f"queries_table={self._queries_table}, "
             f"responses_table={self._responses_table}"
         )
-
-        # Initialize tables if auto-creation is enabled
-        if self._auto_create_tables:
-            self._ensure_tables_exist()
 
     def get_persisted_query(self, hash_value: str) -> Optional[str]:
         """Retrieve stored query by hash.
@@ -63,12 +99,17 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         if not hash_value:
             return None
 
+        cached = self._query_text_cache.get(hash_value)
+        if cached is not None:
+            return cached
+
         try:
             sql = f"SELECT query FROM {self._queries_table} WHERE hash = %s"
             result = self._fetch_one(sql, (hash_value,))
 
             if result:
                 logger.debug(f"Retrieved APQ query with hash {hash_value[:8]}...")
+                self._query_text_cache[hash_value] = result[0]
                 return result[0]
             logger.debug(f"APQ query not found for hash {hash_value[:8]}...")
             return None
@@ -85,18 +126,28 @@ class PostgreSQLAPQBackend(APQStorageBackend):
             query: GraphQL query string to store
         """
         try:
-            sql = f"""
-                INSERT INTO {self._queries_table} (hash, query, created_at)
-                VALUES (%s, %s, NOW())
-                ON CONFLICT (hash) DO UPDATE SET
-                    query = EXCLUDED.query,
-                    updated_at = NOW()
-            """
-            self._execute_query(sql, (hash_value, query))
+            self._execute_query(self._upsert_query_sql(), (hash_value, query))
+            self._query_text_cache[hash_value] = query
             logger.debug(f"Stored APQ query with hash {hash_value[:8]}...")
 
         except Exception as e:
             logger.warning(f"Failed to store persisted query: {e}")
+
+    def register_queries(self, queries: list[str]) -> dict[str, str]:
+        """Register queries in one transaction; raises if they can't be stored.
+
+        Unlike ``store_persisted_query``, a failure is not swallowed: registering the
+        pre-approved queries of ``apq_mode='required'`` must not fail silently.
+        """
+        from fraiseql.storage.apq_store import compute_query_hash
+
+        result = {compute_query_hash(query): query for query in queries}
+        if not result:
+            return result
+        with self._connection() as conn, conn.transaction(), conn.cursor() as cursor:
+            cursor.executemany(self._upsert_query_sql(), list(result.items()))
+        self._query_text_cache.update(result)
+        return result
 
     def get_cached_response(
         self, hash_value: str, context: Optional[dict[str, Any]] = None
@@ -123,19 +174,22 @@ class PostgreSQLAPQBackend(APQStorageBackend):
                     f"SELECT response FROM {self._responses_table} "
                     f"WHERE hash = %s AND tenant_id = %s"
                 )
-                result = self._fetch_one(sql, (hash_value, tenant_id))
+                params: tuple = (hash_value, tenant_id)
                 log_suffix = f" for tenant {tenant_id}"
             else:
                 sql = (
                     f"SELECT response FROM {self._responses_table} "
                     f"WHERE hash = %s AND tenant_id IS NULL"
                 )
-                result = self._fetch_one(sql, (hash_value,))
+                params = (hash_value,)
                 log_suffix = " (global)"
+            result = self._fetch_one(sql, params)
 
             if result:
                 logger.debug(f"Retrieved cached response for hash {hash_value[:8]}...{log_suffix}")
-                return json.loads(result[0])
+                response = result[0]
+                # psycopg decodes jsonb to a dict; a str comes from other drivers or mocks
+                return json.loads(response) if isinstance(response, str) else response
             logger.debug(f"Cached response not found for hash {hash_value[:8]}...{log_suffix}")
             return None
 
@@ -158,7 +212,7 @@ class PostgreSQLAPQBackend(APQStorageBackend):
             tenant_id = self.extract_tenant_id(context) if context else None
             response_json = json.dumps(response)
 
-            # Store with tenant isolation
+            # Store with tenant isolation (the unique index treats NULL as '')
             sql = f"""
                 INSERT INTO {self._responses_table} (hash, tenant_id, response, created_at)
                 VALUES (%s, %s, %s, NOW())
@@ -174,21 +228,29 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         except Exception as e:
             logger.warning(f"Failed to store cached response: {e}")
 
-    def _ensure_tables_exist(self) -> None:
-        """Ensure that required tables exist in the database."""
-        try:
-            # Create queries table
-            queries_sql = self._get_create_queries_table_sql()
-            self._execute_query(queries_sql)
+    def close(self) -> None:
+        """Close the connection pool the backend opened (a pool passed in is left open)."""
+        if self._owns_pool and self._pool is not None:
+            self._pool.close()
+            self._pool = None
+            self._owns_pool = False
 
-            # Create responses table
-            responses_sql = self._get_create_responses_table_sql()
-            self._execute_query(responses_sql)
+    def _upsert_query_sql(self) -> str:
+        return f"""
+            INSERT INTO {self._queries_table} (hash, query, created_at)
+            VALUES (%s, %s, NOW())
+            ON CONFLICT (hash) DO UPDATE SET
+                query = EXCLUDED.query,
+                updated_at = NOW()
+        """
 
-            logger.debug("APQ tables ensured to exist")
-
-        except Exception as e:
-            logger.warning(f"Failed to ensure tables exist: {e}")
+    def _ensure_tables_exist(self, conn: Any) -> None:
+        """Create the APQ tables on ``conn`` if they don't exist."""
+        conn.execute(self._get_create_queries_table_sql())
+        for statement in self._get_create_responses_table_sql().split(";"):
+            if statement.strip():
+                conn.execute(statement)
+        logger.debug("APQ tables ensured to exist")
 
     def _get_create_queries_table_sql(self) -> str:
         """Get SQL for creating the queries table."""
@@ -202,57 +264,68 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         """
 
     def _get_create_responses_table_sql(self) -> str:
-        """Get SQL for creating the responses table with tenant support."""
+        """Get SQL for creating the responses table with tenant support.
+
+        One row per (hash, tenant): a unique index on ``(hash, COALESCE(tenant_id, ''))``,
+        since a primary key cannot hold an expression or a nullable column.
+        """
+        index_base = self._responses_table.replace(".", "_")
         return f"""
             CREATE TABLE IF NOT EXISTS {self._responses_table} (
                 hash VARCHAR(64) NOT NULL,
                 tenant_id VARCHAR(255),
                 response JSONB NOT NULL,
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-                PRIMARY KEY (hash, COALESCE(tenant_id, ''))
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
             );
-            CREATE INDEX IF NOT EXISTS idx_{self._responses_table}_tenant
+            CREATE UNIQUE INDEX IF NOT EXISTS {index_base}_hash_tenant_key
+                ON {self._responses_table} (hash, COALESCE(tenant_id, ''));
+            CREATE INDEX IF NOT EXISTS idx_{index_base}_tenant
                 ON {self._responses_table} (tenant_id) WHERE tenant_id IS NOT NULL;
         """
 
-    def _get_connection(self):
-        """Get database connection.
+    def _get_connection(self) -> Any:
+        """Return the connection pool, opening it on first use."""
+        if self._pool is None:
+            with self._lock:
+                if self._pool is None:
+                    if not self._database_url:
+                        raise RuntimeError(
+                            "PostgreSQL APQ backend has no database: set database_url "
+                            "(apq_backend_config or the app's database_url)"
+                        )
+                    from psycopg_pool import ConnectionPool
 
-        Uses the provided pool for testing, or raises NotImplementedError for production.
-        """
-        if self._pool is not None:
-            # For testing: return a connection from the test pool
+                    self._pool = ConnectionPool(
+                        self._database_url,
+                        min_size=1,
+                        max_size=self._pool_max_size,
+                        timeout=self._connection_timeout,
+                        kwargs={"autocommit": True},
+                        open=True,
+                        name="fraiseql-apq",
+                    )
+                    self._owns_pool = True
+        return self._pool
 
-            try:
-                # Try async context manager first (newer psycopg)
-                return self._pool.connection().__aenter__()
-            except AttributeError:
-                # Fallback for sync context manager
-                return self._pool.connection().__enter__()
-        else:
-            # Production: would integrate with FraiseQL's connection management
-            raise NotImplementedError("Database connection integration needed")
+    @contextmanager
+    def _connection(self) -> Iterator[Any]:
+        """Yield a pooled connection, creating the tables on first use."""
+        with self._get_connection().connection() as conn:
+            if not self._tables_ready:
+                self._ensure_tables_exist(conn)
+                self._tables_ready = True
+            yield conn
 
     def _execute_query(self, sql: str, params: Optional[tuple] = None) -> None:
-        """Execute a SQL query.
+        """Execute a SQL statement.
 
         Args:
             sql: SQL query to execute
             params: Query parameters
         """
-        if self._pool is not None:
-            # Real implementation for testing
-            import asyncio
-
-            async def _execute():
-                async with self._pool.connection() as conn:  # type: ignore[attr-defined]
-                    await conn.execute(sql, params or ())  # type: ignore[attr-defined]
-
-            asyncio.run(_execute())
-        else:
-            # Mock implementation for production
-            logger.debug(f"Executing SQL: {sql[:100]}...")
+        with self._connection() as conn:
+            conn.execute(sql, params or ())
 
     def _fetch_one(self, sql: str, params: Optional[tuple] = None) -> Optional[tuple]:
         """Fetch one row from a SQL query.
@@ -264,16 +337,5 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         Returns:
             First row as tuple or None if no results
         """
-        if self._pool is not None:
-            # Real implementation for testing
-            import asyncio
-
-            async def _fetch():
-                async with self._pool.connection() as conn:  # type: ignore[attr-defined]
-                    result = await conn.execute(sql, params or ())  # type: ignore[attr-defined]
-                    return await result.fetchone()
-
-            return asyncio.run(_fetch())
-        # Mock implementation for production
-        logger.debug(f"Fetching SQL: {sql[:100]}...")
-        return None
+        with self._connection() as conn:
+            return conn.execute(sql, params or ()).fetchone()

@@ -36,7 +36,7 @@ def create_apq_backend(config: FraiseQLConfig) -> APQStorageBackend:
     if backend_type == "postgresql":
         from .postgresql import PostgreSQLAPQBackend
 
-        return PostgreSQLAPQBackend(backend_config)
+        return PostgreSQLAPQBackend(backend_config, database_url=config.database_url)
 
     if backend_type == "custom":
         return _create_custom_backend(backend_config)

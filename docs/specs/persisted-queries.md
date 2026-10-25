@@ -498,10 +498,17 @@ config = FraiseQLConfig(
 ```
 <!-- Code example in TEXT -->
 
-> **Note:** the `postgresql` backend doesn't open a database connection of its own
-> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
-> don't survive a restart and aren't shared between instances, and the tables below
-> are not created.
+> **Note:** the `postgresql` backend opens its own small connection pool to
+> `database_url` (or `apq_backend_config["database_url"]`) on the first APQ request,
+> and creates its tables if they don't exist (`auto_create_tables`, default on).
+> Persisted queries survive a restart and are shared by every instance using that
+> database. Its lookups are synchronous: each holds the event loop for one indexed
+> query (a persisted query's text is kept in process once read).
+
+`apq_backend_config` keys: `database_url` (default: the app's `database_url`),
+`table_prefix` (default `"apq_"`, may include a schema: `"myschema.apq_"`),
+`auto_create_tables` (default `True`), `connection_timeout` (seconds, default 30) and
+`pool_max_size` (default 4).
 
 **Database Tables**:
 
@@ -954,7 +961,7 @@ FRAISEQL_APQ_CACHE_RESPONSES=true
 config = FraiseQLConfig(
     database_url="postgresql://pg-staging/fraiseql_db",
     apq_mode="optional",                    # Allow client registration
-    apq_storage_backend="postgresql",       # Meant to be persistent (see the backend note)
+    apq_storage_backend="postgresql",       # Persistent
     apq_cache_responses=True,
     apq_backend_config={
         "auto_create_tables": True,
@@ -970,7 +977,7 @@ config = FraiseQLConfig(
 config = FraiseQLConfig(
     database_url="postgresql://pg-prod-1/fraiseql_db",
     apq_mode="required",                    # Only persisted queries
-    apq_storage_backend="postgresql",       # Meant to be persistent, shared (see the backend note)
+    apq_storage_backend="postgresql",       # Persistent, shared
     apq_cache_responses=True,
     apq_queries_dir="./dist/graphql",       # Pre-built queries (not read yet, see above)
     apq_backend_config={
@@ -1180,8 +1187,7 @@ clients register queries.
 
 1. Pre-register queries at startup with `store_persisted_query` (see Build-Time
    Registration; `apq_queries_dir` isn't read yet)
-2. A persistent backend: `apq_storage_backend="postgresql"` doesn't persist yet
-   (see the backend note)
+2. Use a persistent backend: `apq_storage_backend="postgresql"
 
 ---
 
