@@ -528,30 +528,53 @@ class User:
 ### Implementation
 
 The subscription resolver is an `async def` generator. Here it bridges PostgreSQL
-`LISTEN/NOTIFY` to GraphQL: a `fn_`/trigger publishes on a channel, and the generator
-yields each fresh `User`.
+`LISTEN/NOTIFY` to GraphQL: a trigger publishes on a channel, and the generator
+yields each fresh `User`. `LISTEN` runs on a connection of its own, in autocommit
+mode (the repository has no `listen()` method), and the row is re-read with
+`db.run()`, which returns plain rows (`find_one()` returns a ready-made GraphQL
+response, which a subscription can't yield).
 
 ```python
+import json
+
+import psycopg
+from psycopg.sql import SQL
+
+from fraiseql.db import DatabaseQuery
+
+DATABASE_URL = "postgresql://localhost/mydb"
+USER_BY_ID = SQL("SELECT data FROM v_user WHERE id = %(id)s")
+
+
+async def notifications(channel: str):
+    """Yield the JSON payload of each NOTIFY on `channel`."""
+    async with await psycopg.AsyncConnection.connect(DATABASE_URL, autocommit=True) as conn:
+        await conn.execute(f'LISTEN "{channel}"')
+        async for notify in conn.notifies():
+            yield json.loads(notify.payload)
+
+
 @fraiseql.subscription
 async def user_created(info) -> AsyncGenerator[User, None]:
     db = info.context["db"]
-    async for payload in db.listen("user_created"):   # LISTEN on a NOTIFY channel
-        user_id = payload["id"]
-        user = await db.find_one("v_user", mandatory_filters={"id": user_id})
-        if user is not None:
-            yield User(**user)
+    async for payload in notifications("user_created"):
+        rows = await db.run(DatabaseQuery(USER_BY_ID, {"id": payload["id"]}))
+        if rows:
+            yield rows[0]["data"]
 
 
 @fraiseql.subscription
 async def user_updated(info, user_id: ID) -> AsyncGenerator[User, None]:
     db = info.context["db"]
-    async for payload in db.listen(f"user_updated:{user_id}"):
-        user = await db.find_one("v_user", mandatory_filters={"id": user_id})
-        if user is not None:
-            yield User(**user)
+    async for payload in notifications("user_updated"):
+        if payload["id"] != str(user_id):
+            continue
+        rows = await db.run(DatabaseQuery(USER_BY_ID, {"id": payload["id"]}))
+        if rows:
+            yield rows[0]["data"]
 ```
 
-On the PostgreSQL side, a trigger on `tb_user` issues the `NOTIFY`:
+On the PostgreSQL side, triggers on `tb_user` issue the `NOTIFY`:
 
 ```sql
 CREATE OR REPLACE FUNCTION fn_notify_user_created()
@@ -567,6 +590,20 @@ $$;
 CREATE TRIGGER trg_user_created
     AFTER INSERT ON tb_user
     FOR EACH ROW EXECUTE FUNCTION fn_notify_user_created();
+
+CREATE OR REPLACE FUNCTION fn_notify_user_updated()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    PERFORM pg_notify('user_updated', jsonb_build_object('id', NEW.id)::text);
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_user_updated
+    AFTER UPDATE ON tb_user
+    FOR EACH ROW EXECUTE FUNCTION fn_notify_user_updated();
 ```
 
 ### Usage
@@ -596,7 +633,7 @@ subscription {
 PostgreSQL `LISTEN/NOTIFY` fans out to every connected backend that issues `LISTEN`, so
 running several FastAPI workers against the same database already distributes
 subscription delivery — no separate message broker is required. For very high fan-out,
-keep per-connection work light (a single `find_one` per event) and cap the number of
+keep per-connection work light (one read per event) and cap the number of
 concurrent subscriptions per connection.
 
 ---

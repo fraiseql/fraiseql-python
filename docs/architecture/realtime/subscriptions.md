@@ -123,13 +123,26 @@ CREATE TRIGGER trg_notify_task_change
     EXECUTE FUNCTION fn_notify_task_change();
 ```
 
-Resolver side — listen on the channel and yield matching tasks:
+Resolver side — listen on the channel and yield matching tasks. `LISTEN` needs a
+connection of its own, in autocommit mode, outside the pool the repository uses; the
+repository has no `listen()` method. Rows are re-read with `db.run()`, which returns
+plain rows (`find()` / `find_one()` return a ready-made GraphQL response, which a
+subscription can't yield):
 
 ```python
 import json
-import fraiseql
 from collections.abc import AsyncGenerator
 from uuid import UUID
+
+import psycopg
+from psycopg.sql import SQL
+
+import fraiseql
+from fraiseql.db import DatabaseQuery
+
+DATABASE_URL = "postgresql://localhost/mydb"
+
+TASK_BY_ID = SQL("SELECT data FROM v_task WHERE id = %(id)s")
 
 
 @fraiseql.subscription
@@ -137,21 +150,23 @@ async def task_updates(info, project_id: UUID) -> AsyncGenerator[Task, None]:
     """Stream task changes for one project via LISTEN/NOTIFY."""
     db = info.context["db"]
 
-    async for payload in db.listen("task_changes"):
-        event = json.loads(payload)
-        if event["project_id"] != str(project_id):
-            continue  # not our project — skip
+    async with await psycopg.AsyncConnection.connect(DATABASE_URL, autocommit=True) as conn:
+        await conn.execute("LISTEN task_changes")
+        async for notify in conn.notifies():
+            event = json.loads(notify.payload)
+            if event["project_id"] != str(project_id):
+                continue  # not our project — skip
 
-        task = await db.find_one("v_task", mandatory_filters={"id": event["task_id"]})
-        if task is not None:
-            yield task
+            rows = await db.run(DatabaseQuery(TASK_BY_ID, {"id": event["task_id"]}))
+            if rows:
+                yield rows[0]["data"]
 ```
 
-The exact API for consuming notifications depends on how your connection/pool is
-wired (for example, a `LISTEN` on a dedicated connection that exposes an async
-iterator of notification payloads). The important pattern is: subscribe to a
-channel, and on each notification re-read the affected row from your `v_`/`tv_`
-view and `yield` it.
+One connection per subscription is simple; with many subscribers, run one
+listener per process and fan the notifications out to the subscriptions (for
+example through an `asyncio.Queue` per subscription). The important pattern is:
+subscribe to a channel, and on each notification re-read the affected row from
+your `v_`/`tv_` view and `yield` it.
 
 ### 3.2 Polling a view
 
@@ -160,9 +175,15 @@ projection (`tv_*`), poll a read view on an interval and yield only what changed
 
 ```python
 import asyncio
-import fraiseql
 from collections.abc import AsyncGenerator
 from uuid import UUID
+
+from psycopg.sql import SQL
+
+import fraiseql
+from fraiseql.db import DatabaseQuery
+
+PROJECT_TASKS = SQL("SELECT id::text AS id, data FROM v_task WHERE data->>'project_id' = %(project_id)s")
 
 
 @fraiseql.subscription
@@ -172,11 +193,12 @@ async def task_updates(info, project_id: UUID) -> AsyncGenerator[Task, None]:
     seen: dict[str, str] = {}  # task id -> last-seen updated_at
 
     while True:
-        tasks = await db.find("v_task", mandatory_filters={"fk_project": project_id})
-        for task in tasks:
-            if seen.get(task.id) != task.updated_at:
-                seen[task.id] = task.updated_at
-                yield task
+        rows = await db.run(DatabaseQuery(PROJECT_TASKS, {"project_id": str(project_id)}))
+        for row in rows:
+            updated_at = row["data"]["updated_at"]
+            if seen.get(row["id"]) != updated_at:
+                seen[row["id"]] = updated_at
+                yield row["data"]
         await asyncio.sleep(1.0)
 ```
 
