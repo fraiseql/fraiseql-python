@@ -560,11 +560,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as it is: no `FRAISEQL_CACHE_*` settings, `create_fraiseql_app` (not `create_app`),
   no `CacheInvalidationRule` / `invalidate_lazy` / `get_cascade_stats`, CASCADE
   rules that need the `pg_fraiseql_cache` extension and invalidate no `ResultCache`
-  entry, and known issues of `CachedRepository`. The observability page uses the
-  error tracker's real tables (`tb_error_log`, `tb_error_occurrence`; there is no
-  `monitoring.errors` / `traces` / `metrics` and no `PostgreSQLSpanExporter`), and
-  notes that notifications aren't delivered and `fraiseql.tracing` stays off in
-  this release. The production runbooks query only the Prometheus metrics
+  entry, and how `CachedRepository` keys and invalidates its entries. The
+  observability page uses the error tracker's real tables (`tb_error_log`,
+  `tb_error_occurrence`; there is no `monitoring.errors` / `traces` / `metrics` and
+  no `PostgreSQLSpanExporter`), notification rules and channels, partition
+  maintenance and `setup_tracing`. The result caching guide and the monitoring page
+  keep only samples that run: no `DatabasePool`, `enable_stats`, `cache_result`,
+  `ResultCache.get` / `set`, `set_many` / `get_many`, notifier classes,
+  `ignore_error` / `assign_error`, cost or benchmark tables; the cache is wired
+  through a `context_getter`, alert rules use the exported `fraiseql_*` metrics,
+  and the tracker runs on the app's pool. The production runbooks query only the Prometheus metrics
   `setup_metrics` exports (no `fraiseql_auth_failures_total`,
   `fraiseql_graphql_query_complexity_*`, `fraiseql_cache_size_bytes`; `process_*`
   needs a `ProcessCollector`) and the security events fraiseql logs, and no longer
