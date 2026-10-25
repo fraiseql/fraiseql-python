@@ -162,6 +162,8 @@ def normalize_dict_where(
                 )
             continue
 
+        _reject_operator_suffix_key(original_field_name, view_name, table_columns)
+
         # Convert camelCase field names to snake_case for database lookups
         # This allows GraphQL camelCase convention while using snake_case in DB
         field_name = original_field_name
@@ -368,6 +370,37 @@ def normalize_dict_where(
         nested_clauses=nested_clauses,
         not_clause=not_clause,
     )
+
+
+def _reject_operator_suffix_key(key: str, view_name: str, table_columns: set[str] | None) -> None:
+    """Refuse a Django-style ``"age__gte"`` key: it is not an operator here.
+
+    Such a key was read as an equality filter on a field named ``age__gte``,
+    which no row has, so the query matched nothing without an error. A key
+    stays a field when the view has a column of that name or its registered
+    type declares one, whatever the suffix.
+
+    Raises:
+        ValueError: ``key`` ends in ``__<operator>`` and names no known field.
+    """
+    field, sep, operator = key.rpartition("__")
+    if not sep or not field or operator not in ALL_OPERATORS:
+        return
+    if table_columns and key in table_columns:
+        return
+    from fraiseql.db import _type_registry
+
+    type_class = _type_registry.get(view_name)
+    declared = getattr(type_class, "__gql_fields__", None) or getattr(
+        type_class, "__annotations__", {}
+    )
+    if key in declared:
+        return
+    msg = (
+        f"where: {key!r} is not a field, and Django-style __{operator} suffixes are not "
+        f'operators; write {{"{field}": {{"{operator}": ...}}}}'
+    )
+    raise ValueError(msg)
 
 
 def _is_flat_view(view_name: str, table_columns: set[str]) -> bool:

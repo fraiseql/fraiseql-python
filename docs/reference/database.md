@@ -157,8 +157,9 @@ async def filtered_users(info, where: UserWhereInput | None = None) -> list[User
 | `endswith` | Ends with | `{"email": {"endswith": "@example.com"}}` |
 | `isnull` | Is null | `{"deleted_at": {"isnull": True}}` |
 
-Django-style suffixes (`"age__gte"`) are not operators: such a key is read as a
-field named `age__gte`, which matches nothing. See
+Django-style suffixes (`"age__gte"`) are not operators: such a key raises a
+`ValueError` that names the supported form, `{"age": {"gte": 18}}` (unless the view
+has a column, or its type a field, really named `age__gte`). See
 [Filter Operators](../advanced/filter-operators.md) for the full list.
 
 ### find_one()

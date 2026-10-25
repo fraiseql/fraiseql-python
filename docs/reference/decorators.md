@@ -139,7 +139,7 @@ async def search_users(
     db = info.context["db"]
     filters = {}
     if name_filter:
-        filters["name__icontains"] = name_filter
+        filters["name"] = {"icontains": name_filter}
     return await db.find("v_user", where=filters, limit=limit)
 ```
 
@@ -613,7 +613,7 @@ from fraiseql.types import ID
 class UserDataLoader(DataLoader):
     async def batch_load(self, keys: list[UUID]) -> list[User | None]:
         db = self.context["db"]
-        users = await db.find("v_user", where={"id__in": keys})
+        users = await db.find("v_user", where={"id": {"in": keys}})
         # Return in same order as keys
         user_map = {user.id: user for user in users}
         return [user_map.get(key) for key in keys]

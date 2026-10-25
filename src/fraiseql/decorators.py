@@ -59,8 +59,8 @@ def query(fn: F | None = None, *, authorizer: Any | None = None) -> F | Callable
                 db = info.context["db"]
                 filters = {}
                 if name_filter:
-                    filters["name__icontains"] = name_filter
-                return await db.find("user_view", filters, limit=limit)
+                    filters["name"] = {"icontains": name_filter}
+                return await db.find("user_view", where=filters, limit=limit)
 
         Query with authentication and authorization::
 
@@ -264,9 +264,9 @@ def subscription(fn: F | None = None, *, authorizer: Any | None = None) -> F | C
                     # Poll for new/updated tasks
                     updated_tasks = await db.find(
                         "task_view",
-                        {
+                        where={
                             "project_id": project_id,
-                            "updated_at__gt": last_check
+                            "updated_at": {"gt": last_check}
                         }
                     )
 

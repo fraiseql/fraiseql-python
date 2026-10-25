@@ -297,6 +297,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ValueError` in every shape: `"ascending"` or `"DESC NULLS LAST"` used to sort
   DESC, and an enum whose value is `"ASC"` sorted DESC too.
 
+- **A Django-style `where={"age__gte": 18}` raises instead of matching
+  nothing.** The key was read as an equality filter on a field named
+  `age__gte`, which no row has. A key ending in `__<operator>` now raises
+  `ValueError` naming the supported form, `{"age": {"gte": ...}}`, unless the
+  view has a column or its registered type a field of exactly that name. The
+  `@fraiseql.query` / `@fraiseql.subscription` docstrings and
+  `docs/reference/decorators.md` used the suffix form; they now nest the
+  operator.
+
 - **A `vector` column of a view without a JSONB column comes back as a list.**
   `row_to_json` writes a pgvector `vector` through its text output, so a field
   typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type

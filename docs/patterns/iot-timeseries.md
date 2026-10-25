@@ -442,7 +442,7 @@ async def active_alerts(info) -> list[Alert]:
     return await db.find("v_alert", mandatory_filters={"acknowledged": False})
 ```
 
-`start_time`/`end_time` map to the WHERE operators `bucket__gte` / `bucket__lte`, which
+`start_time`/`end_time` map to the WHERE operators `gte` / `lte` on `bucket`, which
 FraiseQL translates into a partition-prunable `BETWEEN` against the view. When a query
 selects only aggregate fields, FraiseQL's **runtime auto-aggregation** derives the
 `GROUP BY` and the COUNT/SUM/AVG/MIN/MAX/STDDEV/VARIANCE SQL for you against the view — so
