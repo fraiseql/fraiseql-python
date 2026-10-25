@@ -12,6 +12,7 @@ from graphql import (
     parse,
 )
 
+from fraiseql.core.field_resolvers import python_type, selects_field_resolver, typed_rows
 from fraiseql.core.rust_pipeline import RustResponseBytes
 from fraiseql.utils.naming import snake_to_camel
 
@@ -50,7 +51,7 @@ def _rust_response_bytes_middleware(next: Any, root: Any, info: Any, **kwargs: A
             # Check if resolved value is RustResponseBytes
             if isinstance(resolved, RustResponseBytes):
                 if not _is_root_field(info):
-                    return _field_data(resolved)
+                    return _field_data(resolved, info)
                 if hasattr(info, "context") and isinstance(info.context, dict):
                     _capture(info, resolved)
                     logger.debug("Middleware captured RustResponseBytes from async resolver")
@@ -61,7 +62,7 @@ def _rust_response_bytes_middleware(next: Any, root: Any, info: Any, **kwargs: A
     # Check sync result
     if isinstance(result, RustResponseBytes):
         if not _is_root_field(info):
-            return _field_data(result)
+            return _field_data(result, info)
         if hasattr(info, "context") and isinstance(info.context, dict):
             _capture(info, result)
             logger.debug("Middleware captured RustResponseBytes from sync resolver")
@@ -89,7 +90,7 @@ class _RustObject(dict):
         return default
 
 
-def _field_data(response: RustResponseBytes) -> Any:
+def _field_data(response: RustResponseBytes, info: Any = None) -> Any:
     """The value of the one field in a RustResponseBytes, as graphql-core completes it.
 
     db.find / db.find_one return a complete ``{"data": {<field>: ...}}`` response,
@@ -102,7 +103,18 @@ def _field_data(response: RustResponseBytes) -> Any:
     if errors:
         raise GraphQLError(errors[0].get("message", "Query failed"))
     data = payload.get("data") or {}
-    return next(iter(data.values()), None)
+    value = next(iter(data.values()), None)
+    if info is not None and value and selects_field_resolver(info):
+        # A selected field resolver runs with the row as self: typed objects
+        rows = value if isinstance(value, list) else [value]
+        typed = [
+            typed_rows([row], python_type(info.schema, info.return_type, row))[0]
+            if isinstance(row, dict)
+            else row
+            for row in rows
+        ]
+        return typed if isinstance(value, list) else typed[0]
+    return value
 
 
 def _capture(info: Any, response: RustResponseBytes) -> None:

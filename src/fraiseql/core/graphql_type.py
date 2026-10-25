@@ -48,6 +48,7 @@ from graphql import (
 from psycopg.sql import SQL, Composed
 
 from fraiseql.config.schema_config import SchemaConfig
+from fraiseql.core.field_resolvers import FIELD_RESOLVER, PYTHON_TYPE
 from fraiseql.core.translate_query import translate_query
 from fraiseql.mutations.decorators import FraiseUnion
 from fraiseql.sql.where_generator import DynamicType
@@ -892,6 +893,9 @@ def convert_type_to_graphql_output(
                                     type_=cast("GraphQLOutputType", gql_return_type),
                                     resolve=_gate(wrapped_resolver, attr_name),
                                     description=description,
+                                    # db.find answers with typed objects when
+                                    # a query selects it (core.field_resolvers)
+                                    extensions={FIELD_RESOLVER: True},
                                 )
 
                             except Exception as e:
@@ -912,6 +916,7 @@ def convert_type_to_graphql_output(
                     interfaces=interfaces or None,
                     is_type_of=is_type_of,
                     description=_clean_docstring(typ.__doc__),
+                    extensions={PYTHON_TYPE: typ},
                 )
                 _graphql_type_cache[key] = gql_type
                 return gql_type

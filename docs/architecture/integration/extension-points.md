@@ -95,6 +95,14 @@ combine already-loaded data with a targeted query. Keep these resolvers cheap: i
 field issues one query per parent row, batch it with a dataloader instead (next
 section).
 
+`db.find` and `db.find_one` usually answer with the JSON Rust writes from the view,
+without building Python objects. When the query selects a custom field (of the type
+they return, or of a type nested in it), they return typed objects instead, built from
+the whole JSONB row, so `self.id` is there even when the query doesn't select `id`.
+graphql-core then completes them field by field, which costs about 0.2 ms per row
+(against 0.01 ms for the Rust path): a query that selects only plain fields keeps the
+fast path.
+
 ---
 
 ## 2. Dataloaders: Batching to Prevent N+1

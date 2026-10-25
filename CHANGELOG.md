@@ -631,13 +631,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   With the registry (any app) nested objects were and are named after their
   own type.
 
-- **A field resolver `db.find` won't run is reported.** `find` and `find_one`
-  answer with the rows Rust builds from the view, which don't go through
-  graphql-core field by field, so a `@fraiseql.field` or
+- **Field resolvers run on `db.find` / `db.find_one` results.** `find` and
+  `find_one` answer with the rows Rust builds from the view, which don't go
+  through graphql-core field by field, so a `@fraiseql.field` or
   `@fraiseql.dataloader_field` method on the type they return (the docs'
-  `post_count`) was never called and its field was left out of the response
-  without a word. Running them there isn't supported yet; selecting one now
-  logs a warning naming the field and the view, once per field.
+  `post_count`), or on a type nested in it, was never called and its field
+  was left out of the response. When the query selects one, at any depth
+  (through aliases, fragments, several root fields, or a find wrapped in
+  another object), `find` now returns the rows as typed objects, built from
+  the whole JSONB row, and graphql-core runs the resolver with the row as
+  `self`. A query selecting only plain fields still goes out as Rust bytes; a
+  query that selects a resolver costs what graphql-core does (about 0.2 ms
+  per row of five fields, against 0.01 ms). With no type registered for the
+  view or the field's type, the resolver can't run, and a warning says so.
 
 - **`db.aggregate()` with more than one expression runs.** It wrote the
   expressions one after the other without commas

@@ -26,6 +26,7 @@ from pydantic import BaseModel, field_validator
 
 from fraiseql.analysis.query_analyzer import QueryAnalyzer
 from fraiseql.auth.base import AuthProvider
+from fraiseql.core.field_resolvers import operation_selects_field_resolver
 from fraiseql.core.graphql_parser import RustGraphQLParser
 from fraiseql.core.rust_pipeline import RustResponseBytes
 from fraiseql.db import FraiseQLRepository
@@ -1654,8 +1655,12 @@ def create_graphql_router(
             context["__has_multiple_root_fields__"] = has_multiple_root_fields
 
             # 🚀 MULTI-FIELD QUERY ROUTING (Phase 1)
-            # Route multi-field queries to Rust-only merge path to avoid graphql-core type errors
-            if has_multiple_root_fields:
+            # Route multi-field queries to Rust-only merge path to avoid graphql-core type errors.
+            # Not when the query selects a field resolver: the merge never runs one, so
+            # graphql-core completes the typed rows db.find returns then.
+            if has_multiple_root_fields and not operation_selects_field_resolver(
+                schema, request.query, request.operationName, request.variables
+            ):
                 field_count = _count_root_query_fields(request.query, request.operationName)
                 logger.info(
                     f"🚀 Multi-field query detected ({field_count} root fields) - "

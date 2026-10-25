@@ -1,5 +1,6 @@
 """Database utilities and repository layer for FraiseQL using psycopg and connection pooling."""
 
+import json
 import logging
 import re
 import types
@@ -19,9 +20,6 @@ from fraiseql.audit import get_security_logger
 from fraiseql.core.rust_pipeline import (
     RustResponseBytes,
     execute_via_rust_pipeline,
-)
-from fraiseql.core.unresolved_fields import (
-    warn_unresolved_field_resolvers as _warn_unresolved_field_resolvers,
 )
 from fraiseql.sql.identifiers import qualified_identifier
 from fraiseql.sql.native_columns import resolve_native_column
@@ -185,6 +183,28 @@ def _response_goes_out_as_is(info: Any) -> bool:
         return False
     context = getattr(info, "context", None)
     return not (isinstance(context, dict) and context.get("__has_multiple_root_fields__"))
+
+
+async def _typed_find_rows(conn: Any, query: "DatabaseQuery", row_type: type) -> list[Any]:
+    """The rows of a find query, each built as ``row_type`` (``from_dict``).
+
+    The query selects one JSON column per row, the one Rust builds the response
+    from; here graphql-core completes the objects instead.
+    """
+    from fraiseql.core.field_resolvers import typed_rows
+
+    async with conn.cursor() as cursor:
+        if query.params:
+            await cursor.execute(query.statement, query.params)
+        else:
+            await cursor.execute(query.statement)
+        rows = await cursor.fetchall()
+    values = [
+        json.loads(row[0]) if isinstance(row[0], str | bytes) else row[0]
+        for row in rows
+        if row[0] is not None
+    ]
+    return typed_rows(values, row_type)
 
 
 def _is_rust_response_null(response: RustResponseBytes) -> bool:
@@ -1451,6 +1471,33 @@ class FraiseQLRepository:
             return view_type in schema.get_possible_types(named)
         return False
 
+    def _resolver_row_type(self, info: Any, view_name: str) -> type | None:
+        """The class to build view_name's rows as, when info selects a field resolver.
+
+        None when it selects none: the rows go out as Rust writes them. A field
+        resolver (``@fraiseql.field``, ``@fraiseql.dataloader_field``) of the type
+        or of a type below it runs with the row as ``self``, so graphql-core has
+        to complete typed objects.
+        """
+        from fraiseql.core.field_resolvers import python_type, selects_field_resolver
+
+        if not selects_field_resolver(info):
+            return None
+        row_type = _type_registry.get(view_name) or python_type(
+            info.schema, getattr(info, "return_type", None)
+        )
+        if row_type is None or not hasattr(row_type, "from_dict"):
+            logger.warning(
+                "%s selects a field resolver, but no type is registered for %r "
+                "(@fraiseql.type(sql_source=%r)): the rows go out as the view has "
+                "them, and the field resolver is not run.",
+                getattr(info, "field_name", view_name),
+                view_name,
+                view_name,
+            )
+            return None
+        return row_type
+
     def _adopt_session_context(self, request_context: Mapping[str, Any]) -> None:
         """Copy the request values that session variables are read from.
 
@@ -1967,25 +2014,25 @@ class FraiseQLRepository:
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
+        row_type = None
         if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
             from fraiseql.core.selection_tree import named_object_type, rust_field_selections
             from fraiseql.utils.casing import to_snake_case
 
             field_path_objects = extract_field_paths_from_info(info, transform_path=to_snake_case)
+            # A selected field resolver needs typed rows, not Rust's
+            row_type = self._resolver_row_type(info, view_name)
             # Convert from list[FieldPath] to list[list[str]] for Rust (backward compatibility)
             if field_path_objects:
                 field_paths = [fp.path for fp in field_path_objects]
-                _warn_unresolved_field_resolvers(
-                    view_name, _type_registry.get(view_name), field_paths
-                )
 
                 # The selection Rust projects the rows on. A view without a
                 # registered type is read as the type the field returns.
                 parent_type = self._get_cached_type_name(view_name) or named_object_type(
                     getattr(info, "return_type", None)
                 )
-                if parent_type and info.schema:
+                if parent_type and info.schema and row_type is None:
                     field_selections_json = rust_field_selections(
                         field_path_objects,
                         info.schema,
@@ -2171,6 +2218,9 @@ class FraiseQLRepository:
 
         async with self._session_connection() as conn:
             await self._warn_on_camel_case_keys(conn, view_name, jsonb_column, kwargs)
+            if row_type is not None:
+                # graphql-core completes these, running the selected field resolvers
+                return await _typed_find_rows(conn, query, row_type)
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
@@ -2228,25 +2278,25 @@ class FraiseQLRepository:
         # 1. Extract field paths and build field selections from GraphQL info
         field_paths = None
         field_selections_json = None
+        row_type = None
         if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
             from fraiseql.core.selection_tree import named_object_type, rust_field_selections
             from fraiseql.utils.casing import to_snake_case
 
             field_path_objects = extract_field_paths_from_info(info, transform_path=to_snake_case)
+            # A selected field resolver needs a typed row, not Rust's
+            row_type = self._resolver_row_type(info, view_name)
             # Convert from list[FieldPath] to list[list[str]] for Rust (backward compatibility)
             if field_path_objects:
                 field_paths = [fp.path for fp in field_path_objects]
-                _warn_unresolved_field_resolvers(
-                    view_name, _type_registry.get(view_name), field_paths
-                )
 
                 # The selection Rust projects the row on. A view without a
                 # registered type is read as the type the field returns.
                 parent_type = self._get_cached_type_name(view_name) or named_object_type(
                     getattr(info, "return_type", None)
                 )
-                if parent_type and info.schema:
+                if parent_type and info.schema and row_type is None:
                     field_selections_json = rust_field_selections(
                         field_path_objects,
                         info.schema,
@@ -2290,6 +2340,10 @@ class FraiseQLRepository:
 
         async with self._session_connection() as conn:
             await self._warn_on_camel_case_keys(conn, view_name, jsonb_column, kwargs)
+            if row_type is not None:
+                # graphql-core completes it, running the selected field resolvers
+                rows = await _typed_find_rows(conn, query, row_type)
+                return rows[0] if rows else None
             result = await execute_via_rust_pipeline(
                 conn,
                 query.statement,
