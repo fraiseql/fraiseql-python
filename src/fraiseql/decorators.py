@@ -1,6 +1,8 @@
 """Additional decorators for FraiseQL."""
 
 import asyncio
+import inspect
+import sys
 import time
 from collections.abc import Callable
 from functools import wraps
@@ -798,8 +800,10 @@ def connection(
         max_page_size: Maximum allowed page size
         include_total_count: Whether to include total count in results
         cursor_field: Field to use for cursor ordering
-        jsonb_extraction: Enable JSONB field extraction (inherits global config if None)
-        jsonb_column: JSONB column name to extract fields from (inherits global config if None)
+        jsonb_extraction: Recorded in ``__fraiseql_connection__``; rows are read
+            like ``db.find`` reads them
+        jsonb_column: Recorded in ``__fraiseql_connection__``; the JSONB column is
+            the one registered for the view
 
     Returns:
         Decorated function that returns Connection[T]
@@ -853,7 +857,7 @@ def connection(
     Notes:
         - Functions must be async and take 'info' as first parameter
         - The decorator handles all pagination logic automatically
-        - Uses existing CQRSRepository.paginate() method
+        - Pages with the repository's paginate() (find + count)
         - Returns properly typed Connection[T] objects
         - Supports all Relay connection specification features
     """
@@ -872,7 +876,8 @@ def connection(
             "after": str | None,
             "last": int | None,
             "before": str | None,
-            "where": dict[str, Any] | None,
+            # No "where": the schema builder gives a Connection the node type's
+            # WhereInput, as it gives a list its
             "return": Connection[node_type],
         }
 
@@ -899,20 +904,7 @@ def connection(
             except KeyError as e:
                 raise ValueError("Database repository not found in GraphQL context") from e
 
-            # Resolve JSONB configuration dynamically
-            config = info.context.get("config")
-            resolved_jsonb_extraction = jsonb_extraction
-            resolved_jsonb_column = jsonb_column
-
-            # Auto-inherit from global configuration if not explicitly set
-            if resolved_jsonb_extraction is None and config:
-                resolved_jsonb_extraction = getattr(config, "jsonb_extraction_enabled", False)
-
-            if resolved_jsonb_column is None and config:
-                default_columns = getattr(config, "jsonb_default_columns", ["data"])
-                resolved_jsonb_column = default_columns[0] if default_columns else "data"
-
-            # Call repository paginate method with all parameters
+            # Page with the repository (find + count)
             try:
                 result = await db.paginate(
                     inferred_view_name,
@@ -923,8 +915,7 @@ def connection(
                     filters=where,
                     order_by=cursor_field,
                     include_total=include_total_count,
-                    jsonb_extraction=resolved_jsonb_extraction,
-                    jsonb_column=resolved_jsonb_column,
+                    info=info,
                 )
             except Exception as e:
                 # Provide context about which view/query failed
@@ -953,7 +944,26 @@ def connection(
 
         # CRITICAL: Set __annotations__ so schema builder can extract types
         # Without this, get_type_hints(wrapper) returns {}
-        wrapper.__annotations__ = wrapper_annotations
+        if sys.version_info >= (3, 14):
+            # functools.wraps copies __annotate__ and no longer __annotations__:
+            # an outer @query reads the annotations through it
+            def annotate(format: int) -> dict[str, Any]:
+                if format > 3:  # Format.STRING: annotationlib renders the values
+                    raise NotImplementedError
+                return dict(wrapper_annotations)
+
+            wrapper.__annotate__ = annotate  # type: ignore[attr-defined]
+        else:
+            wrapper.__annotations__ = wrapper_annotations
+        # Its own parameters, not func's (``wraps`` points inspect at func): an
+        # outer @query binds the pagination arguments against this signature
+        wrapper.__signature__ = inspect.signature(wrapper, follow_wrapped=False)  # type: ignore[attr-defined]
+
+        # Under @fraiseql.connection, @fraiseql.query registered func: the field
+        # resolves with this wrapper instead
+        registry = SchemaRegistry.get_instance()
+        if registry.queries.get(func.__name__) is func:
+            registry.queries[func.__name__] = wrapper
 
         return wrapper  # type: ignore[return-value]
 

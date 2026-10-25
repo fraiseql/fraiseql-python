@@ -12,6 +12,7 @@ Supports:
 import inspect
 import logging
 import types
+from collections.abc import Mapping
 from enum import Enum
 from types import UnionType
 from typing import (
@@ -1014,10 +1015,14 @@ def _create_connection_type(node_type: type) -> GraphQLObjectType:
                 description="List of edges in this connection",
             ),
             "pageInfo": GraphQLField(
-                GraphQLNonNull(page_info_type), description="Information about pagination"
+                GraphQLNonNull(page_info_type),
+                description="Information about pagination",
+                resolve=_python_name_resolver("page_info"),
             ),
             "totalCount": GraphQLField(
-                GraphQLInt, description="Total number of items (if includeTotal was enabled)"
+                GraphQLInt,
+                description="Total number of items (if includeTotal was enabled)",
+                resolve=_python_name_resolver("total_count"),
             ),
         },
         description=f"A connection to a list of {node_name} items.",
@@ -1061,6 +1066,25 @@ def _create_edge_type(node_type: type, edge_name: str, registry: Any) -> GraphQL
     return edge_type
 
 
+def _python_name_resolver(python_name: str) -> Callable[..., Any]:
+    """Resolve a camelCase Connection/PageInfo field from its snake_case source.
+
+    ``create_connection`` builds objects with ``page_info``/``has_next_page``
+    attributes, and a resolver may return the same as a dict; the default
+    resolver would look for ``pageInfo`` and find nothing. A camelCase dict key
+    is read too.
+    """
+    graphql_name = snake_to_camel(python_name)
+
+    def resolve(obj: Any, info: Any) -> Any:
+        if isinstance(obj, Mapping):
+            return obj[python_name] if python_name in obj else obj.get(graphql_name)
+        value = getattr(obj, python_name, None)
+        return getattr(obj, graphql_name, None) if value is None else value
+
+    return resolve
+
+
 # Module-level cache for PageInfo type (singleton)
 _PAGE_INFO_TYPE = None
 
@@ -1093,16 +1117,22 @@ def _get_or_create_page_info_type(registry: Any) -> GraphQLObjectType:
             "hasNextPage": GraphQLField(
                 GraphQLNonNull(GraphQLBoolean),
                 description="Whether more items exist after this page",
+                resolve=_python_name_resolver("has_next_page"),
             ),
             "hasPreviousPage": GraphQLField(
                 GraphQLNonNull(GraphQLBoolean),
                 description="Whether more items exist before this page",
+                resolve=_python_name_resolver("has_previous_page"),
             ),
             "startCursor": GraphQLField(
-                GraphQLString, description="Cursor for the first item in this page"
+                GraphQLString,
+                description="Cursor for the first item in this page",
+                resolve=_python_name_resolver("start_cursor"),
             ),
             "endCursor": GraphQLField(
-                GraphQLString, description="Cursor for the last item in this page"
+                GraphQLString,
+                description="Cursor for the last item in this page",
+                resolve=_python_name_resolver("end_cursor"),
             ),
         },
         description="Information about pagination in a connection.",

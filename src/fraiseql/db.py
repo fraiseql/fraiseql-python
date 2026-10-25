@@ -2390,6 +2390,136 @@ class FraiseQLRepository:
             result = await cursor.fetchone()
             return result[0] if result else 0
 
+    async def paginate(
+        self,
+        view_name: str,
+        *,
+        first: int | None = None,
+        after: str | None = None,
+        last: int | None = None,
+        before: str | None = None,
+        filters: Any = None,
+        order_by: str = "id",
+        order_direction: str = "ASC",
+        include_total: bool = True,
+        info: Any = None,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
+        """Page a view Relay-style: ``first``/``after`` forward, ``last``/``before`` back.
+
+        Reads a page with :meth:`find` and the total with :meth:`count`, so
+        ``filters`` takes any ``where`` ``find`` takes (a dict or a WhereInput),
+        and other keyword arguments (``mandatory_filters``) reach both.
+
+        Args:
+            view_name: Database view to page
+            first: Number of rows after ``after`` (20 when neither first nor last is given)
+            after: Cursor of the row the page starts after
+            last: Number of rows before ``before``
+            before: Cursor of the row the page ends before
+            filters: ``where`` filter for the page and the total
+            order_by: Field the rows are ordered and the cursors made from; its
+                values must be unique
+            order_direction: ``"ASC"`` or ``"DESC"``
+            include_total: Whether to count the rows ``filters`` matches
+            info: GraphQL resolve info, passed to :meth:`find`
+            **kwargs: Passed to :meth:`find` and :meth:`count`
+
+        Returns:
+            ``{"edges": [{"node": row, "cursor": str}], "page_info": {...},
+            "total_count": int | None}``, with each row keyed as GraphQL answers
+            it; ``create_connection(result, NodeType)`` makes it a ``Connection``.
+
+        Example:
+            result = await db.paginate("v_post", first=20, after=cursor, order_by="created_at")
+        """
+        import base64
+        import json
+
+        if first is not None and last is not None:
+            raise ValueError("Cannot specify both 'first' and 'last'")
+        if (first is not None and first < 0) or (last is not None and last < 0):
+            raise ValueError("'first' and 'last' must be non-negative")
+        direction = order_direction.upper()
+        if direction not in ("ASC", "DESC"):
+            raise ValueError("order_direction must be 'ASC' or 'DESC'")
+        backward = last is not None
+        size = last if backward else (first if first is not None else 20)
+
+        def decode(cursor: str) -> Any:
+            try:
+                return json.loads(base64.b64decode(cursor.encode(), validate=True))
+            except ValueError as e:
+                raise ValueError(f"Invalid cursor: {cursor!r}") from e
+
+        # The page reads toward ``before`` when going back: reverse the order
+        ascending = (direction == "ASC") != backward
+        conditions: list[Any] = []
+        if filters:
+            if hasattr(filters, "_to_whereinput_dict"):
+                filters = filters._to_whereinput_dict()
+            conditions.append(filters)
+        if after is not None:
+            op = "gt" if direction == "ASC" else "lt"
+            conditions.append({order_by: {op: decode(after)}})
+        if before is not None:
+            op = "lt" if direction == "ASC" else "gt"
+            conditions.append({order_by: {op: decode(before)}})
+        where: Any = None
+        if len(conditions) == 1:
+            where = conditions[0]
+        elif conditions:
+            where = {"AND": conditions}
+
+        result = await self.find(
+            view_name,
+            info=info,
+            where=where,
+            order_by={order_by: "ASC" if ascending else "DESC"},
+            limit=size + 1,
+            **dict(kwargs),
+        )
+        if isinstance(result, RustResponseBytes):
+            # find keeps its response for the router to send as is; this page
+            # isn't the response
+            resolve_info = info if info is not None else self.context.get("graphql_info")
+            stored = getattr(resolve_info, "context", None)
+            if isinstance(stored, dict) and isinstance(stored.get("_rust_response"), dict):
+                responses = stored["_rust_response"]
+                for key in [k for k, v in responses.items() if v is result]:
+                    del responses[key]
+            data = result.to_json().get("data") or {}
+            rows = next(iter(data.values()), None) or []
+        else:
+            rows = result or []
+
+        has_more = len(rows) > size
+        rows = list(rows[:size])
+        if backward:
+            rows.reverse()
+
+        from fraiseql.utils.casing import to_camel_case
+
+        keys = (to_camel_case(order_by), order_by)
+        edges = []
+        for row in rows:
+            value = next((row[k] for k in keys if k in row), None)
+            cursor = base64.b64encode(json.dumps(value).encode()).decode()
+            edges.append({"node": row, "cursor": cursor})
+
+        total_count = None
+        if include_total:
+            total_count = await self.count(view_name, where=filters or None, **dict(kwargs))
+
+        page_info = {
+            "has_next_page": before is not None if backward else has_more,
+            "has_previous_page": has_more if backward else after is not None,
+            "start_cursor": edges[0]["cursor"] if edges else None,
+            "end_cursor": edges[-1]["cursor"] if edges else None,
+            "total_count": total_count,
+        }
+        return {"edges": edges, "page_info": page_info, "total_count": total_count}
+
     async def exists(
         self,
         view_name: str,

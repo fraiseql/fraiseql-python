@@ -337,6 +337,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   missing: the response key of a nested object was always its camelCase name.
   It is now the field's name in the schema.
 
+- **`@fraiseql.connection` pages its view.** It called `db.paginate`, which
+  `FraiseQLRepository` didn't have, so every connection query answered with an
+  error; over `@fraiseql.query` (the order the docs show) the field resolved
+  with the undecorated function and returned null, and on Python 3.14 the
+  other order lost the return annotation. `FraiseQLRepository.paginate` now
+  pages with `find` and `count`: `first`/`after` and `last`/`before`, opaque
+  cursors from `cursor_field`, `pageInfo` and `totalCount`, filtered by
+  `where`, which is now the node type's `WhereInput` (it was `JSON` on
+  Python 3.13). `pageInfo` and `totalCount`
+  (and `hasNextPage`, `startCursor`, ...) resolve from the `page_info`,
+  `total_count`, ... that `create_connection` sets, which a hand-written
+  connection resolver returned as null too.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added
