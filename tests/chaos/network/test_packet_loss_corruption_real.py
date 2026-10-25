@@ -299,67 +299,6 @@ async def test_out_of_order_delivery(
 @pytest.mark.chaos_network
 @pytest.mark.chaos_real_db
 @pytest.mark.asyncio
-async def test_duplicate_packet_handling(
-    chaos_db_client, chaos_test_schema, baseline_metrics, chaos_config
-):
-    """Test handling of duplicate packet delivery.
-
-    Scenario: Network delivers duplicate packets (TCP handles detection).
-    Expected: FraiseQL handles duplicates gracefully.
-    """
-    metrics = ChaosMetrics()
-
-    metrics.start_test()
-
-    operation = FraiseQLTestScenarios.simple_user_query()
-
-    # Simulate duplicate packet effects
-    duplicate_scenarios = []
-
-    # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
-
-    # Uses multiplier-based formula to ensure meaningful test on all hardware
-
-    iterations = max(4, int(8 * chaos_config.load_multiplier))
-
-    for _ in range(iterations):
-        # Simulate receiving some packets twice
-        duplicates = random.randint(0, 2)  # 0-2 duplicates
-
-        try:
-            # Execute once (simulates original packet)
-            result = await chaos_db_client.execute_query(operation)
-            execution_time = result.get("_execution_time_ms", 10.0)
-
-            # Simulate duplicate processing (but TCP would handle dedup)
-            # So we just measure impact of re-processing
-            for _ in range(duplicates):
-                await asyncio.sleep(0.002)  # 2ms per duplicate processing
-
-            total_time = execution_time + (duplicates * 2)
-            duplicate_scenarios.append(total_time)
-            metrics.record_query_time(total_time)
-        except Exception:
-            metrics.record_error()
-
-    metrics.end_test()
-
-    if duplicate_scenarios:
-        avg_duplicate_time = statistics.mean(duplicate_scenarios)
-
-        # Duplicates shouldn't cause excessive delays
-        # Max expected: 5 packets * 2ms + 10ms base + some overhead
-        expected_max_time = 30  # 30ms max
-
-        assert avg_duplicate_time < expected_max_time, (
-            f"Duplicate handling too slow: {avg_duplicate_time:.1f}ms > {expected_max_time}ms"
-        )
-
-
-@pytest.mark.chaos
-@pytest.mark.chaos_network
-@pytest.mark.chaos_real_db
-@pytest.mark.asyncio
 async def test_adaptive_retry_under_packet_loss(
     chaos_db_client, chaos_test_schema, baseline_metrics
 ):

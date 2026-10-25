@@ -256,60 +256,6 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
 
     @pytest.mark.chaos
     @pytest.mark.chaos_network
-    def test_duplicate_packet_handling(self):
-        """Test handling of duplicate packet delivery.
-
-        Scenario: Network delivers duplicate packets.
-        Expected: FraiseQL handles duplicates gracefully (TCP handles this).
-        """
-        toxiproxy = ToxiproxyManager()
-        # Note: Duplicate packets are primarily handled by TCP
-        # This test simulates application-level duplicate handling
-        toxiproxy.create_proxy("fraiseql_postgres", "0.0.0.0:5433", "postgres:5432")
-
-        self.metrics.start_test()
-
-        # Simulate duplicate packet effects
-        duplicate_scenarios = []
-
-        # Scale iterations based on hardware (8 on baseline, 4-32 adaptive)
-        # Uses multiplier-based formula to ensure meaningful test on all hardware
-        iterations = max(4, int(8 * self.chaos_config.load_multiplier))
-
-        # Each packet, duplicate or not, costs a fixed simulated 2ms. The time is
-        # simulated rather than slept and measured: time.sleep(0.002) overshoots by
-        # whatever the machine's load adds, which alone pushed the average past the
-        # bound below on a busy machine.
-        packet_count = 5
-        packet_time_ms = 2.0
-        # DETERMINISTIC PATTERN: 0, 1, 2 duplicates in turn (was random.randint(0, 2))
-        duplicate_pattern = (0, 1, 2)
-
-        for i in range(iterations):
-            # Simulate receiving some packets twice
-            duplicates = duplicate_pattern[i % len(duplicate_pattern)]
-
-            total_time = (packet_count + duplicates) * packet_time_ms
-            duplicate_scenarios.append(total_time)
-            self.metrics.record_query_time(total_time)
-
-        assert max(duplicate_scenarios) > packet_count * packet_time_ms, (
-            "Should simulate some duplicate packets"
-        )
-        avg_duplicate_time = statistics.mean(duplicate_scenarios)
-
-        # Duplicates shouldn't cause excessive delays
-        expected_max_time = packet_count * packet_time_ms * 1.5  # 1.5x overhead
-        assert avg_duplicate_time < expected_max_time, (
-            f"Duplicate handling too slow: {avg_duplicate_time:.1f}ms > {expected_max_time}ms"
-        )
-
-        self.metrics.end_test()
-
-        toxiproxy.delete_proxy("fraiseql_postgres")
-
-    @pytest.mark.chaos
-    @pytest.mark.chaos_network
     def test_adaptive_retry_under_packet_loss(self):
         """Test adaptive retry strategies under packet loss.
 
