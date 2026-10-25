@@ -94,8 +94,12 @@ class TestResourceChaos(ChaosTestCase):
         cpu_intensive_operations = 15
         cpu_times = []
 
-        # Get initial CPU usage
-        initial_cpu = psutil.cpu_percent(interval=0.1)
+        # This process's CPU usage, not the machine's: psutil.cpu_percent() is
+        # machine-wide, so on a shared machine (other tests, pytest -n 8) it moved
+        # with whatever else ran ("Excessive CPU usage increase: +26.8%")
+        process = psutil.Process()
+        process.cpu_percent(interval=None)  # Starts the measurement
+        initial_cpu = 0.0
 
         for i in range(cpu_intensive_operations):
             # Mix of operations with varying computational complexity
@@ -122,8 +126,9 @@ class TestResourceChaos(ChaosTestCase):
             cpu_times.append(execution_time)
             self.metrics.record_query_time(execution_time)
 
-        # Check CPU usage after operations
-        final_cpu = psutil.cpu_percent(interval=0.1)
+        # Check CPU usage after operations: the process's average since the start,
+        # as a share of one core
+        final_cpu = process.cpu_percent(interval=None)
 
         self.metrics.end_test()
 
