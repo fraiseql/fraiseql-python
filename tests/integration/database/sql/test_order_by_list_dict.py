@@ -136,22 +136,15 @@ class TestOrderByListDictHandling:
         actual_fields = [instr.field for instr in result.instructions]
         assert actual_fields == expected_fields
 
-    def test_invalid_direction_ignored(self) -> None:
-        """Test that invalid directions are ignored gracefully."""
+    def test_invalid_direction_raises(self) -> None:
+        """A direction that is not ASC/DESC raises instead of sorting DESC."""
         order_by_input = [
             {"ipAddress": "invalid"},
-            {"serverName": "asc"},  # This should still work
+            {"serverName": "asc"},
         ]
 
-        result = _convert_order_by_input_to_sql(order_by_input)
-
-        # Invalid directions default to ASC, so both should be included
-        assert result is not None
-        assert len(result.instructions) == 2
-        assert result.instructions[0].field == "ip_address"
-        assert result.instructions[0].direction == OrderDirection.DESC  # invalid -> DESC
-        assert result.instructions[1].field == "server_name"
-        assert result.instructions[1].direction == OrderDirection.ASC
+        with pytest.raises(ValueError, match="'invalid'"):
+            _convert_order_by_input_to_sql(order_by_input)
 
     def test_empty_list(self) -> None:
         """Test that empty list returns None."""

@@ -571,7 +571,7 @@ class User:
         return await db.find(
             "v_post",
             where={"user_id": self.id},
-            order_by="created_at DESC",
+            order_by=[{"created_at": "DESC"}],
             limit=limit
         )
 ```

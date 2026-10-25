@@ -108,7 +108,9 @@ async def paginated_users(info, page: int = 1, page_size: int = 20) -> list[User
     offset = (page - 1) * page_size
     return await db.find("v_user", limit=page_size, offset=offset)
 
-# With ordering: a list of {field: direction} dicts
+# With ordering: a list of {field: direction} dicts. ("created_at", "DESC")
+# tuples and bare field names (ascending) work too; a direction other than
+# ASC/DESC raises.
 @fraiseql.query
 async def recent_users(info, limit: int = 10) -> list[User]:
     db = info.context["db"]

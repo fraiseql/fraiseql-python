@@ -114,14 +114,52 @@ def _is_fraiseql_type(field_type: type) -> bool:
 
 
 def _normalize_order_direction(direction: Any) -> OrderDirection:
-    """Convert various direction inputs to OrderDirection enum."""
+    """Convert a direction (``OrderDirection``, enum-like, or string) to ``OrderDirection``.
+
+    ``"asc"`` / ``"desc"`` in any case, or an enum whose value is one of them.
+    Anything else raises: it used to read as DESC (any string but "ASC", any
+    enum value but "asc") or ASC (anything else), which sorted the rows the
+    wrong way without a word.
+
+    Raises:
+        ValueError: The direction is not ASC or DESC.
+    """
     if isinstance(direction, OrderDirection):
         return direction
-    if hasattr(direction, "value"):  # Enum-like
-        return OrderDirection.ASC if direction.value == "asc" else OrderDirection.DESC
-    if isinstance(direction, str):
-        return OrderDirection.ASC if direction.upper() == "ASC" else OrderDirection.DESC
-    return OrderDirection.ASC  # Default
+    raw = direction.value if hasattr(direction, "value") else direction  # Enum-like
+    if isinstance(raw, str):
+        if raw.upper() == "ASC":
+            return OrderDirection.ASC
+        if raw.upper() == "DESC":
+            return OrderDirection.DESC
+    msg = f"order_by: cannot read a sort direction from {direction!r}; use 'ASC' or 'DESC'"
+    raise ValueError(msg)
+
+
+def _order_by_item_from_sequence(item: tuple | str) -> OrderBy:
+    """Read a ``(field, direction)`` / ``(field,)`` tuple or a bare field name.
+
+    The field is a snake_case or camelCase name, dotted for a nested field,
+    resolved as a dict key would be; a missing direction is ASC.
+
+    Raises:
+        TypeError: The tuple is not one or two items with a string field first.
+    """
+    from fraiseql.utils.casing import to_snake_case
+
+    if isinstance(item, str):
+        field, direction = item, OrderDirection.ASC
+    elif len(item) in (1, 2) and isinstance(item[0], str) and item[0]:
+        field = item[0]
+        direction = _normalize_order_direction(item[1]) if len(item) == 2 else OrderDirection.ASC
+    else:
+        msg = (
+            f"order_by: cannot read {item!r}; a tuple item is (field, direction) "
+            "or (field,), e.g. ('created_at', 'DESC')"
+        )
+        raise TypeError(msg)
+    path = ".".join(to_snake_case(part) for part in field.split("."))
+    return OrderBy(field=path, direction=direction)
 
 
 def _unwrap_annotation(annotation: Any, *, into_list: bool) -> Any:
@@ -457,6 +495,23 @@ def _convert_order_by_input_to_sql(
             # _apply_collation_default.
             elif isinstance(item, dict):
                 _collect_dict_order_by(item, instructions, "", global_collation, source_type)
+            # ("created_at", "DESC"), ("created_at",) or "created_at". These
+            # were skipped, so the list resolved to nothing and the rows came
+            # back unordered.
+            elif isinstance(item, (tuple, str)):
+                instr = _order_by_item_from_sequence(item)
+                collation = _apply_collation_default(
+                    None, global_collation, False, _is_text_field(source_type, instr.field)
+                )
+                instructions.append(
+                    OrderBy(field=instr.field, direction=instr.direction, collation=collation)
+                )
+            elif item is not None:
+                msg = (
+                    f"order_by: cannot read list item {item!r}; use {{'field': 'ASC'}}, "
+                    "('field', 'DESC') or 'field'"
+                )
+                raise TypeError(msg)
         return OrderBySet(instructions=instructions) if instructions else None
 
     # Handle object with field-specific order directions

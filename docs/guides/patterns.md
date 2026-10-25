@@ -307,7 +307,7 @@ async def users(info, first: int = 10, after: str | None = None) -> Connection[U
     first = min(first, 100)            # cap page size
     offset = _decode_cursor(after) + 1 if after else 0
 
-    rows = await db.find("v_user", order_by="created_at_desc", limit=first + 1, offset=offset)
+    rows = await db.find("v_user", order_by=[{"created_at": "DESC"}], limit=first + 1, offset=offset)
     has_next_page = len(rows) > first
     rows = rows[:first]
 
@@ -433,7 +433,7 @@ async def users(info, filter: UserFilter | None = None, search: str | None = Non
         # `search_text` is a tsvector exposed by the view; see the SQL below.
         where["search_text"] = {"matches": search}
 
-    rows = await db.find("v_user", where=where, order_by="created_at_desc", limit=100)
+    rows = await db.find("v_user", where=where, order_by=[{"created_at": "DESC"}], limit=100)
     return [User(**row) for row in rows]
 ```
 

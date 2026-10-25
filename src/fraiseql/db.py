@@ -3362,6 +3362,10 @@ class FraiseQLRepository:
             return None
 
         order_set = order_by
+        if isinstance(order_set, tuple):
+            # ("created_at", "DESC") is one sort key; a tuple of keys is a list.
+            is_one_key = len(order_set) <= 2 and isinstance(order_set[0], str)
+            order_set = [order_set] if is_one_key else list(order_set)
         if not hasattr(order_set, "to_sql"):
             if hasattr(order_set, "_to_sql_order_by"):
                 order_set = order_set._to_sql_order_by(config=self.context.get("config"))
@@ -3381,9 +3385,15 @@ class FraiseQLRepository:
                     config=self.context.get("config"),
                     source_type=_type_registry.get(view_name) if view_name else None,
                 )
-            else:
-                # Raw SQL string, or something unrecognised — the caller handles it
+            elif isinstance(order_set, str):
+                # Raw SQL string — the caller passes it through
                 return None
+            else:
+                msg = (
+                    f"order_by: cannot read {type(order_by).__name__}; use a dict, a list of "
+                    "dicts or (field, direction) tuples, or an OrderBySet"
+                )
+                raise TypeError(msg)
 
         if not order_set or not hasattr(order_set, "to_sql"):
             return None

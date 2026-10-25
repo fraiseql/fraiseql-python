@@ -285,6 +285,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operator names; a direction string under a key of that name still sorts on a
   field of that name.
 
+- **`order_by=[("created_at", "DESC")]` sorts.** A list `order_by` read only
+  dicts and `OrderBy`-like items and skipped anything else, so a
+  `(field, direction)` tuple (the form `fraiseql init` generated) left the
+  query without an ORDER BY and the rows came back unordered. `db.find` now
+  takes `(field, direction)` and `(field,)` tuples, bare field names
+  (ascending), and a single tuple outside a list; field names resolve as dict
+  keys do (camelCase, dotted paths). A list item it can't read, or an
+  `order_by` of another type (not a dict, list, tuple, `OrderBySet` or SQL
+  string), raises `TypeError`. A direction other than ASC / DESC raises
+  `ValueError` in every shape: `"ascending"` or `"DESC NULLS LAST"` used to sort
+  DESC, and an enum whose value is `"ASC"` sorted DESC too.
+
 - **A `vector` column of a view without a JSONB column comes back as a list.**
   `row_to_json` writes a pgvector `vector` through its text output, so a field
   typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type
