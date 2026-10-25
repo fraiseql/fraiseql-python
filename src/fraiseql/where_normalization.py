@@ -497,9 +497,12 @@ def _is_nested_object_filter(
     """
     # Check if any keys are vector operators - these should not be treated as nested
     # Example: {"cosine_distance": {"vector": [...], "threshold": 0.5}}
-    # Same for the ltree operators taking {"label": ..., "position": ...}
+    # Same for the ltree operators taking {"label": ..., "position": ...}, and
+    # the coordinate distance_within taking {"center": ..., "radius": ...}
     if any(
-        k in VECTOR_OPERATORS or _normalize_operator(k) in LTREE_INDEX_COMPARISONS
+        k in VECTOR_OPERATORS
+        or _normalize_operator(k) in LTREE_INDEX_COMPARISONS
+        or _normalize_operator(k) == "distance_within"
         for k in field_filter
     ):
         return False, False
@@ -641,6 +644,15 @@ def _declared_ltree(source_type: type, field_path: list[str]) -> bool:
     return isinstance(field_type, type) and issubclass(field_type, LTreeField)
 
 
+def _declared_coordinate(source_type: type, field_path: list[str]) -> bool:
+    """Whether *field_path* names a field *source_type* declares as ``Coordinate``."""
+    from fraiseql.sql.graphql_order_by_generator import _resolve_field_type
+    from fraiseql.types.scalars.coordinates import CoordinateField
+
+    field_type = _resolve_field_type(source_type, tuple(field_path))
+    return isinstance(field_type, type) and issubclass(field_type, CoordinateField)
+
+
 def annotate_temporal_casts(clause: WhereClause, source_type: type | None) -> None:
     """Mark the JSONB conditions on datetime / date / ltree fields of *source_type*.
 
@@ -649,17 +661,24 @@ def annotate_temporal_casts(clause: WhereClause, source_type: type | None) -> No
     condition on a field the type declares as ``datetime`` or ``date`` gets
     ``temporal_cast`` set, and compares as ``timestamptz`` / ``date``. One on an
     ``LTree`` field compares as ``ltree``, label by label (as text,
-    ``'a-b' < 'a.c'``; as paths, ``a.c < a-b``).
+    ``'a-b' < 'a.c'``; as paths, ``a.c < a-b``). A ``Coordinate`` field, on a
+    JSONB path or a column, gets ``"point"``: its filters compare points.
     """
     if source_type is None:
         return
     for condition in clause.conditions:
-        if condition.lookup_strategy == "jsonb_path" and condition.temporal_cast is None:
+        if condition.temporal_cast is not None:
+            continue
+        if condition.lookup_strategy == "jsonb_path":
             condition.temporal_cast = _declared_temporal_cast(source_type, condition.field_path)
             if condition.temporal_cast is None and _declared_ltree(
                 source_type, condition.field_path
             ):
                 condition.temporal_cast = "ltree"
+        if condition.temporal_cast is None and _declared_coordinate(
+            source_type, condition.field_path
+        ):
+            condition.temporal_cast = "point"
     for nested in clause.nested_clauses:
         annotate_temporal_casts(nested, source_type)
     if clause.not_clause:

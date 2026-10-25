@@ -245,6 +245,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ST_DWithin` on `point`s, which PostGIS lacks, and in degrees: it now measures
   geographies (WGS 84) in meters. `eq` / `neq` / `in` / `notin` compared points
   with `=`, which `point` lacks; they use `~=`.
+- **`db.find` filters a `Coordinate` field.**
+  `where={"location": {"distance_within": ((37.77, -122.42), 5000)}}` wrote
+  `data ->> 'location' distance_within %s`, a syntax error: the coordinate SQL
+  was never used. `distance_within` (also `{"center": [lat, lng], "radius":
+  meters}`) and, on a field the type declares `Coordinate`, `eq` / `neq` / `in` /
+  `nin` (tuples, `"lat,lng"` strings or `{lat, lng}`) now get it, on a JSONB
+  field or a `point` column. The coordinate is a `point`, `(longitude,
+  latitude)`.
 - **`BodySizeLimiterMiddleware` passes the request body on to the app.** It
   read the body to measure it, then gave the app behind it an empty one, so
   every GraphQL `POST` behind it got a 422. It is now a plain ASGI middleware:

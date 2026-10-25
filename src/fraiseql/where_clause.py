@@ -31,11 +31,13 @@ Known Limitations:
 from __future__ import annotations
 
 import warnings
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Literal
 
+from graphql import GraphQLError
 from psycopg.sql import SQL, Composed, Identifier
 from psycopg.sql import Literal as SQLLiteral
 
@@ -229,6 +231,10 @@ COORDINATE_OPERATORS = {
     "notin": "NOT IN",
 }
 
+# The filters of a field declared Coordinate (temporal_cast "point"); they are
+# written by the coordinate operator strategy (point has ~=, not =)
+COORDINATE_FIELD_OPERATORS = {"eq", "neq", "in", "nin", "notin", "distance_within"}
+
 # Pattern matching operators
 PATTERN_OPERATORS = {
     "imatches": "~*",  # Case-insensitive regex match
@@ -345,6 +351,30 @@ def temporal_cast_of_value(value: Any) -> str | None:
     return None
 
 
+def _coordinate(value: Any) -> tuple[float, float]:
+    """(latitude, longitude) from a tuple, a list, a ``"lat,lng"`` string or ``{lat, lng}``."""
+    from fraiseql.types.scalars.coordinates import parse_coordinate_value
+
+    if isinstance(value, list):
+        value = tuple(value)
+    return parse_coordinate_value(value)
+
+
+def _coordinate_distance(value: Any) -> tuple[tuple[float, float], float]:
+    """((latitude, longitude), meters) from a tuple or a ``{center, radius}`` input."""
+    if isinstance(value, Mapping) and {"center", "radius"} <= value.keys():
+        center, radius = value["center"], value["radius"]
+    elif hasattr(value, "center") and hasattr(value, "radius"):
+        center, radius = value.center, value.radius  # CoordinateDistanceInput
+    elif isinstance(value, (list, tuple)) and len(value) == 2:
+        center, radius = value
+    else:
+        raise TypeError(f"((lat, lng), meters) or {{center, radius}}, got {value!r}")
+    if not isinstance(radius, int | float | Decimal) or isinstance(radius, bool):
+        raise TypeError(f"a radius in meters, got {radius!r}")
+    return _coordinate(center), float(radius)
+
+
 @dataclass
 class FieldCondition:
     """Single filter condition on a field.
@@ -370,7 +400,8 @@ class FieldCondition:
             ``(data->>'created_at')::timestamptz >= %s::timestamptz``, instead
             of comparing ISO strings as text. A datetime or date value casts
             without it. ``"ltree"`` for a field declared as ``LTree``: paths
-            compare label by label.
+            compare label by label. ``"point"`` for a field declared as
+            ``Coordinate``: eq, in... compare points (``~=``).
 
     Examples:
         # FK lookup: machine.id = '123'
@@ -410,7 +441,7 @@ class FieldCondition:
     lookup_strategy: Literal["fk_column", "jsonb_path", "sql_column"]
     target_column: str
     jsonb_path: list[str] | None = None
-    temporal_cast: Literal["timestamptz", "date", "ltree"] | None = None
+    temporal_cast: Literal["timestamptz", "date", "ltree", "point"] | None = None
 
     def __post_init__(self):
         """Validate the condition after initialization."""
@@ -488,6 +519,9 @@ class FieldCondition:
                 )
                 return sql, params
 
+            if self._is_coordinate_filter():
+                return self._coordinate_sql(Identifier(self.target_column))
+
             if self.operator in LTREE_MATCH_OPERATORS:
                 return self._ltree_match_sql(Identifier(self.target_column))
 
@@ -561,6 +595,9 @@ class FieldCondition:
                     entity_schema, entity_name, str(self.value), ltree_op, jsonb_expr
                 )
                 return sql, params
+
+            if self._is_coordinate_filter():
+                return self._coordinate_sql(jsonb_expr)
 
             if self.operator in LTREE_MATCH_OPERATORS:
                 return self._ltree_match_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
@@ -658,6 +695,9 @@ class FieldCondition:
                     Identifier(self.target_column),
                 )
                 return sql, params
+
+            if self._is_coordinate_filter():
+                return self._coordinate_sql(Identifier(self.target_column))
 
             if self.operator in LTREE_MATCH_OPERATORS:
                 return self._ltree_match_sql(Identifier(self.target_column))
@@ -928,6 +968,43 @@ class FieldCondition:
             raise ValueError(f"Unknown lookup_strategy: {self.lookup_strategy}")
 
         return sql, params
+
+    def _is_coordinate_filter(self) -> bool:
+        """distance_within, or eq / in... on a field declared Coordinate."""
+        return self.operator == "distance_within" or (
+            self.temporal_cast == "point" and self.operator in COORDINATE_FIELD_OPERATORS
+        )
+
+    def _coordinate_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """The coordinate strategy's SQL; values are (latitude, longitude).
+
+        ``distance_within`` takes ``((lat, lng), meters)`` or, from GraphQL,
+        ``{center: [lat, lng], radius: meters}``; a coordinate is a tuple, a
+        ``"lat,lng"`` string or ``{lat, lng}``.
+
+        Raises:
+            ValueError: For a value of the wrong shape.
+        """
+        from fraiseql.sql.operators.advanced.coordinate_operators import (
+            CoordinateOperatorStrategy,
+        )
+
+        operator = "notin" if self.operator == "nin" else self.operator
+        try:
+            if operator == "distance_within":
+                value: Any = _coordinate_distance(self.value)
+            elif operator in ("in", "notin"):
+                if not isinstance(self.value, (list, tuple)):
+                    raise TypeError(f"a list of coordinates, got {self.value!r}")
+                value = [_coordinate(v) for v in self.value]
+            else:
+                value = _coordinate(self.value)
+            sql = CoordinateOperatorStrategy().build_sql(operator, value, path_expr)
+        except (TypeError, GraphQLError) as e:
+            raise ValueError(f"coordinate filter '{self.operator}' takes {e}") from e
+        if sql is None:
+            raise ValueError(f"coordinate filter '{self.operator}' is not supported")
+        return Composed([sql]), []
 
     def _ltree_match_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
         """ancestor_of, descendant_of, matches_*, in_array: path @> %s::ltree...
