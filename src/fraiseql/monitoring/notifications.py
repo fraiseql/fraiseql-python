@@ -579,7 +579,10 @@ class NotificationManager:
                 """
                     SELECT
                         error_id, error_fingerprint, error_type, error_message,
-                        severity, occurrence_count, first_seen, last_seen,
+                        severity, occurrence_count,
+                        -- ISO 8601 text, whatever loaders the pool has (the app's
+                        -- pool loads timestamps as raw text)
+                        to_json(first_seen) #>> '{}', to_json(last_seen) #>> '{}',
                         environment, release_version, stack_trace
                     FROM tb_error_log
                     WHERE error_id = %s
@@ -598,8 +601,8 @@ class NotificationManager:
                 "error_message": row[3],
                 "severity": row[4],
                 "occurrence_count": row[5],
-                "first_seen": row[6].isoformat() if row[6] else None,
-                "last_seen": row[7].isoformat() if row[7] else None,
+                "first_seen": row[6],
+                "last_seen": row[7],
                 "environment": row[8],
                 "release_version": row[9],
                 "stack_trace": row[10],

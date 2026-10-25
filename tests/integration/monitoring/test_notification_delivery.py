@@ -214,3 +214,46 @@ class TestPartitionedTablesAcceptWrites:
         tables = {"tb_error_occurrence", "otel_traces", "otel_metrics", "tb_error_notification_log"}
         assert {row[0].rsplit("_", 2)[0] for row in created} <= tables
         assert all(counts[t] >= 4 for t in tables), counts
+
+
+@pytest_asyncio.fixture(scope="class", loop_scope="class")
+async def app_pool(
+    postgres_url: str, test_schema: str
+) -> AsyncGenerator[psycopg_pool.AsyncConnectionPool]:
+    """The pool create_fraiseql_app makes (dates load as text), with schema.sql loaded."""
+    from fraiseql.fastapi.app import create_db_pool
+
+    pool = await create_db_pool(
+        postgres_url,
+        min_size=1,
+        max_size=4,
+        kwargs={"options": f"-c search_path={test_schema},public"},
+    )
+    async with pool.connection() as conn:
+        await conn.execute(SCHEMA_SQL.read_text())
+        await conn.commit()
+    yield pool
+    await pool.close()
+
+
+@pytest.mark.usefixtures("test_schema")
+class TestOnTheAppPool:
+    @pytest.mark.asyncio(loop_scope="class")
+    async def test_notification_and_reads(self, app_pool, webhook_server) -> None:
+        class AppPoolError(Exception):
+            pass
+
+        url = f"http://127.0.0.1:{webhook_server.server_port}/errors"
+        await _add_config(app_pool, "webhook", {"url": url}, "AppPoolError")
+        tracker = PostgreSQLErrorTracker(app_pool, environment="test")
+
+        error_id = await tracker.capture_exception(_capture(AppPoolError, "on the app pool"))
+
+        assert await _log_rows(app_pool, error_id, 1) == [("webhook", "N/A", "sent", None)]
+        [body] = webhook_server.received
+        assert datetime.fromisoformat(body["first_seen"]).tzinfo is not None
+        error = await tracker.get_error(error_id)
+        assert datetime.fromisoformat(error["last_seen"]).tzinfo is not None
+        [unresolved] = await tracker.get_unresolved_errors()
+        assert unresolved["error_id"] == error_id
+        assert datetime.fromisoformat(unresolved["first_seen"]).tzinfo is not None

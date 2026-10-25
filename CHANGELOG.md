@@ -807,6 +807,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   up the view's type on each call and logged `Type registry state: {...}` (the whole
   registry) at ERROR level when there was none, which is a normal case. That lookup
   now logs `No type registered for view ...` at DEBUG.
+- **The error tracker and its notifications work on the app's own pool.** The pool
+  `create_fraiseql_app` creates loads timestamps as raw text (a `memoryview`), so
+  `get_error`, `get_unresolved_errors` and every notification failed on
+  `.isoformat()`. PostgreSQL now returns `first_seen`, `last_seen` and `resolved_at`
+  as ISO 8601 text, whatever the pool's loaders.
 
 ## [1.30.0] - 2026-10-22
 
