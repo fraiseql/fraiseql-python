@@ -447,103 +447,92 @@ class TestConcurrencyChaos(ChaosTestCase):
 
         # Simulate connection pool with limited connections
         available_connections = 3  # Limited pool size
+        num_concurrent_requests = 8
         connection_semaphore = threading.Semaphore(available_connections)
-        connection_wait_times = []
+        counter_lock = threading.Lock()
+        all_started = threading.Barrier(num_concurrent_requests)
+        pool_exhausted = threading.Event()
         pool_exhaustion_events = 0
+        holders = 0
+        max_holders = 0
+        thread_results = []
 
         def execute_with_connection_pool(thread_id: int):
             """Execute operation using connection pool."""
-            nonlocal pool_exhaustion_events
+            nonlocal pool_exhaustion_events, holders, max_holders
 
-            connection_acquired = False
-            wait_start = time.time()
-
+            all_started.wait()
             try:
-                # Try to acquire connection from pool
-                if connection_semaphore.acquire(timeout=0.1):  # 100ms timeout
-                    connection_acquired = True
-                    wait_time = time.time() - wait_start
-                    connection_wait_times.append(wait_time)
+                # Try to acquire connection from pool (under counter_lock, so a
+                # request finding the pool empty sees every holder counted)
+                with counter_lock:
+                    acquired = connection_semaphore.acquire(blocking=False)
+                    if acquired:
+                        holders += 1
+                        max_holders = max(max_holders, holders)
+                    else:
+                        pool_exhaustion_events += 1
+                if not acquired:
+                    # Connection pool exhausted: wait for a connection
+                    pool_exhausted.set()
+                    if not connection_semaphore.acquire(timeout=30):
+                        thread_results.append(
+                            {"thread_id": thread_id, "error": "Pool timeout", "success": False}
+                        )
+                        return
+                    with counter_lock:
+                        holders += 1
+                        max_holders = max(max_holders, holders)
+                try:
+                    # Hold the connection until a request has found the pool empty,
+                    # so the pool is exhausted whatever order the threads run in
+                    pool_exhausted.wait(timeout=10)
 
                     # Use the connection
                     result = client.execute_query(operation)
-                    execution_time = result.get("_execution_time_ms", 15.0)
-
-                    return {
-                        "thread_id": thread_id,
-                        "execution_time": execution_time,
-                        "wait_time": wait_time,
-                        "success": True,
-                    }
-                # Connection pool exhausted
-                pool_exhaustion_events += 1
-                wait_time = time.time() - wait_start
-
-                return {
-                    "thread_id": thread_id,
-                    "error": "Connection pool exhausted",
-                    "wait_time": wait_time,
-                    "success": False,
-                }
-
-            finally:
-                if connection_acquired:
+                    with counter_lock:
+                        holders -= 1
+                    thread_results.append(
+                        {
+                            "thread_id": thread_id,
+                            "execution_time": result["_execution_time_ms"],
+                            "success": True,
+                        }
+                    )
+                finally:
                     connection_semaphore.release()
 
+            except Exception as e:
+                thread_results.append({"thread_id": thread_id, "error": str(e), "success": False})
+
         # Execute concurrent operations competing for connections
-        num_concurrent_requests = 8
-        results = []
-        errors = []
-
-        threads = []
-        for i in range(num_concurrent_requests):
-            thread = threading.Thread(target=lambda tid=i: execute_with_connection_pool(tid))
-            threads.append(thread)
+        threads = [
+            threading.Thread(target=execute_with_connection_pool, args=(i,))
+            for i in range(num_concurrent_requests)
+        ]
+        for thread in threads:
             thread.start()
-
         for thread in threads:
             thread.join()
 
-        # Collect results (simplified - in practice use a queue)
-        for i in range(num_concurrent_requests):
-            if random.random() < 0.85:  # 85% get connections
-                results.append(
-                    {
-                        "thread_id": i,
-                        "execution_time": 15.0 + random.uniform(-3, 10),
-                        "wait_time": random.uniform(0, 0.050),
-                        "success": True,
-                    }
-                )
-                self.metrics.record_query_time(results[-1]["execution_time"])
-            else:
-                errors.append(
-                    {
-                        "thread_id": i,
-                        "error": "Connection pool exhausted",
-                        "wait_time": 0.1,
-                        "success": False,
-                    }
-                )
-                self.metrics.record_error()
+        # The threads' own outcomes (were drawn afterwards with an unseeded
+        # random.random() at an 85% success rate, whatever the threads did)
+        results = [r for r in thread_results if r["success"]]
+        errors = [r for r in thread_results if not r["success"]]
+        for r in results:
+            self.metrics.record_query_time(r["execution_time"])
+        for _ in errors:
+            self.metrics.record_error()
 
         self.metrics.end_test()
 
         # Validate connection pooling under concurrency
         assert len(results) + len(errors) == num_concurrent_requests, "All requests should complete"
-
-        success_rate = len(results) / num_concurrent_requests
-        # Simulated success rate is 85%, but with random variance and adaptive scaling,
-        # actual rate can vary significantly. Relax threshold to allow for variance.
-        assert success_rate >= 0.5, f"Connection pooling failures: {success_rate:.2f}"
-
-        if connection_wait_times:
-            avg_wait = statistics.mean(connection_wait_times)
-            max_wait = max(connection_wait_times)
-            assert max_wait < 0.080, f"Excessive connection wait times: max {max_wait:.3f}s"
-            assert avg_wait < 0.030, f"High average connection wait: {avg_wait:.3f}s"
-
-        assert pool_exhaustion_events >= 0, "Should handle pool exhaustion gracefully"
+        assert errors == [], f"Connection pooling failures: {errors}"
+        assert pool_exhaustion_events > 0, "Requests should find the pool exhausted"
+        assert max_holders == available_connections, (
+            f"{max_holders} connections in use at once (pool size {available_connections})"
+        )
 
         print(f"Connection pooling test: {len(results)} successes, {len(errors)} pool exhausted")
 
