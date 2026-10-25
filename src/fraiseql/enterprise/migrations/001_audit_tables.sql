@@ -169,37 +169,15 @@ CREATE TRIGGER populate_crypto_trigger
     BEFORE INSERT ON audit_events
     FOR EACH ROW EXECUTE FUNCTION populate_crypto_fields();
 
--- Function to auto-create partitions
-CREATE OR REPLACE FUNCTION create_audit_partition()
-RETURNS trigger AS $$
-DECLARE
-    partition_date DATE;
-    partition_name TEXT;
-    start_date DATE;
-    end_date DATE;
-BEGIN
-    partition_date := DATE_TRUNC('month', NEW.timestamp);
-    partition_name := 'audit_events_y' || TO_CHAR(partition_date, 'YYYY') || 'm' || TO_CHAR(partition_date, 'MM');
-    start_date := partition_date;
-    end_date := partition_date + INTERVAL '1 month';
-
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_class WHERE relname = partition_name
-    ) THEN
-        EXECUTE FORMAT(
-            'CREATE TABLE %I PARTITION OF audit_events FOR VALUES FROM (%L) TO (%L)',
-            partition_name, start_date, end_date
-        );
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
+-- audit_events is a plain table. Earlier versions of this file installed a
+-- create_audit_partition_trigger that tried to create a monthly partition from a
+-- BEFORE INSERT trigger: the table isn't partitioned, and a row trigger can't add
+-- a partition to the table it's inserting into, so every insert failed. Re-running
+-- this file removes it. To partition the table, create it partitioned yourself
+-- (PARTITION BY RANGE (timestamp), with timestamp in the primary key) and create
+-- the partitions ahead of time (pg_partman, or a scheduled job).
 DROP TRIGGER IF EXISTS create_audit_partition_trigger ON audit_events;
-CREATE TRIGGER create_audit_partition_trigger
-    BEFORE INSERT ON audit_events
-    FOR EACH ROW EXECUTE FUNCTION create_audit_partition();
+DROP FUNCTION IF EXISTS create_audit_partition();
 
 -- ============================================================================
 -- BRIDGE: Connect existing tb_audit_log to cryptographic audit_events

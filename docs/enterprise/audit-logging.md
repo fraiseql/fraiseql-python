@@ -46,18 +46,21 @@ psql "$DATABASE_URL" -f "$SQL"
 Then, in SQL:
 
 ```sql
--- The file also installs a trigger that tries to create a monthly partition of
--- audit_events, but the table isn't partitioned, so every insert fails with
--- "cannot CREATE TABLE .. PARTITION OF". Disable it:
-ALTER TABLE audit_events DISABLE TRIGGER create_audit_partition_trigger;
-
 -- The signature needs an active signing key; without one an insert fails with
 -- "No active signing key available". Keep the real key in a secrets store.
 INSERT INTO audit_signing_keys (key_value) VALUES ('replace-with-a-secret-key');
 ```
 
 The file needs the `pgcrypto` extension (it runs `CREATE EXTENSION IF NOT EXISTS
-pgcrypto`).
+pgcrypto`). It can be run again: it keeps the rows and replaces the functions.
+
+`audit_events` is a plain table, not partitioned. Before 1.31.0 the file also
+installed a `create_audit_partition_trigger` that made every insert fail ("cannot
+CREATE TABLE .. PARTITION OF"); running the 1.31.0 file again drops it. To partition
+the table by month, create it partitioned yourself before running the file (`PARTITION
+BY RANGE (timestamp)`, with `timestamp` in the primary key) and create the partitions
+ahead of time, with pg_partman or a scheduled job: an insert trigger can't add the
+partition its own row goes into.
 
 ---
 

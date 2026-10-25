@@ -854,6 +854,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `get_error`, `get_unresolved_errors` and every notification failed on
   `.isoformat()`. PostgreSQL now returns `first_seen`, `last_seen` and `resolved_at`
   as ISO 8601 text, whatever the pool's loaders.
+- **Inserts into the enterprise `audit_events` table work.**
+  `enterprise/migrations/001_audit_tables.sql` installed a `BEFORE INSERT` trigger
+  that created a monthly partition of `audit_events`, which isn't a partitioned
+  table, so every insert failed with `cannot CREATE TABLE .. PARTITION OF`. The
+  trigger and its `create_audit_partition()` function are gone, and running the file
+  again drops them from an existing database. `docs/enterprise/audit-logging.md`
+  says how to partition the table yourself.
 
 ## [1.30.0] - 2026-10-22
 

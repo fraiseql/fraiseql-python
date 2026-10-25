@@ -37,11 +37,6 @@ async def setup_bridge_schema(class_db_pool, test_schema) -> None:
             migration_sql = migration_path.read_text()
             await conn.execute(migration_sql)
 
-        # Disable partition trigger for tests
-        await conn.execute(
-            "ALTER TABLE audit_events DISABLE TRIGGER create_audit_partition_trigger"
-        )
-
         # Ensure test signing key exists
         cur = await conn.execute(
             "SELECT COUNT(*) FROM audit_signing_keys WHERE key_value = %s",
