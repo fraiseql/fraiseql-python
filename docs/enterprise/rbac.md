@@ -60,10 +60,13 @@ exactly that seed. If you changed the parent of a seeded role, it leaves the hie
 alone: check it with `SELECT name, parent_role_id FROM roles WHERE is_system`.
 
 `003_rbac_cache_setup.sql` needs the `pg_fraiseql_cache` extension (see below).
-`004_rbac_row_level_security.sql` adds RLS policies to tables named `users`, `orders`
-and `products`, and fails (`relation "users" does not exist`) unless all three exist;
-read it before applying it, or copy only the two functions at its end (see
-[Row-Level Security](#row-level-security)).
+`004_rbac_row_level_security.sql` creates two helper functions for RLS policies (see
+[Row-Level Security](#row-level-security)). It also holds example policies for tables
+named `users`, `orders` and `products`, applied to each of these tables that exists
+when the file runs (it skips the others with a `NOTICE`): tenant isolation on
+`tenant_id`, and updates limited to the row's owner (`users.id`, `orders.user_id`) or
+to the `admin` and `super_admin` roles. Read them before applying the file to a
+database that has tables with these names.
 
 ### Roles, Permissions and Assignments
 
@@ -173,8 +176,8 @@ nothing.
 
 ## Row-Level Security
 
-`004_rbac_row_level_security.sql` ends with two functions you can use in your own
-policies (copy them if you don't apply the whole file):
+`004_rbac_row_level_security.sql` creates two functions you can use in your own
+policies:
 
 ```sql
 -- user_has_role(user_id, role_name) and user_has_permission(user_id, resource, action)

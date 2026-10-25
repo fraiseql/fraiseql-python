@@ -952,6 +952,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   permissions.** Its query had a positional `%s` placeholder with named parameters,
   so it raised `TypeError: positional placeholders (%s) require a sequence of
   parameters`.
+- **`004_rbac_row_level_security.sql` applies to any database with the RBAC
+  tables.** It created policies on `users`, `orders` and `products` unconditionally,
+  so it failed with `relation "users" does not exist` unless all three existed. It
+  now creates `user_has_role()` and `user_has_permission()` first, and applies each
+  table's example policies only if that table exists (a `NOTICE` names the ones
+  skipped); run it again after creating a table.
 
 ## [1.30.0] - 2026-10-22
 
