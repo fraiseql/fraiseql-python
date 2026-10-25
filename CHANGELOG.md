@@ -318,6 +318,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   raises `ValueError` naming the field, the operator and the operators that
   type has. `db.find` already raised for an unknown operator.
 
+- **A vector distance `orderBy` works on a view with a `data` column.** With
+  the vector as a column beside `data` (a vector inside the JSONB document
+  can't be sorted), `orderBy: {embedding: {cosineDistance: ...}}` and
+  `db.find(order_by={"embedding": {"cosine_distance": [...]}})` rendered
+  `data."embedding"` and failed with `missing FROM-clause entry for table
+  "data"`; only views declared `jsonb_column=None` sorted. They now sort on the
+  column (`"embedding" <=> ...`), through `column_mapping` when the field is
+  mapped. A distance `where` on such a view read `data ->> 'embedding'` (and
+  failed) whenever the registered columns didn't list the vector, which is the
+  case for a plain `@fraiseql.type`; it now reads the column too.
+  `docs/features/pgvector.md` shows both view shapes.
+
 - **A `vector` column of a view without a JSONB column comes back as a list.**
   `row_to_json` writes a pgvector `vector` through its text output, so a field
   typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type

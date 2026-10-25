@@ -227,7 +227,7 @@ class OrderBy:
                 field_name, operator = parts
                 if operator in VECTOR_DISTANCE_OPERATORS:
                     return self._build_vector_distance_sql(
-                        field_name, operator, self.value, table_ref
+                        field_name, operator, self.value, table_ref, column_mapping
                     )
 
         # Standard JSONB extraction for regular fields.
@@ -276,17 +276,27 @@ class OrderBy:
         operator: str,
         value: Any,
         table_ref: str = "t",
+        column_mapping: dict[str, str] | None = None,
     ) -> sql.Composed:
         """Build SQL for vector distance ordering.
 
-        Generates: ({table_ref}."field") <operator> '[0.1,0.2,...]'::vector
+        Generates: (t."field") <operator> '[0.1,0.2,...]'::vector on a view
+        without a JSONB column, ("field") <operator> ... on one with it.
+
+        The vector is always a column of the view: a vector inside the JSONB
+        document can't be sorted by distance, so a view with a ``data`` column
+        exposes it beside ``data``, as ``where`` expects. This used to render
+        ``data."field"``, which PostgreSQL reads as a table named ``data``.
 
         Args:
             field_name: The vector field name (e.g., 'embedding')
             operator: One of :data:`VECTOR_DISTANCE_OPERATORS`
             value: The vector to compare against: a list, a ``VectorDistanceInput``
                 (``{"dense": [...]}``, as GraphQL sends it), or a bit string
-            table_ref: Table alias or column name to use for field access
+            table_ref: ``"t"`` for a view without a JSONB column (selected
+                ``AS t``), otherwise the JSONB column's name
+            column_mapping: Declared field → column names; a mapped vector
+                field sorts on its column
 
         Returns:
             SQL fragment for vector distance ordering
@@ -348,9 +358,13 @@ class OrderBy:
         else:
             direction_str = str(self.direction).upper()
         direction_sql = sql.SQL(direction_str)
-        column_sql = sql.Composed(
-            [sql.SQL(table_ref + "."), sql.Identifier(field_name)],
-        )
+        column = (column_mapping or {}).get(field_name, field_name)
+        if table_ref == "t":
+            column_sql = sql.Composed([sql.SQL("t."), sql.Identifier(column)])
+        else:
+            # The FROM clause has no alias here, and table_ref names the JSONB
+            # column, not a table.
+            column_sql = sql.Composed([sql.Identifier(column)])
         if pg_operator_sql is None:
             return sql.Composed(
                 [

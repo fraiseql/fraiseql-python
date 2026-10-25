@@ -315,7 +315,6 @@ def normalize_dict_where(
             # Direct column filter: status = 'active'
             # Determine lookup strategy based on table structure
             lookup_strategy = "sql_column"
-            target_column = field_name
 
             # Check if we know table columns
             if table_columns is not None:
@@ -323,7 +322,6 @@ def normalize_dict_where(
                 if field_name not in table_columns and not _is_flat_view(view_name, table_columns):
                     # Column doesn't exist in table, must be in JSONB
                     lookup_strategy = "jsonb_path"
-                    target_column = jsonb_column
             else:
                 # We don't know table columns - check if table uses JSONB for data
                 from fraiseql.db import _table_metadata
@@ -334,7 +332,6 @@ def normalize_dict_where(
                     # (unless field is 'id' which is often a top-level column)
                     if metadata.get("has_jsonb_data", False) and field_name != "id":
                         lookup_strategy = "jsonb_path"
-                        target_column = jsonb_column
 
             for op, val in field_value.items():
                 if val is None:
@@ -344,7 +341,11 @@ def normalize_dict_where(
                 # (e.g., descendantOfId → descendant_of_id)
                 operator = _normalize_operator(op)
 
-                if lookup_strategy == "jsonb_path":
+                # A vector distance reads the view's column: one inside the JSONB
+                # document can't be compared (`data ->> 'embedding' <=> ...` has
+                # no operator), so the view exposes it beside `data`. That holds
+                # whether or not the view's columns were registered.
+                if lookup_strategy == "jsonb_path" and operator not in VECTOR_OPERATORS:
                     condition = FieldCondition(
                         field_path=[field_name],
                         operator=operator,
@@ -359,7 +360,7 @@ def normalize_dict_where(
                         operator=operator,
                         value=val,
                         lookup_strategy="sql_column",
-                        target_column=target_column,
+                        target_column=field_name,
                     )
 
                 conditions.append(condition)

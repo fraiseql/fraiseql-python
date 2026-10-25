@@ -131,10 +131,12 @@ FraiseQL automatically detects vector fields using these patterns:
 Fields matching these patterns with `List[float]` type get `VectorFilter` (in `where`) and
 `VectorOrderBy` (in `orderBy`) in the GraphQL schema.
 
-The distance operators work on the view's own `vector` (or `bit`) columns, so declare the type
-over a view without a JSONB `data` column (`jsonb_column=None`). A vector stored inside the
-JSONB `data` column can't be filtered or sorted by distance: the SQL reads `t."embedding"`, a
-column such a view doesn't have. Expose the vector as a column of the view instead:
+The distance operators work on the view's own `vector` (or `bit`) columns. A vector stored
+inside the JSONB `data` column can't be filtered or sorted by distance. Expose the vector as a
+column of the view: either declare the type over a view without a JSONB `data` column
+(`jsonb_column=None`), or keep `data` and add the vector as a column beside it. A distance
+`where` / `orderBy` reads the column (`"embedding" <=> ...`), and every other field is still read
+from `data`:
 
 ```python
 @fraise_type(sql_source="documents", jsonb_column=None)
@@ -142,6 +144,13 @@ class Document:
     id: ID
     title: str
     embedding: List[float]
+```
+
+```sql
+-- or: a view with a data column and the vector beside it
+CREATE VIEW v_document AS
+SELECT id, embedding, jsonb_build_object('id', id, 'title', title) AS data
+FROM documents;
 ```
 
 ## GraphQL API

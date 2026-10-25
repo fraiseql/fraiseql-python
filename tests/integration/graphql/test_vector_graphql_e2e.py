@@ -282,3 +282,86 @@ class TestVectorFieldTypes:
             "{ id } }"
         )
         assert _ids(client, query) == [1, 4, 3]
+
+
+_HYBRID_VIEW = "v_vector_graphql_hybrid_doc"
+
+
+@pytest.mark.usefixtures("clear_registry_class")
+class TestVectorColumnNextToData:
+    """A view with a JSONB ``data`` column and the vector as a column beside it.
+
+    The vector can't be sorted inside JSONB, so the view exposes it as a column.
+    ``orderBy`` read it as ``data."embedding"`` (``missing FROM-clause entry for
+    table "data"``) while ``where`` used the column.
+    """
+
+    @pytest_asyncio.fixture(scope="class", loop_scope="class")
+    async def hybrid_view(self, class_db_pool, test_schema, vector_docs):
+        async with class_db_pool.connection() as conn:
+            await conn.execute(f"SET search_path TO {test_schema}, public")
+            await conn.execute(
+                f"CREATE VIEW {_HYBRID_VIEW} AS SELECT id, embedding, "
+                "jsonb_build_object('id', id, 'category', category) AS data "
+                "FROM tb_vector_graphql_doc"
+            )
+            await conn.commit()
+        yield
+
+    @pytest.fixture(scope="class")
+    def hybrid_type(self):
+        @fraiseql.type(sql_source=_HYBRID_VIEW)
+        class HybridDoc:
+            id: int
+            category: str
+            embedding: list[float]
+
+        return HybridDoc
+
+    @pytest.fixture(scope="class")
+    def client(self, class_db_pool, hybrid_view, hybrid_type):
+        from fraiseql.fastapi.dependencies import set_db_pool
+
+        @fraiseql.query
+        async def hybrid_documents(info) -> list[hybrid_type]:
+            return await info.context["db"].find(_HYBRID_VIEW, "hybridDocuments", info)
+
+        set_db_pool(class_db_pool)
+        app = create_fraiseql_app(
+            database_url="postgresql://test/test",  # the pool above is used
+            types=[hybrid_type],
+            queries=[hybrid_documents],
+            production=False,
+        )
+        return TestClient(app)
+
+    @pytest.mark.parametrize(
+        ("operator", "expected"),
+        [("cosineDistance", [1, 4, 3, 2]), ("l2Distance", [1, 3, 2, 4])],
+    )
+    def test_order_by_distance_over_graphql(self, client, operator, expected) -> None:
+        query = (
+            f"{{ hybridDocuments(orderBy: {{embedding: {{{operator}: {{dense: [1, 0]}}}}}}) "
+            "{ id category } }"
+        )
+        assert _ids(client, query) == expected
+
+    def test_where_and_order_by_over_graphql(self, client) -> None:
+        query = (
+            "{ hybridDocuments(where: {embedding: {cosineDistance: {dense: [1, 0]}, "
+            "distanceWithin: 0.5}}, orderBy: {embedding: {cosineDistance: {dense: [1, 0]}}}) "
+            "{ id } }"
+        )
+        assert _ids(client, query) == [1, 4, 3]
+
+    @pytest.mark.asyncio
+    async def test_order_by_distance_in_db_find(self, class_db_pool, client) -> None:
+        from tests.unit.utils.test_response_utils import extract_graphql_data
+
+        from fraiseql.db import FraiseQLRepository
+
+        repo = FraiseQLRepository(class_db_pool, context={"mode": "development"})
+        result = await repo.find(
+            _HYBRID_VIEW, order_by={"embedding": {"cosine_distance": [1.0, 0.0]}}
+        )
+        assert [row["id"] for row in extract_graphql_data(result, _HYBRID_VIEW)] == [1, 4, 3, 2]
