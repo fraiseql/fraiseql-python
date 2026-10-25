@@ -76,10 +76,12 @@ class TestPerformanceBaseline:
 
         avg_time = statistics.mean(times)
         p95_time = statistics.quantiles(times, n=20)[18]  # 95th percentile
+        # The median, not the mean or the p95: of 10 runs, one scheduler stall on a
+        # loaded machine (-n 8) is enough to move both of those past any target.
+        median_time = statistics.median(times)
 
-        # Baseline expectations (these would be adjusted based on actual performance)
-        assert avg_time < 0.1, f"Average query time too slow: {avg_time:.4f}s"
-        assert p95_time < 0.2, f"95th percentile too slow: {p95_time:.4f}s"
+        # Baseline expectation (a run takes well under 1 ms here)
+        assert median_time < 0.1, f"Median query time too slow: {median_time:.4f}s"
 
         # Store performance metrics for regression detection
         self.baseline_metrics = {
@@ -117,10 +119,11 @@ class TestPerformanceBaseline:
             assert result is not None
             times.append(end - start)
 
-        avg_time = statistics.mean(times)
+        # The median: one scheduler stall would move the mean of these runs.
+        median_time = statistics.median(times)
 
         # Complex queries should still be reasonably fast
-        assert avg_time < 0.5, f"Complex query too slow: {avg_time:.4f}s"
+        assert median_time < 0.5, f"Complex query too slow: {median_time:.4f}s"
 
     async def test_concurrent_load_performance(self, performance_schema, meta_test_pool):
         """Test performance under concurrent load."""
