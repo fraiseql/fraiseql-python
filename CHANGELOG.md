@@ -324,6 +324,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   queries a flat view; first-hour's timestamp step matches the quickstart table; and the
   bulk-operations SQL example runs.
 
+- **With `auto_camel_case=False`, a nested object answers under its own key.**
+  `{ notes { author_info { first_name } } }` came back as
+  `{"authorInfo": {...}}`, a key the client didn't request, with `author_info`
+  missing: the response key of a nested object was always its camelCase name.
+  It is now the field's name in the schema.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

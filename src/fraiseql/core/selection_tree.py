@@ -26,6 +26,9 @@ class FieldInfo:
 
     type_name: str  # The GraphQL type name (e.g., "String", "Equipment")
     is_nested_object: bool  # True if this is an object type, False for scalars/enums
+    # The field's name in the schema: "smtpServer", or "smtp_server" when the
+    # schema keeps snake_case names (auto_camel_case=False)
+    graphql_name: str | None = None
 
 
 class GraphQLSchemaWrapper:
@@ -76,15 +79,13 @@ class GraphQLSchemaWrapper:
         fields = graphql_type.fields
 
         # Try original field name first
-        if field_name in fields:
-            field = fields[field_name]
-        else:
+        graphql_name = field_name
+        if field_name not in fields:
             # If not found, try camelCase version (GraphQL schema uses camelCase)
-            camel_field_name = to_camel_case(field_name)
-            if camel_field_name in fields:
-                field = fields[camel_field_name]
-            else:
+            graphql_name = to_camel_case(field_name)
+            if graphql_name not in fields:
                 return None
+        field = fields[graphql_name]
 
         field_type = field.type
 
@@ -105,6 +106,7 @@ class GraphQLSchemaWrapper:
         return FieldInfo(
             type_name=base_type_name,
             is_nested_object=is_nested,
+            graphql_name=graphql_name,
         )
 
 
@@ -200,10 +202,11 @@ def build_selection_tree(
                 # Leaf field: use the alias from the AST
                 alias = fp.alias
             else:
-                # Intermediate field: convert snake_case field name to camelCase for alias
-                # This ensures nested objects like "smtp_server" get alias "smtpServer"
-                # (Will be overridden if there's another FieldPath with this exact path)
-                alias = to_camel_case(field_name)
+                # Intermediate field: its name in the schema. "smtp_server" is
+                # "smtpServer", unless the schema keeps snake_case names
+                # (auto_camel_case=False). camelCase when the schema doesn't say.
+                graphql_name = getattr(field_info, "graphql_name", None)
+                alias = graphql_name if isinstance(graphql_name, str) else to_camel_case(field_name)
 
             selections.append(
                 FieldSelection(
