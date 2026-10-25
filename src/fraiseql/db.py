@@ -20,6 +20,9 @@ from fraiseql.core.rust_pipeline import (
     RustResponseBytes,
     execute_via_rust_pipeline,
 )
+from fraiseql.core.unresolved_fields import (
+    warn_unresolved_field_resolvers as _warn_unresolved_field_resolvers,
+)
 from fraiseql.sql.identifiers import qualified_identifier
 from fraiseql.sql.native_columns import resolve_native_column
 from fraiseql.types.scalars.vector import is_float_vector_type
@@ -1967,6 +1970,9 @@ class FraiseQLRepository:
             # Convert from list[FieldPath] to list[list[str]] for Rust (backward compatibility)
             if field_path_objects:
                 field_paths = [fp.path for fp in field_path_objects]
+                _warn_unresolved_field_resolvers(
+                    view_name, _type_registry.get(view_name), field_paths
+                )
 
                 # NEW: Build field selections with alias and type information
                 # Get type name for schema lookup
@@ -2237,6 +2243,9 @@ class FraiseQLRepository:
             # Convert from list[FieldPath] to list[list[str]] for Rust (backward compatibility)
             if field_path_objects:
                 field_paths = [fp.path for fp in field_path_objects]
+                _warn_unresolved_field_resolvers(
+                    view_name, _type_registry.get(view_name), field_paths
+                )
 
                 # NEW: Build field selections with alias and type information
                 # Get type name for schema lookup

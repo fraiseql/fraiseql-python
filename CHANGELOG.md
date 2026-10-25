@@ -388,6 +388,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   With the registry (any app) nested objects were and are named after their
   own type.
 
+- **A field resolver `db.find` won't run is reported.** `find` and `find_one`
+  answer with the rows Rust builds from the view, which don't go through
+  graphql-core field by field, so a `@fraiseql.field` or
+  `@fraiseql.dataloader_field` method on the type they return (the docs'
+  `post_count`) was never called and its field was left out of the response
+  without a word. Running them there isn't supported yet; selecting one now
+  logs a warning naming the field and the view, once per field.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added
