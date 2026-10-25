@@ -19,7 +19,7 @@ async def setup_audit_schema(class_db_pool, test_schema) -> None:
             """
                 SELECT EXISTS (
                     SELECT 1 FROM information_schema.tables
-                    WHERE table_name = 'audit_events'
+                    WHERE table_name = 'audit_events' AND table_schema = current_schema()
                 )
             """
         )
