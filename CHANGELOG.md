@@ -541,9 +541,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `get_pool()`, `find(limit=, offset=)`, `count`, `create_fraiseql_app` and the real
   security and KMS APIs (the production runbooks, database-api, kms, api
   index, authentication, multi-tenancy, event-sourcing pages among them); config
-  examples drop fields `FraiseQLConfig` doesn't have and say which declared ones nothing
-  reads yet (`max_query_depth`, `complexity_*`); `order_by` uses
-  `[{"field": "DESC"}]` (`find()` ignores tuples) and `where` uses `{"field": {"gte": …}}`
+  examples drop fields `FraiseQLConfig` doesn't have; `order_by` uses
+  `[{"field": "DESC"}]` and `where` uses `{"field": {"gte": …}}`
   (not `field__gte`); the OLAP page shows the real auto-aggregation shape; vector search
   queries a flat view; first-hour's timestamp step matches the quickstart table; and the
   bulk-operations SQL example runs. The rate-limiting pages (configuration,
@@ -577,7 +576,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   documented with its real signature, `@fraiseql.connection`'s `jsonb_extraction`
   / `jsonb_column` are marked as having no effect, pages no longer set the unread
   `cache_ttl`, and the glossary imports `authorize_field` and the rate limit
-  settings from where they live.
+  settings from where they live. The configuration pages describe the settings as
+  this release has them: `rate_limit_enabled` off by default and what it installs,
+  `complexity_*` and `max_query_depth` enforced, the APQ modes, `apq_queries_dir` and
+  response cache, `query_timeout` on every read, `include_execution_metadata`, and the
+  deprecated settings as having no effect (no `FRAISEQL_DATABASE_ECHO` /
+  `FRAISEQL_CACHE_TTL` in the deployment examples). Pages no longer say `__typename`
+  is injected everywhere. The philosophy and monitoring pages query the error
+  tracker's real tables and the exported Prometheus metrics (no `monitoring.errors`,
+  `fraiseql_cache_hit_rate`, `fraiseql_error_rate`). Samples no longer use
+  `db.listen()`, `find_required()`, `FraiseQLRouter`, `fraiseql.build_schema()`,
+  `fraiseql.Schema`, `fraiseql.filters`, `fraiseql.types.postgres`, `FraiseQLApp`,
+  `repo.execute()`, `fraiseql.get_db`, `fraiseql.testing.GraphQLClient`, a top-level
+  `fraiseql_rs` module or a `build_mutation_response` without its selection
+  document; nested dict filters are not limited to two levels, and a malformed one
+  raises. The migration guides, the semantic search example and the examples under
+  `examples/` (APQ multi-tenant, pattern comparison, coordinate distance, field
+  descriptions, complex where) run as written. The authentication, audit-logging and
+  RBAC pages describe the APIs that exist (the auth errors in `fraiseql.auth.base`,
+  `TokenManager`, `AuditLogger`, `PermissionResolver`, `RoleHierarchy`) instead of
+  `NativeAuthFactory`, `CustomJWTProvider`, `AuditEventLogger` and similar, and the
+  glossary's filter samples validate (camelCase ltree operators; a `Coordinate` field
+  has no GraphQL distance filter).
 
 - **With `auto_camel_case=False`, a nested object answers under its own key.**
   `{ notes { author_info { first_name } } }` came back as
