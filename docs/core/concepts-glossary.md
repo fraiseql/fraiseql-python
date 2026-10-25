@@ -695,22 +695,9 @@ query {
 
 **1. Coordinates (Geographic Filtering)**
 
-```graphql
-query {
-  stores(where: {
-    location: {
-      distance_within: {
-        center: [37.7749, -122.4194]  # San Francisco
-        radius: 5000  # meters
-      }
-    }
-  }) {
-    name
-    address
-    location
-  }
-}
-```
+A `Coordinate` field gets a `StringFilter` in GraphQL: there is no distance filter
+on it over GraphQL yet. For a distance search, compute it in the view or in a SQL
+function and expose the result as a field (or an argument of your own query).
 
 **2. Network Addresses (IP/CIDR Filtering)**
 
@@ -733,7 +720,7 @@ query {
     ipAddress: {
       inRange: { from: "10.0.0.1", to: "10.0.0.254" }
       isPublic: true
-      NOT: { isLoopback: true }
+      isLoopback: false
     }
   }) {
     hostname
@@ -764,8 +751,8 @@ query {
 query {
   categories(where: {
     path: {
-      ancestor_of: "Electronics.Computers.Laptops"  # All ancestor categories
-      nlevel_gte: 2                                  # At least 2 levels deep
+      ancestorOf: "Electronics.Computers.Laptops"   # All ancestor categories
+      nlevelGte: 2                                  # At least 2 levels deep
     }
   }) {
     name
@@ -776,8 +763,8 @@ query {
 query {
   subcategories(where: {
     path: {
-      descendant_of: "Electronics"       # All subcategories
-      matches_lquery: "Electronics.*"    # Pattern matching
+      descendantOf: "Electronics"        # All subcategories
+      matchesLquery: "Electronics.*"     # Pattern matching
     }
   }) {
     name
@@ -787,11 +774,13 @@ query {
 
 **LTree hierarchical operators:**
 
-- `ancestor_of` - Path is ancestor of target
-- `descendant_of` - Path is descendant of target
-- `matches_lquery` - Pattern match with wildcards
-- `matches_ltxtquery` - Text search (AND/OR/NOT)
-- `nlevel_eq` / `nlevel_gt` / `nlevel_gte` / `nlevel_lt` / `nlevel_lte` - Path depth filtering
+- `ancestorOf` - Path is ancestor of target
+- `descendantOf` - Path is descendant of target
+- `matchesLquery` - Pattern match with wildcards
+- `matchesLtxtquery` - Text search (AND/OR/NOT)
+- `nlevelEq` / `nlevelGt` / `nlevelGte` / `nlevelLt` / `nlevelLte` - Path depth filtering
+
+(In a Python `where` dict the same operators are snake_case: `ancestor_of`, `nlevel_gte`, ...)
 
 **Logical Operators (All WhereInput Types)**
 
