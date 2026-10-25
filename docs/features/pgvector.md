@@ -803,32 +803,50 @@ CREATE INDEX CONCURRENTLY ON documents USING hnsw (embedding vector_cosine_ops);
 
 ### Python Client Usage
 
+Outside an app, build the pool and the repository yourself. `find()` returns a
+ready-made GraphQL response (`RustResponseBytes`), with the rows under
+`data.<field_name>`. Declare the type (`@fraiseql.type(sql_source="documents",
+jsonb_column=None)`, as below) for an `embedding` to come back as a list of floats;
+for a table no type is registered for, it comes back in pgvector's text form:
+
 ```python
 import asyncio
-from fraiseql import FraiseQLRepository
+import json
+
+from fraiseql.db import FraiseQLRepository
+from fraiseql.fastapi.app import create_db_pool
+
 
 async def main():
-    repo = FraiseQLRepository("postgresql://localhost/mydb")
+    pool = await create_db_pool("postgresql://localhost/mydb")
+    repo = FraiseQLRepository(pool)
 
     # Semantic search
     query_embedding = [0.1, 0.2, 0.3] * 512  # 1536 dimensions
-    results = await repo.find(
+    result = await repo.find(
+        "documents",
         "documents",
         order_by={"embedding": {"cosine_distance": query_embedding}},
         limit=10,
     )
+    documents = json.loads(bytes(result))["data"]["documents"]
 
     # Hybrid search
-    results = await repo.find(
+    result = await repo.find(
+        "documents",
         "documents",
         where={
             "embedding": {"cosine_distance": {"vector": query_embedding, "threshold": 0.5}},
             "category": {"eq": "technical"},
-            "created_at": {"gte": "2024-01-01"}
+            "created_at": {"gte": "2024-01-01"},
         },
         order_by={"embedding": {"cosine_distance": query_embedding}},
         limit=20,
     )
+    documents = json.loads(bytes(result))["data"]["documents"]
+
+    await pool.close()
+
 
 asyncio.run(main())
 ```

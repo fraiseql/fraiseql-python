@@ -11,24 +11,28 @@ Semantic search uses vector embeddings to understand the meaning and context of 
 - Combining vector similarity with traditional filters
 - Building a RAG (Retrieval-Augmented Generation) system
 
+See [pgvector support](../features/pgvector.md) for the full list of distance operators
+and how a vector field is filtered and sorted.
+
 ## Prerequisites
 
 - PostgreSQL with pgvector extension
-- Python with required ML libraries
+- An embedding model (a hosted API or a local model)
 - Document corpus for embedding
 
 ## Database Schema
 
 ```sql
 -- Enable pgvector extension
-CREATE EXTENSION vector;
+CREATE EXTENSION IF NOT EXISTS vector;
 
 -- Create documents table
 CREATE TABLE documents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     content TEXT,
-    embedding vector(1536),  -- OpenAI text-embedding-ada-002
+    embedding vector(1536),        -- dimension of your text embedding model
+    image_embedding vector(1536),  -- optional: an image model's embedding
     category TEXT,
     tags TEXT[],
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -46,232 +50,233 @@ CREATE INDEX documents_category_idx ON documents (category);
 CREATE INDEX documents_tags_idx ON documents USING gin (tags);
 ```
 
+The distance operators work on a `vector` column of the view, not on a vector inside a
+JSONB `data` column. This example reads the table itself, so the type is declared
+without a JSONB column (`jsonb_column=None`); a view with a `data` column and the
+vector as a column beside it works too (see [pgvector support](../features/pgvector.md)).
+
 ## Python Setup
 
 ```python
 import asyncio
-from typing import List
+import json
+import time
+
+from psycopg.sql import SQL
+
+import fraiseql
+from fraiseql.db import DatabaseQuery, FraiseQLRepository
 from fraiseql.types import ID
 
-import openai
-from fraiseql import fraise_type
-from fraiseql.db import FraiseQLRepository
 
-# Configure OpenAI (or your preferred embedding provider)
-openai.api_key = "your-api-key"
-
-@fraise_type
+@fraiseql.type(sql_source="documents", jsonb_column=None)
 class Document:
     id: ID
     title: str
-    content: str
-    embedding: List[float]  # Vector field detected by name
-    category: str
-    tags: List[str]
-    created_at: str
-    updated_at: str
+    content: str | None
+    embedding: list[float]  # Vector field, detected by its name
+    image_embedding: list[float] | None  # A second vector field
+    category: str | None
+    tags: list[str] | None
 ```
 
 ## Embedding Generation
 
-```python
-async def generate_embedding(text: str) -> List[float]:
-    """Generate embeddings using OpenAI's API."""
-    response = await openai.Embedding.acreate(
-        input=text,
-        model="text-embedding-ada-002"
-    )
-    return response["data"][0]["embedding"]
+FraiseQL doesn't generate embeddings: call your embedding provider (a hosted API or a
+local model) in `generate_embedding`. Its dimension must match the column's
+(`vector(1536)` above).
 
-async def generate_document_embedding(doc: dict) -> List[float]:
+```python
+async def generate_embedding(text: str) -> list[float]:
+    """Return the embedding of `text` from your embedding provider."""
+    raise NotImplementedError("call your embedding model here")
+
+
+async def generate_document_embedding(doc: dict) -> list[float]:
     """Generate embedding for a document combining title and content."""
     text = f"{doc['title']}\n\n{doc['content']}"
     return await generate_embedding(text)
+
+
+def to_vector(embedding: list[float]) -> str:
+    """Format an embedding as a pgvector literal."""
+    return "[" + ",".join(str(x) for x in embedding) + "]"
 ```
 
 ## Data Ingestion
 
-```python
-async def ingest_documents(repo: FraiseQLRepository, documents: List[dict]):
-    """Ingest documents with embeddings into the database."""
+`db.run()` runs a SQL statement with named parameters; `fetch_result=False` for a
+statement that returns no rows:
 
-    # Generate embeddings for all documents
+```python
+INSERT_DOCUMENT = SQL(
+    "INSERT INTO documents (title, content, embedding, category, tags)"
+    " VALUES (%(title)s, %(content)s, %(embedding)s::vector, %(category)s, %(tags)s)"
+)
+
+
+async def ingest_documents(db: FraiseQLRepository, documents: list[dict]) -> None:
+    """Ingest documents with embeddings into the database."""
     for doc in documents:
         embedding = await generate_document_embedding(doc)
-        doc['embedding'] = embedding
-
-    # Bulk insert (you'd implement this based on your data source)
-    for doc in documents:
-        await repo.execute("""
-            INSERT INTO documents (title, content, embedding, category, tags)
-            VALUES (%s, %s, %s::vector, %s, %s)
-        """, (
-            doc['title'],
-            doc['content'],
-            f"[{','.join(str(x) for x in doc['embedding'])}]",
-            doc.get('category'),
-            doc.get('tags', [])
-        ))
+        await db.run(
+            DatabaseQuery(
+                INSERT_DOCUMENT,
+                {
+                    "title": doc["title"],
+                    "content": doc["content"],
+                    "embedding": to_vector(embedding),
+                    "category": doc.get("category"),
+                    "tags": doc.get("tags", []),
+                },
+                fetch_result=False,
+            )
+        )
 ```
 
 ## Basic Semantic Search
 
+`db.find()` returns a ready-made GraphQL response (`RustResponseBytes`): a resolver
+returns it as is, and Python code reads the rows from it with `json.loads(bytes(...))`.
+
 ```python
-async def semantic_search(
-    repo: FraiseQLRepository,
-    query: str,
-    limit: int = 10
-) -> List[dict]:
-    """Perform semantic search on documents."""
+def rows(result, field_name: str = "documents") -> list[dict]:
+    """The rows of a find() response, for use in Python code."""
+    return json.loads(bytes(result))["data"][field_name]
 
-    # Generate embedding for the search query
-    query_embedding = await generate_embedding(query)
 
-    # Search using vector similarity
-    result = await repo.find(
+async def search_by_embedding(
+    db: FraiseQLRepository,
+    embedding: list[float],
+    limit: int = 10,
+) -> list[dict]:
+    """The documents nearest to an embedding, nearest first."""
+    result = await db.find(
         "documents",
-        where={
-            "embedding": {
-                "cosine_distance": query_embedding
-            }
-        },
-        order_by={
-            "embedding": {
-                "cosine_distance": query_embedding
-            }
-        },
+        "documents",
+        order_by={"embedding": {"cosine_distance": embedding}},
         limit=limit,
     )
+    return rows(result)
 
-    return extract_graphql_data(result, "documents")
+
+async def semantic_search(db: FraiseQLRepository, query: str, limit: int = 10) -> list[dict]:
+    """Perform semantic search on documents."""
+    query_embedding = await generate_embedding(query)
+    return await search_by_embedding(db, query_embedding, limit)
+```
+
+As a GraphQL query, the resolver returns what `find()` returns, and selects the
+fields the client asked for:
+
+```python
+@fraiseql.query
+async def search_documents(info, query: str, limit: int = 10) -> list[Document]:
+    """Documents nearest to a text query."""
+    query_embedding = await generate_embedding(query)
+    return await info.context["db"].find(
+        "documents",
+        "searchDocuments",
+        info,
+        order_by={"embedding": {"cosine_distance": query_embedding}},
+        limit=limit,
+    )
 ```
 
 ## Advanced Search Features
 
-### Hybrid Search (Vector + Text)
+### Hybrid Search (Vector + Filters)
+
+A distance filter takes the query vector and the largest distance to keep
+(`threshold`); it composes with the other operators:
 
 ```python
 async def hybrid_search(
-    repo: FraiseQLRepository,
+    db: FraiseQLRepository,
     query: str,
-    category: str = None,
-    tags: List[str] = None,
-    limit: int = 10
-) -> List[dict]:
+    category: str | None = None,
+    tags: list[str] | None = None,
+    max_distance: float = 0.5,
+    limit: int = 10,
+) -> list[dict]:
     """Combine vector similarity with traditional filters."""
-
     query_embedding = await generate_embedding(query)
 
-    # Build where clause
-    where_clause = {
-        "embedding": {
-            "cosine_distance": query_embedding
-        }
+    where = {
+        "embedding": {"cosine_distance": {"vector": query_embedding, "threshold": max_distance}}
     }
-
-    # Add category filter if specified
     if category:
-        where_clause["category"] = {"eq": category}
-
-    # Add tags filter if specified
+        where["category"] = {"eq": category}
     if tags:
-        where_clause["tags"] = {"overlap": tags}  # PostgreSQL array overlap
+        where["tags"] = {"overlaps": tags}  # PostgreSQL array overlap (&&)
 
-    result = await repo.find(
+    result = await db.find(
         "documents",
-        where=where_clause,
-        order_by={
-            "embedding": {
-                "cosine_distance": query_embedding
-            }
-        },
+        "documents",
+        where=where,
+        order_by={"embedding": {"cosine_distance": query_embedding}},
         limit=limit,
     )
-
-    return extract_graphql_data(result, "documents")
+    return rows(result)
 ```
 
 ### Search with Different Distance Metrics
 
 ```python
+DISTANCE_OPERATORS = {
+    "cosine": "cosine_distance",  # <=>
+    "l2": "l2_distance",  # <->
+    "inner_product": "inner_product",  # <#> (negative inner product)
+}
+
+
 async def search_with_distance_metric(
-    repo: FraiseQLRepository,
+    db: FraiseQLRepository,
     query: str,
     metric: str = "cosine",
-    limit: int = 10
-) -> List[dict]:
+    limit: int = 10,
+) -> list[dict]:
     """Search using different distance metrics."""
-
     query_embedding = await generate_embedding(query)
+    operator = DISTANCE_OPERATORS.get(metric, "cosine_distance")
 
-    # Choose distance operator based on metric
-    distance_operators = {
-        "cosine": "cosine_distance",
-        "l2": "l2_distance",
-        "inner_product": "inner_product"
-    }
-
-    operator = distance_operators.get(metric, "cosine_distance")
-
-    result = await repo.find(
+    result = await db.find(
         "documents",
-        where={
-            "embedding": {
-                operator: query_embedding
-            }
-        },
-        order_by={
-            "embedding": {
-                operator: query_embedding
-            }
-        },
+        "documents",
+        order_by={"embedding": {operator: query_embedding}},
         limit=limit,
     )
-
-    return extract_graphql_data(result, "documents")
+    return rows(result)
 ```
 
 ## RAG System Implementation
 
 ```python
 async def retrieve_relevant_context(
-    repo: FraiseQLRepository,
+    db: FraiseQLRepository,
     question: str,
     max_tokens: int = 2000,
-    limit: int = 5
+    limit: int = 5,
 ) -> str:
     """Retrieve relevant context for RAG systems."""
+    documents = await semantic_search(db, question, limit=limit)
 
-    # Search for relevant documents
-    documents = await semantic_search(repo, question, limit=limit)
-
-    # Combine content from relevant documents
     context_parts = []
     total_tokens = 0
-
     for doc in documents:
-        # Estimate tokens (rough approximation)
-        content_tokens = len(doc['content'].split()) * 1.3  # Rough token estimate
-
+        content_tokens = len((doc["content"] or "").split()) * 1.3  # Rough token estimate
         if total_tokens + content_tokens > max_tokens:
             break
-
         context_parts.append(f"Document: {doc['title']}\n{doc['content']}")
         total_tokens += content_tokens
 
     return "\n\n".join(context_parts)
 
-async def rag_query(
-    repo: FraiseQLRepository,
-    question: str,
-    llm_client
-) -> str:
+
+async def rag_query(db: FraiseQLRepository, question: str, llm_client) -> str:
     """Complete RAG query: retrieve context and generate answer."""
+    context = await retrieve_relevant_context(db, question)
 
-    # Retrieve relevant context
-    context = await retrieve_relevant_context(repo, question)
-
-    # Generate answer using LLM with context
     prompt = f"""
     Based on the following context, answer the question.
 
@@ -283,26 +288,27 @@ async def rag_query(
     Answer:
     """
 
-    response = await llm_client.generate(prompt)
-    return response
+    return await llm_client.generate(prompt)  # your LLM client
 ```
 
 ## GraphQL API Usage
 
+A list query over `Document` gets `where`, `orderBy`, `limit` and `offset`. A vector
+operator takes the query vector as `{dense: [...]}`, and a `where` on it needs
+`distanceWithin`, the largest distance to keep:
+
 ```python
-# GraphQL query for semantic search
+@fraiseql.query
+async def documents(info) -> list[Document]:
+    return await info.context["db"].find("documents", "documents", info)
+```
+
+```graphql
+# Semantic search
 query SearchDocuments($embedding: [Float!]!, $limit: Int) {
   documents(
-    where: {
-      embedding: {
-        cosine_distance: $embedding
-      }
-    }
-    orderBy: {
-      embedding: {
-        cosine_distance: $embedding
-      }
-    }
+    where: { embedding: { cosineDistance: { dense: $embedding }, distanceWithin: 0.5 } }
+    orderBy: { embedding: { cosineDistance: { dense: $embedding } } }
     limit: $limit
   ) {
     id
@@ -312,27 +318,18 @@ query SearchDocuments($embedding: [Float!]!, $limit: Int) {
     tags
   }
 }
+```
 
-# GraphQL query for hybrid search
-query HybridSearch(
-  $embedding: [Float!]!
-  $category: String
-  $tags: [String!]
-  $limit: Int
-) {
+```graphql
+# Hybrid search
+query HybridSearch($embedding: [Float!]!, $category: String, $tags: [String!], $limit: Int) {
   documents(
     where: {
-      embedding: {
-        cosine_distance: $embedding
-      }
+      embedding: { cosineDistance: { dense: $embedding }, distanceWithin: 0.5 }
       category: { eq: $category }
-      tags: { overlap: $tags }
+      tags: { overlaps: $tags }
     }
-    orderBy: {
-      embedding: {
-        cosine_distance: $embedding
-      }
-    }
+    orderBy: { embedding: { cosineDistance: { dense: $embedding } } }
     limit: $limit
   ) {
     id
@@ -366,62 +363,69 @@ WITH (lists = 100);    -- Number of clusters
 ### Query Optimization
 
 ```python
-# Use appropriate limits to control result size
-results = await semantic_search(repo, query, limit=20)
+async def search_examples(db: FraiseQLRepository, query: str) -> None:
+    # Use appropriate limits to control result size
+    results = await semantic_search(db, query, limit=20)
 
-# Combine with other filters to reduce search space
-results = await hybrid_search(repo, query, category="technical", limit=10)
+    # Combine with other filters to reduce search space
+    results = await hybrid_search(db, query, category="technical", limit=10)
 
-# Use async processing for batch operations
-async def batch_search(queries: List[str]) -> List[List[dict]]:
-    tasks = [semantic_search(repo, query) for query in queries]
-    return await asyncio.gather(*tasks)
+
+async def batch_search(db: FraiseQLRepository, queries: list[str]) -> list[list[dict]]:
+    # Run independent searches concurrently
+    return await asyncio.gather(*(semantic_search(db, query) for query in queries))
 ```
 
 ## Complete Example Application
 
 ```python
-import asyncio
 from fastapi import FastAPI
-from fraiseql.fastapi import FraiseQLApp
+
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.fastapi.app import create_db_pool
+
+DATABASE_URL = "postgresql://localhost/mydb"
 
 # Sample documents
 SAMPLE_DOCUMENTS = [
     {
         "title": "Python Programming Guide",
-        "content": "Python is a high-level programming language known for its simplicity and readability...",
+        "content": "Python is a high-level programming language known for its simplicity...",
         "category": "programming",
-        "tags": ["python", "programming", "tutorial"]
+        "tags": ["python", "programming", "tutorial"],
     },
     {
         "title": "Machine Learning Basics",
-        "content": "Machine learning is a subset of artificial intelligence that enables computers to learn...",
+        "content": "Machine learning is a subset of artificial intelligence...",
         "category": "ml",
-        "tags": ["machine-learning", "ai", "data-science"]
+        "tags": ["machine-learning", "ai", "data-science"],
     },
     # ... more documents
 ]
 
-async def main():
-    # Initialize FraiseQL app
-    app = FraiseQLApp()
+# The GraphQL API: documents and searchDocuments
+app: FastAPI = create_fraiseql_app(
+    database_url=DATABASE_URL,
+    types=[Document],
+    queries=[documents, search_documents],
+)
 
-    # Get repository
-    repo = app.get_repository()
 
-    # Ingest sample data
-    await ingest_documents(repo, SAMPLE_DOCUMENTS)
+async def main() -> None:
+    # A script outside the app builds its own pool and repository
+    pool = await create_db_pool(DATABASE_URL)
+    db = FraiseQLRepository(pool)
+    try:
+        await ingest_documents(db, SAMPLE_DOCUMENTS)
 
-    # Perform searches
-    results = await semantic_search(repo, "programming languages")
-    print(f"Found {len(results)} documents")
+        results = await semantic_search(db, "programming languages")
+        print(f"Found {len(results)} documents")
 
-    hybrid_results = await hybrid_search(
-        repo,
-        "artificial intelligence",
-        category="ml"
-    )
-    print(f"Found {len(hybrid_results)} ML documents")
+        hybrid_results = await hybrid_search(db, "artificial intelligence", category="ml")
+        print(f"Found {len(hybrid_results)} ML documents")
+    finally:
+        await pool.close()
+
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -445,7 +449,8 @@ if __name__ == "__main__":
 
 - **Range**: -∞ to ∞ (more negative = more similar)
 - **Best for**: Learned similarity metrics
-- **Interpretation**: Dot product of normalized vectors
+- **Interpretation**: pgvector's `<#>` returns the negative inner product, so sorting
+  ascending puts the most similar first
 
 ## Troubleshooting
 
@@ -477,114 +482,94 @@ SELECT id, vector_dims(embedding) as dims FROM documents LIMIT 5;
 -- All should show the same dimension (e.g., 1536)
 ```
 
-**Memory issues with large result sets**
-
-```python
-# Use smaller limits and pagination
-results = await semantic_search(repo, query, limit=50)  # Not 1000
-```
+**Memory issues with large result sets**: use smaller limits (`limit=50`, not 1000)
+and `offset` for further pages.
 
 ## Additional Examples
 
 ### Recommendation System
 
 ```python
-from fraiseql.types import ID
-
-async def get_similar_products(
-    repo: FraiseQLRepository,
-    product_id: ID,
-    limit: int = 5
-) -> List[dict]:
-    """Find products similar to a given product."""
-
-    # Get the source product's embedding
-    source_result = await repo.find("products", where={"id": {"eq": str(product_id)}})
-    source_products = extract_graphql_data(source_result, "products")
-
-    if not source_products:
+async def get_similar_documents(
+    db: FraiseQLRepository,
+    document_id: ID,
+    limit: int = 5,
+) -> list[dict]:
+    """Find documents similar to a given document."""
+    source = rows(
+        await db.find("documents", "documents", where={"id": {"eq": str(document_id)}}, limit=1)
+    )
+    if not source:
         return []
+    source_embedding = source[0]["embedding"]
 
-    source_embedding = source_products[0]["embedding"]
-
-    # Find similar products (excluding the source product)
-    result = await repo.find(
-        "products",
-        where={
-            "id": {"neq": str(product_id)},  # Exclude source product
-            "embedding": {"cosine_distance": source_embedding}
-        },
+    result = await db.find(
+        "documents",
+        "documents",
+        where={"id": {"neq": str(document_id)}},  # Exclude the source document
         order_by={"embedding": {"cosine_distance": source_embedding}},
         limit=limit,
     )
-
-    return extract_graphql_data(result, "products")
+    return rows(result)
 ```
 
 ### Content Deduplication
 
+A cosine distance below 0.1 means a cosine similarity above 0.9:
+
 ```python
 async def find_duplicate_content(
-    repo: FraiseQLRepository,
+    db: FraiseQLRepository,
     content: str,
-    threshold: float = 0.95
-) -> List[dict]:
-    """Find documents with similar content using embeddings."""
-
-    # Generate embedding for the content
+    max_distance: float = 0.1,
+) -> list[dict]:
+    """Find documents whose content embedding is within max_distance."""
     content_embedding = await generate_embedding(content)
 
-    # Find documents with high similarity (low distance)
-    # Cosine distance < 0.1 means similarity > 0.95
-    result = await repo.find(
+    result = await db.find(
+        "documents",
         "documents",
         where={
-            "embedding": {"cosine_distance": content_embedding}
+            "embedding": {"cosine_distance": {"vector": content_embedding, "threshold": max_distance}}
         },
         order_by={"embedding": {"cosine_distance": content_embedding}},
         limit=10,
     )
-
-    documents = extract_graphql_data(result, "documents")
-
-    # Filter by similarity threshold
-    similar_docs = []
-    for doc in documents:
-        # Calculate similarity from distance
-        similarity = 1 - (doc.get("cosine_distance", 1) / 2)
-        if similarity >= threshold:
-            doc["similarity"] = similarity
-            similar_docs.append(doc)
-
-    return similar_docs
+    return rows(result)
 ```
 
 ### Multi-Modal Search
 
+Each vector field is filtered and sorted on its own (`image_embedding` here):
+
 ```python
 async def search_by_image(
-    repo: FraiseQLRepository,
-    image_embedding: List[float],
-    text_query: str = None,
-    limit: int = 10
-) -> List[dict]:
-    """Search documents using image embeddings, optionally combined with text."""
-
-    where_clause = {"image_embedding": {"cosine_distance": image_embedding}}
-
-    # Add text search if provided
+    db: FraiseQLRepository,
+    image_embedding: list[float],
+    text_query: str | None = None,
+    max_distance: float = 0.5,
+    limit: int = 10,
+) -> list[dict]:
+    """Search documents by image embedding, optionally also near a text query."""
+    where = {
+        "image_embedding": {
+            "cosine_distance": {"vector": image_embedding, "threshold": max_distance}
+        }
+    }
     if text_query:
         text_embedding = await generate_embedding(text_query)
-        where_clause["embedding"] = {"cosine_distance": text_embedding}
+        where["embedding"] = {
+            "cosine_distance": {"vector": text_embedding, "threshold": max_distance}
+        }
 
-    result = await repo.find(
+    result = await db.find(
         "documents",
-        where=where_clause,
+        "documents",
+        where=where,
         order_by={"image_embedding": {"cosine_distance": image_embedding}},
         limit=limit,
     )
-
-    return extract_graphql_data(result, "documents")
+    return rows(result)
 ```
 
 ## Advanced Patterns
@@ -593,184 +578,78 @@ async def search_by_image(
 
 ```python
 async def expanded_search(
-    repo: FraiseQLRepository,
+    db: FraiseQLRepository,
     query: str,
-    expand_terms: List[str] = None
-) -> List[dict]:
-    """Search with query expansion for better results."""
+    expand_terms: list[str] | None = None,
+    limit: int = 10,
+) -> list[dict]:
+    """Search with the average embedding of the query and its expansion terms."""
+    texts = [query, *(expand_terms or [])]
+    embeddings = await asyncio.gather(*(generate_embedding(text) for text in texts))
 
-    # Generate embedding for original query
-    base_embedding = await generate_embedding(query)
-
-    # If expansion terms provided, combine embeddings
-    if expand_terms:
-        expanded_texts = [query] + expand_terms
-        embeddings = await asyncio.gather(*[
-            generate_embedding(text) for text in expanded_texts
-        ])
-
-        # Average the embeddings (simple approach)
-        combined_embedding = []
-        for i in range(len(embeddings[0])):
-            combined_embedding.append(
-                sum(emb[i] for emb in embeddings) / len(embeddings)
-            )
-    else:
-        combined_embedding = base_embedding
-
-    return await semantic_search(repo, combined_embedding)
+    combined_embedding = [sum(values) / len(embeddings) for values in zip(*embeddings)]
+    return await search_by_embedding(db, combined_embedding, limit)
 ```
 
 ### Cached Embeddings
 
 ```python
-import asyncio
-from typing import Dict, Tuple
-from cachetools import TTLCache
+embedding_cache: dict[str, list[float]] = {}
 
-# Cache for embeddings (TTL: 1 hour)
-embedding_cache = TTLCache(maxsize=1000, ttl=3600)
 
-async def get_cached_embedding(text: str) -> List[float]:
-    """Get embedding with caching to reduce API calls."""
-
+async def get_cached_embedding(text: str) -> list[float]:
+    """Get embedding with caching to reduce calls to the embedding model."""
     cache_key = text.lower().strip()
-
-    if cache_key in embedding_cache:
-        return embedding_cache[cache_key]
-
-    embedding = await generate_embedding(text)
-    embedding_cache[cache_key] = embedding
-
-    return embedding
+    if cache_key not in embedding_cache:
+        embedding_cache[cache_key] = await generate_embedding(text)
+    return embedding_cache[cache_key]
 ```
+
+Use a size- and time-bounded cache (such as `cachetools.TTLCache`) in production.
 
 ### Batch Processing
 
 ```python
 async def batch_semantic_search(
-    repo: FraiseQLRepository,
-    queries: List[str],
-    limit: int = 10
-) -> List[List[dict]]:
+    db: FraiseQLRepository,
+    queries: list[str],
+    limit: int = 10,
+) -> list[list[dict]]:
     """Process multiple semantic searches in parallel."""
-
-    # Generate embeddings in parallel
-    embeddings = await asyncio.gather(*[
-        generate_embedding(query) for query in queries
-    ])
-
-    # Execute searches in parallel
-    search_tasks = [
-        semantic_search(repo, embedding, limit)
-        for embedding in embeddings
-    ]
-
-    return await asyncio.gather(*search_tasks)
-```
-
-## Integration Examples
-
-### With OpenAI
-
-```python
-import openai
-
-async def openai_semantic_search(
-    repo: FraiseQLRepository,
-    query: str,
-    model: str = "text-embedding-ada-002"
-) -> List[dict]:
-    """Semantic search using OpenAI embeddings."""
-
-    # Generate embedding
-    response = await openai.Embedding.acreate(
-        input=query,
-        model=model
+    embeddings = await asyncio.gather(*(generate_embedding(query) for query in queries))
+    return await asyncio.gather(
+        *(search_by_embedding(db, embedding, limit) for embedding in embeddings)
     )
-    embedding = response["data"][0]["embedding"]
-
-    return await semantic_search(repo, embedding)
-```
-
-### With Cohere
-
-```python
-import cohere
-
-async def cohere_semantic_search(
-    repo: FraiseQLRepository,
-    query: str,
-    model: str = "embed-english-v3.0"
-) -> List[dict]:
-    """Semantic search using Cohere embeddings."""
-
-    co = cohere.Client(api_key="your-api-key")
-
-    response = co.embed(
-        texts=[query],
-        model=model,
-        input_type="search_query"
-    )
-
-    embedding = response.embeddings[0]
-    return await semantic_search(repo, embedding)
-```
-
-### With Sentence Transformers
-
-```python
-from sentence_transformers import SentenceTransformer
-
-# Load model once
-model = SentenceTransformer('all-MiniLM-L6-v2')
-
-async def local_semantic_search(
-    repo: FraiseQLRepository,
-    query: str
-) -> List[dict]:
-    """Semantic search using local Sentence Transformers."""
-
-    # Generate embedding locally (no API calls)
-    embedding = model.encode(query).tolist()
-
-    return await semantic_search(repo, embedding)
 ```
 
 ## Performance Monitoring
 
 ```python
-import time
-
 async def benchmark_search(
-    repo: FraiseQLRepository,
+    db: FraiseQLRepository,
     query: str,
-    runs: int = 10
-) -> Dict[str, float]:
+    runs: int = 10,
+) -> dict[str, float]:
     """Benchmark search performance."""
-
     query_embedding = await generate_embedding(query)
 
     times = []
     for _ in range(runs):
-        start_time = time.time()
-
-        await semantic_search(repo, query_embedding, limit=10)
-
-        end_time = time.time()
-        times.append(end_time - start_time)
+        start_time = time.perf_counter()
+        await search_by_embedding(db, query_embedding, limit=10)
+        times.append(time.perf_counter() - start_time)
 
     return {
         "avg_time": sum(times) / len(times),
         "min_time": min(times),
         "max_time": max(times),
-        "runs": runs
+        "runs": runs,
     }
 ```
 
 ## Next Steps
 
-- **Experiment with different embedding models** (Cohere, Sentence Transformers)
+- **Experiment with different embedding models** (hosted or local)
 - **Implement query expansion** for better search results
 - **Add relevance scoring** and ranking
 - **Build recommendation systems** using vector similarity
@@ -782,8 +661,6 @@ async def benchmark_search(
 
 - [FraiseQL pgvector Documentation](../features/pgvector.md)
 - [pgvector GitHub](https://github.com/pgvector/pgvector)
-- [OpenAI Embeddings Guide](https://platform.openai.com/docs/guides/embeddings)
-- [Cohere Embeddings](https://docs.cohere.com/docs/embeddings)
 - [Sentence Transformers](https://www.sbert.net/)
 - [Vector Search Best Practices](https://github.com/pgvector/pgvector#best-practices)
 
