@@ -348,7 +348,7 @@ pub fn initialize_schema_registry(schema_json: String) -> PyResult<()> {
 ///
 /// Examples:
 ///     >>> cascade_json = '{"updated": [{"__typename": "Post", "id": "1"}]}'
-///     >>> selections = '{"fields": ["updated"], "updated": {"include": ["Post"]}}'
+///     >>> selections = '{"fields": ["updated"], "updated": {"fields": ["__typename", "id"]}}'
 ///     >>> result = filter_cascade_data(cascade_json, selections)
 ///
 /// Args:
