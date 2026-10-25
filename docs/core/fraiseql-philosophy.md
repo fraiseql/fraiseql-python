@@ -538,10 +538,10 @@ LIMIT 10;
 **Grafana Dashboards:**
 Pre-built dashboards in `grafana/`:
 
-- Error monitoring (grouping, rates, trends)
-- OpenTelemetry traces (spans, performance)
-- Performance metrics (latency, throughput)
-- All querying PostgreSQL directly (no exporters needed)
+- Error monitoring (grouping, rates, trends), from `tb_error_log` / `tb_error_occurrence`
+- Database (connections, slow queries), from PostgreSQL's statistics views
+- APQ storage, from the PostgreSQL APQ backend's tables
+- Performance metrics (latency, throughput), from the Prometheus metrics of `setup_metrics`
 
 ### Why "In PostgreSQL Everything"?
 

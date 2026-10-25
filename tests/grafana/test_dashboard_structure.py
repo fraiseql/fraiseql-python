@@ -9,6 +9,7 @@ Tests verify:
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -17,10 +18,15 @@ DASHBOARD_DIR = Path(__file__).parent.parent.parent / "grafana"
 DASHBOARD_FILES = [
     "error_monitoring.json",
     "performance_metrics.json",
-    "cache_hit_rate.json",
     "database_pool.json",
     "apq_effectiveness.json",
 ]
+
+# The target field holding the query, per datasource plugin
+DATASOURCE_QUERY_FIELD = {
+    "grafana-postgresql-datasource": "rawSql",
+    "prometheus": "expr",
+}
 
 
 @pytest.fixture
@@ -129,7 +135,7 @@ class TestDashboardStructure:
                 )
 
     def test_panel_targets(self, dashboards) -> None:
-        """Each panel should have at least one target with SQL query."""
+        """Each panel should have targets with a SQL query or a PromQL expression."""
         for name, dashboard in dashboards.items():
             panels = dashboard["dashboard"]["panels"]
 
@@ -137,17 +143,40 @@ class TestDashboardStructure:
                 targets = panel["targets"]
                 assert len(targets) > 0, f"{name}, panel '{panel['title']}': No targets defined"
 
+                datasource_type = panel.get("datasource", {}).get("type")
+                assert datasource_type in DATASOURCE_QUERY_FIELD, (
+                    f"{name}, panel '{panel['title']}': Unknown datasource {datasource_type!r}"
+                )
+                query_field = DATASOURCE_QUERY_FIELD[datasource_type]
+
                 for target in targets:
                     assert "refId" in target, (
                         f"{name}, panel '{panel['title']}': Target missing refId"
                     )
-                    assert "rawSql" in target, (
-                        f"{name}, panel '{panel['title']}': Target missing rawSql"
+                    assert target.get(query_field), (
+                        f"{name}, panel '{panel['title']}': Target missing {query_field}"
                     )
-                    assert target["rawSql"], f"{name}, panel '{panel['title']}': Empty SQL query"
+
+    def test_panel_datasources_are_dashboard_variables(self, dashboards) -> None:
+        """Panels should read the dashboard's datasource variable."""
+        for name, dashboard in dashboards.items():
+            variables = {v["name"]: v for v in dashboard["dashboard"]["templating"]["list"]}
+            assert variables.get("datasource", {}).get("type") == "datasource", (
+                f"{name}: Missing 'datasource' template variable"
+            )
+            expected = {"type": variables["datasource"]["query"], "uid": "${datasource}"}
+
+            for panel in dashboard["dashboard"]["panels"]:
+                assert panel["datasource"] == expected, (
+                    f"{name}, panel '{panel['title']}': datasource should be {expected}"
+                )
+                for target in panel["targets"]:
+                    assert target.get("datasource", expected) == expected, (
+                        f"{name}, panel '{panel['title']}': target datasource differs from panel"
+                    )
 
     def test_templating_variables(self, dashboards) -> None:
-        """Dashboards should have required template variables."""
+        """Variables used by the queries should be defined by the dashboard."""
         for name, dashboard in dashboards.items():
             assert "templating" in dashboard["dashboard"], (
                 f"{name}: Missing templating configuration"
@@ -156,21 +185,23 @@ class TestDashboardStructure:
             templating = dashboard["dashboard"]["templating"]
             assert "list" in templating, f"{name}: Missing template variable list"
 
-            variables = templating["list"]
+            variables = {v["name"]: v for v in templating["list"]}
 
-            # All dashboards should have 'environment' variable
-            var_names = [v["name"] for v in variables]
-            assert "environment" in var_names, f"{name}: Missing 'environment' template variable"
+            for panel in dashboard["dashboard"]["panels"]:
+                for target in panel["targets"]:
+                    query = target.get("rawSql") or target.get("expr", "")
+                    # $__name are Grafana's own macros and variables
+                    for used in re.findall(r"\$(?!__)(\w+)", query):
+                        assert used in variables, (
+                            f"{name}, panel '{panel['title']}': Undefined variable ${used}"
+                        )
 
-            # Check environment variable structure
-            env_var = next(v for v in variables if v["name"] == "environment")
-            assert "options" in env_var, f"{name}: Environment variable missing options"
-
-            # Should include production option
-            env_options = [opt["value"] for opt in env_var["options"]]
-            assert "production" in env_options, (
-                f"{name}: Environment variable missing 'production' option"
-            )
+            # The error tables have an environment column; it should offer 'production'
+            if "environment" in variables:
+                env_options = [opt["value"] for opt in variables["environment"]["options"]]
+                assert "production" in env_options, (
+                    f"{name}: Environment variable missing 'production' option"
+                )
 
     def test_time_configuration(self, dashboards) -> None:
         """Dashboards should have time configuration."""
@@ -223,25 +254,11 @@ class TestDashboardSpecificContent:
         expected_panels = [
             "Request Rate (req/sec)",
             "Response Time Percentiles",
-            "Slowest Operations (P99)",
+            "Slowest Endpoints (P99)",
         ]
 
         for expected in expected_panels:
             assert expected in panel_titles, f"Performance dashboard missing panel: {expected}"
-
-    def test_cache_hit_rate_dashboard(self, dashboards) -> None:
-        """Cache hit rate dashboard should have cache-specific panels."""
-        dashboard = dashboards["cache_hit_rate"]
-        panel_titles = [p["title"] for p in dashboard["dashboard"]["panels"]]
-
-        expected_panels = [
-            "Overall Cache Hit Rate",
-            "Cache Hit Rate Over Time",
-            "Cache Performance by Type",
-        ]
-
-        for expected in expected_panels:
-            assert expected in panel_titles, f"Cache hit rate dashboard missing panel: {expected}"
 
     def test_database_pool_dashboard(self, dashboards) -> None:
         """Database pool dashboard should have pool-specific panels."""
@@ -250,22 +267,23 @@ class TestDashboardSpecificContent:
 
         expected_panels = [
             "Active Connections",
-            "Connection Pool Over Time",
-            "Pool Utilization Rate",
+            "Idle in Transaction",
+            "Connection Utilization",
+            "Top Queries by Total Time",
         ]
 
         for expected in expected_panels:
             assert expected in panel_titles, f"Database pool dashboard missing panel: {expected}"
 
     def test_apq_effectiveness_dashboard(self, dashboards) -> None:
-        """APQ effectiveness dashboard should have APQ-specific panels."""
+        """APQ dashboard should have APQ storage panels."""
         dashboard = dashboards["apq_effectiveness"]
         panel_titles = [p["title"] for p in dashboard["dashboard"]["panels"]]
 
         expected_panels = [
-            "APQ Hit Rate",
-            "Bandwidth Saved",
-            "Top Persisted Queries by Usage",
+            "Stored Persisted Queries",
+            "APQ Storage Growth",
+            "Largest Persisted Queries",
         ]
 
         for expected in expected_panels:
@@ -281,8 +299,7 @@ class TestDashboardTags:
         """Each dashboard should have relevant tags."""
         expected_tags = {
             "error_monitoring": ["fraiseql", "errors", "monitoring"],
-            "performance_metrics": ["fraiseql", "performance", "tracing"],
-            "cache_hit_rate": ["fraiseql", "cache", "performance"],
+            "performance_metrics": ["fraiseql", "performance", "prometheus"],
             "database_pool": ["fraiseql", "database", "pool", "connections"],
             "apq_effectiveness": ["fraiseql", "apq", "persisted-queries", "performance"],
         }

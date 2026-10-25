@@ -789,6 +789,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   child of an incoming `traceparent` (the middleware attached the extracted context
   without ever detaching it), and the OTLP exporter gets `export_timeout_ms` in
   seconds, as it expects (30000 ms meant 30000 s).
+- **The Grafana dashboards in `grafana/` query tables and metrics that exist.** They
+  read `monitoring.errors`, `monitoring.traces` and other tables nothing creates. Error
+  monitoring now reads `tb_error_log` / `tb_error_occurrence` (and the notification
+  log); the database dashboard reads PostgreSQL's `pg_stat_activity`,
+  `pg_stat_database`, `pg_stat_user_tables` and `v_query_stats`; the APQ dashboard
+  (now "FraiseQL APQ Storage") reads the PostgreSQL APQ backend's `apq_queries` /
+  `apq_responses`; performance metrics uses the Prometheus metrics `setup_metrics`
+  exports (`fraiseql_http_requests_total`, `fraiseql_http_request_duration_seconds`,
+  `fraiseql_response_time_seconds`, `fraiseql_errors_total`). Panels with no data
+  source (APQ hit rates, history of pool sizes) are gone, and so is
+  `cache_hit_rate.json`: nothing records cache hits. Every panel takes a `datasource`
+  variable; `import_dashboards.sh` no longer stops after the first import (`set -e`
+  and `((count++))`). A test runs each SQL query against `schema.sql`, and another
+  checks each PromQL expression's metrics and labels against the exported ones.
 
 ## [1.30.0] - 2026-10-22
 

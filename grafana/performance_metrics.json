@@ -1,33 +1,110 @@
 {
   "dashboard": {
+    "uid": "fraiseql-performance",
     "title": "FraiseQL Performance Metrics",
-    "tags": ["fraiseql", "performance", "tracing"],
+    "description": "HTTP metrics recorded by MetricsMiddleware: call setup_metrics(app) and scrape GET /metrics.",
+    "tags": [
+      "fraiseql",
+      "performance",
+      "http",
+      "prometheus"
+    ],
     "timezone": "browser",
     "schemaVersion": 38,
     "version": 1,
     "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "label": "Prometheus",
+          "type": "datasource",
+          "query": "prometheus",
+          "current": {},
+          "hide": 0,
+          "refresh": 1,
+          "regex": "",
+          "options": []
+        },
+        {
+          "name": "job",
+          "label": "Job",
+          "type": "query",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "definition": "label_values(fraiseql_http_requests_total, job)",
+          "query": {
+            "query": "label_values(fraiseql_http_requests_total, job)",
+            "refId": "PrometheusVariableQueryEditor-VariableQuery"
+          },
+          "includeAll": true,
+          "allValue": ".*",
+          "multi": true,
+          "refresh": 2,
+          "current": {
+            "text": "All",
+            "value": "$__all"
+          },
+          "options": []
+        }
+      ]
+    },
     "panels": [
       {
         "id": 1,
         "title": "Request Rate (req/sec)",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  date_trunc('minute', start_time) as time,\n  COUNT(*) / 60.0 as requests_per_second\nFROM monitoring.traces\nWHERE\n  start_time >= $__timeFrom()\n  AND start_time <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "sum by (endpoint) (rate(fraiseql_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
+            "legendFormat": "{{endpoint}}",
+            "range": true,
+            "instant": false
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
+            "unit": "reqps",
             "custom": {
               "lineInterpolation": "smooth",
               "showPoints": "never",
               "fillOpacity": 10
             },
-            "unit": "reqps"
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
           }
         }
       },
@@ -35,176 +112,318 @@
         "id": 2,
         "title": "Response Time Percentiles",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "P50",
-            "rawSql": "SELECT\n  date_trunc('minute', start_time) as time,\n  percentile_cont(0.50) WITHIN GROUP (ORDER BY duration_ms) as p50_latency\nFROM monitoring.traces\nWHERE\n  start_time >= $__timeFrom()\n  AND start_time <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "P50"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.50, sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{job=~\"$job\"}[$__rate_interval])))",
+            "legendFormat": "P50",
+            "range": true,
+            "instant": false
           },
           {
             "refId": "P95",
-            "rawSql": "SELECT\n  date_trunc('minute', start_time) as time,\n  percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) as p95_latency\nFROM monitoring.traces\nWHERE\n  start_time >= $__timeFrom()\n  AND start_time <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "P95"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.95, sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{job=~\"$job\"}[$__rate_interval])))",
+            "legendFormat": "P95",
+            "range": true,
+            "instant": false
           },
           {
             "refId": "P99",
-            "rawSql": "SELECT\n  date_trunc('minute', start_time) as time,\n  percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms) as p99_latency\nFROM monitoring.traces\nWHERE\n  start_time >= $__timeFrom()\n  AND start_time <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "P99"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "histogram_quantile(0.99, sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{job=~\"$job\"}[$__rate_interval])))",
+            "legendFormat": "P99",
+            "range": true,
+            "instant": false
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
+            "unit": "s",
             "custom": {
               "lineInterpolation": "smooth",
               "showPoints": "never",
-              "fillOpacity": 0
+              "fillOpacity": 10
             },
-            "unit": "ms"
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
           }
         }
       },
       {
         "id": 3,
-        "title": "Slowest Operations (P99)",
+        "title": "Slowest Endpoints (P99)",
         "type": "table",
-        "gridPos": {"h": 10, "w": 12, "x": 0, "y": 8},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n    operation_name,\n    COUNT(*) as request_count,\n    ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY duration_ms)::numeric, 2) as p50_ms,\n    ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms)::numeric, 2) as p95_ms,\n    ROUND(percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms)::numeric, 2) as p99_ms,\n    MAX(duration_ms) as max_ms\nFROM monitoring.traces\nWHERE start_time > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment'\nGROUP BY operation_name\nHAVING COUNT(*) > 10\nORDER BY p99_ms DESC\nLIMIT 20;",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "topk(20, histogram_quantile(0.99, sum by (le, method, endpoint) (rate(fraiseql_http_request_duration_seconds_bucket{job=~\"$job\"}[$__range]))))",
+            "legendFormat": "__auto",
+            "range": false,
+            "instant": true,
             "format": "table"
           }
         ],
+        "description": "P99 latency over the time range, per method and path. All GraphQL operations share the /graphql endpoint.",
         "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "p99_ms"},
-              "properties": [
-                {
-                  "id": "custom.cellOptions",
-                  "value": {
-                    "type": "color-background",
-                    "mode": "gradient"
-                  }
-                },
-                {
-                  "id": "thresholds",
-                  "value": {
-                    "mode": "absolute",
-                    "steps": [
-                      {"value": 0, "color": "green"},
-                      {"value": 100, "color": "yellow"},
-                      {"value": 500, "color": "orange"},
-                      {"value": 1000, "color": "red"}
-                    ]
-                  }
-                }
-              ]
-            }
-          ]
+          "defaults": {
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
       },
       {
         "id": 4,
-        "title": "Database Query Performance",
-        "type": "table",
-        "gridPos": {"h": 10, "w": 12, "x": 12, "y": 8},
+        "title": "Responses by Status",
+        "type": "piechart",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n    LEFT(attributes->>'db.statement', 60) as query,\n    COUNT(*) as execution_count,\n    ROUND(AVG(duration_ms)::numeric, 2) as avg_duration_ms,\n    ROUND(MAX(duration_ms)::numeric, 2) as max_duration_ms\nFROM monitoring.traces\nWHERE start_time > NOW() - INTERVAL '$time_range'\n  AND attributes->>'db.system' = 'postgresql'\n  AND environment = '$environment'\nGROUP BY LEFT(attributes->>'db.statement', 60)\nORDER BY avg_duration_ms DESC\nLIMIT 20;",
-            "format": "table"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "sum by (status) (increase(fraiseql_http_requests_total{job=~\"$job\"}[$__range]))",
+            "legendFormat": "{{status}}",
+            "range": false,
+            "instant": true
           }
         ],
         "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "avg_duration_ms"},
-              "properties": [
-                {
-                  "id": "custom.cellOptions",
-                  "value": {
-                    "type": "color-background",
-                    "mode": "gradient"
-                  }
-                },
-                {
-                  "id": "thresholds",
-                  "value": {
-                    "mode": "absolute",
-                    "steps": [
-                      {"value": 0, "color": "green"},
-                      {"value": 50, "color": "yellow"},
-                      {"value": 200, "color": "orange"},
-                      {"value": 500, "color": "red"}
-                    ]
-                  }
-                }
-              ]
-            }
-          ]
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "table",
+            "placement": "right"
+          },
+          "pieType": "pie",
+          "displayLabels": [
+            "name",
+            "percent"
+          ],
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          }
         }
       },
       {
         "id": 5,
-        "title": "Trace Status Distribution",
-        "type": "piechart",
-        "gridPos": {"h": 8, "w": 8, "x": 0, "y": 18},
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT\n  CASE\n    WHEN status_code >= 200 AND status_code < 300 THEN 'Success (2xx)'\n    WHEN status_code >= 400 AND status_code < 500 THEN 'Client Error (4xx)'\n    WHEN status_code >= 500 THEN 'Server Error (5xx)'\n    ELSE 'Other'\n  END as status,\n  COUNT(*) as count\nFROM monitoring.traces\nWHERE start_time > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment'\nGROUP BY status\nORDER BY count DESC;",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "legend": {"displayMode": "list", "placement": "bottom"},
-          "pieType": "donut",
-          "displayLabels": ["name", "percent"]
-        }
-      },
-      {
-        "id": 6,
-        "title": "Requests by Operation",
+        "title": "Requests by Endpoint",
         "type": "bargauge",
-        "gridPos": {"h": 8, "w": 8, "x": 8, "y": 18},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  operation_name,\n  COUNT(*) as request_count\nFROM monitoring.traces\nWHERE start_time > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment'\nGROUP BY operation_name\nORDER BY request_count DESC\nLIMIT 10;",
-            "format": "table"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "topk(10, sum by (endpoint) (increase(fraiseql_http_requests_total{job=~\"$job\"}[$__range])))",
+            "legendFormat": "{{endpoint}}",
+            "range": false,
+            "instant": true
           }
         ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          },
+          "overrides": []
+        },
         "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
           "orientation": "horizontal",
           "displayMode": "gradient"
         }
       },
       {
-        "id": 7,
-        "title": "Error Rate by Operation",
+        "id": 6,
+        "title": "5xx Rate by Endpoint",
         "type": "timeseries",
-        "gridPos": {"h": 8, "w": 8, "x": 16, "y": 18},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n    date_trunc('minute', t.start_time) as time,\n    t.operation_name,\n    ROUND(100.0 * COUNT(DISTINCT e.id) / NULLIF(COUNT(DISTINCT t.trace_id), 0), 2) as error_rate_pct\nFROM monitoring.traces t\nLEFT JOIN monitoring.errors e ON t.trace_id = e.trace_id\nWHERE t.start_time >= $__timeFrom()\n  AND t.start_time <= $__timeTo()\n  AND t.environment = '$environment'\nGROUP BY time, t.operation_name\nHAVING COUNT(DISTINCT t.trace_id) > 5\nORDER BY time;",
-            "format": "time_series"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "100 * sum by (endpoint) (rate(fraiseql_http_requests_total{job=~\"$job\", status=~\"5..\"}[$__rate_interval])) / sum by (endpoint) (rate(fraiseql_http_requests_total{job=~\"$job\"}[$__rate_interval]))",
+            "legendFormat": "{{endpoint}}",
+            "range": true,
+            "instant": false
           }
         ],
+        "description": "A GraphQL error in a 200 response is not counted here: see the Error Monitoring dashboard.",
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
+            "unit": "percent",
             "custom": {
               "lineInterpolation": "smooth",
-              "showPoints": "never"
+              "showPoints": "never",
+              "fillOpacity": 10
             },
-            "unit": "percent"
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Unhandled Exceptions by Type",
+        "type": "timeseries",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "sum by (error_type) (rate(fraiseql_errors_total{job=~\"$job\"}[$__rate_interval]))",
+            "legendFormat": "{{error_type}}",
+            "range": true,
+            "instant": false
+          }
+        ],
+        "description": "Exceptions that escaped the app (error_code=HTTP_ERROR) or a @with_metrics function.",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short",
+            "custom": {
+              "lineInterpolation": "smooth",
+              "showPoints": "never",
+              "fillOpacity": 10
+            },
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "legend": {
+            "displayMode": "list",
+            "placement": "bottom"
+          },
+          "tooltip": {
+            "mode": "multi"
           }
         }
       },
@@ -212,67 +431,47 @@
         "id": 8,
         "title": "Average Response Time",
         "type": "stat",
-        "gridPos": {"h": 4, "w": 24, "x": 0, "y": 26},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  ROUND(AVG(duration_ms)::numeric, 2) as avg_ms,\n  ROUND(percentile_cont(0.50) WITHIN GROUP (ORDER BY duration_ms)::numeric, 2) as p50_ms,\n  ROUND(percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms)::numeric, 2) as p95_ms,\n  ROUND(percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms)::numeric, 2) as p99_ms\nFROM monitoring.traces\nWHERE start_time > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment';",
-            "format": "table"
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "expr": "sum(rate(fraiseql_response_time_seconds_sum{job=~\"$job\"}[$__range])) / sum(rate(fraiseql_response_time_seconds_count{job=~\"$job\"}[$__range]))",
+            "legendFormat": "average",
+            "range": false,
+            "instant": true
           }
         ],
-        "options": {
-          "graphMode": "area",
-          "colorMode": "value",
-          "orientation": "horizontal",
-          "textMode": "value_and_name"
-        },
         "fieldConfig": {
           "defaults": {
-            "unit": "ms",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 100, "color": "yellow"},
-                {"value": 500, "color": "orange"},
-                {"value": 1000, "color": "red"}
-              ]
-            }
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       }
-    ],
-    "templating": {
-      "list": [
-        {
-          "name": "environment",
-          "type": "custom",
-          "options": [
-            {"text": "production", "value": "production"},
-            {"text": "staging", "value": "staging"},
-            {"text": "development", "value": "development"}
-          ],
-          "current": {"text": "production", "value": "production"},
-          "multi": false
-        },
-        {
-          "name": "time_range",
-          "type": "custom",
-          "options": [
-            {"text": "1 hour", "value": "1 hour"},
-            {"text": "6 hours", "value": "6 hours"},
-            {"text": "24 hours", "value": "24 hours"},
-            {"text": "7 days", "value": "7 days"}
-          ],
-          "current": {"text": "1 hour", "value": "1 hour"},
-          "multi": false
-        }
-      ]
-    },
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    }
+    ]
   },
   "overwrite": true,
   "message": "FraiseQL Performance Metrics Dashboard"

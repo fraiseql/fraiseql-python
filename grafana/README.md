@@ -1,28 +1,52 @@
 # FraiseQL Grafana Dashboards
 
-Production-ready Grafana dashboards for monitoring FraiseQL applications with PostgreSQL-native observability.
+Grafana dashboards over the data FraiseQL actually records: the error tables of
+`src/fraiseql/monitoring/schema.sql`, the HTTP metrics of `setup_metrics`, PostgreSQL's
+own statistics views, and the tables of the PostgreSQL APQ backend.
 
 ## Overview
 
-This directory contains 5 comprehensive Grafana dashboards that provide complete observability for FraiseQL applications:
+| Dashboard | File | Datasource | Reads | Needs |
+|-----------|------|------------|-------|-------|
+| Error Monitoring | `error_monitoring.json` | PostgreSQL | `tb_error_log`, `tb_error_occurrence`, `tb_error_notification_log` | `schema.sql` loaded, errors captured with `PostgreSQLErrorTracker` |
+| Performance Metrics | `performance_metrics.json` | Prometheus | `fraiseql_http_*`, `fraiseql_response_time_seconds`, `fraiseql_errors_total` | `setup_metrics(app)`, Prometheus scraping `GET /metrics` |
+| Database Pool | `database_pool.json` | PostgreSQL | `pg_stat_activity`, `pg_stat_database`, `pg_stat_user_tables`, `v_query_stats` | nothing (`v_query_stats` panels: `pg_stat_statements`) |
+| APQ Storage | `apq_effectiveness.json` | PostgreSQL | `apq_queries`, `apq_responses` | `apq_storage_backend="postgresql"` |
 
-1. **Error Monitoring** - Track errors, resolution status, and affected users
-2. **Performance Metrics** - Request rates, latency percentiles, and slow operations
-3. **Cache Hit Rate** - Cache effectiveness and performance savings
-4. **Database Pool** - Connection pool health and query performance
-5. **APQ Effectiveness** - Automatic Persisted Queries performance and bandwidth savings
+There is no cache hit rate dashboard: nothing in FraiseQL records cache hits or misses
+(`fraiseql_cache_hits_total` / `fraiseql_cache_misses_total` exist, but only your own
+calls to `metrics.record_cache_hit()` / `record_cache_miss()` give them values), and the
+APQ hit counters (`fraiseql.monitoring.apq_metrics`) live in the process, served as JSON,
+not to Prometheus. For the same reason the database dashboard reads connections from
+PostgreSQL, not from the `fraiseql_db_connections_*` gauges, which stay at 0 unless your
+code calls `metrics.update_db_connections()`.
 
 ## Quick Start
 
 ### Prerequisites
 
-- Grafana 9.0+ installed and running
-- PostgreSQL datasource configured in Grafana
-- FraiseQL application with observability enabled
+- Grafana 11+ (the dashboards use the `grafana-postgresql-datasource` plugin id; on an
+  older Grafana, set the type of each PostgreSQL dashboard's `datasource` variable to
+  `postgres`)
+- A PostgreSQL datasource pointing at the application database
+- A Prometheus datasource, for the Performance Metrics dashboard
+- What each dashboard needs (table above):
+
+```bash
+# Error tables (and v_query_stats, if pg_stat_statements is installed first)
+psql "$DATABASE_URL" -f src/fraiseql/monitoring/schema.sql
+```
+
+```python
+from fraiseql.monitoring import setup_metrics
+from fraiseql.monitoring.postgres_error_tracker import init_error_tracker
+
+metrics = setup_metrics(app)  # MetricsMiddleware + GET /metrics (needs prometheus_client)
+tracker = init_error_tracker(pool, environment="production")
+# ... await tracker.capture_exception(exc, context={"user": {"user_id": user_id}})
+```
 
 ### Automatic Import
-
-Run the import script to automatically install all dashboards:
 
 ```bash
 cd grafana/
@@ -37,440 +61,193 @@ GRAFANA_PASSWORD=secret \
 ./import_dashboards.sh
 ```
 
-The script will:
-
-- ✅ Create a "FraiseQL" folder in Grafana
-- ✅ Import all 5 dashboards
-- ✅ Configure dashboard settings
-- ✅ Provide direct links to each dashboard
+The script creates a "FraiseQL" folder, checks for the PostgreSQL and Prometheus
+datasources (it can create the PostgreSQL one from `POSTGRES_HOST`, `POSTGRES_DB`,
+`POSTGRES_USER` and `POSTGRES_PASSWORD`), imports the 4 dashboards and prints their URLs.
 
 ### Manual Import
 
-If you prefer to import dashboards manually:
+1. Open Grafana, **Dashboards → New → Import**
+2. Upload a `.json` file from this directory (the file wraps the dashboard in
+   `{"dashboard": ...}`; paste the inner `dashboard` object if the UI refuses it)
+3. Pick the datasource in the dashboard's `datasource` variable
 
-1. Open Grafana UI
-2. Go to **Dashboards → Import**
-3. Upload each `.json` file from this directory
-4. Select your PostgreSQL datasource
-5. Click **Import**
+Every panel reads the dashboard's `datasource` variable, so a dashboard works with any
+datasource of the right type, whatever its name.
 
 ## Dashboard Details
 
-### 1. Error Monitoring Dashboard
+Time-range panels use Grafana's macros (`$__timeFilter`, `$__timeGroupAlias`,
+`$__rate_interval`, `$__range`), so they follow the time picker.
 
-**File**: `error_monitoring.json`
+### 1. Error Monitoring
 
-**Panels**:
+Errors captured by `PostgreSQLErrorTracker.capture_exception()`: one row per distinct
+error (fingerprint) in `tb_error_log`, one row per occurrence in `tb_error_occurrence`.
+The `environment` variable filters on `tb_error_log.environment`, the `environment` the
+tracker was created with (default `production`).
 
-- Error rate over time (timeseries)
-- Error distribution by type (pie chart)
-- Top 10 error fingerprints (table)
-- Error resolution status (stat)
-- Errors by environment (bar gauge)
-- Recent errors (table)
-- Users affected by errors (timeseries)
+| Panel | Shows |
+|-------|-------|
+| Error Rate Over Time | occurrences per interval |
+| Error Distribution by Type | occurrences by `error_type` |
+| Top 10 Error Fingerprints | open errors (`unresolved`, `investigating`) with the most occurrences in the range, with affected users |
+| Error Resolution Status | distinct errors seen in the range, by `status` |
+| Errors by Environment | occurrences in every environment |
+| Recent Errors (Last Hour) | the last 20 occurrences, with user and trace id |
+| Users Affected by Errors | distinct `user_context->>'user_id'` per interval |
+| Notification Deliveries | `tb_error_notification_log` by channel and status (`sent`, `failed`) |
 
-**Key Queries**:
-
-```sql
--- Error rate over time
-SELECT
-  date_trunc('minute', occurred_at) as time,
-  COUNT(*) as error_count
-FROM monitoring.errors
-WHERE occurred_at >= $__timeFrom()
-  AND occurred_at <= $__timeTo()
-  AND environment = '$environment'
-GROUP BY time;
-
--- Top error fingerprints
-SELECT
-    fingerprint,
-    exception_type,
-    message,
-    COUNT(*) as occurrences,
-    MAX(occurred_at) as last_seen,
-    COUNT(DISTINCT context->>'user_id') as affected_users
-FROM monitoring.errors
-WHERE occurred_at > NOW() - INTERVAL '24 hours'
-  AND resolved_at IS NULL
-GROUP BY fingerprint, exception_type, message
-ORDER BY occurrences DESC
-LIMIT 10;
-```
-
-**Use Cases**:
-
-- Monitor production error rates
-- Identify frequently occurring errors
-- Track error resolution progress
-- Analyze user impact of errors
-
----
-
-### 2. Performance Metrics Dashboard
-
-**File**: `performance_metrics.json`
-
-**Panels**:
-
-- Request rate (req/sec) (timeseries)
-- Response time percentiles (P50, P95, P99) (timeseries)
-- Slowest operations table
-- Database query performance table
-- Trace status distribution (pie chart)
-- Requests by operation (bar gauge)
-- Error rate by operation (timeseries)
-- Average response time (stat)
-
-**Key Queries**:
+"Affected users" counts the `user_id` key of the `user` context you pass to
+`capture_exception(exc, context={"user": {"user_id": ...}})`; without it the user panels
+are empty.
 
 ```sql
--- Request rate
+-- Error Rate Over Time
 SELECT
-  date_trunc('minute', start_time) as time,
-  COUNT(*) / 60.0 as requests_per_second
-FROM monitoring.traces
-WHERE start_time >= $__timeFrom()
-  AND start_time <= $__timeTo()
-GROUP BY time;
-
--- P95 latency
-SELECT
-  date_trunc('minute', start_time) as time,
-  percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) as p95_latency
-FROM monitoring.traces
-WHERE start_time >= $__timeFrom()
-  AND start_time <= $__timeTo()
-GROUP BY time;
-
--- Slowest operations
-SELECT
-    operation_name,
-    COUNT(*) as request_count,
-    percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms) as p99_ms
-FROM monitoring.traces
-WHERE start_time > NOW() - INTERVAL '1 hour'
-GROUP BY operation_name
-HAVING COUNT(*) > 10
-ORDER BY p99_ms DESC
-LIMIT 20;
+  $__timeGroupAlias(eo.occurred_at, $__interval),
+  COUNT(*) AS errors
+FROM tb_error_occurrence eo
+JOIN tb_error_log el ON el.error_id = eo.error_id
+WHERE $__timeFilter(eo.occurred_at)
+  AND el.environment = '$environment'
+GROUP BY 1
+ORDER BY 1
 ```
 
-**Use Cases**:
+### 2. Performance Metrics (Prometheus)
 
-- Monitor application performance
-- Identify slow operations
-- Track SLA compliance (P95/P99 targets)
-- Detect performance regressions
+The HTTP metrics `MetricsMiddleware` records on every request (except `/metrics`,
+`/health`, `/ready`, `/startup`). The `job` variable is Prometheus's scrape label.
 
----
+| Panel | Query |
+|-------|-------|
+| Request Rate (req/sec) | `sum by (endpoint) (rate(fraiseql_http_requests_total[$__rate_interval]))` |
+| Response Time Percentiles | `histogram_quantile(0.95, sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket[$__rate_interval])))` (P50, P95, P99) |
+| Slowest Endpoints (P99) | P99 of `fraiseql_http_request_duration_seconds` by `method`, `endpoint` over the range |
+| Responses by Status | `sum by (status) (increase(fraiseql_http_requests_total[$__range]))` |
+| Requests by Endpoint | top 10 `endpoint` by requests over the range |
+| 5xx Rate by Endpoint | share of `status=~"5.."` responses, by endpoint |
+| Unhandled Exceptions by Type | `sum by (error_type) (rate(fraiseql_errors_total[$__rate_interval]))` |
+| Average Response Time | `fraiseql_response_time_seconds_sum / _count` over the range |
 
-### 3. Cache Hit Rate Dashboard
+All GraphQL operations go to one endpoint (`/graphql`), and a GraphQL error comes back
+with status 200: per-operation numbers need `@with_metrics` on your resolvers
+(`fraiseql_graphql_queries_total`, labels `operation_type`, `operation_name`), and errors
+in the response body are on the Error Monitoring dashboard. See
+`docs/production/runbooks/README.md` (Metrics Quick Reference) for every metric.
 
-**File**: `cache_hit_rate.json`
+### 3. Database Pool
 
-**Panels**:
+Read from PostgreSQL itself, so it works without any FraiseQL configuration. These are
+current values (the connections now, counters since the last statistics reset):
+PostgreSQL keeps no history of them, so there are no time series.
 
-- Overall cache hit rate (stat)
-- Cache operations over time (hits/misses) (timeseries)
-- Cache hit rate over time (timeseries)
-- Cache performance by type (table)
-- Cache savings (time saved) (stat)
-- Cache operations rate (timeseries)
-- Query cache vs APQ cache comparison (bar gauge)
+| Panel | Reads |
+|-------|-------|
+| Active / Idle / Idle in Transaction / Total Connections | `pg_stat_activity`, client backends of the current database |
+| Connection Utilization | client backends of the server / `max_connections` |
+| Connections by Application | `pg_stat_activity` by `application_name`, user, state |
+| Longest Running Queries | non-idle backends, oldest `query_start` first |
+| Top Queries by Total Time | `v_query_stats` |
+| Slowest Queries by Mean Time | `v_query_stats`, statements called 10+ times |
+| Buffer Cache Hit Ratio | `pg_stat_database` (`blks_hit / (blks_hit + blks_read)`) |
+| Top Tables by Scans | `pg_stat_user_tables` |
 
-**Key Queries**:
+Set `application_name` in the app's connection string
+(`postgresql://.../db?application_name=myapp`) to tell its pool apart from other clients.
+
+`v_query_stats` is created by `schema.sql` only when `pg_stat_statements` is installed
+(`shared_preload_libraries = 'pg_stat_statements'`, then
+`CREATE EXTENSION pg_stat_statements`) before the schema is loaded; without it those two
+panels report a missing relation.
 
 ```sql
--- Overall hit rate
-SELECT
-  ROUND(100.0 * SUM(CASE WHEN labels->>'result' = 'hit' THEN metric_value ELSE 0 END) /
-    NULLIF(SUM(metric_value), 0), 2) as hit_rate_percent
-FROM monitoring.metrics
-WHERE metric_name IN ('cache_hits_total', 'cache_misses_total')
-  AND timestamp > NOW() - INTERVAL '1 hour';
-
--- Cache performance by type
-WITH cache_stats AS (
-  SELECT
-    labels->>'cache_type' as cache_type,
-    SUM(CASE WHEN metric_name = 'cache_hits_total' THEN metric_value ELSE 0 END) as total_hits,
-    SUM(CASE WHEN metric_name = 'cache_misses_total' THEN metric_value ELSE 0 END) as total_misses
-  FROM monitoring.metrics
-  WHERE metric_name IN ('cache_hits_total', 'cache_misses_total')
-    AND timestamp > NOW() - INTERVAL '1 hour'
-  GROUP BY cache_type
-)
-SELECT
-  cache_type,
-  total_hits,
-  total_misses,
-  ROUND(100.0 * total_hits / NULLIF(total_hits + total_misses, 0), 2) as hit_rate_percent
-FROM cache_stats;
+-- Idle in Transaction
+SELECT COUNT(*) AS idle_in_transaction
+FROM pg_stat_activity
+WHERE datname = current_database()
+  AND backend_type = 'client backend'
+  AND state LIKE 'idle in transaction%'
 ```
 
-**Use Cases**:
+### 4. APQ Storage
 
-- Monitor cache effectiveness
-- Optimize cache strategies
-- Calculate time/cost savings
-- Compare different cache types
+The persisted queries stored by the PostgreSQL APQ backend
+(`apq_storage_backend="postgresql"`), which creates `apq_queries` and `apq_responses` on
+first use. With another `table_prefix` in `apq_backend_config`, replace `apq_` in the
+queries. The default memory backend stores nothing in PostgreSQL.
 
----
+| Panel | Reads |
+|-------|-------|
+| Stored Persisted Queries | `COUNT(*)` of `apq_queries` |
+| New Persisted Queries | queries registered in the range (`created_at`) |
+| Cached Responses | `COUNT(*)` of `apq_responses` (only with `apq_cache_responses=True`) |
+| APQ Storage Size | `pg_total_relation_size` of both tables |
+| APQ Storage Growth | queries registered per interval |
+| Cached Responses by Tenant | `apq_responses` by `tenant_id` |
+| Recently Registered Queries | the last 20 queries registered in the range |
+| Largest Persisted Queries | `OCTET_LENGTH(query)`: the bytes a hash-only request saves |
 
-### 4. Database Pool Dashboard
-
-**File**: `database_pool.json`
-
-**Panels**:
-
-- Active connections (stat)
-- Idle connections (stat)
-- Total connections (stat)
-- Connection pool over time (timeseries)
-- Database query rate (timeseries)
-- Query types distribution (pie chart)
-- Database query duration (P50/P95) (timeseries)
-- Top tables by query count (table)
-- Pool utilization rate (gauge)
-
-**Key Queries**:
-
-```sql
--- Connection pool metrics
-SELECT
-  metric_value as active_connections
-FROM monitoring.metrics
-WHERE metric_name = 'db_connections_active'
-ORDER BY timestamp DESC
-LIMIT 1;
-
--- Query rate by type
-SELECT
-  date_trunc('minute', timestamp) as time,
-  labels->>'query_type' as query_type,
-  SUM(metric_value) / 60.0 as queries_per_second
-FROM monitoring.metrics
-WHERE metric_name = 'db_queries_total'
-  AND timestamp >= $__timeFrom()
-  AND timestamp <= $__timeTo()
-GROUP BY time, query_type;
-
--- Pool utilization
-SELECT
-  ROUND(100.0 * active / NULLIF(total, 0), 2) as utilization_percent
-FROM (
-  SELECT
-    (SELECT metric_value FROM monitoring.metrics
-     WHERE metric_name = 'db_connections_active'
-     ORDER BY timestamp DESC LIMIT 1) as active,
-    (SELECT metric_value FROM monitoring.metrics
-     WHERE metric_name = 'db_connections_total'
-     ORDER BY timestamp DESC LIMIT 1) as total
-) pool_stats;
-```
-
-**Use Cases**:
-
-- Monitor connection pool health
-- Detect connection pool exhaustion
-- Optimize pool size configuration
-- Identify high-volume tables
-
----
-
-### 5. APQ Effectiveness Dashboard
-
-**File**: `apq_effectiveness.json`
-
-**Panels**:
-
-- APQ hit rate (stat)
-- Total APQ requests (stat)
-- Bandwidth saved (stat)
-- APQ operations over time (timeseries)
-- APQ hit rate over time (timeseries)
-- Stored persisted queries (stat)
-- APQ storage growth (timeseries)
-- Top persisted queries by usage (table)
-- APQ request types (pie chart)
-- Bandwidth savings over time (timeseries)
-
-**Key Queries**:
-
-```sql
--- APQ hit rate
-WITH apq_stats AS (
-  SELECT
-    SUM(CASE WHEN labels->>'cache_type' = 'apq'
-        AND metric_name = 'cache_hits_total' THEN metric_value ELSE 0 END) as hits,
-    SUM(CASE WHEN labels->>'cache_type' = 'apq'
-        AND metric_name = 'cache_misses_total' THEN metric_value ELSE 0 END) as misses
-  FROM monitoring.metrics
-  WHERE metric_name IN ('cache_hits_total', 'cache_misses_total')
-    AND timestamp > NOW() - INTERVAL '24 hours'
-)
-SELECT
-  ROUND(100.0 * hits / NULLIF(hits + misses, 0), 2) as hit_rate_percent
-FROM apq_stats;
-
--- Bandwidth saved (assuming ~2KB per query)
-SELECT
-  SUM(metric_value) * 2048 / 1048576.0 as mb_saved
-FROM monitoring.metrics
-WHERE metric_name = 'cache_hits_total'
-  AND labels->>'cache_type' = 'apq'
-  AND timestamp > NOW() - INTERVAL '24 hours';
-
--- Top persisted queries
-SELECT
-  au.query_hash,
-  LEFT(pq.query, 100) as query_preview,
-  au.usage_count
-FROM (
-  SELECT
-    labels->>'query_hash' as query_hash,
-    SUM(metric_value) as usage_count
-  FROM monitoring.metrics
-  WHERE metric_name = 'cache_hits_total'
-    AND labels->>'cache_type' = 'apq'
-    AND timestamp > NOW() - INTERVAL '24 hours'
-  GROUP BY query_hash
-) au
-LEFT JOIN tb_persisted_query pq ON au.query_hash = pq.hash
-ORDER BY au.usage_count DESC
-LIMIT 20;
-```
-
-**Use Cases**:
-
-- Monitor APQ adoption and effectiveness
-- Calculate bandwidth savings
-- Identify most-used persisted queries
-- Optimize client query strategies
-
----
+APQ hit and miss counts are not stored: they are in the process
+(`fraiseql.monitoring.apq_metrics.get_global_metrics()`), which the router of
+`fraiseql.fastapi.apq_metrics_router` serves as JSON under `/admin/apq/` once you mount it.
 
 ## Configuration
 
-### Environment Variables
+### Time Ranges and Refresh
 
-All dashboards include an `environment` template variable for filtering data:
+| Dashboard | Default range | Refresh |
+|-----------|---------------|---------|
+| Error Monitoring | last 24 hours | 30s |
+| Performance Metrics | last 1 hour | 30s |
+| Database Pool | last 1 hour | 30s |
+| APQ Storage | last 7 days | 5m |
 
-- **production** - Production environment
-- **staging** - Staging environment
-- **development** - Development environment
-
-To change the environment:
-
-1. Open dashboard
-2. Click dropdown at top (default: "production")
-3. Select desired environment
-
-### Time Ranges
-
-Default time ranges:
-
-- **Error Monitoring**: Last 24 hours
-- **Performance Metrics**: Last 1 hour
-- **Cache Hit Rate**: Last 1 hour
-- **Database Pool**: Last 1 hour
-- **APQ Effectiveness**: Last 24 hours
-
-All dashboards support custom time ranges via Grafana's time picker.
-
-### Refresh Rates
-
-- **Error Monitoring**: 30 seconds
-- **Performance Metrics**: 30 seconds
-- **Cache Hit Rate**: 30 seconds
-- **Database Pool**: 10 seconds (faster for real-time monitoring)
-- **APQ Effectiveness**: 30 seconds
-
-## PostgreSQL Datasource Setup
-
-### Create Datasource
-
-1. Go to **Configuration → Data Sources → Add data source**
-2. Select **PostgreSQL**
-3. Configure settings:
-
-```
-Name: PostgreSQL
-Host: your-postgres-host:5432
-Database: your-database-name
-User: grafana_readonly  (recommended)
-Password: ***
-SSL Mode: require (for production)
-Version: 14+ (or your PostgreSQL version)
-```
-
-### Create Read-Only User (Recommended)
-
-For security, create a dedicated read-only user for Grafana:
+### PostgreSQL Datasource and Read-Only User
 
 ```sql
--- Create read-only user
 CREATE USER grafana_readonly WITH PASSWORD 'secure_password';
-
--- Grant connection
 GRANT CONNECT ON DATABASE your_database TO grafana_readonly;
+GRANT USAGE ON SCHEMA public TO grafana_readonly;
 
--- Grant schema usage
-GRANT USAGE ON SCHEMA monitoring TO grafana_readonly;
+-- Error Monitoring
+GRANT SELECT ON tb_error_log, tb_error_occurrence, tb_error_notification_log TO grafana_readonly;
 
--- Grant SELECT on monitoring tables
-GRANT SELECT ON ALL TABLES IN SCHEMA monitoring TO grafana_readonly;
+-- APQ Storage
+GRANT SELECT ON apq_queries, apq_responses TO grafana_readonly;
 
--- Auto-grant SELECT on future tables
-ALTER DEFAULT PRIVILEGES IN SCHEMA monitoring
-    GRANT SELECT ON TABLES TO grafana_readonly;
-
--- If using tb_persisted_query for APQ dashboard
-GRANT SELECT ON tb_persisted_query TO grafana_readonly;
+-- Database Pool: other sessions' state and query text, and v_query_stats
+GRANT pg_read_all_stats TO grafana_readonly;
+GRANT SELECT ON v_query_stats TO grafana_readonly;
 ```
 
-### Test Connection
+Without `pg_read_all_stats` the user sees only its own sessions in `pg_stat_activity`
+and `<insufficient privilege>` instead of other users' query text.
 
-After configuration, click **Save & Test** to verify:
-
-- ✅ Database connection successful
-- ✅ Can execute queries
-- ✅ PostgreSQL version detected
+Use the schema the tables were created in instead of `public` if `schema.sql` was loaded
+with another `search_path`, and add it to the datasource user's `search_path`.
 
 ## Troubleshooting
 
 ### Dashboards Show "No Data"
 
-**Possible causes**:
+1. **Error Monitoring**: check that errors are being captured, in the selected environment:
 
-1. **Observability not enabled**
-   - Verify `monitoring.errors`, `monitoring.traces`, `monitoring.metrics` tables exist
-   - Check FraiseQL observability configuration
+   ```sql
+   SELECT environment, COUNT(*) AS errors, MAX(last_seen) AS latest
+   FROM tb_error_log
+   GROUP BY environment;
+   ```
 
-2. **Wrong environment selected**
-   - Ensure environment variable matches your data
-   - Check `environment` column in tables
-
-3. **No data in time range**
-   - Expand time range (e.g., last 7 days)
-   - Verify application is generating data
-
-**Debug query**:
-
-```sql
--- Check if data exists
-SELECT
-  COUNT(*) as error_count,
-  MAX(occurred_at) as latest_error
-FROM monitoring.errors
-WHERE occurred_at > NOW() - INTERVAL '7 days';
-```
+2. **Performance Metrics**: check that `GET /metrics` on the app returns
+   `fraiseql_http_requests_total`, and that the Prometheus target is up.
+3. **APQ Storage**: `relation "apq_queries" does not exist` means the app uses the memory
+   APQ backend, or has not stored a query yet.
+4. **Database Pool**, `relation "v_query_stats" does not exist`: install
+   `pg_stat_statements`, then load `schema.sql` again (it is idempotent).
 
 ### Import Script Fails
-
-**Error: "Cannot connect to Grafana"**
 
 ```bash
 # Check Grafana is running
@@ -478,12 +255,8 @@ curl http://localhost:3000/api/health
 
 # Verify credentials
 GRAFANA_USER=admin GRAFANA_PASSWORD=your_password ./import_dashboards.sh
-```
 
-**Error: "PostgreSQL datasource not found"**
-
-```bash
-# Create datasource first via Grafana UI, or set env vars:
+# Create the PostgreSQL datasource from the script
 POSTGRES_HOST=localhost:5432 \
 POSTGRES_DB=myapp \
 POSTGRES_USER=grafana_readonly \
@@ -491,161 +264,75 @@ POSTGRES_PASSWORD=password \
 ./import_dashboards.sh
 ```
 
-### Query Performance Issues
+### Query Performance
 
-If dashboard queries are slow (>2 seconds):
-
-1. **Check indexes** (should be created by FraiseQL schema):
-
-   ```sql
-   -- Verify indexes exist
-   SELECT indexname, tablename
-   FROM pg_indexes
-   WHERE schemaname = 'monitoring';
-   ```
-
-2. **Enable query optimization**:
-
-   ```sql
-   -- Analyze tables for better query plans
-   ANALYZE monitoring.errors;
-   ANALYZE monitoring.traces;
-   ANALYZE monitoring.metrics;
-   ```
-
-3. **Consider table partitioning** (for high-volume data):
-   - See `docs/production/observability.md` for partition setup
+The error queries filter on `occurred_at` and `last_seen`, and join on `error_id`, all
+indexed by `schema.sql`; `tb_error_occurrence` is partitioned by month, so a time filter
+reads only the partitions in range. Keep partitions ahead with
+`SELECT ensure_error_occurrence_partitions(2)` (from cron or pg_cron), and drop old ones
+with `drop_old_error_occurrence_partitions(6)`.
 
 ## Customization
 
-### Adding Custom Panels
-
-1. Open dashboard in Grafana
-2. Click **Add panel**
-3. Write SQL query against `monitoring.*` tables
-4. Configure visualization
-5. Save dashboard
-
-Example custom panel:
+### Adding Panels
 
 ```sql
--- Custom: Errors by user role
+-- Errors by release
 SELECT
-  context->>'user_role' as role,
-  COUNT(*) as error_count
-FROM monitoring.errors
-WHERE occurred_at > NOW() - INTERVAL '24 hours'
-  AND context->>'user_role' IS NOT NULL
-GROUP BY role
-ORDER BY error_count DESC;
+  release_version,
+  SUM(occurrence_count) AS occurrences
+FROM tb_error_log
+WHERE $__timeFilter(last_seen)
+  AND environment = '$environment'
+GROUP BY release_version
+ORDER BY occurrences DESC
 ```
 
 ### Alerting
 
-Set up Grafana alerts for critical metrics:
-
-1. **High Error Rate**:
+1. **Error spike** (PostgreSQL):
 
    ```sql
-   SELECT COUNT(*) as error_count
-   FROM monitoring.errors
-   WHERE occurred_at > NOW() - INTERVAL '5 minutes'
-     AND resolved_at IS NULL;
+   SELECT COUNT(*) AS errors
+   FROM tb_error_occurrence eo
+   JOIN tb_error_log el ON el.error_id = eo.error_id
+   WHERE eo.occurred_at > NOW() - INTERVAL '5 minutes'
+     AND el.environment = 'production'
    ```
 
-   Alert if: `error_count > 100`
+   Alert if `errors > 100`.
 
-2. **Low Cache Hit Rate**:
+2. **5xx rate** (Prometheus):
+
+   ```promql
+   100 * sum(rate(fraiseql_http_requests_total{status=~"5.."}[5m]))
+     / sum(rate(fraiseql_http_requests_total[5m]))
+   ```
+
+   Alert if above 1.
+
+3. **Connection exhaustion** (PostgreSQL):
 
    ```sql
-   SELECT
-     100.0 * hits / NULLIF(hits + misses, 0) as hit_rate
-   FROM (
-     SELECT
-       SUM(CASE WHEN metric_name = 'cache_hits_total' THEN metric_value ELSE 0 END) as hits,
-       SUM(CASE WHEN metric_name = 'cache_misses_total' THEN metric_value ELSE 0 END) as misses
-     FROM monitoring.metrics
-     WHERE timestamp > NOW() - INTERVAL '5 minutes'
-   ) stats;
+   WITH conns AS (
+     SELECT COUNT(*) AS used FROM pg_stat_activity WHERE backend_type = 'client backend'
+   )
+   SELECT ROUND(100.0 * used / current_setting('max_connections')::int, 1) AS utilization
+   FROM conns
    ```
 
-   Alert if: `hit_rate < 50`
-
-3. **Pool Exhaustion**:
-
-   ```sql
-   SELECT
-     100.0 * active / NULLIF(total, 0) as utilization
-   FROM (
-     SELECT
-       (SELECT metric_value FROM monitoring.metrics
-        WHERE metric_name = 'db_connections_active'
-        ORDER BY timestamp DESC LIMIT 1) as active,
-       (SELECT metric_value FROM monitoring.metrics
-        WHERE metric_name = 'db_connections_total'
-        ORDER BY timestamp DESC LIMIT 1) as total
-   ) pool;
-   ```
-
-   Alert if: `utilization > 90`
-
-## Best Practices
-
-1. **Use read-only database user** for Grafana (security)
-2. **Set appropriate refresh rates** (balance freshness vs database load)
-3. **Enable Grafana alerting** for critical metrics
-4. **Create dedicated dashboard folder** for organization
-5. **Document custom modifications** for team knowledge sharing
-6. **Test dashboards in staging** before production deployment
-7. **Monitor dashboard query performance** via Grafana query inspector
-
-## Cost Comparison
-
-**PostgreSQL-native observability** (FraiseQL + Grafana):
-
-- **Cost**: $0 (self-hosted) or ~$50-100/month (managed Grafana)
-- **Data retention**: Unlimited (configurable)
-- **Query flexibility**: Full SQL
-
-**External APM** (Datadog, New Relic, etc.):
-
-- **Cost**: $500-5,000/month
-- **Data retention**: Limited by plan (typically 15-90 days)
-- **Query flexibility**: Limited query language
-
-**Savings**: $6,000-60,000 per year with FraiseQL observability!
+   Alert if `utilization > 90`.
 
 ## Testing
 
-FraiseQL maintains **very high quality standards**. All dashboards have comprehensive tests:
-
-- **50 automated tests** covering JSON structure, SQL queries, and import script
-- **Validates**: Correctness, performance, security, Grafana compatibility
-- **Runs in**: <0.4 seconds with no external dependencies
-
 ```bash
-# Run all dashboard tests
 uv run pytest tests/grafana/ -v
-
-# Expected: 50 passed, 1 skipped in 0.38s
 ```
 
-See `tests/grafana/README.md` for detailed testing documentation.
+- `test_dashboard_structure.py`, `test_sql_queries.py`, `test_import_script.py`: JSON
+  structure, datasources, variables, SQL conventions, import script
+- `test_prometheus_queries.py`: every metric and label in the PromQL is one FraiseQL exports
+- `test_queries_run_in_postgres.py`: every SQL query runs against `schema.sql` and the APQ
+  tables in PostgreSQL (integration; needs Docker or `TEST_DATABASE_URL`)
 
-## Support
-
-- **Documentation**: See `docs/production/observability.md` for detailed observability setup
-- **Tests**: See `tests/grafana/README.md` for testing guide
-- **GitHub Issues**: Report dashboard issues at https://github.com/your-org/fraiseql/issues
-- **Grafana Docs**: https://grafana.com/docs/
-
-## License
-
-MIT License - See LICENSE file for details
-
----
-
-**Last Updated**: October 11, 2025
-**FraiseQL Version**: 0.11.0+
-**Grafana Version**: 9.0+
-**Test Coverage**: 50 tests (JSON, SQL, Scripts)
+See `tests/grafana/README.md` for details.

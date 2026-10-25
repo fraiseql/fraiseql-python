@@ -1,41 +1,78 @@
 {
   "dashboard": {
+    "uid": "fraiseql-database",
     "title": "FraiseQL Database Pool",
-    "tags": ["fraiseql", "database", "pool", "connections"],
+    "description": "Connections and query statistics read from PostgreSQL itself (pg_stat_activity, pg_stat_database, pg_stat_user_tables, v_query_stats). The current values: PostgreSQL keeps no history of them.",
+    "tags": [
+      "fraiseql",
+      "database",
+      "pool",
+      "connections"
+    ],
     "timezone": "browser",
     "schemaVersion": 38,
     "version": 1,
-    "refresh": "10s",
+    "refresh": "30s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "templating": {
+      "list": [
+        {
+          "name": "datasource",
+          "label": "PostgreSQL",
+          "type": "datasource",
+          "query": "grafana-postgresql-datasource",
+          "current": {},
+          "hide": 0,
+          "refresh": 1,
+          "regex": "",
+          "options": []
+        }
+      ]
+    },
     "panels": [
       {
         "id": 1,
         "title": "Active Connections",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  metric_value as active_connections\nFROM monitoring.metrics\nWHERE metric_name = 'db_connections_active'\n  AND environment = '$environment'\nORDER BY timestamp DESC\nLIMIT 1;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS active_connections\nFROM pg_stat_activity\nWHERE datname = current_database()\n  AND backend_type = 'client backend'\n  AND state = 'active'\n  AND pid <> pg_backend_pid()",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "area",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
         "fieldConfig": {
           "defaults": {
-            "unit": "short",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 15, "color": "yellow"},
-                {"value": 25, "color": "red"}
-              ]
-            }
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
@@ -43,269 +80,432 @@
         "id": 2,
         "title": "Idle Connections",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  metric_value as idle_connections\nFROM monitoring.metrics\nWHERE metric_name = 'db_connections_idle'\n  AND environment = '$environment'\nORDER BY timestamp DESC\nLIMIT 1;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS idle_connections\nFROM pg_stat_activity\nWHERE datname = current_database()\n  AND backend_type = 'client backend'\n  AND state = 'idle'",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "area",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
         "fieldConfig": {
           "defaults": {
-            "unit": "short",
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {"value": 0, "color": "red"},
-                {"value": 5, "color": "yellow"},
-                {"value": 10, "color": "green"}
-              ]
-            }
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
       {
         "id": 3,
-        "title": "Total Connections",
+        "title": "Idle in Transaction",
         "type": "stat",
-        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 0},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "SELECT\n  metric_value as total_connections\nFROM monitoring.metrics\nWHERE metric_name = 'db_connections_total'\n  AND environment = '$environment'\nORDER BY timestamp DESC\nLIMIT 1;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS idle_in_transaction\nFROM pg_stat_activity\nWHERE datname = current_database()\n  AND backend_type = 'client backend'\n  AND state LIKE 'idle in transaction%'",
             "format": "table"
           }
         ],
-        "options": {
-          "graphMode": "area",
-          "colorMode": "value",
-          "orientation": "auto",
-          "textMode": "value_and_name"
-        },
+        "description": "Connections holding a transaction open without running a query: a pool connection not returned, or a leak.",
         "fieldConfig": {
           "defaults": {
-            "unit": "short",
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 20, "color": "yellow"},
-                {"value": 30, "color": "red"}
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 1
+                }
               ]
-            }
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
       {
         "id": 4,
-        "title": "Connection Pool Over Time",
-        "type": "timeseries",
-        "gridPos": {"h": 10, "w": 24, "x": 0, "y": 6},
+        "title": "Total Connections",
+        "type": "stat",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
         "targets": [
           {
-            "refId": "Active",
-            "rawSql": "SELECT\n  date_trunc('minute', timestamp) as time,\n  AVG(metric_value) as active_connections\nFROM monitoring.metrics\nWHERE metric_name = 'db_connections_active'\n  AND timestamp >= $__timeFrom()\n  AND timestamp <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "Active"
-          },
-          {
-            "refId": "Idle",
-            "rawSql": "SELECT\n  date_trunc('minute', timestamp) as time,\n  AVG(metric_value) as idle_connections\nFROM monitoring.metrics\nWHERE metric_name = 'db_connections_idle'\n  AND timestamp >= $__timeFrom()\n  AND timestamp <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "Idle"
-          },
-          {
-            "refId": "Total",
-            "rawSql": "SELECT\n  date_trunc('minute', timestamp) as time,\n  AVG(metric_value) as total_connections\nFROM monitoring.metrics\nWHERE metric_name = 'db_connections_total'\n  AND timestamp >= $__timeFrom()\n  AND timestamp <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "Total"
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT COUNT(*) AS total_connections\nFROM pg_stat_activity\nWHERE datname = current_database()\n  AND backend_type = 'client backend'",
+            "format": "table"
           }
         ],
         "fieldConfig": {
           "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "lineInterpolation": "smooth",
-              "showPoints": "never",
-              "fillOpacity": 10
-            },
             "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
       },
       {
         "id": 5,
-        "title": "Database Query Rate",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT\n  date_trunc('minute', timestamp) as time,\n  labels->>'query_type' as query_type,\n  SUM(metric_value) / 60.0 as queries_per_second\nFROM monitoring.metrics\nWHERE metric_name = 'db_queries_total'\n  AND timestamp >= $__timeFrom()\n  AND timestamp <= $__timeTo()\n  AND environment = '$environment'\nGROUP BY time, query_type\nORDER BY time;",
-            "format": "time_series"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "lineInterpolation": "smooth",
-              "showPoints": "never",
-              "fillOpacity": 10
-            },
-            "unit": "qps"
-          }
-        }
-      },
-      {
-        "id": 6,
-        "title": "Query Types Distribution",
-        "type": "piechart",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT\n  labels->>'query_type' as query_type,\n  SUM(metric_value) as total_queries\nFROM monitoring.metrics\nWHERE metric_name = 'db_queries_total'\n  AND timestamp > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment'\nGROUP BY query_type\nORDER BY total_queries DESC;",
-            "format": "table"
-          }
-        ],
-        "options": {
-          "legend": {"displayMode": "table", "placement": "right"},
-          "pieType": "donut",
-          "displayLabels": ["name", "percent"]
-        }
-      },
-      {
-        "id": 7,
-        "title": "Database Query Duration",
-        "type": "timeseries",
-        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
-        "targets": [
-          {
-            "refId": "P50",
-            "rawSql": "WITH query_times AS (\n  SELECT\n    date_trunc('minute', timestamp) as time,\n    labels->>'query_type' as query_type,\n    metric_value * 1000 as duration_ms\n  FROM monitoring.metrics\n  WHERE metric_name = 'db_query_duration_seconds'\n    AND timestamp >= $__timeFrom()\n    AND timestamp <= $__timeTo()\n    AND environment = '$environment'\n)\nSELECT\n  time,\n  percentile_cont(0.50) WITHIN GROUP (ORDER BY duration_ms) as p50_ms\nFROM query_times\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "P50"
-          },
-          {
-            "refId": "P95",
-            "rawSql": "WITH query_times AS (\n  SELECT\n    date_trunc('minute', timestamp) as time,\n    labels->>'query_type' as query_type,\n    metric_value * 1000 as duration_ms\n  FROM monitoring.metrics\n  WHERE metric_name = 'db_query_duration_seconds'\n    AND timestamp >= $__timeFrom()\n    AND timestamp <= $__timeTo()\n    AND environment = '$environment'\n)\nSELECT\n  time,\n  percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) as p95_ms\nFROM query_times\nGROUP BY time\nORDER BY time;",
-            "format": "time_series",
-            "legendFormat": "P95"
-          }
-        ],
-        "fieldConfig": {
-          "defaults": {
-            "color": {"mode": "palette-classic"},
-            "custom": {
-              "lineInterpolation": "smooth",
-              "showPoints": "never"
-            },
-            "unit": "ms"
-          }
-        }
-      },
-      {
-        "id": 8,
-        "title": "Top Tables by Query Count",
-        "type": "table",
-        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
-        "targets": [
-          {
-            "refId": "A",
-            "rawSql": "SELECT\n  labels->>'table_name' as table_name,\n  labels->>'query_type' as query_type,\n  SUM(metric_value) as query_count\nFROM monitoring.metrics\nWHERE metric_name = 'db_queries_total'\n  AND timestamp > NOW() - INTERVAL '$time_range'\n  AND environment = '$environment'\nGROUP BY table_name, query_type\nORDER BY query_count DESC\nLIMIT 20;",
-            "format": "table"
-          }
-        ],
-        "fieldConfig": {
-          "overrides": [
-            {
-              "matcher": {"id": "byName", "options": "query_count"},
-              "properties": [
-                {
-                  "id": "custom.cellOptions",
-                  "value": {
-                    "type": "color-background",
-                    "mode": "gradient"
-                  }
-                }
-              ]
-            }
-          ]
-        }
-      },
-      {
-        "id": 9,
-        "title": "Pool Utilization Rate",
+        "title": "Connection Utilization",
         "type": "gauge",
-        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 8,
+          "x": 0,
+          "y": 4
+        },
         "targets": [
           {
             "refId": "A",
-            "rawSql": "WITH latest_metrics AS (\n  SELECT DISTINCT ON (metric_name)\n    metric_name,\n    metric_value\n  FROM monitoring.metrics\n  WHERE metric_name IN ('db_connections_active', 'db_connections_total')\n    AND environment = '$environment'\n  ORDER BY metric_name, timestamp DESC\n)\nSELECT\n  ROUND(100.0 * \n    (SELECT metric_value FROM latest_metrics WHERE metric_name = 'db_connections_active') /\n    NULLIF((SELECT metric_value FROM latest_metrics WHERE metric_name = 'db_connections_total'), 0)\n  , 2) as utilization_percent;",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "WITH conns AS (\n  SELECT COUNT(*) AS used\n  FROM pg_stat_activity\n  WHERE backend_type = 'client backend'\n)\nSELECT ROUND(100.0 * used / current_setting('max_connections')::int, 1) AS utilization_percent\nFROM conns",
             "format": "table"
           }
         ],
-        "options": {
-          "showThresholdLabels": true,
-          "showThresholdMarkers": true
-        },
+        "description": "Client connections to the server (every database) as a share of max_connections.",
         "fieldConfig": {
           "defaults": {
-            "unit": "percent",
             "min": 0,
             "max": 100,
             "thresholds": {
               "mode": "absolute",
               "steps": [
-                {"value": 0, "color": "green"},
-                {"value": 60, "color": "yellow"},
-                {"value": 80, "color": "orange"},
-                {"value": 90, "color": "red"}
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "orange",
+                  "value": 70
+                },
+                {
+                  "color": "red",
+                  "value": 90
+                }
               ]
-            }
+            },
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           }
         }
-      }
-    ],
-    "templating": {
-      "list": [
-        {
-          "name": "environment",
-          "type": "custom",
-          "options": [
-            {"text": "production", "value": "production"},
-            {"text": "staging", "value": "staging"},
-            {"text": "development", "value": "development"}
-          ],
-          "current": {"text": "production", "value": "production"},
-          "multi": false
+      },
+      {
+        "id": 6,
+        "title": "Connections by Application",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
         },
-        {
-          "name": "time_range",
-          "type": "custom",
-          "options": [
-            {"text": "1 hour", "value": "1 hour"},
-            {"text": "6 hours", "value": "6 hours"},
-            {"text": "24 hours", "value": "24 hours"},
-            {"text": "7 days", "value": "7 days"}
-          ],
-          "current": {"text": "1 hour", "value": "1 hour"},
-          "multi": false
+        "gridPos": {
+          "h": 8,
+          "w": 16,
+          "x": 8,
+          "y": 4
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  COALESCE(NULLIF(application_name, ''), '(not set)') AS application_name,\n  usename,\n  state,\n  COUNT(*) AS connections\nFROM pg_stat_activity\nWHERE datname = current_database()\n  AND backend_type = 'client backend'\nGROUP BY application_name, usename, state\nORDER BY connections DESC\nLIMIT 50",
+            "format": "table"
+          }
+        ],
+        "description": "The app's psycopg pool shows up under the application_name of its connection string.",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
         }
-      ]
-    },
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    }
+      },
+      {
+        "id": 7,
+        "title": "Longest Running Queries",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 12
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  pid,\n  COALESCE(NULLIF(application_name, ''), '(not set)') AS application_name,\n  state,\n  wait_event_type,\n  NOW() - query_start AS running_for,\n  LEFT(query, 120) AS query\nFROM pg_stat_activity\nWHERE datname = current_database()\n  AND backend_type = 'client backend'\n  AND state <> 'idle'\n  AND pid <> pg_backend_pid()\nORDER BY query_start\nLIMIT 20",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
+        }
+      },
+      {
+        "id": 8,
+        "title": "Top Queries by Total Time",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 20
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  query_preview,\n  calls,\n  total_exec_time_ms,\n  mean_exec_time_ms,\n  max_exec_time_ms,\n  rows_returned,\n  cache_hit_ratio\nFROM v_query_stats\nORDER BY total_exec_time_ms DESC\nLIMIT 20",
+            "format": "table"
+          }
+        ],
+        "description": "Needs pg_stat_statements (shared_preload_libraries + CREATE EXTENSION) installed before schema.sql is loaded, which creates v_query_stats. Counters are cumulative since the last pg_stat_statements_reset().",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
+        }
+      },
+      {
+        "id": 9,
+        "title": "Slowest Queries by Mean Time",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 10,
+          "w": 24,
+          "x": 0,
+          "y": 30
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  query_preview,\n  calls,\n  mean_exec_time_ms,\n  min_exec_time_ms,\n  max_exec_time_ms,\n  total_exec_time_ms\nFROM v_query_stats\nWHERE calls >= 10\nORDER BY mean_exec_time_ms DESC\nLIMIT 20",
+            "format": "table"
+          }
+        ],
+        "description": "Statements called at least 10 times, from v_query_stats (pg_stat_statements).",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
+        }
+      },
+      {
+        "id": 10,
+        "title": "Buffer Cache Hit Ratio",
+        "type": "stat",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 40
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT ROUND(100.0 * blks_hit / NULLIF(blks_hit + blks_read, 0), 2) AS cache_hit_percent\nFROM pg_stat_database\nWHERE datname = current_database()",
+            "format": "table"
+          }
+        ],
+        "description": "Share of block reads served from shared buffers since the statistics were last reset.",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent"
+          },
+          "overrides": []
+        },
+        "options": {
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Top Tables by Scans",
+        "type": "table",
+        "datasource": {
+          "type": "grafana-postgresql-datasource",
+          "uid": "${datasource}"
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 18,
+          "x": 6,
+          "y": 40
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "datasource": {
+              "type": "grafana-postgresql-datasource",
+              "uid": "${datasource}"
+            },
+            "editorMode": "code",
+            "rawQuery": true,
+            "rawSql": "SELECT\n  schemaname,\n  relname AS table_name,\n  seq_scan,\n  idx_scan,\n  n_tup_ins AS rows_inserted,\n  n_tup_upd AS rows_updated,\n  n_tup_del AS rows_deleted,\n  n_live_tup AS live_rows\nFROM pg_stat_user_tables\nORDER BY seq_scan + COALESCE(idx_scan, 0) DESC\nLIMIT 20",
+            "format": "table"
+          }
+        ],
+        "description": "Cumulative counters from pg_stat_user_tables since the statistics were last reset.",
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true
+        }
+      }
+    ]
   },
   "overwrite": true,
   "message": "FraiseQL Database Pool Dashboard"
