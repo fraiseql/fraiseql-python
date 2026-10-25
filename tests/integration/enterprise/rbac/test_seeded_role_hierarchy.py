@@ -160,3 +160,19 @@ class TestReapplyingTheMigrationOnAChangedHierarchy:
             await conn.execute((MIGRATIONS / "002_rbac_tables.sql").read_text())
 
         assert await _parents(rbac_pool) == changed
+
+
+class TestRolePermissions:
+    async def test_get_role_permissions(self, rbac_pool, rbac_repo) -> None:
+        await _grant(rbac_pool, VIEWER, "user", "read")
+        await _grant(rbac_pool, ADMIN, "user", "delete")
+        resolver = PermissionResolver(rbac_repo)
+
+        async def perms(role_id: UUID, **kwargs) -> set[str]:
+            found = await resolver.get_role_permissions(role_id, **kwargs)
+            return {f"{p.resource}.{p.action}" for p in found}
+
+        assert await perms(ADMIN) == {"user.read", "user.delete"}
+        assert await perms(ADMIN, include_inherited=False) == {"user.delete"}
+        assert await perms(VIEWER) == {"user.read"}
+        assert await perms(SUPER_ADMIN, include_inherited=False) == set()

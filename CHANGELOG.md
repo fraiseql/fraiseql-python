@@ -948,6 +948,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entry now answers for `request_cache_ttl` (new `PermissionCache` argument,
   default 1 second, `timedelta(0)` turns the layer off), then the next call reads
   PostgreSQL again; expired entries are dropped.
+- **`PermissionResolver.get_role_permissions(role_id)` returns the role's
+  permissions.** Its query had a positional `%s` placeholder with named parameters,
+  so it raised `TypeError: positional placeholders (%s) require a sequence of
+  parameters`.
 
 ## [1.30.0] - 2026-10-22
 

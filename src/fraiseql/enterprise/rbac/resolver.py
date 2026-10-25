@@ -239,7 +239,7 @@ class PermissionResolver:
                 SELECT DISTINCT p.*
                 FROM permissions p
                 INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                WHERE rp.role_id = ANY(%s::uuid[])
+                WHERE rp.role_id = ANY(%(role_ids)s::uuid[])
                 AND rp.granted = TRUE
                 ORDER BY p.resource, p.action
             """,

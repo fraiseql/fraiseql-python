@@ -121,6 +121,8 @@ repository's pool when you don't pass one.
 `has_permission(user_id, resource, action, tenant_id=None)` returns a bool, and
 `check_permission(..., raise_on_deny=True)` raises `PermissionError("Permission
 denied: requires post.delete")`. Both go through the cache (see [Caching](#caching)).
+`get_role_permissions(role_id, include_inherited=True)` lists a role's permissions,
+with those of its ancestors unless `include_inherited=False`.
 `RoleHierarchy(repo)` (`fraiseql.enterprise.rbac.hierarchy`) has
 `get_inherited_roles(role_id)` (the role and its ancestors), `get_hierarchy_depth`,
 `get_role_ancestors` and `get_role_descendants`.
@@ -161,9 +163,6 @@ A change to a user's roles or permissions therefore shows within 5 minutes, or a
 once with the extension below, or after `await resolver.invalidate_user_cache(user_id,
 tenant_id)` (within `request_cache_ttl` for other resolvers). Pass `use_cache=False`
 where that delay is too long.
-
-In this release `get_role_permissions(role_id)` fails (`TypeError: positional
-placeholders (%s) require a sequence of parameters`).
 
 With the `pg_fraiseql_cache` extension, `await setup_rbac_cache(pool)`
 (`fraiseql.enterprise.rbac`) installs version triggers on the four tables, so cached
