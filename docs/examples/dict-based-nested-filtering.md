@@ -232,29 +232,27 @@ Typical performance characteristics:
 
 ## Error Handling
 
-### Unsupported Deep Nesting
+### Deep Nesting
 
-Dict-based filters support 2-level nesting only:
+A nested filter follows the JSONB path of each level, as deep as the document goes:
 
 ```python
-# ✅ Supported: 2 levels
+# data -> 'device' ->> 'location'
 {"device": {"location": {"eq": "Seattle"}}}
 
-# ❌ Not supported: 3+ levels
+# data -> 'device' -> 'location' -> 'address' ->> 'city'
 {"device": {"location": {"address": {"city": {"eq": "Seattle"}}}}}
 ```
 
-Deep nesting will log a warning and skip the nested fields.
-
 ### Invalid Filter Structures
 
-Malformed filters are gracefully handled:
+Malformed filters raise `ValueError` instead of being skipped:
 
 ```python
-# Empty nested filter - ignored (no conditions added)
+# Empty nested filter: "WhereClause must have at least one condition, ..."
 {"device": {}}
 
-# Invalid operator - logged and skipped
+# Unknown operator: "Invalid operator 'invalid_field'. Supported operators: ..."
 {"device": {"invalid_field": "not_an_operator"}}
 ```
 

@@ -562,7 +562,8 @@ query {
 All operators work identically in Python dict-based queries:
 
 ```python
-from fraiseql.sql import create_graphql_where_input, LTreeFilter
+from fraiseql.sql import create_graphql_where_input
+from fraiseql.sql.graphql_where_generator import LTreeFilter
 
 # Using WhereInput (type-safe)
 where = CategoryWhereInput(

@@ -23,15 +23,18 @@ FraiseQL provides powerful, flexible filtering capabilities for both GraphQL que
 Complete runnable example showing FraiseQL filtering.
 
 Prerequisites:
-- PostgreSQL with a users table/view
+- PostgreSQL with a v_user view (id, data JSONB)
 - FraiseQL installed: pip install "fraiseql<2"
 """
 
-import asyncio
 from datetime import datetime
 from uuid import UUID
+
+from fastapi.testclient import TestClient
+
 import fraiseql
-from fraiseql.filters import StringFilter, BooleanFilter, DateTimeFilter
+from fraiseql.fastapi import create_fraiseql_app
+
 
 # 1. Define your GraphQL type
 @fraiseql.type(sql_source="v_user")
@@ -43,58 +46,55 @@ class User:
     is_verified: bool
     created_at: datetime
 
+
 # 2. Create a filtered query resolver
 @fraiseql.query
 async def active_verified_users(info) -> list[User]:
-    """Get all active, verified users created after 2024."""
+    """Get all active, verified users created since 2024."""
     db = info.context["db"]
-    repo = fraiseql.FraiseQLRepository(db)
-
-    return await repo.find(
+    return await db.find(
         "v_user",
+        "activeVerifiedUsers",
+        info,
         where={
             "status": {"eq": "active"},
             "is_verified": {"eq": True},
-            "created_at": {"gte": "2024-01-01T00:00:00Z"}
-        }
+            "created_at": {"gte": "2024-01-01T00:00:00Z"},
+        },
     )
 
-# 3. Execute the query
-async def main():
-    schema = fraiseql.Schema("postgresql://localhost/mydb")
 
-    query = """
-    {
-      activeVerifiedUsers {
-        id
-        name
-        email
-        createdAt
-      }
-    }
-    """
-
-    result = await schema.execute(query)
-
-    if result.errors:
-        print(f"❌ Errors: {result.errors}")
-    else:
-        print(f"✅ Found {len(result.data['activeVerifiedUsers'])} users")
-        for user in result.data['activeVerifiedUsers']:
-            print(f"  - {user['name']} ({user['email']})")
+# 3. Serve it, and run the query
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[active_verified_users],
+)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    query = "{ activeVerifiedUsers { id name email createdAt } }"
+    with TestClient(app) as client:
+        result = client.post("/graphql", json={"query": query}).json()
+
+    if "errors" in result:
+        print(f"❌ Errors: {result['errors']}")
+    else:
+        users = result["data"]["activeVerifiedUsers"]
+        print(f"✅ Found {len(users)} users")
+        for user in users:
+            print(f"  - {user['name']} ({user['email']})")
 ```
 
 **Expected Output:**
 
 ```
-✅ Found 3 users
+✅ Found 2 users
   - Alice Johnson (alice@example.com)
   - Bob Smith (bob@example.com)
-  - Carol White (carol@example.com)
 ```
+
+A list query also gets a `where` argument of its own (`UserWhereInput`), so clients
+can filter without a resolver of yours (see [Where Input Types](../advanced/where-input-types.md)).
 
 ---
 
@@ -116,23 +116,29 @@ WhereType provides type-safe filtering with full IDE autocomplete support. Use t
 
 ```python
 import fraiseql
-from fraiseql.filters import StringFilter, BooleanFilter
+from fraiseql.sql import BooleanFilter, StringFilter, create_graphql_where_input
+
+UserWhereInput = create_graphql_where_input(User)
+
 
 @fraiseql.query
 async def active_users(info) -> list[User]:
-    return await repo.find(
+    db = info.context["db"]
+    return await db.find(
         "v_user",
-        where=UserWhere(
+        "activeUsers",
+        info,
+        where=UserWhereInput(
             status=StringFilter(eq="active"),
-            is_verified=BooleanFilter(eq=True)
-        )
+            is_verified=BooleanFilter(eq=True),
+        ),
     )
 ```
 
 **Benefits:**
 
 - Full IDE autocomplete and type checking
-- Compile-time error detection
+- Type-checker error detection
 - Self-documenting code
 
 For complete documentation: **[Where Input Types Guide](../advanced/where-input-types.md)**
@@ -145,10 +151,14 @@ Dict-based filters are ideal for dynamic, runtime-built queries. Use this when f
 
 ```python
 @fraiseql.query
-async def search_users(info, filters: dict) -> list[User]:
-    return await repo.find("v_user", where=filters)
-
-# Usage: {"status": {"eq": "active"}, "age": {"gte": 18}}
+async def search_users(info, status: str | None = None, verified_only: bool = False) -> list[User]:
+    where = {}
+    if status:
+        where["status"] = {"eq": status}
+    if verified_only:
+        where["is_verified"] = {"eq": True}
+    db = info.context["db"]
+    return await db.find("v_user", "searchUsers", info, where=where or None)
 ```
 
 ### Simple Filter Example
@@ -158,7 +168,7 @@ where_dict = {
     "status": {"eq": "active"},
     "created_at": {"gte": "2024-01-01T00:00:00Z"}
 }
-results = await repo.find("v_user", where=where_dict)
+results = await db.find("v_user", where=where_dict)
 ```
 
 ### Nested Object Filtering
@@ -173,16 +183,16 @@ where_dict = {
         "name": {"contains": "router"}
     }
 }
-results = await repo.find("assignments", where=where_dict)
+results = await db.find("v_assignment", where=where_dict)
 ```
 
 **Generated SQL:**
 
 ```sql
-SELECT * FROM assignments
-WHERE data->>'status' = 'active'
-  AND data->'device'->>'is_active' = 'true'
-  AND data->'device'->>'name' ILIKE '%router%'  -- icontains operator (case-insensitive)
+SELECT "data"::text FROM "v_assignment"
+WHERE "data" ->> 'status' = $1
+  AND "data" -> 'device' ->> 'is_active' = $2
+  AND "data" -> 'device' ->> 'name' LIKE $3  -- contains is case-sensitive; icontains uses ILIKE
 ```
 
 ### CamelCase Support
@@ -348,15 +358,12 @@ field_name: list[Type] = fraise_field(
 
 ### Nested Filters Not Working
 
-Dict-based filters support 2-level nesting only:
-
-```python
-# ✅ Supported: 2 levels
-{"device": {"location": {"eq": "Seattle"}}}
-
-# ❌ Not supported: 3+ levels
-{"device": {"location": {"address": {"city": {"eq": "Seattle"}}}}}
-```
+A nested filter follows the JSONB path of each level, as deep as the document goes:
+`{"device": {"location": {"address": {"city": {"eq": "Seattle"}}}}}` filters on
+`data -> 'device' -> 'location' -> 'address' ->> 'city'`. Check that the keys of the
+view's JSONB are snake_case (`is_active`, not `isActive`): the filter looks the
+snake_case key up. An unknown operator raises `ValueError` naming the supported
+ones, and an empty nested filter (`{"device": {}}`) raises too.
 
 ---
 
