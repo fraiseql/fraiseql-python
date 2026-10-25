@@ -101,11 +101,10 @@ requests without a tenant. A row past its `expires_at` is ignored.
 from uuid import UUID
 
 from fraiseql.db import FraiseQLRepository
-from fraiseql.enterprise.rbac.cache import PermissionCache
 from fraiseql.enterprise.rbac.resolver import PermissionResolver
 
 # pool: the app's psycopg AsyncConnectionPool
-resolver = PermissionResolver(FraiseQLRepository(pool), PermissionCache(pool))
+resolver = PermissionResolver(FraiseQLRepository(pool))
 
 user_id = UUID("00000000-0000-0000-0000-0000000000c1")
 
@@ -116,8 +115,8 @@ print(sorted(f"{p.resource}.{p.action}" for p in permissions))
 roles = await resolver.get_user_roles(user_id)      # direct roles: [Role(name='editor', ...)]
 ```
 
-Pass the `PermissionCache` yourself: `PermissionResolver(repo)` alone fails, as it
-looks for a `pool` attribute `FraiseQLRepository` doesn't have.
+`PermissionResolver(repo, cache=None)` creates a `PermissionCache` on the
+repository's pool when you don't pass one.
 
 `has_permission(user_id, resource, action, tenant_id=None)` returns a bool, and
 `check_permission(..., raise_on_deny=True)` raises `PermissionError("Permission

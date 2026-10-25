@@ -55,7 +55,7 @@ class PermissionResolver:
         """
         self.repo = repo
         self.hierarchy = RoleHierarchy(repo)
-        self.cache = cache or PermissionCache(repo.pool)
+        self.cache = cache or PermissionCache(repo.get_pool())
 
     async def get_user_permissions(
         self, user_id: UUID, tenant_id: Optional[UUID] = None, use_cache: bool = True

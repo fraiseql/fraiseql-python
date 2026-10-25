@@ -930,6 +930,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`RoleHierarchy.get_role_descendants(role_id)` returns the roles that inherit
   from the role.** It looked for each role among its own ancestors, so it always
   returned `[]`.
+- **`PermissionResolver(repo)` works without a `cache` argument.** It built its
+  default `PermissionCache` from `repo.pool`, which `FraiseQLRepository` doesn't have,
+  so it raised `AttributeError` (and so did `RbacMiddleware` and the RBAC directives,
+  which build one that way). It now uses `repo.get_pool()`.
 
 ## [1.30.0] - 2026-10-22
 
