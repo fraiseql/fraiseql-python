@@ -243,7 +243,8 @@ def create_fraiseql_app(
         connection_pool_timeout: Seconds to wait for available connection (default: 30.0)
         connection_pool_recycle: Seconds before recycling idle connections (default: 3600)
         enable_schema_registry: Whether to initialize Rust schema registry (default: True)
-        app: Existing FastAPI app to extend (creates new if None)
+        app: Existing FastAPI app to extend (creates new if None). fraiseql opens its
+            database pool around the app's own lifespan, or its ``on_event`` handlers.
         authorizer: Optional global default operation authorizer (issue #362). When
             provided it gates every root query/mutation and the three resolver-bypass
             paths (TurboRouter, /graphql/rust, APQ cache hits), and survives schema
@@ -375,11 +376,22 @@ def create_fraiseql_app(
     set_auth_provider(auth_provider)
     set_fraiseql_config(config)
 
+    # The app's own startup and shutdown, run inside fraiseql's lifespan once the pool
+    # is open. An app passed in keeps its lifespan (or, without one, its
+    # @app.on_event handlers, which its default lifespan runs); fraiseql's lifespan
+    # replaces it, so it is called from there.
+    existing_lifespan = app.router.lifespan_context if app is not None else None
+
+    def _app_hooks(app: FastAPI) -> Any:
+        if existing_lifespan is not None:
+            return existing_lifespan(app)
+        return _on_event_handlers(app)
+
     # Create lifespan context manager for the app
     if lifespan is None:
         # Use default lifespan that manages database pool
         @asynccontextmanager
-        async def default_lifespan(app: FastAPI) -> AsyncGenerator[None]:
+        async def default_lifespan(app: FastAPI) -> AsyncGenerator[Any]:
             """Manage application lifecycle."""
             # Startup - only create pool if one doesn't already exist
             # (allows test fixtures to inject their own pool)
@@ -400,8 +412,8 @@ def create_fraiseql_app(
                 set_db_pool(pool)
                 pool_created_here = True
 
-            async with _on_event_handlers(app):
-                yield
+            async with _app_hooks(app) as state:
+                yield state
 
             # Shutdown - only close pool if we created it
             if pool_created_here:
@@ -416,7 +428,7 @@ def create_fraiseql_app(
     else:
         # Wrap user's lifespan to ensure database pool is still managed
         @asynccontextmanager
-        async def wrapped_lifespan(app: FastAPI) -> AsyncGenerator[None]:
+        async def wrapped_lifespan(app: FastAPI) -> AsyncGenerator[Any]:
             """Wrap user lifespan with FraiseQL resource management."""
             # Startup - initialize database pool
             pool = await create_db_pool(
@@ -429,8 +441,8 @@ def create_fraiseql_app(
             set_db_pool(pool)
 
             # Call user's lifespan
-            async with lifespan(app), _on_event_handlers(app):
-                yield
+            async with lifespan(app), _app_hooks(app) as state:
+                yield state
 
             # Shutdown - cleanup our resources
             pool_to_close = get_db_pool()
@@ -450,6 +462,9 @@ def create_fraiseql_app(
             description=description or "GraphQL API powered by FraiseQL",
             lifespan=lifespan_to_use,
         )
+    else:
+        # Without this an app passed in never opened the database pool
+        app.router.lifespan_context = lifespan_to_use
 
     # Setup CORS if enabled
     if config.cors_enabled:

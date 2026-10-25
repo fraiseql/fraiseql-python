@@ -233,3 +233,33 @@ def test_lifespan_with_existing_app() -> None:
 
         response = client.post("/graphql", json={"query": "{ getStatus { message } }"})
         assert response.status_code == 200
+
+
+def test_existing_app_gets_a_database_pool(clear_registry) -> None:
+    """An app passed in opens fraiseql's pool and still runs its own startup once.
+
+    clear_registry also unsets the pool an earlier test's app left behind, which
+    used to hide that an app passed in never opened one.
+    """
+    from fraiseql.fastapi.dependencies import get_db_pool
+
+    existing_app = FastAPI()
+
+    @existing_app.on_event("startup")
+    async def on_startup() -> None:
+        lifecycle_events.append("existing_startup")
+
+    app = create_fraiseql_app(
+        database_url="postgresql://localhost/test",
+        types=[Status],
+        queries=[get_status],
+        app=existing_app,
+        production=False,
+    )
+
+    with pytest.raises(RuntimeError, match="Database pool not initialized"):
+        get_db_pool()
+
+    with TestClient(app):
+        assert get_db_pool() is not None
+        assert lifecycle_events == ["existing_startup"]
