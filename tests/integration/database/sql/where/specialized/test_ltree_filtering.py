@@ -86,8 +86,8 @@ class TestEndToEndLTreeFiltering:
         where_clause_ltxtquery = build_where_clause(graphql_where_ltxtquery)
         sql_ltxtquery = where_clause_ltxtquery.as_string(None)
 
-        # Should contain ? operator for ltxtquery text matching
-        assert "?" in sql_ltxtquery
+        # Should contain @ operator for ltxtquery text matching
+        assert " @ " in sql_ltxtquery
         assert "::ltxtquery" in sql_ltxtquery
         assert "'astrophysics'::ltxtquery" in sql_ltxtquery
 
@@ -218,7 +218,7 @@ class TestEndToEndLTreeFiltering:
                 assert "~" in sql_string, "matches_lquery should use ~ operator"
                 assert "::lquery" in sql_string, "matches_lquery should use ::lquery casting"
             elif operator == "matches_ltxtquery":
-                assert "?" in sql_string, "matches_ltxtquery should use ? operator"
+                assert " @ " in sql_string, "matches_ltxtquery should use @ operator"
                 assert "::ltxtquery" in sql_string, (
                     "matches_ltxtquery should use ::ltxtquery casting"
                 )

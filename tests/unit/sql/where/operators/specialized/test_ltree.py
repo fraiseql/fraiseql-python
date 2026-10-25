@@ -166,12 +166,12 @@ class TestLTreeHierarchicalOperators:
         assert result.as_string(None) == expected
 
     def test_ltree_matches_ltxtquery(self) -> None:
-        """Test ? operator (path matches ltxtquery text search)."""
-        # "top.science.physics" ? "science & physics" = true
+        """Test @ operator (path matches ltxtquery text search)."""
+        # "top.science.physics" @ "science & physics" = true
         result = self.strategy.build_sql(
             "matches_ltxtquery", "science & physics", self.path_sql, LTree
         )
-        expected = "(data->>'path')::ltree ? 'science & physics'::ltxtquery"
+        expected = "(data->>'path')::ltree @ 'science & physics'::ltxtquery"
         assert result.as_string(None) == expected
 
     def test_hierarchical_operators_complex_paths(self) -> None:
@@ -222,7 +222,7 @@ class TestLTreeHierarchicalDirectFunctions:
         path_sql = SQL("data->>'path'")
         result = build_matches_ltxtquery_sql(path_sql, "science & physics")
         sql_str = result.as_string(None)
-        assert sql_str == "(data->>'path')::ltree ? 'science & physics'::ltxtquery"
+        assert sql_str == "(data->>'path')::ltree @ 'science & physics'::ltxtquery"
 
 
 # ============================================================================

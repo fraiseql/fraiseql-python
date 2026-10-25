@@ -436,7 +436,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `? %s::lquery[]`, `<@ %s::ltree[]`. `matches_any_lquery` and `in_array` take a
   non-empty list. A JSONB field the type declares `LTree` also compares as
   `ltree` with `eq`, `lt`, `gte`, `in`...: as text, `top.sciences` sorted
-  before `top.science.zoology`.
+  before `top.science.zoology`. The operator-registry path (`LTreeOperatorStrategy`,
+  `build_matches_ltxtquery_sql`) wrote `matches_ltxtquery` as `ltree ? ltxtquery`,
+  an operator PostgreSQL doesn't have; it writes `@` too.
 
 - **`error: NotFound | Conflict` on a class mutation is reported at schema
   build.** Decorating it raised

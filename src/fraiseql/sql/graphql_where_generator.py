@@ -423,7 +423,7 @@ class LTreeFilter:
     descendant_of: str | None = None  # <@ - Is descendant of path
     isdescendant: str | None = None  # Alias for descendant_of
     matches_lquery: str | None = None  # ~ - Matches lquery pattern
-    matches_ltxtquery: str | None = None  # ? - Matches ltxtquery text pattern
+    matches_ltxtquery: str | None = None  # @ - Matches ltxtquery text pattern
     matches_any_lquery: list[str] | None = None  # ? ANY(lquery[]) - Matches any lquery
 
     # Level/depth operators (nlevel() function)

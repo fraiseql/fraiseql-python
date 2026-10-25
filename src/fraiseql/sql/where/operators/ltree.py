@@ -121,16 +121,16 @@ def build_matches_lquery_sql(path_sql: SQL, value: str) -> Composed:
 def build_matches_ltxtquery_sql(path_sql: SQL, value: str) -> Composed:
     """Build SQL for LTree matches_ltxtquery (?) text query.
 
-    The ? operator checks if the left path matches the ltxtquery text pattern.
+    The @ operator checks if the left path matches the ltxtquery text pattern.
 
     Args:
         path_sql: The SQL path expression (e.g., data->>'category_path')
         value: ltxtquery text pattern string
 
     Returns:
-        Composed SQL: (path)::ltree ? 'pattern'::ltxtquery
+        Composed SQL: (path)::ltree @ 'pattern'::ltxtquery
     """
-    return Composed([SQL("("), path_sql, SQL(")::ltree ? "), Literal(value), SQL("::ltxtquery")])
+    return Composed([SQL("("), path_sql, SQL(")::ltree @ "), Literal(value), SQL("::ltxtquery")])
 
 
 # Depth operators for ltree paths
