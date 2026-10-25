@@ -2983,7 +2983,7 @@ class FraiseQLRepository:
             #     "order_count": 500
             # }
         """
-        from psycopg.sql import SQL, Composed
+        from psycopg.sql import SQL, Composed, Identifier
 
         if not aggregations:
             return {}
@@ -2998,9 +2998,12 @@ class FraiseQLRepository:
 
         table_identifier = qualified_identifier(view_name)
 
-        # Build SELECT clause with all aggregations
-        agg_clauses = [SQL(f"{expr} AS {name}") for name, expr in aggregations.items()]
-        select_clause = Composed(agg_clauses)
+        # Build SELECT clause with all aggregations. The expressions are SQL the
+        # caller writes; the result names are quoted.
+        select_clause = SQL(", ").join(
+            SQL("{} AS {}").format(SQL(expr), Identifier(name))
+            for name, expr in aggregations.items()
+        )
 
         # Build query
         query_parts = [SQL("SELECT "), select_clause, SQL(" FROM "), table_identifier]

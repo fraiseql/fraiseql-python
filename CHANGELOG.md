@@ -589,6 +589,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without a word. Running them there isn't supported yet; selecting one now
   logs a warning naming the field and the view, once per field.
 
+- **`db.aggregate()` with more than one expression runs.** It wrote the
+  expressions one after the other without commas
+  (`SELECT SUM(amount) AS totalCOUNT(*) AS n`), a syntax error. They are now
+  comma-separated, and each result name is quoted, so it comes back as written.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't
