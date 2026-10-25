@@ -91,12 +91,24 @@ class TestCacheChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         total_operations = max(7, int(15 * self.chaos_config.load_multiplier))
 
-        for _i in range(total_operations):
+        # DETERMINISTIC SCHEDULE: 15% cache misses, 15% of the hits corrupted (at
+        # least one), in an order shuffled with a fixed seed. Two unseeded
+        # random.random() draws per operation drew no corruption about 1 run in 50.
+        misses = round(total_operations * 0.15)
+        corrupted = max(1, round((total_operations - misses) * 0.15))
+        accesses = (
+            ["miss"] * misses
+            + ["corrupted"] * corrupted
+            + ["hit"] * (total_operations - misses - corrupted)
+        )
+        random.Random("cache_corruption").shuffle(accesses)
+
+        for i, access in enumerate(accesses):
             try:
                 # Simulate cache access
-                if random.random() < 0.85:  # 85% cache hit rate
+                if access != "miss":  # 85% cache hit rate
                     # Check for corruption
-                    if random.random() < 0.15:  # 15% of cache entries corrupted
+                    if access == "corrupted":  # 15% of cache entries corrupted
                         # Corrupted cache entry detected
                         corruption_detected += 1
                         self.metrics.record_error()
@@ -108,7 +120,7 @@ class TestCacheChaos(ChaosTestCase):
                         successful_fallbacks += 1
                     else:
                         # Valid cache hit
-                        execution_time = 4.0 + random.uniform(-0.5, 0.5)
+                        execution_time = 4.0 + (i % 3 - 1) * 0.5
                         self.metrics.record_query_time(execution_time)
                 else:
                     # Cache miss - direct database query
