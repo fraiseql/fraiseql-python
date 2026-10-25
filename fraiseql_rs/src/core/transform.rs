@@ -97,6 +97,10 @@ pub struct ZeroCopyTransformer<'a> {
     typename: Option<&'a str>,
     field_projection: Option<&'a FieldSet>,
     current_depth: usize,
+    /// Depth of the row objects: 0 for an object row, 1 for each object of an
+    /// array row. `typename` names their type, and only theirs: a nested
+    /// object is of another type this transformer doesn't know.
+    row_depth: usize,
     /// Reused for each camelCase key, which is copied to the output right away
     key_scratch: Vec<u8>,
 }
@@ -112,6 +116,7 @@ impl<'a> ZeroCopyTransformer<'a> {
             typename,
             field_projection,
             current_depth: 0,
+            row_depth: 0,
             key_scratch: Vec::new(),
         }
     }
@@ -145,8 +150,10 @@ impl<'a> ZeroCopyTransformer<'a> {
 
         // Transform array/object
         if reader.peek_byte()? == b'[' {
+            self.row_depth = self.current_depth + 1;
             self.transform_array(&mut reader, &mut writer)?;
         } else {
+            self.row_depth = self.current_depth;
             self.transform_object(&mut reader, &mut writer)?;
         }
 
@@ -171,14 +178,20 @@ impl<'a> ZeroCopyTransformer<'a> {
             return Err(TransformError::MaxDepthExceeded(self.config.max_depth));
         }
 
+        // Only a row object is of type `typename`; a nested object keeps the
+        // __typename its JSON has, if any
+        let inject_typename = self.config.add_typename
+            && self.typename.is_some()
+            && self.current_depth == self.row_depth;
+
         self.current_depth += 1;
 
         reader.expect_byte(b'{')?;
         writer.write_object_start()?;
 
         // Inject __typename FIRST (important for GraphQL clients)
-        if let Some(typename) = self.typename {
-            if self.config.add_typename {
+        if inject_typename {
+            if let Some(typename) = self.typename {
                 writer.write_key(b"__typename")?;
                 writer.write_string(typename.as_bytes())?;
                 writer.needs_comma = true;
@@ -195,8 +208,8 @@ impl<'a> ZeroCopyTransformer<'a> {
             // Read key
             let key_bytes = reader.read_string()?;
 
-            // Skip __typename if already present
-            if key_bytes == b"__typename" {
+            // Skip a __typename already present where one was injected
+            if inject_typename && key_bytes == b"__typename" {
                 reader.expect_byte(b':')?;
                 reader.skip_value()?;
                 continue;
@@ -211,8 +224,8 @@ impl<'a> ZeroCopyTransformer<'a> {
                 }
             }
 
-            // Transform key (camelCase if needed)
-            if self.config.camel_case {
+            // Transform key (camelCase if needed; __typename is a GraphQL name)
+            if self.config.camel_case && key_bytes != b"__typename" {
                 let camel_key = snake_to_camel(key_bytes, &mut self.key_scratch);
                 writer.write_key(camel_key)?;
             } else {
@@ -736,5 +749,64 @@ impl std::error::Error for TransformError {}
 impl From<TransformError> for PyErr {
     fn from(err: TransformError) -> PyErr {
         pyo3::exceptions::PyValueError::new_err(err.to_string())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn transform(input: &str, typename: Option<&str>) -> String {
+        let config = TransformConfig {
+            add_typename: true,
+            camel_case: true,
+            project_fields: false,
+            add_graphql_wrapper: false,
+            max_depth: MAX_JSON_DEPTH,
+        };
+        let mut transformer = ZeroCopyTransformer::new(config, typename, None);
+        let mut output = ByteBuf::with_estimated_capacity(input.len(), &config);
+        transformer.transform_bytes(input.as_bytes(), &mut output).unwrap();
+        String::from_utf8(output.into_vec()).unwrap()
+    }
+
+    #[test]
+    fn typename_is_the_rows_not_the_nested_objects() {
+        // A nested object is of its own type: it was given the row's name
+        let out = transform(
+            r#"{"id":"a1","device":{"id":"d1","is_active":true},"devices":[{"id":"d1"}]}"#,
+            Some("Assignment"),
+        );
+        assert_eq!(
+            out,
+            r#"{"__typename":"Assignment","id":"a1","device":{"id":"d1","isActive":true},"devices":[{"id":"d1"}]}"#
+        );
+    }
+
+    #[test]
+    fn each_object_of_an_array_row_is_a_row() {
+        let out = transform(r#"[{"id":1,"owner":{"id":2}},{"id":3}]"#, Some("Post"));
+        assert_eq!(
+            out,
+            r#"[{"__typename":"Post","id":1,"owner":{"id":2}},{"__typename":"Post","id":3}]"#
+        );
+    }
+
+    #[test]
+    fn a_nested_typename_in_the_json_is_kept() {
+        let out = transform(
+            r#"{"__typename":"Stale","device":{"__typename":"Device","id":"d1"}}"#,
+            Some("Assignment"),
+        );
+        assert_eq!(
+            out,
+            r#"{"__typename":"Assignment","device":{"__typename":"Device","id":"d1"}}"#
+        );
+    }
+
+    #[test]
+    fn without_a_typename_nothing_is_injected() {
+        let out = transform(r#"{"id":1,"__typename":"Row","child":{"a_b":1}}"#, None);
+        assert_eq!(out, r#"{"id":1,"__typename":"Row","child":{"aB":1}}"#);
     }
 }

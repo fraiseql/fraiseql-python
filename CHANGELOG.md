@@ -378,6 +378,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `hide_error_details`, `enable_subscriptions`, `enable_dataloader`,
   `enable_rate_limiting`) and functions `fraiseql.fastapi` doesn't export.
 
+- **A nested object no longer gets its parent's `__typename`.** Without the
+  Rust schema registry (the repository used before or without
+  `create_fraiseql_app`, as in docs/examples/dict-based-nested-filtering.md),
+  `find`/`find_one` wrote the row type's name into every object of the row:
+  an `Assignment`'s `device` came back as `"__typename": "Assignment"`. Only
+  the row objects get it now; a nested object keeps the `__typename` its
+  JSONB holds, if any (no longer dropped, nor camelCased to `Typename`).
+  With the registry (any app) nested objects were and are named after their
+  own type.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added
