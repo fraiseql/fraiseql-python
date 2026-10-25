@@ -178,6 +178,32 @@ async def discover_fraiseql_schema(
         await pool.close()
 
 
+def _add_rate_limiter(app: FastAPI, config: FraiseQLConfig) -> None:
+    """Install RateLimiterMiddleware from the ``rate_limit_*`` settings."""
+    from fraiseql.middleware.rate_limiter import (
+        InMemoryRateLimiter,
+        RateLimitConfig,
+        RateLimiterMiddleware,
+    )
+
+    if config.rate_limit_window_type != "sliding":
+        logger.warning(
+            "rate_limit_window_type=%r is not implemented; requests are counted "
+            "in a sliding window",
+            config.rate_limit_window_type,
+        )
+    limiter = InMemoryRateLimiter(
+        RateLimitConfig(
+            requests_per_minute=config.rate_limit_requests_per_minute,
+            requests_per_hour=config.rate_limit_requests_per_hour,
+            burst_size=config.rate_limit_burst_size,
+            whitelist=list(config.rate_limit_whitelist),
+            blacklist=list(config.rate_limit_blacklist),
+        )
+    )
+    app.add_middleware(RateLimiterMiddleware, rate_limiter=limiter)
+
+
 def create_fraiseql_app(
     *,
     # Required configuration
@@ -465,6 +491,11 @@ def create_fraiseql_app(
     else:
         # Without this an app passed in never opened the database pool
         app.router.lifespan_context = lifespan_to_use
+
+    # Rate limiting, added before CORS so that CORS wraps it and a 429 carries
+    # the CORS headers
+    if config.rate_limit_enabled:
+        _add_rate_limiter(app, config)
 
     # Setup CORS if enabled
     if config.cors_enabled:

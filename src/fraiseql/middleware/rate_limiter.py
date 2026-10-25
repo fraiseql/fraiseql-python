@@ -625,8 +625,14 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         """Process request with rate limiting."""
-        # Skip rate limiting for certain paths
-        if request.url.path in ["/health", "/metrics", "/"]:
+        # Skip rate limiting when disabled, and for certain paths
+        config = getattr(self.rate_limiter, "config", None)
+        if (config is not None and not config.enabled) or request.url.path in [
+            "/health",
+            "/ready",
+            "/metrics",
+            "/",
+        ]:
             return await call_next(request)
 
         # Get client key

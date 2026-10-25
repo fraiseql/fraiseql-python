@@ -58,6 +58,11 @@ def test_health_is_not_limited(client):
     assert client.get("/health").status_code == 200
 
 
+def test_disabled_config_does_not_limit():
+    client = _client(RateLimitConfig(enabled=False, requests_per_minute=1, burst_size=1))
+    assert all(client.post("/graphql", json={}).status_code == 200 for _ in range(3))
+
+
 def test_blacklisted_client_gets_403():
     client = _client(RateLimitConfig(blacklist=["testclient"]))
     response = client.post("/graphql", json={"query": "{ ok }"})

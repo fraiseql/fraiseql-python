@@ -220,6 +220,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Retry-After` (seconds, at least 1) and the `X-RateLimit-*` headers, and a
   blacklisted client gets 403 instead of a 500.
 
+- **The `rate_limit_*` settings of `FraiseQLConfig` work, and
+  `rate_limit_enabled` defaults to `False`.** Nothing read them, so no app was
+  ever rate limited, though `rate_limit_enabled` defaulted to `True`. With
+  `rate_limit_enabled=True` (or `FRAISEQL_RATE_LIMIT_ENABLED=true`),
+  `create_fraiseql_app` installs `RateLimiterMiddleware`: requests are counted
+  per client IP (`request.client.host`) in a sliding window, in memory for
+  each process, against `rate_limit_requests_per_minute` and
+  `rate_limit_requests_per_hour`; a request over the limit gets 429 with
+  `Retry-After`. `rate_limit_whitelist` IPs are never limited, and
+  `rate_limit_blacklist` IPs get 403. `/health`, `/ready`, `/metrics` and `/`
+  are not counted. `rate_limit_window_type="fixed"` logs a warning: only the
+  sliding window exists. The default moves to `False` so that upgrading doesn't
+  start limiting apps that never were, at 60 requests a minute per IP (behind a
+  proxy, per proxy, unless the server reads the forwarded address, as uvicorn's
+  `--proxy-headers` does). `RateLimiterMiddleware` also honours
+  `RateLimitConfig(enabled=False)` now, and doesn't count `/ready`.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

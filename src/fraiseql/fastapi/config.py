@@ -160,7 +160,7 @@ class FraiseQLConfig(BaseSettings):
 
     Security Settings:
         complexity_enabled: Enforce complexity_max_score / _max_depth (default: False)
-        rate_limit_enabled: Enable rate limiting (default: True)
+        rate_limit_enabled: Install RateLimiterMiddleware, per client IP (default: False)
         cors_enabled: Enable CORS (default: False - use reverse proxy)
         enable_rust_endpoint: Mount POST /graphql/rust resolver-bypass route (default: False)
 
@@ -315,14 +315,16 @@ class FraiseQLConfig(BaseSettings):
             self.complexity_enabled = True
         return self
 
-    # Rate limiting settings
-    rate_limit_enabled: bool = True
+    # Rate limiting settings: when enabled, create_fraiseql_app installs
+    # RateLimiterMiddleware, keyed on the client IP, with a per-process
+    # in-memory count
+    rate_limit_enabled: bool = False
     rate_limit_requests_per_minute: int = 60
     rate_limit_requests_per_hour: int = 1000
     rate_limit_burst_size: int = 10
-    rate_limit_window_type: str = "sliding"  # "sliding" or "fixed"
-    rate_limit_whitelist: list[str] = []
-    rate_limit_blacklist: list[str] = []
+    rate_limit_window_type: str = "sliding"  # only "sliding" is implemented
+    rate_limit_whitelist: list[str] = []  # client IPs never limited
+    rate_limit_blacklist: list[str] = []  # client IPs always rejected (403)
 
     # APQ Backend Configuration
     apq_mode: APQMode = APQMode.OPTIONAL
