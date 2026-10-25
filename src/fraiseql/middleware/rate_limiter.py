@@ -82,6 +82,17 @@ class RateLimitConfig:
     blacklist: list[str] = field(default_factory=list)
 
 
+def _is_allowed(config: RateLimitConfig, minute_count: int, hour_count: int) -> bool:
+    """Whether one more request fits, given the requests already counted.
+
+    The hour limit always applies. Within it, ``burst_size`` requests a minute
+    are allowed even above ``requests_per_minute``.
+    """
+    if hour_count >= config.requests_per_hour:
+        return False
+    return minute_count < max(config.requests_per_minute, config.burst_size)
+
+
 class RateLimiter(Protocol):
     """Protocol for rate limiter implementations."""
 
@@ -145,17 +156,7 @@ class InMemoryRateLimiter:
                     hour_limit=999999,
                 )
 
-            # Check burst allowance
-            if minute_count < self.config.burst_size:
-                allowed = True
-            # Check minute limit
-            elif (
-                minute_count >= self.config.requests_per_minute
-                or hour_count >= self.config.requests_per_hour
-            ):
-                allowed = False
-            else:
-                allowed = True
+            allowed = _is_allowed(self.config, minute_count, hour_count)
 
             if allowed:
                 # Record request
@@ -174,7 +175,7 @@ class InMemoryRateLimiter:
                 remaining = 0
 
                 # Calculate retry after
-                if minute_count >= self.config.requests_per_minute:
+                if hour_count < self.config.requests_per_hour:
                     retry_after = int(60 - (now - self._minute_windows[key][0]))
                 else:
                     retry_after = int(3600 - (now - self._hour_windows[key][0]))
@@ -416,17 +417,7 @@ class PostgreSQLRateLimiter:
                     hour_limit=999999,
                 )
 
-            # Check burst allowance
-            if minute_count < self.config.burst_size:
-                allowed = True
-            # Check minute and hour limits
-            elif (
-                minute_count >= self.config.requests_per_minute
-                or hour_count >= self.config.requests_per_hour
-            ):
-                allowed = False
-            else:
-                allowed = True
+            allowed = _is_allowed(self.config, minute_count, hour_count)
 
             if allowed:
                 # Record request
@@ -473,7 +464,7 @@ class PostgreSQLRateLimiter:
                 )
 
             # Rate limit exceeded
-            if minute_count >= self.config.requests_per_minute:
+            if hour_count < self.config.requests_per_hour:
                 await cur.execute(
                     f"""
                     SELECT request_time FROM {self.table_name}

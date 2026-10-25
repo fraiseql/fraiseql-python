@@ -68,3 +68,13 @@ def test_blacklisted_client_gets_403():
     response = client.post("/graphql", json={"query": "{ ok }"})
     assert response.status_code == 403
     assert response.json() == {"detail": "Forbidden"}
+
+
+async def test_burst_does_not_lift_the_hour_limit():
+    limiter = InMemoryRateLimiter(
+        RateLimitConfig(requests_per_minute=100, requests_per_hour=2, burst_size=10)
+    )
+    allowed = [(await limiter.check_rate_limit("k")).allowed for _ in range(3)]
+    assert allowed == [True, True, False]
+    # Retrying is possible once the oldest request leaves the hour window
+    assert (await limiter.check_rate_limit("k")).retry_after > 60

@@ -236,6 +236,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   proxy, per proxy, unless the server reads the forwarded address, as uvicorn's
   `--proxy-headers` does). `RateLimiterMiddleware` also honours
   `RateLimitConfig(enabled=False)` now, and doesn't count `/ready`.
+  `InMemoryRateLimiter` and `PostgreSQLRateLimiter` hold the hour limit even
+  within `burst_size`: the first `burst_size` requests of each minute used to
+  pass whatever the hour count was.
 
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
