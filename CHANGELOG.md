@@ -239,6 +239,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `InMemoryRateLimiter` and `PostgreSQLRateLimiter` hold the hour limit even
   within `burst_size`: the first `burst_size` requests of each minute used to
   pass whatever the hour count was.
+- **Without the Rust schema registry, `db.find` / `db.find_one` answer with
+  exactly the selected fields.** With `enable_schema_registry=False`, or for a
+  view no type is registered for, Rust picked the fields to write from a 128-bit
+  map of hashed key names. A key falling on the bit of a selected one was written
+  too, so an unselected field could reach the client (`secret_note` came back
+  when only `author` was selected); every field of a nested object or list was
+  dropped (`author: {}`); and keys were camelCased even with
+  `auto_camel_case=False`. A key is now compared with the selected ones, a nested
+  object keeps its selected fields, keys are the ones the query uses, and a leaf
+  value (a JSON scalar) is written as stored. A view without a registered type is
+  projected as the type its field returns.
 
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which

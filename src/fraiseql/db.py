@@ -1986,7 +1986,7 @@ class FraiseQLRepository:
         field_selections_json = None
         if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
-            from fraiseql.core.selection_tree import GraphQLSchemaWrapper, build_selection_tree
+            from fraiseql.core.selection_tree import named_object_type, rust_field_selections
             from fraiseql.utils.casing import to_snake_case
 
             field_path_objects = extract_field_paths_from_info(info, transform_path=to_snake_case)
@@ -1997,33 +1997,15 @@ class FraiseQLRepository:
                     view_name, _type_registry.get(view_name), field_paths
                 )
 
-                # NEW: Build field selections with alias and type information
-                # Get type name for schema lookup
-                parent_type = self._get_cached_type_name(view_name)
+                # The selection Rust projects the rows on. A view without a
+                # registered type is read as the type the field returns.
+                parent_type = self._get_cached_type_name(view_name) or named_object_type(
+                    getattr(info, "return_type", None)
+                )
                 if parent_type and info.schema:
-                    # Wrap schema for field type lookups
-                    schema_wrapper = GraphQLSchemaWrapper(info.schema)
-
-                    # Build selection tree with materialized paths
-                    field_selections = build_selection_tree(
-                        field_path_objects,
-                        schema_wrapper,
-                        parent_type=parent_type,
+                    field_selections_json = rust_field_selections(
+                        field_path_objects, info.schema, parent_type
                     )
-
-                    # Serialize to JSON format for Rust
-                    # Use "materialized_path" (dot-separated string) as expected by Rust
-                    field_selections_json = [
-                        {
-                            "materialized_path": ".".join(sel.path)
-                            if isinstance(sel.path, list)
-                            else sel.path,
-                            "alias": sel.alias,
-                            "type_name": sel.type_name,
-                            "is_nested_object": sel.is_nested_object,
-                        }
-                        for sel in field_selections
-                    ]
 
                     # Store field selections in context for nested resolvers
                     # This allows nested_field_resolver to apply field filtering to embedded JSONB
@@ -2259,7 +2241,7 @@ class FraiseQLRepository:
         field_selections_json = None
         if info and self._projects_for_view(info, view_name):
             from fraiseql.core.ast_parser import extract_field_paths_from_info
-            from fraiseql.core.selection_tree import GraphQLSchemaWrapper, build_selection_tree
+            from fraiseql.core.selection_tree import named_object_type, rust_field_selections
             from fraiseql.utils.casing import to_snake_case
 
             field_path_objects = extract_field_paths_from_info(info, transform_path=to_snake_case)
@@ -2270,33 +2252,15 @@ class FraiseQLRepository:
                     view_name, _type_registry.get(view_name), field_paths
                 )
 
-                # NEW: Build field selections with alias and type information
-                # Get type name for schema lookup
-                parent_type = self._get_cached_type_name(view_name)
+                # The selection Rust projects the row on. A view without a
+                # registered type is read as the type the field returns.
+                parent_type = self._get_cached_type_name(view_name) or named_object_type(
+                    getattr(info, "return_type", None)
+                )
                 if parent_type and info.schema:
-                    # Wrap schema for field type lookups
-                    schema_wrapper = GraphQLSchemaWrapper(info.schema)
-
-                    # Build selection tree with materialized paths
-                    field_selections = build_selection_tree(
-                        field_path_objects,
-                        schema_wrapper,
-                        parent_type=parent_type,
+                    field_selections_json = rust_field_selections(
+                        field_path_objects, info.schema, parent_type
                     )
-
-                    # Serialize to JSON format for Rust
-                    # Use "materialized_path" (dot-separated string) as expected by Rust
-                    field_selections_json = [
-                        {
-                            "materialized_path": ".".join(sel.path)
-                            if isinstance(sel.path, list)
-                            else sel.path,
-                            "alias": sel.alias,
-                            "type_name": sel.type_name,
-                            "is_nested_object": sel.is_nested_object,
-                        }
-                        for sel in field_selections
-                    ]
 
         # 2. Get JSONB column from cached metadata
         jsonb_column = None  # default to None (use row_to_json)

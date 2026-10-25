@@ -229,3 +229,37 @@ def build_selection_tree(
             unique_selections[path_key] = sel
 
     return list(unique_selections.values())
+
+
+def named_object_type(graphql_type: Any) -> str | None:
+    """The name of the object type a field returns (through lists and non-null), else None.
+
+    ``[Note!]!`` gives ``"Note"``; a scalar, an interface or a union gives None.
+    """
+    while is_non_null_type(graphql_type) or is_list_type(graphql_type):
+        graphql_type = graphql_type.of_type
+    return graphql_type.name if is_object_type(graphql_type) else None
+
+
+def rust_field_selections(
+    field_paths: list[Any],  # list[FieldPath]
+    schema: GraphQLSchema,
+    parent_type: str,
+) -> list[dict[str, Any]]:
+    """The selection the Rust pipeline projects each row on, as it reads it.
+
+    One dict per selected field, parents included: its JSON path
+    (``materialized_path``, dot-separated), the key it answers under (``alias``), its
+    type, and whether it is an object. Rust writes only these fields.
+    """
+    return [
+        {
+            "materialized_path": ".".join(sel.path),
+            "alias": sel.alias,
+            "type_name": sel.type_name,
+            "is_nested_object": sel.is_nested_object,
+        }
+        for sel in build_selection_tree(
+            field_paths, GraphQLSchemaWrapper(schema), parent_type=parent_type
+        )
+    ]

@@ -9,7 +9,7 @@ use serde_json::{Value, json};
 use crate::{
     core::transform::{ByteBuf, MAX_JSON_DEPTH, TransformConfig, ZeroCopyTransformer},
     json_transform,
-    pipeline::projection::FieldSet,
+    pipeline::projection::Projection,
     schema_registry,
 };
 
@@ -87,7 +87,15 @@ pub fn build_graphql_response(
         }
     }
 
-    build_zero_copy(json_rows, field_name, type_name, field_paths, is_list, include_graphql_wrapper)
+    build_zero_copy(
+        json_rows,
+        field_name,
+        type_name,
+        field_paths,
+        field_selections,
+        is_list,
+        include_graphql_wrapper,
+    )
 }
 
 /// Transform JSON rows using schema registry and build GraphQL response.
@@ -179,25 +187,35 @@ fn build_with_schema(
     })
 }
 
+/// Build the response by streaming each row through the zero-copy transformer.
+///
+/// The rows are projected on the selection: `field_selections` when given (their
+/// response paths name each key), else `field_paths` (keys camelCased). Without
+/// either, rows are written whole.
 fn build_zero_copy(
     json_rows: Vec<String>,
     field_name: &str,
     type_name: Option<&str>,
     field_paths: Option<Vec<Vec<String>>>,
+    field_selections: Option<Vec<Value>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
 ) -> PyResult<Vec<u8>> {
+    let projection = match (field_selections, field_paths) {
+        (Some(selections), _) => Some(Projection::from_selections(&selections)),
+        (None, Some(paths)) => Some(Projection::from_paths(&paths, true)),
+        (None, None) => None,
+    };
+
     let config = TransformConfig {
         add_typename: type_name.is_some(),
         camel_case: true,
-        project_fields: field_paths.is_some(),
+        project_fields: projection.is_some(),
         add_graphql_wrapper: false,
         max_depth: MAX_JSON_DEPTH,
     };
 
-    let field_set = field_paths.map(|paths| FieldSet::from_paths(&paths));
-
-    let mut transformer = ZeroCopyTransformer::new(config, type_name, field_set.as_ref());
+    let mut transformer = ZeroCopyTransformer::new(config, type_name, projection.as_ref());
 
     let total_input_size: usize = json_rows.iter().map(|s| s.len()).sum();
 
