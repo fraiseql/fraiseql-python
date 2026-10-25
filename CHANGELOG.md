@@ -350,6 +350,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `total_count`, ... that `create_connection` sets, which a hand-written
   connection resolver returned as null too.
 
+- **`fraiseql generate crud` writes mutations that run.** The module it wrote
+  didn't import: it decorated a class with `@fraiseql.result`, which takes the
+  success and error classes, used `UUID` without importing it, and took a
+  `CQRSRepository` parameter nothing passes to call `repository.update(table,
+  id, input)`. It now writes `Create`/`Update`/`Delete` class mutations with
+  their inputs, a `{Type}Success` and a `{Type}Error`, plus
+  `migrations/{timestamp}_create_{table}_mutations.sql` with the
+  `create_`/`update_`/`delete_` functions they call, for the table
+  `fraiseql generate migration` creates. The file is named in snake_case
+  (`blog_post_mutations.py`, was `blogpost_mutations.py`); `--table` and
+  `--types-module` are new. `fraiseql generate migration` no longer fails with
+  `AttributeError` building its timestamp.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

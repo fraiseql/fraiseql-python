@@ -490,38 +490,47 @@ psql $DATABASE_URL -f migrations/20241010120000_create_users.sql
 
 ### generate crud
 
-Generate CRUD mutations boilerplate for a type.
+Generate CRUD mutations for a type, and the PostgreSQL functions they call.
 
 **Usage:**
 
 ```bash
-fraiseql generate crud TYPE_NAME
+fraiseql generate crud TYPE_NAME [OPTIONS]
 ```
 
 **Arguments:**
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `TYPE_NAME` | Yes | Name of the type (e.g., User, Product) |
+| `TYPE_NAME` | Yes | Name of the type (e.g., User, BlogPost) |
+
+**Options:**
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--table TEXT` | `TYPE_NAME` lowercase + `s` | Table the functions write, as [`generate migration`](#generate-migration) names it |
+| `--types-module TEXT` | `src.types` | Module the mutations import `TYPE_NAME` from |
 
 **Generated Files:**
 
-Creates `src/mutations/{type_name}_mutations.py` with:
-
-- Input types (Create, Update)
-- Result types (Success, Error, Result union)
-- Mutation functions (create, update, delete)
+- `src/mutations/{type_name}_mutations.py` (snake_case: `BlogPost` → `blog_post_mutations.py`):
+  `Create{Type}Input`, `Update{Type}Input`, `Delete{Type}Input`, `{Type}Success`,
+  `{Type}Error` and the class mutations `Create{Type}`, `Update{Type}`, `Delete{Type}`
+- `migrations/{timestamp}_create_{table}_mutations.sql`: the `mutation_response` type
+  (if the database doesn't have it) and the functions `create_{type_name}`,
+  `update_{type_name}` and `delete_{type_name}`, for the `id`/`data` table
+  `generate migration` creates
 
 **Examples:**
 
 ```bash
-# Generate CRUD for User type
+# Generate CRUD for User
 fraiseql generate crud User
 # Creates: src/mutations/user_mutations.py
+#          migrations/20241010120000_create_users_mutations.sql
 
-# Generate CRUD for Product type
-fraiseql generate crud Product
-# Creates: src/mutations/product_mutations.py
+# Another table name, and the type defined in src/main.py
+fraiseql generate crud Product --table tb_product --types-module src.main
 ```
 
 **Generated Structure:**
@@ -530,41 +539,64 @@ fraiseql generate crud Product
 import fraiseql
 from fraiseql.types import ID
 
+from src.types import User
+
+
 @fraiseql.input
 class CreateUserInput:
     name: str
 
-@input
+
+@fraiseql.input
 class UpdateUserInput:
     id: ID
-    name: str | None
+    name: str | None = None
 
-@success
+
+@fraiseql.input
+class DeleteUserInput:
+    id: ID
+
+
+@fraiseql.success
 class UserSuccess:
     user: User
-    message: str
 
-@error
+
+@fraiseql.error
 class UserError:
-    message: str
-    code: str
+    """Why the mutation failed (status, message and code are added)."""
 
-@result
-class UserResult:
-    pass
 
 @fraiseql.mutation
-async def create_user(input: CreateUserInput, repository: CQRSRepository) -> UserResult:
-    # Call your CQRS repository methods
-    result = await repository.create(input)
-    return UserResult(user=result)
+class CreateUser:  # calls create_user(input jsonb)
+    input: CreateUserInput
+    success: UserSuccess
+    error: UserError
+
+# UpdateUser and DeleteUser the same way
+```
+
+Each function returns a `mutation_response`: `create_user` inserts the input as the
+row's `data`, `update_user` merges the given fields into it, and `delete_user` sets
+`deleted_at`. The created, updated or deleted row is the `user` of `UserSuccess`; an
+unknown `id` answers `UserError` with status `failed:not_found` (code 404).
+
+```graphql
+mutation {
+  createUser(input: {name: "Ada"}) {
+    ... on UserSuccess { user { id name } }
+    ... on UserError { status message code }
+  }
+}
 ```
 
 **Next Steps:**
 
-1. Import and register mutations in your app
-2. Customize input fields and validation logic
-3. Implement repository calls with proper error handling
+1. Import `src/mutations/user_mutations.py` before you build the app: the mutations register on import
+2. Put your fields in the input types and in the functions
+3. Create the table (`fraiseql generate migration User`), then run the functions file:
+   `psql $DATABASE_URL -f migrations/..._create_users_mutations.sql`
 
 ---
 

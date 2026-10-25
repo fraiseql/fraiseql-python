@@ -206,11 +206,19 @@ class TestGenerateCrud:
         content = mutations_file.read_text()
         assert "class CreateProductInput:" in content
         assert "class UpdateProductInput:" in content
-        assert "class ProductResult:" in content
-        assert "@fraiseql.mutation" in content
-        assert "async def create_product(" in content
-        assert "async def update_product(" in content
-        assert "async def delete_product(" in content
+        assert "class DeleteProductInput:" in content
+        assert "class ProductSuccess:" in content
+        assert "class ProductError:" in content
+        assert "from src.types import Product" in content
+        for name in ("CreateProduct", "UpdateProduct", "DeleteProduct"):
+            assert f"@fraiseql.mutation\nclass {name}:" in content
+
+        # The PostgreSQL functions the mutations call, for generate migration's table
+        (functions_file,) = Path("migrations").glob("*_create_products_mutations.sql")
+        functions = functions_file.read_text()
+        for name in ("create_product", "update_product", "delete_product"):
+            assert f"CREATE OR REPLACE FUNCTION {name}(input jsonb)" in functions
+        assert "INSERT INTO products (data)" in functions
 
     def test_generate_crud_creates_directory(self, cli_runner, temp_project_dir) -> None:
         """Test that mutations directory is created if missing."""
@@ -228,6 +236,30 @@ class TestGenerateCrud:
 
         assert result.exit_code == 0
 
-        content = Path("src/mutations/blogpost_mutations.py").read_text()
-        assert "async def create_blogpost(" in content
-        assert "BlogPostResult" in content
+        content = Path("src/mutations/blog_post_mutations.py").read_text()
+        assert "class CreateBlogPost:" in content
+        assert "blog_post: BlogPost" in content
+        (functions_file,) = Path("migrations").glob("*_create_blogposts_mutations.sql")
+        assert "FUNCTION create_blog_post(input jsonb)" in functions_file.read_text()
+
+    def test_generate_crud_table_and_types_module(self, cli_runner, temp_project_dir) -> None:
+        """--table and --types-module reach the generated files."""
+        result = cli_runner.invoke(
+            cli, ["generate", "crud", "User", "--table", "tb_user", "--types-module", "app.models"]
+        )
+
+        assert result.exit_code == 0
+        assert "from app.models import User" in Path("src/mutations/user_mutations.py").read_text()
+        (functions_file,) = Path("migrations").glob("*_create_tb_user_mutations.sql")
+        assert "INSERT INTO tb_user (data)" in functions_file.read_text()
+
+
+def test_get_timestamp_is_utc_seconds() -> None:
+    """The migration file prefix: it raised AttributeError (datetime.datetime.UTC)."""
+    import asyncio
+
+    from fraiseql.cli.commands.generate import get_timestamp
+
+    timestamp = asyncio.run(get_timestamp())
+    assert len(timestamp) == 14
+    assert timestamp.isdigit()

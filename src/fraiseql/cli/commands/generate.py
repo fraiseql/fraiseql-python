@@ -131,134 +131,204 @@ WHERE deleted_at IS NULL;
 
 @generate.command()
 @click.argument("type_name")
-def crud(type_name: str) -> None:
+@click.option(
+    "--table",
+    help="Database table name (defaults to type_name lowercase + 's', as generate migration)",
+)
+@click.option(
+    "--types-module",
+    default="src.types",
+    show_default=True,
+    help="Module the generated mutations import TYPE_NAME from",
+)
+def crud(type_name: str, table: str | None, types_module: str) -> None:
     """Generate CRUD mutations for a FraiseQL type.
 
-    Creates create, update, and delete mutations for the specified type.
+    Writes create, update and delete mutations for TYPE_NAME and the PostgreSQL
+    functions they call, for the table ``fraiseql generate migration`` creates.
     """
+    from fraiseql.mutations.mutation_decorator import _camel_to_snake
+
     click.echo(f"🔧 Generating CRUD mutations for {type_name}...")
 
-    mutations_content = f'''"""CRUD mutations for {type_name}."""
+    snake = _camel_to_snake(type_name)
+    table = table or f"{type_name.lower()}s"
+
+    mutations_content = f'''"""CRUD mutations for {type_name}.
+
+Each mutation calls the PostgreSQL function named after it (CreateUser calls
+create_user(input jsonb)); `fraiseql generate crud` wrote those functions to
+migrations/. They return the mutation_response type the same file creates.
+"""
 
 import fraiseql
-from fraiseql import fraise_field
-from fraiseql.mutations import CQRSRepository
 from fraiseql.types import ID
 
-from ..types import {type_name}
+from {types_module} import {type_name}
 
 
 @fraiseql.input
 class Create{type_name}Input:
     """Input for creating a {type_name}."""
-    # TODO: Add your fields here
-    name: str = fraise_field(description="Name")
+
+    # TODO: the fields a client sends; they are stored in the row's data
+    name: str
 
 
 @fraiseql.input
 class Update{type_name}Input:
-    """Input for updating a {type_name}."""
-    id: ID = fraise_field(description="{type_name} ID")
-    # TODO: Add your fields here
-    name: str | None = fraise_field(description="Name")
+    """Input for updating a {type_name}: the fields given replace the stored ones."""
+
+    id: ID
+    # TODO: the fields a client may change
+    name: str | None = None
+
+
+@fraiseql.input
+class Delete{type_name}Input:
+    """Input for deleting a {type_name}."""
+
+    id: ID
 
 
 @fraiseql.success
 class {type_name}Success:
-    """{type_name} mutation succeeded."""
-    {type_name.lower()}: {type_name}
-    message: str
+    """The {type_name} the mutation created, updated or deleted."""
+
+    {snake}: {type_name}
 
 
 @fraiseql.error
 class {type_name}Error:
-    """{type_name} mutation failed."""
-    message: str
-    code: str
-
-
-@fraiseql.result
-class {type_name}Result:
-    """{type_name} mutation result."""
-    pass
+    """Why the mutation failed (status, message and code are added)."""
 
 
 @fraiseql.mutation
-async def create_{type_name.lower()}(
-    input: Create{type_name}Input,
-    repository: CQRSRepository,
-) -> {type_name}Result:
-    """Create a new {type_name}."""
-    try:
-        # TODO: Implement your creation logic
-        result = await repository.create("{type_name.lower()}s", input)
-        return {type_name}Success(
-            {type_name.lower()}=result,
-            message="{type_name} created successfully"
-        )
-    except Exception as e:
-        return {type_name}Error(
-            message=str(e),
-            code="CREATE_FAILED"
-        )
+class Create{type_name}:
+    """Create a {type_name}."""
+
+    input: Create{type_name}Input
+    success: {type_name}Success
+    error: {type_name}Error
 
 
 @fraiseql.mutation
-async def update_{type_name.lower()}(
-    input: Update{type_name}Input,
-    repository: CQRSRepository,
-) -> {type_name}Result:
-    """Update an existing {type_name}."""
-    try:
-        # TODO: Implement your update logic
-        result = await repository.update("{type_name.lower()}s", input.id, input)
-        return {type_name}Success(
-            {type_name.lower()}=result,
-            message="{type_name} updated successfully"
-        )
-    except Exception as e:
-        return {type_name}Error(
-            message=str(e),
-            code="UPDATE_FAILED"
-        )
+class Update{type_name}:
+    """Update a {type_name}."""
+
+    input: Update{type_name}Input
+    success: {type_name}Success
+    error: {type_name}Error
 
 
 @fraiseql.mutation
-async def delete_{type_name.lower()}(
-    id: UUID,
-    repository: CQRSRepository,
-) -> {type_name}Result:
-    """Delete a {type_name}."""
-    try:
-        # TODO: Implement your deletion logic (soft delete recommended)
-        await repository.delete("{type_name.lower()}s", id)
-        return {type_name}Success(
-            {type_name.lower()}=None,
-            message="{type_name} deleted successfully"
-        )
-    except Exception as e:
-        return {type_name}Error(
-            message=str(e),
-            code="DELETE_FAILED"
-        )
+class Delete{type_name}:
+    """Delete a {type_name} (soft delete: sets deleted_at)."""
+
+    input: Delete{type_name}Input
+    success: {type_name}Success
+    error: {type_name}Error
 '''
 
-    # Ensure mutations directory exists
-    Path("src/mutations").mkdir(parents=True, exist_ok=True)
+    functions_content = f"""-- CRUD functions for {type_name}
+-- The mutations in src/mutations/{snake}_mutations.py call them.
+-- Generated by FraiseQL CLI. Needs the {table} table (fraiseql generate migration).
 
-    # Write mutations file
-    filename = f"src/mutations/{type_name.lower()}_mutations.py"
+DO $$
+BEGIN
+    CREATE TYPE mutation_response AS (
+        status          text,
+        message         text,
+        entity_id       text,
+        entity_type     text,
+        entity          jsonb,
+        updated_fields  text[],
+        cascade         jsonb,
+        metadata        jsonb
+    );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION create_{snake}(input jsonb) RETURNS mutation_response
+LANGUAGE plpgsql AS $$
+DECLARE
+    created {table};
+BEGIN
+    -- TODO: validate input; return ROW('failed:validation', ...) to reject it
+    INSERT INTO {table} (data) VALUES (input - 'id') RETURNING * INTO created;
+    RETURN ROW(
+        'created', '{type_name} created', created.id::text, '{type_name}',
+        created.data || jsonb_build_object('id', created.id), NULL, NULL, NULL
+    )::mutation_response;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION update_{snake}(input jsonb) RETURNS mutation_response
+LANGUAGE plpgsql AS $$
+DECLARE
+    changes jsonb := input - 'id';
+    updated {table};
+BEGIN
+    UPDATE {table} SET data = data || changes
+    WHERE id = (input->>'id')::uuid AND deleted_at IS NULL
+    RETURNING * INTO updated;
+    IF NOT FOUND THEN
+        RETURN ROW(
+            'failed:not_found', '{type_name} not found', input->>'id', '{type_name}',
+            NULL, NULL, NULL, NULL
+        )::mutation_response;
+    END IF;
+    RETURN ROW(
+        'updated', '{type_name} updated', updated.id::text, '{type_name}',
+        updated.data || jsonb_build_object('id', updated.id),
+        ARRAY(SELECT jsonb_object_keys(changes)), NULL, NULL
+    )::mutation_response;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION delete_{snake}(input jsonb) RETURNS mutation_response
+LANGUAGE plpgsql AS $$
+DECLARE
+    deleted {table};
+BEGIN
+    UPDATE {table} SET deleted_at = CURRENT_TIMESTAMP
+    WHERE id = (input->>'id')::uuid AND deleted_at IS NULL
+    RETURNING * INTO deleted;
+    IF NOT FOUND THEN
+        RETURN ROW(
+            'failed:not_found', '{type_name} not found', input->>'id', '{type_name}',
+            NULL, NULL, NULL, NULL
+        )::mutation_response;
+    END IF;
+    RETURN ROW(
+        'deleted', '{type_name} deleted', deleted.id::text, '{type_name}',
+        deleted.data || jsonb_build_object('id', deleted.id), NULL, NULL, NULL
+    )::mutation_response;
+END;
+$$;
+"""
+
+    Path("src/mutations").mkdir(parents=True, exist_ok=True)
+    filename = f"src/mutations/{snake}_mutations.py"
     Path(filename).write_text(mutations_content)
 
+    Path("migrations").mkdir(exist_ok=True)
+    timestamp = asyncio.run(get_timestamp())
+    functions_filename = f"migrations/{timestamp}_create_{table}_mutations.sql"
+    Path(functions_filename).write_text(functions_content)
+
     click.echo(f"✅ CRUD mutations created: {filename}")
+    click.echo(f"✅ CRUD functions created: {functions_filename}")
     click.echo("\nDon't forget to:")
-    click.echo("1. Import and register these mutations in your app")
-    click.echo("2. Customize the input fields and logic")
-    click.echo("3. Run migrations to create the database table")
+    click.echo(f"1. Import {filename} before you build the app (the mutations register on import)")
+    click.echo("2. Put your fields in the input types and the functions")
+    click.echo(f"3. Create the {table} table (fraiseql generate migration {type_name}),")
+    click.echo(f"   then run: psql $DATABASE_URL -f {functions_filename}")
 
 
 async def get_timestamp() -> str:
     """Get current timestamp for migration filenames."""
-    from datetime import datetime
+    from datetime import UTC, datetime
 
-    return datetime.now(datetime.UTC).strftime("%Y%m%d%H%M%S")
+    return datetime.now(UTC).strftime("%Y%m%d%H%M%S")
