@@ -17,11 +17,14 @@ import json
 import logging
 import traceback
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 import psycopg
 from psycopg_pool import AsyncConnectionPool
+
+if TYPE_CHECKING:
+    from fraiseql.monitoring.notifications import NotificationManager
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +38,7 @@ class PostgreSQLErrorTracker:
         environment: str = "production",
         release_version: str | None = None,
         enable_notifications: bool = True,
+        notification_manager: "NotificationManager | None" = None,
     ) -> None:
         """Initialize PostgreSQL error tracker.
 
@@ -43,11 +47,17 @@ class PostgreSQLErrorTracker:
             environment: Environment name (production, staging, development)
             release_version: Application release version
             enable_notifications: Whether to trigger notifications on errors
+            notification_manager: The manager that sends them, with your custom
+                channels registered (default: a NotificationManager on db_pool,
+                created on the first error)
         """
         self.db = db_pool
         self.environment = environment
         self.release_version = release_version
         self.enable_notifications = enable_notifications
+        self.notification_manager = notification_manager
+        # Notification tasks in flight: the event loop keeps only weak references
+        self._notification_tasks: set[asyncio.Task[None]] = set()
 
     async def capture_exception(
         self,
@@ -528,14 +538,15 @@ class PostgreSQLErrorTracker:
         """
         # Import NotificationManager lazily to avoid circular imports
         try:
-            from fraiseql.monitoring.notifications import NotificationManager
+            if self.notification_manager is None:
+                from fraiseql.monitoring.notifications import NotificationManager
 
-            manager = NotificationManager(self.db)
-            # Send notifications asynchronously without blocking error capture
-            # Store task reference to prevent premature garbage collection
-            task = asyncio.create_task(manager.send_notifications(error_id))
-            # We don't await it - fire-and-forget pattern
-            _ = task
+                self.notification_manager = NotificationManager(self.db)
+            # Send notifications asynchronously without blocking error capture,
+            # keeping a reference so the task isn't garbage-collected mid-way
+            task = asyncio.create_task(self.notification_manager.send_notifications(error_id))
+            self._notification_tasks.add(task)
+            task.add_done_callback(self._notification_tasks.discard)
 
             logger.debug(
                 "Error notification triggered: error_id=%s, is_new=%s",
@@ -561,6 +572,7 @@ def init_error_tracker(
     environment: str = "production",
     release_version: str | None = None,
     enable_notifications: bool = True,
+    notification_manager: "NotificationManager | None" = None,
 ) -> PostgreSQLErrorTracker:
     """Initialize the global error tracker.
 
@@ -569,6 +581,7 @@ def init_error_tracker(
         environment: Environment name
         release_version: Application release version
         enable_notifications: Whether to enable notifications
+        notification_manager: The manager that sends them (see PostgreSQLErrorTracker)
 
     Returns:
         Initialized error tracker
@@ -579,6 +592,7 @@ def init_error_tracker(
         environment=environment,
         release_version=release_version,
         enable_notifications=enable_notifications,
+        notification_manager=notification_manager,
     )
     logger.info("Initialized PostgreSQL error tracker for environment: %s", environment)
     return _tracker_instance

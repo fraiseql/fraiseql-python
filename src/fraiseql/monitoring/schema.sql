@@ -236,7 +236,7 @@ COMMENT ON FUNCTION drop_old_error_occurrence_partitions IS 'Drop partitions old
 SELECT ensure_error_occurrence_partitions(2);
 
 -- ============================================================================
--- OPENTELEMETRY TRACES (Partitioned by day for high-volume tracing)
+-- OPENTELEMETRY TRACES (Partitioned by month, see ensure_monitoring_partitions)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS otel_traces (
@@ -280,10 +280,10 @@ CREATE INDEX IF NOT EXISTS idx_otel_trace_duration ON otel_traces(duration_ms DE
 CREATE INDEX IF NOT EXISTS idx_otel_trace_errors ON otel_traces(status_code) WHERE status_code = 'error';
 CREATE INDEX IF NOT EXISTS idx_otel_attributes ON otel_traces USING gin(attributes);
 
-COMMENT ON TABLE otel_traces IS 'OpenTelemetry distributed traces (partitioned by day)';
+COMMENT ON TABLE otel_traces IS 'OpenTelemetry distributed traces (partitioned by month)';
 
 -- ============================================================================
--- OPENTELEMETRY METRICS (Partitioned by day)
+-- OPENTELEMETRY METRICS (Partitioned by month)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS otel_metrics (
@@ -314,7 +314,7 @@ CREATE INDEX IF NOT EXISTS idx_otel_metrics_name_time ON otel_metrics(metric_nam
 CREATE INDEX IF NOT EXISTS idx_otel_metrics_time ON otel_metrics(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_otel_metrics_labels ON otel_metrics USING gin(labels);
 
-COMMENT ON TABLE otel_metrics IS 'OpenTelemetry metrics (partitioned by day)';
+COMMENT ON TABLE otel_metrics IS 'OpenTelemetry metrics (partitioned by month)';
 
 -- ============================================================================
 -- ERROR NOTIFICATIONS (Unpartitioned - low volume configuration data)
@@ -371,6 +371,83 @@ CREATE INDEX IF NOT EXISTS idx_notification_log_status ON tb_error_notification_
 
 COMMENT ON TABLE tb_error_notification_config IS 'Configuration for error notifications';
 COMMENT ON TABLE tb_error_notification_log IS 'Notification delivery log (partitioned by month)';
+
+-- ============================================================================
+-- PARTITIONS OF EVERY PARTITIONED TABLE
+-- ============================================================================
+-- A row whose timestamp has no partition can't be written ("no partition of
+-- relation ... found for row"). Run ensure_monitoring_partitions() monthly
+-- (pg_cron, or any scheduler) so the coming months always have one.
+
+-- Create the monthly partition <parent>_YYYY_MM of a table, in the table's schema
+CREATE OR REPLACE FUNCTION create_monthly_partition(
+    parent_table TEXT,
+    partition_date DATE
+) RETURNS TEXT AS $$
+DECLARE
+    parent_oid REGCLASS;
+    parent_schema TEXT;
+    parent_name TEXT;
+    part_name TEXT;
+    start_date DATE;
+    end_date DATE;
+BEGIN
+    parent_oid := parent_table::REGCLASS;
+    SELECT n.nspname, c.relname INTO parent_schema, parent_name
+    FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.oid = parent_oid;
+
+    start_date := DATE_TRUNC('month', partition_date)::DATE;
+    end_date := (DATE_TRUNC('month', partition_date) + INTERVAL '1 month')::DATE;
+    part_name := parent_name || '_' || TO_CHAR(start_date, 'YYYY_MM');
+
+    EXECUTE format(
+        'CREATE TABLE IF NOT EXISTS %I.%I PARTITION OF %s FOR VALUES FROM (%L) TO (%L)',
+        parent_schema, part_name, parent_oid, start_date, end_date
+    );
+    RETURN part_name;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION create_monthly_partition IS 'Create the monthly partition <parent>_YYYY_MM of a partitioned table';
+
+-- Ensure the current month and the next N months have a partition, for every
+-- partitioned monitoring table. Returns the partitions it created.
+CREATE OR REPLACE FUNCTION ensure_monitoring_partitions(
+    months_ahead INT DEFAULT 2
+) RETURNS TABLE (partition_name TEXT, created BOOLEAN) AS $$
+DECLARE
+    parent_table TEXT;
+    parent_schema TEXT;
+    target_month DATE;
+    part_name TEXT;
+    i INT;
+BEGIN
+    FOREACH parent_table IN ARRAY ARRAY[
+        'tb_error_occurrence', 'otel_traces', 'otel_metrics', 'tb_error_notification_log'
+    ] LOOP
+        SELECT n.nspname INTO parent_schema
+        FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.oid = parent_table::REGCLASS;
+
+        FOR i IN 0..months_ahead LOOP
+            target_month := (DATE_TRUNC('month', CURRENT_DATE) + make_interval(months => i))::DATE;
+            part_name := parent_table || '_' || TO_CHAR(target_month, 'YYYY_MM');
+            IF to_regclass(format('%I.%I', parent_schema, part_name)) IS NULL THEN
+                PERFORM create_monthly_partition(parent_table, target_month);
+                partition_name := part_name;
+                created := TRUE;
+                RETURN NEXT;
+            END IF;
+        END LOOP;
+    END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION ensure_monitoring_partitions IS 'Ensure every partitioned monitoring table has partitions for the current and next N months';
+
+-- Create initial partitions (current month + 2 months ahead)
+SELECT ensure_monitoring_partitions(2);
 
 -- ============================================================================
 -- VIEWS FOR COMMON QUERIES

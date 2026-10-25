@@ -764,6 +764,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`fraiseql:<tenant>:v_user:...`); it now invalidates the entity's views
   (`user(s)`, `v_user(s)`, `tv_user(s)`, schema-qualified or not) for every tenant,
   and the new `invalidate_view()` does it for one view.
+- **Error notifications are delivered, and logged.** The notification manager built
+  each channel with the rule's whole `channel_config` as keyword arguments, which
+  `SlackChannel` and `WebhookChannel` (no arguments) and `EmailChannel` (no `to`)
+  refuse, so every notification failed with a `TypeError`. A channel class now gets
+  only the keys its constructor takes, and `register_channel` also accepts an
+  instance. The tracker created a new `NotificationManager` for each error, so
+  channels registered on one were never used: `PostgreSQLErrorTracker` and
+  `init_error_tracker` take `notification_manager=`, and keep a reference to the
+  background task. `schema.sql` created no partition for `tb_error_notification_log`,
+  `otel_traces` or `otel_metrics` (only `tb_error_occurrence` had some), so every
+  write to them failed; it now creates them for the current and next two months,
+  and the new `ensure_monitoring_partitions(months_ahead)` creates them for all four
+  tables (run it monthly). Their partitions are monthly (the comments of
+  `otel_traces` and `otel_metrics` said daily).
 
 ## [1.30.0] - 2026-10-22
 

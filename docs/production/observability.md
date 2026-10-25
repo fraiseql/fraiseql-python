@@ -51,10 +51,11 @@ It creates:
 | `tb_error_notification_config`, `tb_error_notification_log` | Notification rules and their delivery log (see [Notifications](#notifications)) |
 | `v_active_errors`, `v_top_errors`, `v_error_trends` | Unresolved errors; the most frequent ones; errors per hour |
 | `get_error_stats(p_hours)`, `resolve_error(p_error_id, p_resolved_by, p_resolution_notes)` | SQL counterparts of the tracker methods |
-| `create_error_occurrence_partition(date)`, `ensure_error_occurrence_partitions(months_ahead)`, `drop_old_error_occurrence_partitions(retention_months)`, `get_partition_stats()` | Partition management (see [Retention](#retention-and-partitions)) |
-| `otel_traces`, `otel_metrics` | Tables for spans and metrics. Nothing in FraiseQL writes to them: traces and metrics go to the exporters below |
+| `ensure_monitoring_partitions(months_ahead)`, `create_monthly_partition(table, date)`, `create_error_occurrence_partition(date)`, `ensure_error_occurrence_partitions(months_ahead)`, `drop_old_error_occurrence_partitions(retention_months)`, `get_partition_stats()` | Partition management (see [Retention](#retention-and-partitions)) |
+| `otel_traces`, `otel_metrics` | Tables for spans and metrics, partitioned by month. Nothing in FraiseQL writes to them: traces and metrics go to the exporters below |
 
-The file creates the `tb_error_occurrence` partitions for the current month and
+The file creates the partitions of the four partitioned tables (`tb_error_occurrence`,
+`tb_error_notification_log`, `otel_traces`, `otel_metrics`) for the current month and
 the next two. A capture fails (and is logged, not raised) when its month has no
 partition, so create them ahead of time (see [Retention](#retention-and-partitions)).
 
@@ -186,23 +187,57 @@ WHERE o.occurred_at > NOW() - INTERVAL '24 hours';
 
 ### Notifications
 
-The tracker is meant to send a notification when it captures an error
-(`enable_notifications=True`, the default): `NotificationManager` reads the enabled
-rules of `tb_error_notification_config` that match the error (`error_fingerprint`,
-`error_type`, `severity` and `environment` filters, NULL matching everything, and
-`min_occurrence_count`), skips a rule that already sent for this error within its
-`rate_limit_minutes`, sends through the rule's `channel_type` (`email`, `slack`,
-`webhook`, or one added with `register_channel`), and logs the attempt in
+The tracker sends a notification when it captures an error
+(`enable_notifications=True`, the default), in a background task: its
+`NotificationManager` reads the enabled rules of `tb_error_notification_config` that
+match the error (`error_fingerprint`, `error_type`, `severity` and `environment`
+filters, NULL matching everything, and `min_occurrence_count`), skips a rule that
+already sent for this error within its `rate_limit_minutes`, sends through the rule's
+`channel_type` (`email`, `slack`, `webhook`, or one added with `register_channel`),
+and logs the attempt (`sent` or `failed`, with the reason) in
 `tb_error_notification_log`.
 
-> **Known issue (1.31.0):** no notification is delivered. The manager builds the
-> channel with the rule's `channel_config` as keyword arguments
-> (`WebhookChannel(url=...)`), which the built-in channels don't accept, so the
-> attempt fails with a `TypeError`; and `schema.sql` creates no partition for
-> `tb_error_notification_log`, so the failure isn't logged either. Both are logged
-> on the `fraiseql.monitoring.notifications` logger. Until this is fixed, pass
-> `enable_notifications=False` and alert from your own job, for example on new rows
-> of `v_active_errors`.
+```sql
+INSERT INTO tb_error_notification_config
+    (error_type, severity, environment, channel_type, channel_config, rate_limit_minutes)
+VALUES
+    (NULL, ARRAY['error', 'critical'], ARRAY['production'], 'webhook',
+     '{"url": "https://hooks.example.com/errors", "headers": {"Authorization": "Bearer ..."}}', 30),
+    ('PaymentError', NULL, NULL, 'slack',
+     '{"webhook_url": "https://hooks.slack.com/services/...", "channel": "#payments"}', 60),
+    (NULL, ARRAY['critical'], NULL, 'email',
+     '{"smtp_host": "smtp.example.com", "smtp_user": "alerts", "smtp_password": "...",
+       "from_address": "alerts@example.com", "to": ["oncall@example.com"]}', 15);
+```
+
+`channel_config` is passed to the channel's `send`; a channel class also gets the
+keys its constructor takes (`EmailChannel` its `smtp_host`, `smtp_port`, `smtp_user`,
+`smtp_password`, `use_tls` and `from_address`). For a channel of your own, register
+it on a manager and give that manager to the tracker:
+
+```python
+from fraiseql.monitoring.notifications import NotificationManager
+from fraiseql.monitoring.postgres_error_tracker import init_error_tracker
+
+
+class PagerChannel:
+    async def send(self, error: dict, config: dict) -> tuple[bool, str | None]:
+        await page(config["service"], f"{error['error_type']}: {error['error_message']}")
+        return True, None  # (sent?, error message)
+
+    def format_message(self, error: dict, template: str | None = None) -> str:
+        return error["error_message"]
+
+
+manager = NotificationManager(pool)
+manager.register_channel("pager", PagerChannel)  # a class, or an instance
+tracker = init_error_tracker(pool, environment="production", notification_manager=manager)
+```
+
+`tb_error_notification_log`, like `tb_error_occurrence`, `otel_traces` and
+`otel_metrics`, is partitioned by month: `schema.sql` creates the partitions of the
+current month and the next two. Run `SELECT ensure_monitoring_partitions(2);` every
+month (pg_cron or any scheduler), or writes fail once the months run out.
 
 ## Metrics
 
@@ -274,12 +309,13 @@ tracing backend.
 
 ## Retention and Partitions
 
-`tb_error_occurrence` is partitioned by month (`tb_error_occurrence_YYYY_MM`), so
-old occurrences are dropped a month at a time instead of deleted row by row:
+`tb_error_occurrence`, `tb_error_notification_log`, `otel_traces` and `otel_metrics`
+are partitioned by month (`<table>_YYYY_MM`), so old rows are dropped a month at a
+time instead of deleted row by row:
 
 ```sql
--- Create the partitions for this month and the next 3 (idempotent)
-SELECT * FROM ensure_error_occurrence_partitions(3);
+-- Create the partitions of all four tables for this month and the next 3 (idempotent)
+SELECT * FROM ensure_monitoring_partitions(3);
 
 -- Drop the partitions older than 6 months
 SELECT * FROM drop_old_error_occurrence_partitions(6);
@@ -291,7 +327,7 @@ SELECT * FROM get_partition_stats();
 Run the first two monthly, from cron or pg_cron:
 
 ```bash
-0 0 1 * * psql -d myapp -c "SELECT ensure_error_occurrence_partitions(3);"
+0 0 1 * * psql -d myapp -c "SELECT ensure_monitoring_partitions(3);"
 0 0 1 * * psql -d myapp -c "SELECT drop_old_error_occurrence_partitions(6);"
 ```
 

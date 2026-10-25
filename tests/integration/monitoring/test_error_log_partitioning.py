@@ -250,9 +250,14 @@ class TestErrorOccurrencePartitioning:
             for row in results:
                 table_name, partition_name, row_count, total_size, index_size = row
 
-                # Verify structure
-                assert table_name == "tb_error_occurrence"
-                assert partition_name.startswith("tb_error_occurrence_")
+                # Verify structure: every partitioned table has its partitions
+                assert table_name in {
+                    "tb_error_occurrence",
+                    "otel_traces",
+                    "otel_metrics",
+                    "tb_error_notification_log",
+                }
+                assert partition_name.startswith(f"{table_name}_")
                 assert isinstance(row_count, int)
                 assert isinstance(total_size, str)  # pg_size_pretty returns text
                 assert isinstance(index_size, str)
