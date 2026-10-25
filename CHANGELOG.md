@@ -778,6 +778,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and the new `ensure_monitoring_partitions(months_ahead)` creates them for all four
   tables (run it monthly). Their partitions are monthly (the comments of
   `otel_traces` and `otel_metrics` said daily).
+- **`fraiseql.tracing` works with the `tracing` extra.** It imported the Jaeger
+  exporter with everything else, and the extra doesn't install it (its last
+  release, 1.21, needs `protobuf<5`), so `OPENTELEMETRY_AVAILABLE` was False and
+  `setup_tracing` created no span. Each exporter and the psycopg instrumentation
+  are now optional on their own; `setup_tracing` opens a span per HTTP request.
+  `export_format="jaeger"` without the exporter raises an `ImportError` that points
+  to OTLP (Jaeger accepts it), and so does a missing Zipkin exporter instead of
+  silently exporting nothing. New `export_format="console"`. The request span is the
+  child of an incoming `traceparent` (the middleware attached the extracted context
+  without ever detaching it), and the OTLP exporter gets `export_timeout_ms` in
+  seconds, as it expects (30000 ms meant 30000 s).
 
 ## [1.30.0] - 2026-10-22
 

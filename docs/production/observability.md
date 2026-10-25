@@ -261,18 +261,40 @@ them, are in the [runbooks' metrics reference](runbooks/README.md#metrics-quick-
 
 ## Distributed Tracing
 
-`fraiseql.tracing.setup_tracing(app, TracingConfig(...))` is meant to open an
-OpenTelemetry span per HTTP request and export it over OTLP, Jaeger or Zipkin.
+With the `tracing` extra (`pip install "fraiseql[tracing]"`: the OpenTelemetry SDK,
+the OTLP exporter and the psycopg instrumentation),
+`fraiseql.tracing.setup_tracing(app, TracingConfig(...))` opens a span per HTTP
+request (`POST /graphql`, kind `SERVER`, with the `http.*` attributes and the status
+code; `exclude_paths` defaults to `/health`, `/ready`, `/metrics`, `/docs`,
+`/openapi.json`), continues the trace of an incoming `traceparent` header, instruments
+psycopg, and exports the spans:
 
-> **Known issue (1.31.0):** `fraiseql.tracing` turns itself off unless the Jaeger
-> exporter (`opentelemetry.exporter.jaeger.thrift`) imports, even for OTLP. The
-> `tracing` extra doesn't install it, and its last release doesn't import with the
-> OpenTelemetry SDK versions the extra installs, so `setup_tracing` adds no spans.
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.tracing import TracingConfig, setup_tracing
 
-Set up OpenTelemetry yourself instead. With the `tracing` extra
-(`pip install "fraiseql[tracing]"`), the SDK, the OTLP exporter and the psycopg
-instrumentation are installed; this traces every SQL statement FraiseQL runs, and
-spans you open in resolvers:
+app = create_fraiseql_app(database_url="postgresql://localhost/mydb", types=[User], queries=[users])
+setup_tracing(
+    app,
+    TracingConfig(
+        service_name="orders-api",
+        deployment_environment="production",
+        sample_rate=0.1,                                 # keep 10% of traces
+        export_format="otlp",                            # or "console", "zipkin"
+        export_endpoint="http://otel-collector:4317",    # OTLP over gRPC
+    ),
+)
+```
+
+`export_format="console"` prints the spans (no endpoint needed); `"zipkin"` needs
+`opentelemetry-exporter-zipkin-json`. `"jaeger"` raises an `ImportError`: its
+exporter is deprecated upstream and doesn't install with the current SDK; Jaeger
+accepts OTLP, so use `"otlp"` with its port 4317. Without `export_endpoint` (OTLP,
+Zipkin), spans are recorded but not exported. If a `TracerProvider` is already set
+when `setup_tracing` runs, fraiseql uses it as it is (its exporters, not the config's).
+
+Or set up OpenTelemetry yourself; this traces every SQL statement FraiseQL runs,
+and spans you open in resolvers:
 
 ```python
 from opentelemetry import trace
