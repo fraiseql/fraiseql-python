@@ -143,7 +143,7 @@ class FraiseQLConfig(BaseSettings):
         auth0_api_identifier: Auth0 API identifier (if using Auth0)
 
     Performance Settings:
-        cache_ttl: Query cache TTL in seconds (default: 300)
+        cache_ttl: Deprecated, and has no effect (nothing reads it)
         execution_timeout_ms: Query timeout in milliseconds (default: 30000)
         jsonb_field_limit_threshold: Fields threshold for JSONB optimization (default: 20)
 
@@ -224,7 +224,30 @@ class FraiseQLConfig(BaseSettings):
         return validate_postgres_url(v)
 
     # Performance settings
-    cache_ttl: int = 300  # seconds
+    cache_ttl: int = 300
+    """Deprecated, and has no effect: nothing reads it.
+
+    No cache uses it: APQ responses have ``apq_response_cache_ttl``, and
+    ``CachedRepository.find`` takes ``cache_ttl=`` per call. It will be removed.
+    """
+
+    @field_validator("cache_ttl", mode="before")
+    @classmethod
+    def warn_cache_ttl(cls, v: Any) -> Any:
+        """Warn that a cache_ttl set to anything but its default changes nothing."""
+        try:
+            unchanged = int(v) == 300
+        except (TypeError, ValueError):
+            return v  # the int validation reports it
+        if not unchanged:
+            warnings.warn(
+                "FraiseQLConfig.cache_ttl has no effect: nothing reads it. "
+                "It is deprecated and will be removed; remove it from your configuration.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        return v
+
     turbo_router_cache_size: int = 1000  # Max number of queries to cache
     jsonb_field_limit_threshold: int = (
         20  # Switch to full data column when field count exceeds this

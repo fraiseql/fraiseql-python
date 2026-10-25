@@ -1007,7 +1007,11 @@ def mutation(
                 if not updates:
                     raise GraphQLError("No fields to update")
 
-                return await db.update_one("user_view", {"id": input.id}, updates)
+                # Writes go through a PostgreSQL function; the view reads the result
+                await db.execute_function("fn_update_user", {"id": str(input.id), **updates})
+                return await db.find_one(
+                    "v_user", "updateUser", info, where={"id": {"eq": input.id}}
+                )
 
         Multi-step mutation with transaction::\
 
@@ -1018,48 +1022,44 @@ def mutation(
             ) -> TransferResult:
                 db = info.context["db"]
 
-                async with db.transaction():
-                    # Validate source account
-                    source = await db.find_one(
-                        "account_view",
-                        {"id": input.source_account_id}
-                    )
-                    if not source or source.balance < input.amount:
-                        raise GraphQLError("Insufficient funds")
+                async def transfer(conn):
+                    # One transaction: either both balances change or neither does
+                    async with conn.cursor() as cur:
+                        await cur.execute(
+                            "UPDATE tb_account SET balance = balance - %s "
+                            "WHERE id = %s AND balance >= %s RETURNING balance",
+                            (input.amount, input.source_account_id, input.amount),
+                        )
+                        source = await cur.fetchone()
+                        if source is None:
+                            raise GraphQLError("Insufficient funds")
 
-                    # Validate destination account
-                    dest = await db.find_one(
-                        "account_view",
-                        {"id": input.destination_account_id}
-                    )
-                    if not dest:
-                        raise GraphQLError("Destination account not found")
+                        await cur.execute(
+                            "UPDATE tb_account SET balance = balance + %s "
+                            "WHERE id = %s RETURNING balance",
+                            (input.amount, input.destination_account_id),
+                        )
+                        dest = await cur.fetchone()
+                        if dest is None:
+                            raise GraphQLError("Destination account not found")
 
-                    # Perform transfer
-                    await db.update_one(
-                        "account_view",
-                        {"id": source.id},
-                        {"balance": source.balance - input.amount}
-                    )
-                    await db.update_one(
-                        "account_view",
-                        {"id": dest.id},
-                        {"balance": dest.balance + input.amount}
-                    )
-
-                    # Log transaction
-                    transfer = await db.create_one("transfer_view", {
-                        "source_account_id": input.source_account_id,
-                        "destination_account_id": input.destination_account_id,
-                        "amount": input.amount,
-                        "created_at": datetime.utcnow()
-                    })
+                        await cur.execute(
+                            "INSERT INTO tb_transfer (source_account_id, "
+                            "destination_account_id, amount) VALUES (%s, %s, %s) "
+                            "RETURNING id",
+                            (input.source_account_id, input.destination_account_id,
+                             input.amount),
+                        )
+                        (transfer_id,) = await cur.fetchone()
 
                     return TransferResult(
-                        transfer=transfer,
-                        new_source_balance=source.balance - input.amount,
-                        new_dest_balance=dest.balance + input.amount
+                        transfer_id=transfer_id,
+                        new_source_balance=source[0],
+                        new_dest_balance=dest[0],
                     )
+
+                # Rolled back if transfer raises
+                return await db.run_in_transaction(transfer)
 
         Mutation with file upload handling::\
 
@@ -1088,10 +1088,12 @@ def mutation(
                 )
 
                 # Update user record
-                return await db.update_one(
-                    "user_view",
-                    {"id": user_context.user_id},
-                    {"avatar_url": file_url}
+                await db.execute_function(
+                    "fn_update_user",
+                    {"id": str(user_context.user_id), "avatar_url": file_url},
+                )
+                return await db.find_one(
+                    "v_user", "uploadAvatar", info, where={"id": {"eq": user_context.user_id}}
                 )
 
         Mutation with input transformation using prepare_input hook::\

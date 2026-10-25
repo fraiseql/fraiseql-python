@@ -97,6 +97,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   removed. Pass `{"vector": ..., "threshold": ...}`. Over GraphQL,
   `distanceWithin` is already required.
 
+- **`FraiseQLConfig.cache_ttl`**, which has no effect: nothing reads it (APQ
+  responses have `apq_response_cache_ttl`, and `CachedRepository.find` takes
+  `cache_ttl=` per call). Setting it to anything but 300, in code or with
+  `FRAISEQL_CACHE_TTL`, now emits a `DeprecationWarning`; it will be removed.
+
 ### Removed
 
 - **`examples/blog_enterprise/`.** It registered no types and one
@@ -362,6 +367,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`blog_post_mutations.py`, was `blogpost_mutations.py`); `--table` and
   `--types-module` are new. `fraiseql generate migration` no longer fails with
   `AttributeError` building its timestamp.
+
+- **The `@fraiseql.mutation` docstring calls repository methods that exist.**
+  Its examples used `db.update_one`, `db.create_one` and `db.transaction()`;
+  they now use `execute_function`, `find_one` and `run_in_transaction`. The
+  `src/fraiseql/fastapi.pyi` stub is removed: the `fraiseql/fastapi/` package
+  is what type checkers read (ty and pyright both), and the stub listed
+  settings `FraiseQLConfig` doesn't have (`enable_turbo_router`,
+  `enable_query_caching`, `production_mode`, `enable_introspection`,
+  `hide_error_details`, `enable_subscriptions`, `enable_dataloader`,
+  `enable_rate_limiting`) and functions `fraiseql.fastapi` doesn't export.
 
 ## [1.30.0] - 2026-10-22
 
