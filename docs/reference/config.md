@@ -100,7 +100,8 @@ FRAISEQL_DATABASE_URL=postgresql://localhost/mydb
 
 - **Type**: `bool`
 - **Default**: `False`
-- **Description**: Enable SQL query logging (development only)
+- **Description**: Deprecated, and has no effect: nothing reads it. Setting it emits a
+  `DeprecationWarning`; it will be removed.
 
 **Examples**:
 
@@ -110,7 +111,6 @@ config = FraiseQLConfig(
     database_pool_size=50,
     database_max_overflow=20,
     database_pool_timeout=60,
-    database_echo=True  # Development only
 )
 ```
 
@@ -258,7 +258,12 @@ config = FraiseQLConfig(
 
 - **Type**: `int | None`
 - **Default**: `None`
-- **Description**: Maximum allowed query depth (None = unlimited)
+- **Description**: Reject a query nested deeper than this (`None` = unlimited). `{ users { id } }`
+  has depth 1, `{ users { posts { id } } }` depth 2; fragments add no depth of their own. A
+  deeper query gets a `QUERY_TOO_DEEP` GraphQL error (`extensions.depth`,
+  `extensions.maxDepth`) before any resolver or SQL runs, on `POST` and `GET /graphql`, APQ
+  persisted queries included. Introspection (`__schema`, `__type`) is not counted:
+  `introspection_policy` governs it. Must be at least 1.
 
 ### query_timeout
 
@@ -545,38 +550,48 @@ config = FraiseQLConfig(
 ### complexity_enabled
 
 - **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable query complexity analysis
+- **Default**: `False`
+- **Description**: Enforce `complexity_max_score` and `complexity_max_depth`. Setting either
+  of them (in code or from the environment) turns it on, unless `complexity_enabled` is set
+  too; `complexity_enabled=False` keeps the limits off.
 
 ### complexity_max_score
 
 - **Type**: `int`
 - **Default**: `1000`
-- **Description**: Maximum allowed complexity score
+- **Description**: Reject a query whose complexity score is higher, with a `QUERY_TOO_COMPLEX`
+  GraphQL error (`extensions.complexity`, `extensions.maxComplexity`), before it runs. A
+  scalar costs 1, an object field 1 plus its selections, a list field 1 plus its selections
+  times its `limit` / `first` argument (literal, variable, or the argument's schema
+  default), else `complexity_default_list_size`. Introspection is not counted. Must be at
+  least 1.
 
 ### complexity_max_depth
 
 - **Type**: `int`
 - **Default**: `10`
-- **Description**: Maximum query depth
+- **Description**: Reject a query nested deeper, like `max_query_depth`, when complexity
+  limits are on. When both apply, the lower one wins.
 
 ### complexity_default_list_size
 
 - **Type**: `int`
 - **Default**: `10`
-- **Description**: Default list size for complexity calculation
+- **Description**: List size assumed for a list field the query passes no `limit` / `first` to
 
 ### complexity_include_in_response
 
 - **Type**: `bool`
 - **Default**: `False`
-- **Description**: Include complexity score in response
+- **Description**: Deprecated, and has no effect: no response carries the complexity score.
+  Setting it emits a `DeprecationWarning`; it will be removed.
 
 ### complexity_field_multipliers
 
 - **Type**: `dict[str, int]`
 - **Default**: `{}`
-- **Description**: Custom field complexity multipliers
+- **Description**: Cost of a field instead of 1, keyed by field name (`"search"`) or
+  `"Type.field"`
 
 **Examples**:
 
@@ -734,7 +749,9 @@ app = create_fraiseql_app(
 
 - **Type**: `str`
 - **Default**: `"public"`
-- **Description**: Default schema for queries when not specified
+- **Description**: Deprecated, and has no effect: a query reads the view its `sql_source`
+  names, and an unqualified name resolves through the connection's `search_path`. Qualify it
+  (`sql_source="api.v_user"`) to pick a schema. Setting it emits a `DeprecationWarning`.
 
 **Examples**:
 
@@ -742,7 +759,6 @@ app = create_fraiseql_app(
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
     default_mutation_schema="app",
-    default_query_schema="api"
 )
 ```
 

@@ -283,11 +283,12 @@ jq -r 'select(.event == "graphql.expensive_query") | .context.query_hash' \
 
 #### 1. Throttle GraphQL Traffic
 
-fraiseql does not enforce a query depth or complexity limit on the GraphQL endpoint:
-`FraiseQLConfig` accepts `max_query_depth` and the `complexity_*` settings, but
-nothing reads them, so setting them (or their `FRAISEQL_*` variables) changes
-nothing. The immediate levers are rate limiting, statement timeouts (below) and
-argument caps in resolvers.
+Cap query depth and size: with `FRAISEQL_MAX_QUERY_DEPTH` (or `max_query_depth`) and
+`FRAISEQL_COMPLEXITY_MAX_SCORE` (or `complexity_max_score`) set, a deeper or costlier
+query gets a `QUERY_TOO_DEEP` / `QUERY_TOO_COMPLEX` GraphQL error before any resolver
+or SQL runs. No limit is on by default, and the settings are read at startup, so
+restart the app after changing them. Rate limiting, statement timeouts (below) and
+argument caps in resolvers are the other levers.
 
 `RateLimitMiddleware` counts requests per client (`request.state.user_id` when set,
 otherwise the IP) for each rule's path and for every request (`default_limit`). On

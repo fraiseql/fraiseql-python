@@ -768,7 +768,7 @@ config = FraiseQLConfig(
     complexity_max_score=1000,
     rate_limit_enabled=True,
     rate_limit_requests_per_minute=60,
-    execution_timeout_ms=30000,
+    query_timeout=30,  # statement timeout, seconds
 )
 ```
 

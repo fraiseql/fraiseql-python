@@ -203,7 +203,9 @@ connections behind proxies and load balancers.
 **Default**: `false`
 **Environment**: `FRAISEQL_DATABASE_ECHO`
 
-Log generated SQL. Useful in development; keep off in production.
+Deprecated, and has no effect: nothing reads it, and no SQL is echoed. Setting it
+emits a `DeprecationWarning`; it will be removed. To see the SQL, see
+[Inspecting generated SQL](#inspecting-generated-sql).
 
 ```python
 config = FraiseQLConfig(
@@ -294,7 +296,11 @@ Which GraphQL IDE to serve.
 **Default**: `None` (no depth limit)
 **Environment**: `FRAISEQL_MAX_QUERY_DEPTH`
 
-Maximum nesting depth allowed in a query.
+Reject a query nested deeper than this. `{ users { id } }` has depth 1,
+`{ users { posts { id } } }` depth 2; fragments add no depth of their own. A deeper
+query gets a `QUERY_TOO_DEEP` GraphQL error before any resolver or SQL runs (`POST`
+and `GET /graphql`, APQ persisted queries included). Introspection (`__schema`,
+`__type`) is not counted: `introspection_policy` governs it.
 
 ### `auto_camel_case`
 
@@ -329,7 +335,8 @@ config = FraiseQLConfig(
 **Default**: `300`
 **Environment**: `FRAISEQL_CACHE_TTL`
 
-Default time-to-live for cached query results.
+Deprecated, and has no effect: nothing reads it. APQ responses have
+`apq_response_cache_ttl`, and `CachedRepository.find` takes `cache_ttl=` per call.
 
 ### `execution_timeout_ms`
 
@@ -337,7 +344,8 @@ Default time-to-live for cached query results.
 **Default**: `30000`
 **Environment**: `FRAISEQL_EXECUTION_TIMEOUT_MS`
 
-Maximum time a query may execute before being cancelled.
+Deprecated, and has no effect: nothing reads it. The statement timeout of each
+query is `query_timeout` (seconds).
 
 ### `include_execution_metadata`
 
@@ -345,8 +353,9 @@ Maximum time a query may execute before being cancelled.
 **Default**: `false`
 **Environment**: `FRAISEQL_INCLUDE_EXECUTION_METADATA`
 
-Include timing/diagnostic metadata in GraphQL responses. Useful during
-development and profiling.
+Add `extensions.execution` (`mode`, `time_ms`) to GraphQL responses in production.
+Outside production it is always added. Responses served as raw Rust bytes (the
+zero-copy paths) carry no extensions either way.
 
 ### `jsonb_field_limit_threshold`
 
@@ -368,8 +377,7 @@ Maximum number of prepared queries to cache for the fast-path router.
 ```python
 config = FraiseQLConfig(
     database_url="postgresql://app:pass@localhost/myapp",
-    cache_ttl=300,
-    execution_timeout_ms=30000,
+    query_timeout=30,
     include_execution_metadata=False,
     jsonb_field_limit_threshold=20,
 )
@@ -383,17 +391,26 @@ config = FraiseQLConfig(
 
 | Field | Type | Default | Environment |
 |-------|------|---------|-------------|
-| `complexity_enabled` | bool | `true` | `FRAISEQL_COMPLEXITY_ENABLED` |
+| `complexity_enabled` | bool | `false` | `FRAISEQL_COMPLEXITY_ENABLED` |
 | `complexity_max_score` | int | `1000` | `FRAISEQL_COMPLEXITY_MAX_SCORE` |
 | `complexity_max_depth` | int | `10` | `FRAISEQL_COMPLEXITY_MAX_DEPTH` |
 | `complexity_default_list_size` | int | `10` | `FRAISEQL_COMPLEXITY_DEFAULT_LIST_SIZE` |
-| `complexity_include_in_response` | bool | `false` | `FRAISEQL_COMPLEXITY_INCLUDE_IN_RESPONSE` |
+| `complexity_field_multipliers` | dict | `{}` | `FRAISEQL_COMPLEXITY_FIELD_MULTIPLIERS` |
+| `complexity_include_in_response` | bool | `false` | deprecated, no effect |
+
+With `complexity_enabled`, a query whose score is over `complexity_max_score` gets a
+`QUERY_TOO_COMPLEX` GraphQL error, and one nested deeper than `complexity_max_depth` a
+`QUERY_TOO_DEEP` error; neither runs. Setting `complexity_max_score` or
+`complexity_max_depth` turns `complexity_enabled` on unless you set it too. The score
+comes from the schema: a scalar costs 1, an object field 1 plus its selections, and a
+list field 1 plus its selections times its `limit` / `first` argument (else
+`complexity_default_list_size`). `complexity_field_multipliers` sets a field's cost by
+name or `"Type.field"`. Introspection is not counted.
 
 ```python
 config = FraiseQLConfig(
     database_url="postgresql://app:pass@localhost/myapp",
-    complexity_enabled=True,
-    complexity_max_score=1000,
+    complexity_max_score=1000,  # turns complexity_enabled on
     complexity_max_depth=10,
 )
 ```
@@ -509,12 +526,13 @@ approve queries in `required` mode, where clients cannot register them.
 
 | Field | Type | Default | Environment |
 |-------|------|---------|-------------|
-| `default_query_schema` | str | `"public"` | `FRAISEQL_DEFAULT_QUERY_SCHEMA` |
 | `default_mutation_schema` | str | `"public"` | `FRAISEQL_DEFAULT_MUTATION_SCHEMA` |
 | `default_entity_schema` | str \| None | `None` | `FRAISEQL_DEFAULT_ENTITY_SCHEMA` |
 
-PostgreSQL schemas to use for query views, mutation functions, and `tb_*` entity
-tables when not specified on the decorator.
+PostgreSQL schemas to use for mutation functions and `tb_*` entity tables when not
+specified on the decorator. `default_query_schema` is deprecated and has no effect: a
+query reads the view its `sql_source` names, so qualify it (`sql_source="api.v_user"`)
+to pick a schema.
 
 ### `coordinate_distance_method`
 
@@ -524,6 +542,8 @@ tables when not specified on the decorator.
 
 How coordinate-distance filters are computed. `"haversine"` works without
 extensions; `"postgis"` is the most accurate but requires the PostGIS extension.
+The app's config wins when it sets the method; without one, the environment
+variable is read when the filter is built.
 
 ### `default_string_collation`
 
@@ -679,8 +699,6 @@ config = FraiseQLConfig(
     environment="production",
     database_pool_size=20,
     database_max_overflow=10,
-    cache_ttl=300,
-    complexity_enabled=True,
     complexity_max_score=1000,
     rate_limit_enabled=True,
 )
@@ -696,9 +714,7 @@ config = FraiseQLConfig(
     database_max_overflow=20,
     database_pool_timeout=10,        # fail fast under load
     database_pool_recycle=1800,
-    cache_ttl=600,
-    execution_timeout_ms=15000,
-    complexity_enabled=True,
+    query_timeout=15,
     complexity_max_score=2000,
     rate_limit_enabled=True,
     rate_limit_requests_per_minute=600,
@@ -772,13 +788,11 @@ Notable validation behavior:
 
 ### Inspecting generated SQL
 
-Turn on SQL echo in development to see what FraiseQL sends to PostgreSQL:
+FraiseQL has no SQL echo setting (`database_echo` has no effect). To see what it
+sends to PostgreSQL, turn on statement logging in a development database:
 
-```python
-config = FraiseQLConfig(
-    database_url="postgresql://app:pass@localhost/myapp",
-    database_echo=True,
-)
+```sql
+ALTER DATABASE myapp SET log_statement = 'all';
 ```
 
 For application logs, use standard Python logging (e.g. `LOG_LEVEL` in your own

@@ -158,7 +158,6 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",    # share APQ across instances
     complexity_enabled=True,
     complexity_max_score=1000,
-    cache_ttl=300,                       # result-cache TTL (seconds)
 )
 ```
 
@@ -189,7 +188,6 @@ config = FraiseQLConfig(
     apq_storage_backend="postgresql",
     complexity_enabled=True,
     complexity_max_score=500,            # reject expensive queries earlier
-    cache_ttl=600,
 )
 ```
 
@@ -206,7 +204,7 @@ config = FraiseQLConfig(
 
 ### Complexity Scoring
 
-FraiseQL calculates query complexity to reject expensive operations before they hit PostgreSQL. The scorer combines field count, nesting depth, list sizes, and per-field multipliers; it is controlled by `complexity_*` settings on `FraiseQLConfig`:
+With `complexity_enabled` (or a `complexity_max_score` / `complexity_max_depth` set), FraiseQL scores each query from the schema and rejects one over the limit with a `QUERY_TOO_COMPLEX` GraphQL error before it hits PostgreSQL. A scalar costs 1, an object field 1 plus its selections, and a list field 1 plus its selections times its `limit` / `first` argument (else `complexity_default_list_size`); `complexity_field_multipliers` sets a field's cost by field name or `"Type.field"`. Introspection is not counted:
 
 ```python
 from fraiseql.fastapi import FraiseQLConfig
@@ -217,9 +215,8 @@ config = FraiseQLConfig(
     complexity_max_depth=10,
     complexity_default_list_size=10,
     complexity_field_multipliers={
-        "search": 5,      # text search operations
-        "aggregate": 10,  # COUNT, SUM, AVG operations
-        "sort": 2,        # ORDER BY clauses
+        "search": 5,               # any field named search costs 5
+        "Query.salesReport": 10,   # one root field
     },
 )
 ```

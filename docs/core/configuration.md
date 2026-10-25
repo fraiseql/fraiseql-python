@@ -40,7 +40,7 @@ app = create_fraiseql_app(types=[User, Post], config=config)
 | database_max_overflow | int | 10 | Extra connections allowed beyond pool_size |
 | database_pool_timeout | int | 30 | Connection timeout in seconds |
 | database_pool_recycle | int | 3600 | Recycle connections after N seconds (default: 1 hour) |
-| database_echo | bool | False | Enable SQL query logging (development only) |
+| database_echo | bool | False | Deprecated, no effect: nothing reads it |
 
 **Connection Pool Configuration**:
 
@@ -121,7 +121,7 @@ config = FraiseQLConfig(
 | introspection_policy | IntrospectionPolicy | PUBLIC | Schema introspection access control |
 | enable_playground | bool | True | Enable GraphQL playground IDE |
 | playground_tool | Literal | "graphiql" | GraphQL IDE to use (graphiql/apollo-sandbox) |
-| max_query_depth | int \| None | None | Maximum allowed query depth (None = unlimited) |
+| max_query_depth | int \| None | None | Reject queries nested deeper than this, with a `QUERY_TOO_DEEP` error (None = unlimited; introspection not counted) |
 | query_timeout | int | 30 | Maximum query execution time in seconds |
 | auto_camel_case | bool | True | Auto-convert snake_case fields to camelCase |
 
@@ -155,7 +155,6 @@ config = FraiseQLConfig(
     introspection_policy=IntrospectionPolicy.PUBLIC,
     enable_playground=True,
     playground_tool="graphiql",
-    database_echo=True  # Log all SQL queries
 )
 ```
 
@@ -337,12 +336,19 @@ config = FraiseQLConfig(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| complexity_enabled | bool | True | Enable query complexity analysis |
-| complexity_max_score | int | 1000 | Maximum allowed complexity score |
-| complexity_max_depth | int | 10 | Maximum query depth |
-| complexity_default_list_size | int | 10 | Default list size for complexity calculation |
-| complexity_include_in_response | bool | False | Include complexity score in response |
-| complexity_field_multipliers | dict[str, int] | {} | Custom field complexity multipliers |
+| complexity_enabled | bool | False | Enforce `complexity_max_score` and `complexity_max_depth`; turned on when either is set |
+| complexity_max_score | int | 1000 | Reject a query whose complexity score is higher (`QUERY_TOO_COMPLEX`) |
+| complexity_max_depth | int | 10 | Reject a query nested deeper (`QUERY_TOO_DEEP`); the lower of it and `max_query_depth` wins |
+| complexity_default_list_size | int | 10 | List size assumed for a list field without a `limit` / `first` argument |
+| complexity_include_in_response | bool | False | Deprecated, no effect: no response carries the score |
+| complexity_field_multipliers | dict[str, int] | {} | Cost of a field instead of 1, by field name or `"Type.field"` |
+
+The score is computed from the schema before the query runs: a scalar costs 1, an
+object field 1 plus its selections, and a list field 1 plus its selections times its
+`limit` / `first` argument (or `complexity_default_list_size`). So
+`{ users { posts { id } } }` without limits scores `1 + 10 * (1 + 10 * 1) = 111`.
+Introspection (`__schema`, `__type`) is not counted; `introspection_policy` governs it.
+A rejected query gets a GraphQL error and runs no resolver or SQL.
 
 **Examples**:
 
@@ -442,7 +448,7 @@ flag.
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | default_mutation_schema | str | "public" | Default schema for mutations |
-| default_query_schema | str | "public" | Default schema for queries |
+| default_query_schema | str | "public" | Deprecated, no effect: a query reads the view its `sql_source` names (qualify it to pick a schema) |
 
 **Examples**:
 
@@ -451,7 +457,6 @@ flag.
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
     default_mutation_schema="app",
-    default_query_schema="api"
 )
 ```
 

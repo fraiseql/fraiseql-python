@@ -108,7 +108,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   score, the statement timeout is `query_timeout` (seconds), and a query reads
   the view its `sql_source` names (qualify it to pick a schema). Setting one to
   anything but its default, in code or from the environment, now emits a
-  `DeprecationWarning`; they will be removed.
+  `DeprecationWarning`; they will be removed. The docs no longer present them,
+  or `cache_ttl`, as working, and describe `max_query_depth` and the
+  `complexity_*` limits as they now behave.
 
 ### Removed
 

@@ -838,17 +838,15 @@ asyncio.create_task(metrics_collector())
 
 ### Query Logging
 
-```python
-# Log all SQL queries in development
-from fraiseql.fastapi.config import FraiseQLConfig
+FraiseQL has no SQL echo setting (`database_echo` has no effect). Log statements in
+PostgreSQL:
 
-config = FraiseQLConfig(
-    database_url="postgresql://...",
-    database_echo=True  # Development only
-)
+```sql
+-- Development: log every statement
+ALTER DATABASE myapp SET log_statement = 'all';
 
-# Production: Log slow queries only
-# PostgreSQL: log_min_duration_statement = 1000  # Log queries > 1s
+-- Production: log slow statements only (> 1s)
+ALTER DATABASE myapp SET log_min_duration_statement = 1000;
 ```
 
 ## Alerting

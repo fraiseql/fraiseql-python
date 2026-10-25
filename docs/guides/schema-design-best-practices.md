@@ -497,12 +497,14 @@ class Category:
 complexity at the app level:
 
 ```python
-from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
 app = create_fraiseql_app(
-    database_url="postgresql://localhost/mydb",
+    config=FraiseQLConfig(
+        database_url="postgresql://localhost/mydb",
+        max_query_depth=10,  # Reject Category -> Category -> Category... past 10 levels
+    ),
     types=[Category],
-    max_query_depth=10,  # Prevent Category -> Category -> Category...
 )
 ```
 

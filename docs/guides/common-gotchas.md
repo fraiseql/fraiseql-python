@@ -732,16 +732,21 @@ query {
 **Set a maximum query depth in the app config:**
 
 ```python
-from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
 app = create_fraiseql_app(
-    database_url="postgresql://localhost/mydb",
+    config=FraiseQLConfig(
+        database_url="postgresql://localhost/mydb",
+        max_query_depth=15,  # Reject queries nested deeper than 15 levels
+    ),
     types=[User],
-    max_query_depth=15,  # Reject queries nested deeper than 15 levels
 )
 ```
 
-`max_query_depth` is also settable via `FRAISEQL_MAX_QUERY_DEPTH`. FraiseQL additionally runs query-complexity analysis (`complexity_max_depth`, `complexity_max_score`) that you can tune the same way.
+A deeper query gets a `QUERY_TOO_DEEP` GraphQL error before anything runs.
+`max_query_depth` is also settable via `FRAISEQL_MAX_QUERY_DEPTH`. To cap the size of a
+query as well, set `complexity_max_score` (each list multiplies the cost of what it
+selects by its `limit`, or by `complexity_default_list_size`).
 
 **Or bound the recursion explicitly in the query:**
 

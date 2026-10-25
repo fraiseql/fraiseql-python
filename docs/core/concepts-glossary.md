@@ -1010,13 +1010,16 @@ CREATE INDEX idx_users_email ON users(email);
 Limiting query depth and breadth:
 
 ```python
-from fraiseql import ComplexityConfig
+from fraiseql.fastapi import FraiseQLConfig
 
-config = ComplexityConfig(
-    max_complexity=1000,
-    max_depth=10
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    max_query_depth=10,          # QUERY_TOO_DEEP past 10 levels
+    complexity_max_score=1000,   # QUERY_TOO_COMPLEX over 1000
 )
 ```
+
+Both are checked before the query runs; no limit is on by default.
 
 ### APQ (Automatic Persisted Queries)
 

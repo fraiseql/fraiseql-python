@@ -223,10 +223,10 @@ If you answered **no** to any of these, start with [Security Planning](#security
 ### Query Complexity Limits
 
 - [ ] Query depth limit enforced (`complexity_max_depth`, or `max_query_depth`)
-- [ ] Query complexity scoring enabled (`complexity_enabled=True`)
+- [ ] Query complexity scoring enabled (`complexity_enabled=True`, or set `complexity_max_score`; off by default)
 - [ ] Complexity limit set (`complexity_max_score`, default 1000 — tune per policy)
 - [ ] Mutation complexity calculated and limited
-- [ ] Timeout on slow queries (`execution_timeout_ms`, default 30000 ms)
+- [ ] Timeout on slow queries (`query_timeout`, the statement timeout, default 30 s)
 - [ ] Query complexity monitoring in place
 
 ### DDoS Protection

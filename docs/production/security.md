@@ -140,82 +140,57 @@ def sanitize_graphql_query(query: str) -> str:
 
 ## Query Complexity Limits
 
-### Complexity Analysis
+FraiseQL checks a query's depth and complexity before it runs, on `POST` and
+`GET /graphql` (APQ persisted queries included). A query over a limit gets a GraphQL
+error and runs no resolver or SQL. No limit is on by default.
+
+### Depth Limiting
 
 ```python
 from fraiseql.fastapi.config import FraiseQLConfig
 
 config = FraiseQLConfig(
     database_url="postgresql://...",
-    # Query complexity limits
-    complexity_enabled=True,
-    complexity_max_score=1000,
-    complexity_max_depth=10,
-    complexity_default_list_size=10,
-    # Field-specific multipliers
-    complexity_field_multipliers={
-        "users": 2,  # Expensive field
-        "orders": 3,
-        "analytics": 10
-    }
+    max_query_depth=10,  # or FRAISEQL_MAX_QUERY_DEPTH=10
 )
 ```
 
-### Depth Limiting
+`{ users { id } }` has depth 1, `{ users { posts { id } } }` depth 2; fragments add no
+depth of their own. A deeper query gets:
 
-```python
-from graphql import GraphQLError
-
-def enforce_max_depth(document, max_depth: int = 10):
-    """Prevent excessively nested queries."""
-    from graphql import visit
-
-    current_depth = 0
-
-    def enter_field(node, key, parent, path, ancestors):
-        nonlocal current_depth
-        depth = len([a for a in ancestors if hasattr(a, "kind") and a.kind == "field"])
-
-        if depth > max_depth:
-            raise GraphQLError(
-                f"Query depth {depth} exceeds maximum {max_depth}",
-                extensions={"code": "MAX_DEPTH_EXCEEDED"}
-            )
-
-    visit(document, {"Field": {"enter": enter_field}})
+```json
+{"errors": [{"message": "Query depth 12 exceeds the maximum depth of 10",
+             "extensions": {"code": "QUERY_TOO_DEEP", "depth": 12, "maxDepth": 10}}]}
 ```
 
-### Cost Analysis
+Introspection (`__schema`, `__type`) is not counted: `introspection_policy` decides who
+may run it (it is disabled in production by default).
+
+### Complexity Analysis
 
 ```python
-from fraiseql.analysis.complexity import calculate_query_cost
-
-@app.middleware("http")
-async def query_cost_middleware(request: Request, call_next):
-    if request.url.path != "/graphql":
-        return await call_next(request)
-
-    body = await request.json()
-    query = body.get("query", "")
-
-    # Calculate cost
-    cost = calculate_query_cost(query, schema)
-
-    # Reject expensive queries
-    if cost > 1000:
-        return Response(
-            content=json.dumps({
-                "errors": [{
-                    "message": f"Query cost {cost} exceeds limit 1000",
-                    "extensions": {"code": "QUERY_TOO_EXPENSIVE"}
-                }]
-            }),
-            status_code=400,
-            media_type="application/json"
-        )
-
-    return await call_next(request)
+config = FraiseQLConfig(
+    database_url="postgresql://...",
+    # Setting a limit turns complexity_enabled on
+    complexity_max_score=1000,
+    complexity_max_depth=10,
+    complexity_default_list_size=10,
+    # Cost of a field instead of 1, by name or "Type.field"
+    complexity_field_multipliers={
+        "search": 5,
+        "Order.lines": 3,
+    },
+)
 ```
+
+The score is computed from the schema: a scalar costs 1, an object field 1 plus its
+selections, and a list field 1 plus its selections times its `limit` / `first` argument
+(literal or variable), else `complexity_default_list_size`. `{ users { posts { id } } }`
+without limits scores `1 + 10 * (1 + 10 * 1) = 111`; with `users(limit: 2)` it scores
+`1 + 2 * 11 = 23`. A query over `complexity_max_score` gets a `QUERY_TOO_COMPLEX` error
+(`extensions.complexity`, `extensions.maxComplexity`), one deeper than
+`complexity_max_depth` a `QUERY_TOO_DEEP` error. `complexity_enabled=False` keeps these
+two limits off; `max_query_depth` always applies.
 
 ## Rate Limiting
 
