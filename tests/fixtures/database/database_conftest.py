@@ -100,6 +100,9 @@ def postgres_url(postgres_container) -> str:
 
     This ensures pgvector tests use the container even when examples
     fixtures have set DATABASE_URL.
+
+    The extensions the tests use are created here, once per session (see
+    _create_shared_extensions).
     """
     # Prefer container URL for test isolation
     if postgres_container and "postgres" in _container_cache:
@@ -107,28 +110,21 @@ def postgres_url(postgres_container) -> str:
         url = container.get_connection_url()
         # testcontainers returns postgresql+psycopg:// but psycopg3 expects postgresql://
         url = url.replace("postgresql+psycopg://", "postgresql://")
-        return url
+    else:
+        # Fallback to explicit external database, then DATABASE_URL (may be from examples)
+        url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+        if not url:
+            pytest.skip("No database available")
 
-    # Fallback to explicit external database
-    external_url = os.environ.get("TEST_DATABASE_URL")
-    if external_url:
-        return external_url
-
-    # Last resort: DATABASE_URL (may be from examples)
-    db_url = os.environ.get("DATABASE_URL")
-    if db_url:
-        return db_url
-
-    pytest.skip("No database available")
+    _create_shared_extensions(url)
+    return url
 
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def session_db_pool(postgres_url) -> AsyncGenerator[psycopg_pool.AsyncConnectionPool]:
     """Session-scoped pool for setup/teardown operations only.
 
-    This pool is used ONLY for:
-    - Creating extensions (once per session)
-    - Administrative operations
+    This pool is used ONLY for administrative operations.
 
     All actual tests use per-class pools derived from this connection URL.
     """
@@ -143,35 +139,7 @@ async def session_db_pool(postgres_url) -> AsyncGenerator[psycopg_pool.AsyncConn
     await pool.open()
     await pool.wait()
 
-    # Create extensions once for the session
-    async with pool.connection() as conn:
-        await conn.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"')
-        await conn.execute('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
-        await conn.execute('CREATE EXTENSION IF NOT EXISTS "ltree"')
-
-        # Try pg_stat_statements extension
-        try:
-            await conn.execute('CREATE EXTENSION IF NOT EXISTS "pg_stat_statements"')
-        except Exception:
-            pass
-
-        # Try vector extension
-        try:
-            result = await conn.execute(
-                "SELECT name FROM pg_available_extensions WHERE name = 'vector'"
-            )
-            if await result.fetchone():
-                await conn.execute('CREATE EXTENSION IF NOT EXISTS "vector"')
-        except Exception:
-            pass
-
-        # Try pg_fraiseql_cache extension
-        try:
-            await conn.execute('CREATE EXTENSION IF NOT EXISTS "pg_fraiseql_cache"')
-        except Exception:
-            pass
-
-        await conn.commit()
+    # The extensions were created by postgres_url
 
     yield pool
 
@@ -608,6 +576,54 @@ def pytest_collection_modifyitems(config, items) -> None:
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
+
+
+# Extensions created for every test session, when the database has them. pgcrypto
+# and ltree are also created by the enterprise audit migrations and the ltree tests.
+_SHARED_EXTENSIONS = (
+    "uuid-ossp",
+    "pgcrypto",
+    "ltree",
+    "pg_stat_statements",
+    "vector",
+    "pg_fraiseql_cache",
+)
+# Any fixed key: it only has to be the same in every xdist worker
+_EXTENSIONS_LOCK_KEY = 4_812_301
+
+
+def _create_shared_extensions(url: str) -> None:
+    """Create the extensions the tests use, one xdist worker at a time.
+
+    Two sessions running ``CREATE EXTENSION IF NOT EXISTS`` for an extension that
+    doesn't exist yet both go ahead, and the second fails with a unique violation on
+    pg_extension_name_index. Under ``-n 8`` against one database, the workers' first
+    tests hit that on a fresh database (the audit and ltree tests did). An advisory
+    lock makes the workers take turns, and once the first has created them the
+    tests' own ``CREATE EXTENSION IF NOT EXISTS`` are no-ops.
+
+    Extensions the database doesn't have, or the user can't create, are skipped:
+    the tests that need them skip or create them themselves.
+    """
+    try:
+        with psycopg.connect(url, autocommit=True, connect_timeout=10) as conn:
+            conn.execute("SELECT pg_advisory_lock(%s)", [_EXTENSIONS_LOCK_KEY])
+            try:
+                available = {
+                    row[0] for row in conn.execute("SELECT name FROM pg_available_extensions")
+                }
+                for name in _SHARED_EXTENSIONS:
+                    if name not in available:
+                        continue
+                    try:
+                        conn.execute(f'CREATE EXTENSION IF NOT EXISTS "{name}"')
+                    except psycopg.Error:
+                        pass
+            finally:
+                conn.execute("SELECT pg_advisory_unlock(%s)", [_EXTENSIONS_LOCK_KEY])
+    except psycopg.OperationalError:
+        # Unreachable database: the fixtures that connect report it
+        pass
 
 
 def _wait_for_database_ready(url: str, max_attempts: int = 30) -> None:
