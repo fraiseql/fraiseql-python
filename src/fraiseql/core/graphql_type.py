@@ -48,7 +48,7 @@ from graphql import (
 from psycopg.sql import SQL, Composed
 
 from fraiseql.config.schema_config import SchemaConfig
-from fraiseql.core.field_resolvers import FIELD_RESOLVER, PYTHON_TYPE
+from fraiseql.core.field_resolvers import FIELD_RESOLVER, PYTHON_TYPE, WITH_ARGUMENTS
 from fraiseql.core.translate_query import translate_query
 from fraiseql.mutations.decorators import FraiseUnion
 from fraiseql.sql.where_generator import DynamicType
@@ -628,6 +628,9 @@ def convert_type_to_graphql_output(
                                         wrap_resolver_with_enum_serialization(enhanced_resolver),
                                         name,
                                     ),
+                                    # db.find answers with typed objects when a
+                                    # query filters it (core.field_resolvers)
+                                    extensions={FIELD_RESOLVER: WITH_ARGUMENTS},
                                 )
                                 continue  # Skip other resolver creation
 

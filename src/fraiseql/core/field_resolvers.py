@@ -3,10 +3,12 @@
 ``db.find`` and ``db.find_one`` answer with the rows Rust builds from the view's
 JSONB, which graphql-core never resolves field by field. A ``@fraiseql.field``
 (or ``@fraiseql.dataloader_field``) method of the type is a resolver of its own:
-it needs the row as ``self``. When the selection holds one, at any depth, find
-returns typed objects instead, and graphql-core completes them. Without one the
-rows still go out as Rust wrote them, so this check has to be cheap: a schema
-with no field resolver answers it without looking at the query.
+it needs the row as ``self``. So does a nested-array field given a ``where``
+(``fraise_field(supports_where_filtering=True)``), which filters the elements.
+When the selection holds one, at any depth, find returns typed objects instead,
+and graphql-core completes them. Without one the rows still go out as Rust
+wrote them, so this check has to be cheap: a schema with no field resolver
+answers it without looking at the query.
 """
 
 from collections.abc import Iterable, Mapping
@@ -34,8 +36,12 @@ from graphql import (
     parse,
 )
 
-# GraphQLField.extensions key: the field is a method of the type (a resolver)
+# GraphQLField.extensions key: the field is a method of the type (a resolver),
+# or another field graphql-core has to resolve (value True)
 FIELD_RESOLVER = "fraiseql_field_resolver"
+# FIELD_RESOLVER value: the resolver only changes the value when the query passes
+# arguments (nested-array ``where``); without them the Rust rows are right
+WITH_ARGUMENTS = "with_arguments"
 # GraphQLObjectType.extensions key: the Python class the type was built from
 PYTHON_TYPE = "fraiseql_python_type"
 
@@ -120,7 +126,8 @@ def _selects(
                 field = (getattr(owner, "fields", None) or {}).get(name)
                 if field is None:
                     continue
-                if (field.extensions or {}).get(FIELD_RESOLVER):
+                marker = (field.extensions or {}).get(FIELD_RESOLVER)
+                if marker is True or (marker == WITH_ARGUMENTS and selection.arguments):
                     return True
                 if _selects(
                     schema,

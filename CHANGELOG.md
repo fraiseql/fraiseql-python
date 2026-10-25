@@ -698,7 +698,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   matched everything. It now reads the dict (GraphQL or Python field names, `AND`
   / `OR` / `NOT`, an enum field compared by its value). An operator the Python
   filter lacks (the filter types also offer `ilike`, `matches`...) is a GraphQL
-  error naming the supported ones; it used to match every element.
+  error naming the supported ones; it used to match every element. Through
+  `db.find` / `db.find_one` (over HTTP) the resolver didn't run at all, since
+  the rows Rust builds skip it: a query that passes such a field a `where` now
+  gets typed rows, as for a field resolver; without a `where` the rows still go
+  out as Rust bytes.
 
 - **`db.aggregate()` with more than one expression runs.** It wrote the
   expressions one after the other without commas

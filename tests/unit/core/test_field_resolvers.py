@@ -81,3 +81,44 @@ def test_a_schema_without_field_resolvers_reaches_none(clear_registry) -> None:
 
     assert _reaching(schema) == frozenset()
     assert operation_selects_field_resolver(schema, "{ plains { id } }") is False
+
+
+@pytest.fixture
+def nested_schema(clear_registry):
+    from fraiseql.fields import fraise_field
+
+    @fraiseql.type
+    class Device:
+        hostname: str
+
+    @fraiseql.type(sql_source="v_department", resolve_nested=True)
+    class Department:
+        id: int
+
+    @fraiseql.type
+    class Network:
+        id: int
+        department: Department | None
+        devices: list[Device] = fraise_field(
+            default_factory=list, supports_where_filtering=True, nested_where_type=Device
+        )
+
+    @fraiseql.query
+    async def networks(info) -> list[Network]:
+        return []
+
+    return build_fraiseql_schema(query_types=[networks])
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        # a nested-array where filters in its resolver; without one the rows are right
+        ('{ networks { devices(where: {hostname: {eq: "a"}}) { hostname } } }', True),
+        ("query($w: DeviceWhereInput) { networks { devices(where: $w) { hostname } } }", True),
+        ("{ networks { devices { hostname } } }", False),
+        ("{ networks { id } }", False),
+    ],
+)
+def test_nested_resolvers_count_as_field_resolvers(nested_schema, query, expected) -> None:
+    assert operation_selects_field_resolver(nested_schema, query) is expected
