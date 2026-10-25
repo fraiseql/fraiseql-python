@@ -42,12 +42,21 @@ async def test_jwt_expiration_during_request(
 
     iterations = max(5, int(10 * chaos_config.load_multiplier))
 
-    for _i in range(iterations):
+    # DETERMINISTIC PATTERN: 15% token expirations (at least one) and 5% other auth
+    # failures, in an order shuffled with a fixed seed. Drawing each with
+    # random.random() left a 10-iteration run without any expiration about 1 run in 5.
+    expired_count = max(1, round(iterations * 0.15))
+    other_failure_count = round(iterations * 0.05)
+    token_kinds = ["expired"] * expired_count + ["invalid"] * other_failure_count
+    token_kinds += ["valid"] * (iterations - len(token_kinds))
+    random.Random(0).shuffle(token_kinds)
+
+    for token_kind in token_kinds:
         try:
             # Simulate JWT validation
-            if random.random() < 0.15:  # 15% chance of token expiration during processing
+            if token_kind == "expired":
                 raise Exception("Token expired during request processing")
-            if random.random() < 0.05:  # 5% chance of other auth failures
+            if token_kind == "invalid":
                 raise Exception("JWT validation failed")
             # Successful authentication
             auth_successes += 1

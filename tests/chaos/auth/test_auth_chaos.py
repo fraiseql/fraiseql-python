@@ -425,19 +425,26 @@ class TestAuthenticationChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(5, int(10 * self.chaos_config.load_multiplier))
 
-        for _i in range(iterations):
+        # DETERMINISTIC PATTERN: 15% invalid signatures and 15% tampered tokens, at
+        # least one of each, in an order shuffled with a fixed seed. Drawing each
+        # token with random.random() left a 10-iteration run without any tampered
+        # token, or with too few valid ones, about 4 runs in 10.
+        bad_count = max(1, round(iterations * 0.15))
+        token_kinds = ["invalid_signature"] * bad_count + ["tampered"] * bad_count
+        token_kinds += ["valid"] * (iterations - len(token_kinds))
+        random.Random(0).shuffle(token_kinds)
+
+        for token_kind in token_kinds:
             try:
                 # Simulate token validation
-                token_type = random.random()
-                if token_type < 0.7:  # 70% valid tokens
-                    valid_tokens += 1
-                    result = client.execute_query(operation)
-                    execution_time = result.get("_execution_time_ms", 15.0)
-                    self.metrics.record_query_time(execution_time)
-                elif token_type < 0.85:  # 15% invalid signatures
+                if token_kind == "invalid_signature":
                     raise jwt.InvalidSignatureError("Invalid JWT signature")
-                else:  # 15% tampered tokens
+                if token_kind == "tampered":
                     raise Exception("JWT token appears to be tampered with")
+                valid_tokens += 1
+                result = client.execute_query(operation)
+                execution_time = result.get("_execution_time_ms", 15.0)
+                self.metrics.record_query_time(execution_time)
 
             except jwt.InvalidSignatureError:
                 invalid_signatures += 1
