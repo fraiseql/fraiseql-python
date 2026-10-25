@@ -149,9 +149,8 @@ FraiseQL delivers **sub-10ms response times** for typical GraphQL queries throug
 ```python
 # Standard production setup
 config = FraiseQLConfig(
-    apq_enabled=True,
-    apq_storage_backend="postgresql",
-    field_projection=True,
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # APQ is on by default (apq_mode="optional")
     complexity_max_score=1000,
 )
 ```
@@ -176,9 +175,8 @@ config = FraiseQLConfig(
 ```python
 # Maximum performance setup
 config = FraiseQLConfig(
-    apq_enabled=True,
-    apq_storage_backend="postgresql",
-    field_projection=True,
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # APQ is on by default (apq_mode="optional")
     complexity_max_score=500,
 )
 ```

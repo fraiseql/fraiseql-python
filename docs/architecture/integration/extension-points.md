@@ -87,9 +87,7 @@ class User:
     @fraiseql.field(description="Number of posts authored by this user")
     async def post_count(self, info) -> int:
         db = info.context["db"]
-        return await db.fetchval(
-            "SELECT count(*) FROM v_post WHERE author_id = $1", self.id
-        )
+        return await db.count("v_post", where={"author_id": {"eq": self.id}})
 ```
 
 Because the parent object (`self`) and `info` are both available, a custom field can

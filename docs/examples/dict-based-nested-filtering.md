@@ -360,7 +360,7 @@ def test_find_active_assignments_with_active_devices(self):
 
 ```python
 import fraiseql
-from fraiseql.db import FraiseQLRepository
+from fraiseql.db import FraiseQLRepository, register_type_for_view
 
 @fraiseql.type
 class Device:
@@ -375,8 +375,8 @@ class Assignment:
     status: str
     device: Device
 
-# Register types
-register_type_for_view("assignments", Assignment)
+# Register types (the view is "id" + a JSONB "data" column)
+register_type_for_view("assignments", Assignment, has_jsonb_data=True)
 
 # Repository usage
 repo = FraiseQLRepository(db_pool)

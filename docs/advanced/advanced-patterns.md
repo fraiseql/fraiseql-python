@@ -396,14 +396,18 @@ async def create_user(info, name: str, email: str) -> User:
         raise ValueError("Invalid email")
 
     # ❌ Manual transaction management
-    async with db.transaction():
-        id = await db.fetchval(
-            "INSERT INTO tb_user (name, email) VALUES ($1, $2) RETURNING id",
-            name, email
+    async def insert(conn):
+        cur = await conn.execute(
+            "INSERT INTO tb_user (name, email) VALUES (%s, %s) RETURNING id",
+            (name, email),
         )
+        (id,) = await cur.fetchone()
 
         # ❌ Manual sync (can forget!)
-        await sync_tv_user(db, id)
+        await sync_tv_user(conn, id)
+        return id
+
+    id = await db.run_in_transaction(insert)
 
     return await db.find_one("tv_user", "createUser", info, mandatory_filters={"id": id})
 ```

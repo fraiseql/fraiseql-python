@@ -681,7 +681,7 @@ query = f"SELECT * FROM tb_user WHERE name = '{user_input}'"
 # If user_input = "' OR '1'='1", this becomes a SQL injection.
 
 # ✅ SAFE (what FraiseQL does internally — parameterized):
-await db.fetchval("SELECT * FROM tb_user WHERE name = $1", user_input)
+await cursor.execute("SELECT * FROM tb_user WHERE name = %s", (user_input,))
 # user_input is treated as pure data, never as SQL
 ```
 

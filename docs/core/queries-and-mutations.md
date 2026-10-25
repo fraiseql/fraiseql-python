@@ -779,8 +779,9 @@ Mutation with validation:
 ```python
 import fraiseql
 from fraiseql.types import ID
+from graphql import GraphQLError
 
-@input
+@fraiseql.input
 class UpdateUserInput:
     id: ID
     name: str | None = None
@@ -795,7 +796,7 @@ async def update_user(info, input: UpdateUserInput) -> User:
     if not user_context:
         raise GraphQLError("Authentication required")
 
-    # Validation
+    # Validation (is_valid_email is your own check)
     if input.email and not is_valid_email(input.email):
         raise GraphQLError("Invalid email format")
 
@@ -809,13 +810,18 @@ async def update_user(info, input: UpdateUserInput) -> User:
     if not updates:
         raise GraphQLError("No fields to update")
 
-    return await db.update_one("v_user", where={"id": input.id}, updates=updates)
+    # The write runs in a PostgreSQL function; fn_update_user sets the keys it is given
+    await db.execute_function("fn_update_user", {"id": str(input.id), **updates})
+    # Read the result back from the view
+    return await db.find_one("v_user", "updateUser", info, mandatory_filters={"id": input.id})
 ```
 
 Multi-step mutation with transaction:
 
 ```python
 import fraiseql
+from graphql import GraphQLError
+from psycopg.rows import dict_row
 
 @fraiseql.mutation
 async def transfer_funds(
@@ -824,48 +830,49 @@ async def transfer_funds(
 ) -> TransferResult:
     db = info.context["db"]
 
-    async with db.transaction():
-        # Validate source account
-        source = await db.find_one(
-            "v_account",
-            where={"id": input.source_account_id}
-        )
-        if not source or source.balance < input.amount:
-            raise GraphQLError("Insufficient funds")
+    async def transfer(conn) -> TransferResult:
+        async with conn.cursor(row_factory=dict_row) as cur:
+            # Lock both accounts until the transaction ends
+            await cur.execute(
+                "SELECT id, balance FROM tb_account WHERE id = ANY(%s) FOR UPDATE",
+                ([input.source_account_id, input.destination_account_id],),
+            )
+            accounts = {str(row["id"]): row for row in await cur.fetchall()}
+            source = accounts.get(str(input.source_account_id))
+            dest = accounts.get(str(input.destination_account_id))
 
-        # Validate destination account
-        dest = await db.find_one(
-            "v_account",
-            where={"id": input.destination_account_id}
-        )
-        if not dest:
-            raise GraphQLError("Destination account not found")
+            if not source or source["balance"] < input.amount:
+                raise GraphQLError("Insufficient funds")
+            if not dest:
+                raise GraphQLError("Destination account not found")
 
-        # Perform transfer
-        await db.update_one(
-            "v_account",
-            where={"id": source.id},
-            updates={"balance": source.balance - input.amount}
-        )
-        await db.update_one(
-            "v_account",
-            where={"id": dest.id},
-            updates={"balance": dest.balance + input.amount}
-        )
+            # Perform transfer
+            await cur.execute(
+                "UPDATE tb_account SET balance = balance - %s WHERE id = %s",
+                (input.amount, source["id"]),
+            )
+            await cur.execute(
+                "UPDATE tb_account SET balance = balance + %s WHERE id = %s",
+                (input.amount, dest["id"]),
+            )
 
-        # Log transaction
-        transfer = await db.create_one("v_transfer", data={
-            "source_account_id": input.source_account_id,
-            "destination_account_id": input.destination_account_id,
-            "amount": input.amount,
-            "created_at": datetime.utcnow()
-        })
+            # Log transaction (tb_transfer.created_at defaults to now())
+            await cur.execute(
+                "INSERT INTO tb_transfer (source_account_id, destination_account_id, amount) "
+                "VALUES (%s, %s, %s) RETURNING id",
+                (source["id"], dest["id"], input.amount),
+            )
+            transfer_id = (await cur.fetchone())["id"]
 
         return TransferResult(
-            transfer=transfer,
-            new_source_balance=source.balance - input.amount,
-            new_dest_balance=dest.balance + input.amount
+            transfer_id=transfer_id,
+            new_source_balance=source["balance"] - input.amount,
+            new_dest_balance=dest["balance"] + input.amount,
         )
+
+    # One transaction: every statement commits together, and a raised error rolls
+    # them all back
+    return await db.run_in_transaction(transfer)
 ```
 
 Mutation with input transformation (prepare_input hook):

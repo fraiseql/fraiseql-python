@@ -71,12 +71,12 @@ class Event:
 ```
 
 ```python
-from fraiseql import register_type_for_view
+from fraiseql.db import register_type_for_view
 
 # Declare the aggregations FraiseQL may derive at runtime for this view.
 register_type_for_view(
+    "v_event",
     Event,
-    view_name="v_event",
     aggregation={
         "group_by": ["event_date", "product_id", "category", "region", "source"],
         "measures": {

@@ -177,7 +177,10 @@ from fraiseql.auth import requires_auth
 async def current_user(info) -> User:
     user_context = info.context["user"]
     # user_context is guaranteed to exist
-    return await db.get_by_id("v_user", user_context.user_id)
+    db = info.context["db"]
+    return await db.find_one(
+        "v_user", "currentUser", info, mandatory_filters={"id": user_context.user_id}
+    )
 ```
 
 #### `@requires_role`
@@ -191,7 +194,8 @@ from fraiseql.auth import requires_role
 @requires_role("admin")
 async def all_users(info) -> list[User]:
     # Only admin users can call this
-    return await db.find("v_user")
+    db = info.context["db"]
+    return await db.find("v_user", "allUsers", info)
 ```
 
 #### `@requires_permission`
@@ -199,13 +203,18 @@ async def all_users(info) -> list[User]:
 Require specific permission(s).
 
 ```python
+from uuid import UUID
+
 from fraiseql.auth import requires_permission
 
 @fraiseql.mutation
 @requires_permission("user:delete")
 async def delete_user(info, id: UUID) -> bool:
     # Only users with "user:delete" permission
-    return await db.delete("users", id)
+    db = info.context["db"]
+    # fn_delete_user(input jsonb, OUT deleted boolean)
+    result = await db.execute_function("fn_delete_user", {"id": str(id)})
+    return result["deleted"]
 ```
 
 **See Also:**

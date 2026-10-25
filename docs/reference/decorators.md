@@ -364,11 +364,14 @@ class DeleteUser:
 ```python
 import fraiseql
 
-# Function-based
+# Function-based: call the PostgreSQL function, then read the row back from the view
 @fraiseql.mutation
 async def create_user_account(info, input: CreateUserInput) -> User:
     db = info.context["db"]
-    return await db.create_one("v_user", data=input.__dict__)
+    result = await db.execute_function("fn_create_user", input.to_dict())
+    return await db.find_one(
+        "v_user", "createUserAccount", info, mandatory_filters={"id": result["id"]}
+    )
 
 # Class-based
 @fraiseql.mutation
@@ -713,17 +716,20 @@ from fraiseql.auth import requires_auth
 async def get_my_profile(info) -> User:
     user = info.context["user"]  # Guaranteed to be authenticated
     db = info.context["db"]
-    return await db.find_one("v_user", where={"id": user.user_id})
+    return await db.find_one(
+        "v_user", "getMyProfile", info, mandatory_filters={"id": user.user_id}
+    )
 
 @fraiseql.mutation
 @requires_auth
 async def update_profile(info, input: UpdateProfileInput) -> User:
     user = info.context["user"]
     db = info.context["db"]
-    return await db.update_one(
-        "v_user",
-        where={"id": user.user_id},
-        updates=input.__dict__
+    await db.execute_function(
+        "fn_update_user", {"id": str(user.user_id), **input.to_dict()}
+    )
+    return await db.find_one(
+        "v_user", "updateProfile", info, mandatory_filters={"id": user.user_id}
     )
 ```
 
@@ -759,14 +765,18 @@ from fraiseql.types import ID
 @requires_permission("users:write")
 async def create_user(info, input: CreateUserInput) -> User:
     db = info.context["db"]
-    return await db.create_one("v_user", data=input.__dict__)
+    result = await db.execute_function("fn_create_user", input.to_dict())
+    return await db.find_one(
+        "v_user", "createUser", info, mandatory_filters={"id": result["id"]}
+    )
 
 @fraiseql.mutation
 @requires_permission("users:delete")
 async def delete_user(info, id: ID) -> bool:
     db = info.context["db"]
-    await db.delete_one("v_user", where={"id": id})
-    return True
+    # fn_delete_user(input jsonb, OUT deleted boolean)
+    result = await db.execute_function("fn_delete_user", {"id": str(id)})
+    return result["deleted"]
 ```
 
 **Raises**:
@@ -848,7 +858,8 @@ from fraiseql.types import ID
 async def update_user(info, id: ID, input: UpdateUserInput) -> User:
     # Can be performed by users:write OR admin:all
     db = info.context["db"]
-    return await db.update_one("v_user", where={"id": id}, updates=input.__dict__)
+    await db.execute_function("fn_update_user", {"id": str(id), **input.to_dict()})
+    return await db.find_one("v_user", "updateUser", info, mandatory_filters={"id": id})
 ```
 
 **Raises**:

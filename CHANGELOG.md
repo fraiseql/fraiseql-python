@@ -276,6 +276,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   points (host, port, user, password) instead of `fraiseql:fraiseql@localhost:5432`,
   so the 16 blog_simple tests run instead of skipping against any other server.
 
+- Docs: examples no longer call repository methods fraiseql doesn't have
+  (`update_one`, `create_one`, `delete_one`, `transaction()`, `fetchrow`,
+  `fetchval`, `delete`): they use `execute_function`, `find_one`, `count` and
+  `run_in_transaction`. The configuration pages no longer list settings
+  `FraiseQLConfig` doesn't have (`jsonb_extraction_enabled`, `jsonb_default_columns`,
+  `jsonb_auto_detect`, `field_projection`, `schema_registry`, `enable_query_caching`,
+  `enable_turbo_router`, the `turbo_*` admission options), and `register_type_for_view`
+  and `UNSET` are imported from where they live.
+
 ## [1.30.0] - 2026-10-22
 
 ### Added

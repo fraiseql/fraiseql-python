@@ -287,53 +287,22 @@ config = FraiseQLConfig(
 
 ## Performance Settings
 
-### enable_query_caching
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable query result caching
-
 ### cache_ttl
 
 - **Type**: `int`
 - **Default**: `300`
 - **Description**: Cache time-to-live in seconds
 
-### enable_turbo_router
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable TurboRouter for registered queries
-
 ### turbo_router_cache_size
 
 - **Type**: `int`
 - **Default**: `1000`
-- **Description**: Maximum number of queries to cache
+- **Description**: Maximum number of queries the TurboRouter registry holds. The
+  TurboRouter is always on: no setting turns it off.
 
-### turbo_router_auto_register
-
-- **Type**: `bool`
-- **Default**: `False`
-- **Description**: Auto-register queries at startup
-
-### turbo_max_complexity
-
-- **Type**: `int`
-- **Default**: `100`
-- **Description**: Max complexity score for turbo caching
-
-### turbo_max_total_weight
-
-- **Type**: `float`
-- **Default**: `2000.0`
-- **Description**: Max total weight of cached queries
-
-### turbo_enable_adaptive_caching
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable complexity-based admission
+`enable_query_caching`, `enable_turbo_router`, `turbo_router_auto_register`,
+`turbo_max_complexity`, `turbo_max_total_weight` and `turbo_enable_adaptive_caching`
+aren't `FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 
 ## JSON Passthrough Settings
 
@@ -342,52 +311,36 @@ query. `json_passthrough_enabled`, `json_passthrough_in_production`,
 `json_passthrough_cache_nested` and the `passthrough_*` options of earlier releases aren't
 `FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 
-## JSONB Extraction Settings
-
-### jsonb_extraction_enabled
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable automatic JSONB column extraction in production mode
-
-### jsonb_default_columns
-
-- **Type**: `list[str]`
-- **Default**: `["data", "json_data", "jsonb_data"]`
-- **Description**: Default JSONB column names to search for
-
-### jsonb_auto_detect
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Auto-detect JSONB columns by analyzing content
+## JSONB Settings
 
 ### jsonb_field_limit_threshold
 
 - **Type**: `int`
 - **Default**: `20`
-- **Description**: Field count threshold for full data column (default: 20)
+- **Description**: Copied into the request context as
+  `info.context["jsonb_field_limit_threshold"]`, for resolvers that want it. FraiseQL's
+  own queries don't read it.
 
 **Examples**:
 
 ```python
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
-    jsonb_extraction_enabled=True,
-    jsonb_default_columns=["data", "metadata", "json_data"],
-    jsonb_auto_detect=True,
-    jsonb_field_limit_threshold=30
+    jsonb_field_limit_threshold=30,
 )
 ```
+
+`jsonb_extraction_enabled`, `jsonb_default_columns` and `jsonb_auto_detect` aren't
+`FraiseQLConfig` fields, and `FraiseQLConfig` ignores them. A type reads its JSONB
+column from `jsonb_column=` on `@fraiseql.type` (`data` by default).
 
 ## Rust Pipeline (v1.0.0+)
 
 **v0.11.5 Architectural Change**: FraiseQL now uses an exclusive Rust pipeline for all query execution. No mode detection or conditional logic.
 
-**Configuration Options**:
-
-- `field_projection: bool = True` - Enable Rust-based field filtering
-- `schema_registry: bool = True` - Enable schema-based transformation
+**Configuration Options**: none in `FraiseQLConfig`. Field selection always happens in
+Rust. The Rust schema registry is initialized by `create_fraiseql_app`, which takes
+`enable_schema_registry=False` to skip it.
 
 **Benefits**:
 
@@ -756,25 +709,16 @@ config = FraiseQLConfig(
 
 ## Rust Pipeline Settings
 
-### field_projection
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable Rust-based field filtering
-
-### schema_registry
-
-- **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable schema-based transformation
-
-**Examples**:
+None. `field_projection` and `schema_registry` aren't `FraiseQLConfig` fields, and
+`FraiseQLConfig` ignores them: field selection always happens in Rust. To skip
+initializing the Rust schema registry, pass `enable_schema_registry=False` to
+`create_fraiseql_app`:
 
 ```python
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    field_projection=True,  # Enable field filtering
-    schema_registry=True    # Enable schema-based transformation
+app = create_fraiseql_app(
+    types=[User],
+    config=FraiseQLConfig(database_url="postgresql://localhost/mydb"),
+    enable_schema_registry=False,
 )
 ```
 
@@ -952,10 +896,7 @@ config = FraiseQLConfig(
     query_timeout=15,
 
     # Performance
-    enable_query_caching=True,
     cache_ttl=600,
-    enable_turbo_router=True,
-    jsonb_extraction_enabled=True,
 
     # Auth
     auth_enabled=True,

@@ -354,8 +354,8 @@ development and profiling.
 **Default**: `20`
 **Environment**: `FRAISEQL_JSONB_FIELD_LIMIT_THRESHOLD`
 
-When a query selects more than this many fields, FraiseQL switches to returning
-the full `data` JSONB column instead of projecting individual paths.
+Copied into the request context as `info.context["jsonb_field_limit_threshold"]`,
+for resolvers that want it. FraiseQL's own queries don't read it.
 
 ### `turbo_router_cache_size`
 

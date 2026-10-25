@@ -37,9 +37,12 @@ EXECUTE FUNCTION sync_post_to_tv();
 from fraiseql.types import ID
 
 # ✅ Explicit sync (visible in your code)
-async def create_post(title: str, author_id: ID) -> Post:
+async def create_post(info, title: str, author_id: ID) -> Post:
+    pool = info.context["db_pool"]  # an asyncpg pool, as in EntitySync below
+    sync = info.context["sync"]
+
     # 1. Write to command side
-    post_id = await db.execute(
+    post_id = await pool.fetchval(
         "INSERT INTO tb_post (title, author_id) VALUES ($1, $2) RETURNING id",
         title, author_id
     )
@@ -48,7 +51,8 @@ async def create_post(title: str, author_id: ID) -> Post:
     await sync.sync_post([post_id], mode='incremental')
 
     # 3. Read from query side
-    return await db.fetchrow("SELECT data FROM tv_post WHERE id = $1", post_id)
+    db = info.context["db"]
+    return await db.find_one("tv_post", "createPost", info, mandatory_filters={"id": post_id})
 ```
 
 **Benefits of explicit sync**:
@@ -276,7 +280,7 @@ async def create_many_posts(posts: list[dict]) -> list[UUID]:
 
     # 1. Create all posts (command side)
     for post_data in posts:
-        post_id = await db.execute(
+        post_id = await pool.fetchval(
             "INSERT INTO tb_post (...) VALUES (...) RETURNING id",
             post_data["title"], post_data["content"], post_data["author_id"]
         )
@@ -301,7 +305,7 @@ from fraiseql.types import ID
 async def update_post(post_id: ID, data: dict, background_tasks: BackgroundTasks):
     """Update post and defer sync to background."""
     # 1. Write to command side
-    await db.execute("UPDATE tb_post SET ... WHERE id = $1", post_id)
+    await pool.execute("UPDATE tb_post SET ... WHERE id = $1", post_id)
 
     # 2. DEFERRED SYNC (non-blocking)
     background_tasks.add_task(sync.sync_post, [post_id])
@@ -324,7 +328,7 @@ from fraiseql.types import ID
 async def update_post(post_id: ID, old_data: dict, new_data: dict):
     """Only sync if data changed in a way that affects queries."""
     # Update command side
-    await db.execute("UPDATE tb_post SET ... WHERE id = $1", post_id)
+    await pool.execute("UPDATE tb_post SET ... WHERE id = $1", post_id)
 
     # Only sync if title or content changed (not view count)
     if new_data["title"] != old_data["title"] or new_data["content"] != old_data["content"]:
@@ -340,10 +344,10 @@ from fraiseql.types import ID
 async def delete_user(user_id: ID):
     """Delete user and cascade sync related entities."""
     # 1. Get user's posts before deleting
-    post_ids = await db.fetch("SELECT id FROM tb_post WHERE author_id = $1", user_id)
+    post_ids = await pool.fetch("SELECT id FROM tb_post WHERE author_id = $1", user_id)
 
     # 2. Delete from command side (CASCADE will delete posts too)
-    await db.execute("DELETE FROM tb_user WHERE id = $1", user_id)
+    await pool.execute("DELETE FROM tb_user WHERE id = $1", user_id)
 
     # 3. EXPLICIT CASCADE SYNC
     await sync.delete_user([user_id])
@@ -560,7 +564,7 @@ from fraiseql.types import ID
 async def create_comment(post_id: ID, author_id: ID, content: str):
     """Create comment and sync all affected entities."""
     # 1. Write to command side
-    comment_id = await db.execute(
+    comment_id = await pool.fetchval(
         "INSERT INTO tb_comment (...) VALUES (...) RETURNING id",
         post_id, author_id, content
     )
@@ -588,7 +592,7 @@ async def like_post(post_id: ID, user_id: ID):
     await cache.set(f"post:{post_id}", cached_post)
 
     # 2. Write to command side
-    await db.execute(
+    await pool.execute(
         "INSERT INTO tb_post_like (post_id, user_id) VALUES ($1, $2)",
         post_id, user_id
     )
@@ -644,7 +648,7 @@ EXECUTE FUNCTION sync_post_to_tv();
 ```python
 # In your mutation code
 async def create_post(...):
-    post_id = await db.execute("INSERT INTO tb_post ...")
+    post_id = await pool.fetchval("INSERT INTO tb_post ... RETURNING id")
     await sync.sync_post([post_id])  # Explicit!
 ```
 

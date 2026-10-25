@@ -249,9 +249,10 @@ async def create_user(info, input: CreateUserInput) -> CreateUserSuccess | Creat
 In traditional GraphQL servers, resolvers are *custom code* you write by hand for every field:
 
 ```python
-# Traditional GraphQL - hand-written resolver
+# Traditional GraphQL - hand-written resolver (here over an asyncpg pool)
 async def user_resolver(parent, info, id):
-    return await db.fetchrow("SELECT * FROM users WHERE id = $1", id)
+    pool = info.context["pool"]
+    return await pool.fetchrow("SELECT * FROM users WHERE id = $1", id)
 ```
 
 In FraiseQL, you write resolvers for **operations** (`@fraiseql.query` / `@fraiseql.mutation`), and FraiseQL generates the per-field resolvers automatically at runtime when the schema is built. Field resolvers read straight from the view's `data` JSONB, so you do not write glue code per field:

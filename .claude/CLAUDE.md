@@ -2,13 +2,13 @@
 
 ## Vision
 
-**FraiseQL v1 is a Python GraphQL framework** that transforms database schema into GraphQL APIs at runtime. Using decorators, developers define types and queries, while FraiseQL automatically generates resolvers and executes queries against PostgreSQL, MySQL, SQLite, or SQL Server.
+**FraiseQL v1 is a Python GraphQL framework** that transforms database schema into GraphQL APIs at runtime. Using decorators, developers define types and queries, while FraiseQL automatically generates resolvers and executes queries against PostgreSQL views that expose a JSONB `data` column.
 
 ## Core Architecture Principle
 
 ```text
 Developer Code              FraiseQL Runtime          Database
-(Python)                   (Python + Rust)           (PostgreSQL/MySQL/etc)
+(Python)                   (Python + Rust)           (PostgreSQL)
     ↓                            ↓                          ↓
 @fraiseql.type        →  GraphQL Schema         →   SQL Query Execution
 @fraiseql.query       →  Query Resolution       →   Result Set Handling
@@ -29,11 +29,11 @@ FastAPI Integration   →  HTTP Server/GraphQL   →   Connection Pooling
 |-----------|-----------|-----|
 | **Package** | Python 3.13+ | Developer ergonomics, rapid iteration |
 | **Optional Extension** | Rust (PyO3) | Performance for mutations, complex queries |
-| **Database Support** | PostgreSQL (primary), MySQL, SQLite, SQL Server | Multi-database support |
+| **Database Support** | PostgreSQL only (psycopg 3) | JSONB views, PL/pgSQL functions, `SET LOCAL` session variables |
 | **Testing** | pytest + pytest-asyncio | Comprehensive async test framework |
 | **Linting** | Ruff (astral suite) | Fast, strict code quality |
 
-**NOT SUPPORTED**: Oracle (no driver support)
+**NOT SUPPORTED**: MySQL, SQLite, SQL Server, Oracle (no SQL generator or driver for them)
 
 ### Code Quality
 
@@ -73,7 +73,7 @@ FraiseQL v1 is production-ready with full feature support:
 
 - **Core**: GraphQL schema generation and query execution
 - **Decorators**: `@fraiseql.type`, `@fraiseql.query`, `@fraiseql.mutation`
-- **Database**: Introspection, multi-database support, connection pooling
+- **Database**: PostgreSQL introspection, connection pooling (psycopg pool)
 - **Extensions**: Optional Rust acceleration via `fraiseql_rs`
 - **Integration**: FastAPI, ASGI, customizable middleware
 
@@ -208,16 +208,17 @@ from fraiseql import build_fraiseql_schema
 schema = build_fraiseql_schema(query_types=[users], mutation_resolvers=[CreateUser])
 ```
 
-### 3. Database Abstraction
+### 3. Database: PostgreSQL Only
 
-FraiseQL abstracts database differences via **SQL generation**:
+FraiseQL targets **PostgreSQL** and nothing else. There is one SQL generator, and it
+writes PostgreSQL SQL (psycopg 3):
 
-- **PostgreSQL**: Full feature support (JSONB, custom types, array ops)
-- **MySQL**: Core features (views, joins, filtering)
-- **SQLite**: Local development and testing
-- **SQL Server**: Enterprise support (transactions, CTEs)
+- **Reads**: views (`v_*`) and table views (`tv_*`) with an `id` column and a JSONB `data` column
+- **Filtering / ordering**: JSONB path operators, plus PostgreSQL types (ltree, inet, daterange, pgvector...)
+- **Writes**: PostgreSQL functions (`fn_*`), called by `@fraiseql.mutation`
+- **Context**: per-request session variables set with `SET LOCAL`
 
-**Pattern**: SQL generators per database, unified interface for queries.
+**Pattern**: one PostgreSQL SQL generator (`src/fraiseql/sql/`), one repository (`FraiseQLRepository` in `src/fraiseql/db.py`).
 
 ### 4. Error Handling
 
@@ -345,9 +346,9 @@ fraiseql_v1/
 │   └── Cargo.toml             # Rust package config
 │
 ├── examples/                  # Example applications
-│   ├── basic/                 # Simple blog app
-│   ├── fastapi/               # FastAPI integration example
-│   └── federation/            # Multi-database example
+│   ├── blog_simple/           # Simple blog app
+│   ├── ecommerce/             # E-commerce API
+│   └── apq_multi_tenant/      # Multi-tenant APQ example
 │
 ├── Makefile                   # Development commands
 ├── pyproject.toml             # Python package config
@@ -373,11 +374,13 @@ fraiseql_v1/
 3. Add parameters and type hints
 4. FraiseQL builds the GraphQL field; a list query also gets `where`, `orderBy`, `limit`, `offset`
 
-### Add Database Support
+### Add a PostgreSQL Feature (operator, type, scalar)
 
-1. Implement SQL generation in `src/fraiseql/sql/`
-2. Add connection handler in `src/fraiseql/db.py`
-3. Add tests for new dialect
+FraiseQL supports PostgreSQL only; there is no dialect layer to extend.
+
+1. Implement SQL generation in `src/fraiseql/sql/` (e.g. `sql/where/operators/`)
+2. Wire repository support in `src/fraiseql/db.py` if reads need it
+3. Add unit tests, and integration tests against a real PostgreSQL
 4. Document in guides
 
 ### Fix a Bug
@@ -495,7 +498,7 @@ uv run pytest tests/ -o log_cli=true
 echo $DATABASE_URL
 
 # Test connection
-python -c "import psycopg2; psycopg2.connect(os.getenv('DATABASE_URL'))"
+uv run python -c "import os, psycopg; psycopg.connect(os.environ['DATABASE_URL']).close()"
 
 # View connection logs
 uv run pytest tests/ -o log_cli_level=DEBUG

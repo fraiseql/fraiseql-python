@@ -325,21 +325,25 @@ ALTER TABLE tb_note ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 UPDATE tb_note SET created_at = NOW(), updated_at = NOW();
 ```
 
-### Step 2: Create Update Trigger
+### Step 2: Set updated_at Explicitly (No Trigger)
 
 ```sql
--- Function to update updated_at
 -- ℹ️ FraiseQL Best Practice: Use DEFAULT instead of triggers
 -- Triggers hide logic from AI and make code harder to understand.
--- For timestamp updates, use explicit application code:
+-- For timestamp updates, set updated_at in the function that does the update:
+CREATE OR REPLACE FUNCTION fn_update_note(input JSONB, OUT updated BOOLEAN) AS $$
+BEGIN
+    UPDATE tb_note
+    SET title = COALESCE(input->>'title', title),
+        content = COALESCE(input->>'content', content),
+        updated_at = NOW()  -- Explicit!
+    WHERE id = (input->>'id')::uuid;
+    updated := FOUND;
+END;
+$$ LANGUAGE plpgsql;
 
--- Python mutation example:
--- @mutation
--- async def update_note(id: str, title: str, context: Context) -> Note:
---     return await context.db.update("tb_note", id, {
---         "title": title,
---         "updated_at": datetime.utcnow()  # Explicit!
---     })
+-- A mutation calls it the way delete_note calls fn_delete_note:
+--   await db.execute_function("fn_update_note", {"id": str(id), "title": title})
 
 -- Or use DEFAULT for automatic creation timestamps:
 -- created_at TIMESTAMPTZ DEFAULT NOW()  -- Set once on INSERT

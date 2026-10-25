@@ -165,19 +165,19 @@ config = FraiseQLConfig(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| enable_query_caching | bool | True | Enable query result caching |
 | cache_ttl | int | 300 | Cache time-to-live in seconds |
 
 ### TurboRouter
 
+The TurboRouter is always on: no setting turns it off.
+
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| enable_turbo_router | bool | True | Enable TurboRouter for registered queries |
-| turbo_router_cache_size | int | 1000 | Maximum number of queries to cache |
-| turbo_router_auto_register | bool | False | Auto-register queries at startup |
-| turbo_max_complexity | int | 100 | Max complexity score for turbo caching |
-| turbo_max_total_weight | float | 2000.0 | Max total weight of cached queries |
-| turbo_enable_adaptive_caching | bool | True | Enable complexity-based admission |
+| turbo_router_cache_size | int | 1000 | Maximum number of queries the registry holds |
+
+`enable_query_caching`, `enable_turbo_router`, `turbo_router_auto_register`,
+`turbo_max_complexity`, `turbo_max_total_weight` and `turbo_enable_adaptive_caching`
+aren't `FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 
 **Examples**:
 
@@ -185,11 +185,8 @@ config = FraiseQLConfig(
 # High-performance configuration
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
-    enable_query_caching=True,
     cache_ttl=600,  # 10 minutes
-    enable_turbo_router=True,
     turbo_router_cache_size=5000,
-    turbo_max_complexity=200
 )
 ```
 
@@ -201,26 +198,21 @@ pipeline to the response on every query (see [Rust Pipeline](#rust-pipeline-v100
 and the `passthrough_*` options of earlier releases aren't `FraiseQLConfig` fields, and
 `FraiseQLConfig` ignores them.
 
-### JSONB Extraction
+### JSONB
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| jsonb_extraction_enabled | bool | True | Enable automatic JSONB column extraction |
-| jsonb_default_columns | list[str] | ["data", "json_data", "jsonb_data"] | Default JSONB column names to search |
-| jsonb_auto_detect | bool | True | Auto-detect JSONB columns by content analysis |
-| jsonb_field_limit_threshold | int | 20 | Field count threshold for full data column |
+| jsonb_field_limit_threshold | int | 20 | Copied into the request context as `info.context["jsonb_field_limit_threshold"]`; FraiseQL's own queries don't read it |
 
-**Examples**:
+`jsonb_extraction_enabled`, `jsonb_default_columns` and `jsonb_auto_detect` aren't
+`FraiseQLConfig` fields, and `FraiseQLConfig` ignores them. A type reads its JSONB
+column from `jsonb_column=` on `@fraiseql.type` (`data` by default):
 
 ```python
-# JSONB-optimized configuration
-config = FraiseQLConfig(
-    database_url="postgresql://localhost/mydb",
-    jsonb_extraction_enabled=True,
-    jsonb_default_columns=["data", "metadata", "json_data"],
-    jsonb_auto_detect=True,
-    jsonb_field_limit_threshold=30
-)
+@fraiseql.type(sql_source="tv_machine", jsonb_column="machine_data")
+class Machine:
+    id: ID
+    name: str
 ```
 
 ### Rust Pipeline (v1.0.0+)
@@ -411,9 +403,11 @@ FraiseQL uses an exclusive Rust pipeline for all query execution.
 
 ### Configuration Options
 
-- `field_projection: bool = True` - Enable Rust-based field filtering
-- `schema_registry: bool = True` - Enable schema-based transformation
 - `enable_rust_endpoint: bool = False` - Mount the `POST /graphql/rust` passthrough route
+
+Field selection always happens in Rust: `field_projection` and `schema_registry` aren't
+`FraiseQLConfig` fields, and `FraiseQLConfig` ignores them. The Rust schema registry is
+initialized by `create_fraiseql_app`, which takes `enable_schema_registry=False` to skip it.
 
 ### Example
 
@@ -421,8 +415,8 @@ FraiseQL uses an exclusive Rust pipeline for all query execution.
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
     # Rust pipeline is always active
-    field_projection=True,  # Optional: disable for debugging
 )
+app = create_fraiseql_app(types=[User], config=config, enable_schema_registry=False)
 ```
 
 ### `enable_rust_endpoint` (opt-in, issue #365)
@@ -535,11 +529,8 @@ config = FraiseQLConfig(
     auto_camel_case=True,
 
     # Performance
-    enable_query_caching=True,
     cache_ttl=600,
-    enable_turbo_router=True,
     turbo_router_cache_size=5000,
-    jsonb_extraction_enabled=True,
 
     # Auth
     auth_enabled=True,

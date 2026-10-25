@@ -56,24 +56,19 @@ query {
 
 Rust pipeline will extract only `id` and `firstName` from the full JSONB, ignoring other fields.
 
-**Configuration:**
-
-```python
-config = FraiseQLConfig(
-    field_projection=True,  # Enable field filtering (default)
-)
-```
+**Configuration:** none. Field projection always happens; there is no `field_projection`
+setting (`FraiseQLConfig` ignores it).
 
 **Impact**: 20-40% faster transformation for large objects with many fields
 
 ## 3. Use Automatic Persisted Queries (APQ)
 
-Enable APQ to cache query parsing:
+APQ is on by default (`apq_mode="optional"`). Pick where persisted queries are stored:
 
 ```python
 config = FraiseQLConfig(
-    apq_enabled=True,
-    apq_storage_backend="postgresql",  # or "memory"
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # or "memory" (the default)
 )
 ```
 
