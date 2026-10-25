@@ -170,20 +170,33 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
             # Uses multiplier-based formula to ensure meaningful test on all hardware
             iterations = max(7, int(15 * self.chaos_config.load_multiplier))
 
-            for _i in range(iterations):
-                if random.random() < corruption_rate:
+            # DETERMINISTIC SCHEDULE: corruption_rate of the packets corrupted, then
+            # impact_rate of the others failing too, in an order shuffled with a fixed
+            # seed (was two unseeded random.random() draws per packet, which failed
+            # the severe scenario about 1 run in 130)
+            corrupted = round(iterations * corruption_rate)
+            impacted = int((iterations - corrupted) * impact_rate)
+            outcomes = (
+                ["corrupted"] * corrupted
+                + ["impacted"] * impacted
+                + ["ok"] * (iterations - corrupted - impacted)
+            )
+            random.Random(scenario_name).shuffle(outcomes)
+
+            for i, outcome in enumerate(outcomes):
+                if outcome == "corrupted":
                     # Corrupted packet - operation fails
                     corrupt_failures += 1
                     self.metrics.record_error()
                 # Normal operation, but may still fail due to impact
-                elif random.random() >= impact_rate:
+                elif outcome == "ok":
                     corrupt_successes += 1
-                    self.metrics.record_query_time(10.0 + random.uniform(-2, 2))
+                    self.metrics.record_query_time(10.0 + (i % 5) - 2)
                 else:
                     corrupt_failures += 1
                     self.metrics.record_error()
 
-            success_rate = corrupt_successes / 15.0
+            success_rate = corrupt_successes / iterations
             expected_min_success = 1.0 - corruption_rate - impact_rate
 
             assert success_rate >= expected_min_success, (
