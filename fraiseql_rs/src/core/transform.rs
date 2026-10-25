@@ -1071,6 +1071,49 @@ mod tests {
     }
 
     #[test]
+    fn typename_is_written_where_selected_only() {
+        let projection = Projection::from_selections(&[
+            serde_json::json!({"materialized_path": "__typename", "response_path": "t",
+                               "type_name": "Post"}),
+            serde_json::json!({"materialized_path": "author", "response_path": "author",
+                               "is_nested_object": true, "type_name": "Author"}),
+            serde_json::json!({"materialized_path": "author.__typename",
+                               "response_path": "author.__typename", "type_name": "Author"}),
+            serde_json::json!({"materialized_path": "tags", "response_path": "tags",
+                               "is_nested_object": true, "type_name": "Tag"}),
+            serde_json::json!({"materialized_path": "tags.name", "response_path": "tags.name"}),
+        ]);
+        let config = TransformConfig {
+            add_typename: false,
+            camel_case: true,
+            project_fields: true,
+            add_graphql_wrapper: false,
+            max_depth: MAX_JSON_DEPTH,
+        };
+        let input = r#"{"__typename":"Stale","author":{"id":1},"tags":[{"name":"a"}]}"#;
+        let mut transformer = ZeroCopyTransformer::new(config, Some("Post"), Some(&projection));
+        let mut output = ByteBuf::with_estimated_capacity(input.len(), &config);
+        transformer.transform_bytes(input.as_bytes(), &mut output).unwrap();
+
+        assert_eq!(
+            String::from_utf8(output.into_vec()).unwrap(),
+            r#"{"t":"Post","author":{"__typename":"Author"},"tags":[{"name":"a"}]}"#
+        );
+    }
+
+    #[test]
+    fn a_selected_typename_of_an_unknown_type_is_the_jsons() {
+        let projection = Projection::from_selections(&[serde_json::json!(
+            {"materialized_path": "__typename", "response_path": "__typename"}
+        )]);
+        assert_eq!(
+            project(r#"{"__typename":"Row","id":1}"#, None, &projection),
+            r#"{"__typename":"Row"}"#
+        );
+        assert_eq!(project(r#"{"id":1}"#, None, &projection), "{}");
+    }
+
+    #[test]
     fn a_snake_case_key_is_found_by_its_camel_case_name() {
         // The field dns1 (Python dns_1) is read from the key "dns_1"
         let projection = selections(&[("dns1", "dns1", true), ("dns1.ip", "dns1.ip", false)]);

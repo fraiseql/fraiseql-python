@@ -61,6 +61,7 @@ type MultiFieldDef = (String, String, Vec<String>, Option<String>, Option<bool>)
 /// │ HTTP Bytes   │ → Return to Python (zero-copy)
 /// │ (Vec<u8>)    │
 /// └──────────────┘
+#[allow(clippy::too_many_arguments)]
 pub fn build_graphql_response(
     json_rows: Vec<String>,
     field_name: &str,
@@ -69,8 +70,11 @@ pub fn build_graphql_response(
     field_selections: Option<Vec<Value>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: Option<bool>,
 ) -> PyResult<Vec<u8>> {
     let registry = schema_registry::get_registry();
+    // Without a selection, rows are written whole, __typename included
+    let inject_typename = inject_typename.unwrap_or(true) || field_selections.is_none();
 
     if schema_registry::is_initialized() {
         if let Some(type_name_str) = type_name {
@@ -83,6 +87,7 @@ pub fn build_graphql_response(
                 &registry,
                 is_list,
                 include_graphql_wrapper,
+                inject_typename,
             );
         }
     }
@@ -95,6 +100,7 @@ pub fn build_graphql_response(
         field_selections,
         is_list,
         include_graphql_wrapper,
+        inject_typename,
     )
 }
 
@@ -113,6 +119,7 @@ fn build_with_schema(
     registry: &schema_registry::SchemaRegistry,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: bool,
 ) -> PyResult<Vec<u8>> {
     let projection = field_selections.map(|selections| Projection::from_selections(&selections));
     let transformed_items: Result<Vec<Value>, _> = json_rows
@@ -129,6 +136,7 @@ fn build_with_schema(
                             Some(type_name),
                             projection,
                             registry,
+                            inject_typename,
                         )
                     } else {
                         json_transform::transform_with_schema(&value, type_name, registry)
@@ -195,7 +203,9 @@ fn build_with_schema(
 ///
 /// The rows are projected on the selection: `field_selections` when given (their
 /// response paths name each key), else `field_paths` (keys camelCased). Without
-/// either, rows are written whole.
+/// either, rows are written whole. A row object gets `__typename` when
+/// `inject_typename`; any object gets it where selected.
+#[allow(clippy::too_many_arguments)]
 fn build_zero_copy(
     json_rows: Vec<String>,
     field_name: &str,
@@ -204,6 +214,7 @@ fn build_zero_copy(
     field_selections: Option<Vec<Value>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: bool,
 ) -> PyResult<Vec<u8>> {
     let projection = match (field_selections, field_paths) {
         (Some(selections), _) => Some(Projection::from_selections(&selections)),
@@ -212,7 +223,7 @@ fn build_zero_copy(
     };
 
     let config = TransformConfig {
-        add_typename: type_name.is_some(),
+        add_typename: inject_typename && type_name.is_some(),
         camel_case: true,
         project_fields: projection.is_some(),
         add_graphql_wrapper: false,
@@ -371,11 +382,14 @@ pub fn build_multi_field_response(fields: Vec<MultiFieldDef>) -> PyResult<Vec<u8
                     })
                     .map(|value| {
                         if let Some(ref projection) = projection {
+                            // The response goes to the client as is: __typename
+                            // where selected only
                             json_transform::project_with_schema(
                                 &value,
                                 Some(&type_name),
                                 projection,
                                 &registry,
+                                false,
                             )
                         } else {
                             json_transform::transform_with_schema(&value, &type_name, &registry)

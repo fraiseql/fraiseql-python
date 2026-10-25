@@ -338,6 +338,12 @@ async def execute_mutation_rust(
 
         if mutation_result and isinstance(mutation_result, dict):
             typename = mutation_result.get("__typename")
+            if typename is None:
+                # Not selected (HTTP mode writes the selected fields only): the type
+                # Rust built the response for
+                typename = fraiseql_rs.mutation_response_type(
+                    mutation_json, success_type, error_type, entity_type
+                )
 
             # Success type: a non-null entity field must not be null, under any alias
             if typename == success_type and not entity_nullable:

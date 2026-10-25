@@ -9,7 +9,7 @@ mod postgres_composite;
 mod response_builder;
 mod types;
 
-pub use entity_filter::{filter_entity_fields, project_selection};
+pub use entity_filter::{filter_entity_fields, project_selection, project_selection_with};
 pub use entity_processor::{
     ProcessedEntity, add_typename_to_entity, process_cascade, process_entity,
     process_entity_with_typename,
@@ -126,6 +126,24 @@ pub fn parse_selection_document(document: Option<&str>) -> Result<Value, String>
     }
 }
 
+/// The type a mutation result answers with: `success_type` for a success status
+/// (or an entity alone, the simple format), `error_type` otherwise. It is the
+/// `__typename` of `build_mutation_response_selected`'s object, also when the
+/// query doesn't select it.
+pub fn response_type_name<'a>(
+    mutation_json: &str,
+    success_type: &'a str,
+    error_type: &'a str,
+    entity_type: Option<&str>,
+) -> Result<&'a str, String> {
+    let result = parse_result(mutation_json, entity_type)?;
+    Ok(if result.status.is_success() {
+        success_type
+    } else {
+        error_type
+    })
+}
+
 /// Build a GraphQL mutation response holding only what the query selected.
 ///
 /// The success or error object is built in full (as `build_graphql_response` builds
@@ -171,10 +189,14 @@ pub fn build_mutation_response_selected(
     } else {
         "error"
     }];
+    // "typename": "selected": the response goes to the client as is, so it holds
+    // __typename only where the query selects it
+    let typename_where_selected =
+        document.get("typename").and_then(Value::as_str) == Some("selected");
     let projected = if selection.is_null() {
         full
     } else {
-        project_selection(full, selection)
+        project_selection_with(full, selection, typename_where_selected)
     };
     serde_json::to_vec(&serde_json::json!({ "data": { field_name: projected } }))
         .map_err(|e| format!("Failed to serialize: {}", e))
@@ -224,6 +246,50 @@ mod integration_tests {
             response,
             serde_json::json!({"data": {"m": {"__typename": "CreateUserSuccess",
                 "u": {"__typename": "User", "firstName": "A"}}}})
+        );
+    }
+
+    #[test]
+    fn test_typename_where_selected_holds_the_selected_fields_only() {
+        let result = r#"{"status": "success", "message": "ok", "entity_id": "1",
+            "entity_type": "User", "entity": {"id": "1", "first_name": "A"},
+            "updated_fields": null, "cascade": null, "metadata": null}"#;
+        let document = serde_json::json!({"format": 2, "typename": "selected", "error": null,
+            "success": {"__type": "CreateUserSuccess", "fields": [
+                {"name": "user", "alias": "u", "selections": {"fields": [
+                    {"name": "__typename", "alias": "kind"},
+                    {"name": "firstName", "alias": "firstName"}]}},
+                {"name": "message", "alias": "message"}]}});
+
+        let bytes = build_mutation_response_selected(
+            result,
+            "m",
+            "CreateUserSuccess",
+            "CreateUserError",
+            Some("user"),
+            None,
+            None,
+            true,
+            &document,
+        )
+        .unwrap();
+
+        let response: Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(
+            response,
+            serde_json::json!({"data": {"m": {"u": {"kind": "User", "firstName": "A"},
+                "message": "ok"}}})
+        );
+        assert_eq!(
+            response_type_name(result, "CreateUserSuccess", "CreateUserError", None),
+            Ok("CreateUserSuccess")
+        );
+        let failed = r#"{"status": "failed:validation", "message": "no", "entity_id": null,
+            "entity_type": null, "entity": null, "updated_fields": null, "cascade": null,
+            "metadata": null}"#;
+        assert_eq!(
+            response_type_name(failed, "CreateUserSuccess", "CreateUserError", None),
+            Ok("CreateUserError")
         );
     }
 

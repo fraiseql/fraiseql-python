@@ -721,7 +721,8 @@ async def test_schema_validation_with_success_type_fields(cascade_http_client):
 
     # Should have successful mutation result
     mutation_result = result["data"]["createPostWithEntity"]
-    assert mutation_result["__typename"] == "CreatePostWithEntitySuccess"
+    # The success fields are there; __typename isn't selected, so it isn't either
+    assert "__typename" not in mutation_result
 
     # All expected fields should be present (this validates schema compliance)
     assert "message" in mutation_result

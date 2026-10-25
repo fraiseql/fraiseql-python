@@ -2211,6 +2211,9 @@ class FraiseQLRepository:
                 field_paths=field_paths,  # NEW: Pass field paths for Rust-side projection!
                 field_selections=field_selections_json,  # NEW: Pass field selections with aliases!
                 include_graphql_wrapper=include_wrapper,  # Field-only mode for multi-field
+                # Sent as is, the response holds the selected fields only; else
+                # graphql-core reads each object's __typename (unions, interfaces)
+                inject_typename=not _response_goes_out_as_is(info),
             )
 
             # Store RustResponseBytes in context for direct path
@@ -2327,6 +2330,9 @@ class FraiseQLRepository:
                 field_paths=field_paths,  # NEW: Pass field paths for Rust-side projection!
                 field_selections=field_selections_json,  # NEW: Pass field selections with aliases!
                 include_graphql_wrapper=include_wrapper,  # Field-only mode for multi-field
+                # Sent as is, the response holds the selected fields only; else
+                # graphql-core reads each object's __typename (unions, interfaces)
+                inject_typename=not _response_goes_out_as_is(info),
             )
 
             # In field-only mode (multi-field queries, include_wrapper=False),

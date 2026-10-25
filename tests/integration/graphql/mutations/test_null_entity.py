@@ -122,7 +122,7 @@ class TestNullEntity:
         )
 
         assert "errors" not in body, body
-        assert body["data"]["maybeNote"] == {"__typename": "NoteMaybe", key: None}
+        assert body["data"]["maybeNote"] == {key: None}
 
     def test_nullable_entity_when_present(self, client) -> None:
         body = self._post(

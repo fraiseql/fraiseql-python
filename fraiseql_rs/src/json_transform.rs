@@ -270,15 +270,16 @@ pub fn transform_with_selections(
     registry: &SchemaRegistry,
 ) -> Value {
     let projection = Projection::from_selections(selections);
-    project_with_schema(value, Some(current_type), &projection, registry)
+    project_with_schema(value, Some(current_type), &projection, registry, true)
 }
 
 /// Project a JSON value on a selection: the selected fields only, each under its
 /// response key.
 ///
 /// - An array is projected element by element, at any depth.
-/// - An object gets `__typename` when its type is known (first), then each
-///   selected field found in it, in selection order: an object field projected on
+/// - An object gets `__typename` first when `inject_typename` and its type is
+///   known, then each selected field found in it, in selection order (so without
+///   `inject_typename`, `__typename` only where selected): an object field projected on
 ///   its own selection, a leaf copied as it is. A field selected under two aliases
 ///   is written twice, each with its sub-selection. A field missing from the
 ///   data is left out.
@@ -293,17 +294,20 @@ pub fn project_with_schema(
     current_type: Option<&str>,
     projection: &Projection,
     registry: &SchemaRegistry,
+    inject_typename: bool,
 ) -> Value {
     match value {
         Value::Array(items) => Value::Array(
             items
                 .iter()
-                .map(|item| project_with_schema(item, current_type, projection, registry))
+                .map(|item| {
+                    project_with_schema(item, current_type, projection, registry, inject_typename)
+                })
                 .collect(),
         ),
         Value::Object(map) => {
             let mut result = Map::with_capacity(projection.fields.len() + 1);
-            if let Some(type_name) = current_type {
+            if let (true, Some(type_name)) = (inject_typename, current_type) {
                 result.insert(TYPENAME.to_string(), Value::String(type_name.to_string()));
             }
             for field in &projection.fields {
@@ -326,7 +330,13 @@ pub fn project_with_schema(
                             .filter(|info| info.is_nested_object())
                             .map(|info| info.type_name())
                             .or(field.type_name.as_deref());
-                        project_with_schema(field_value, nested_type, children, registry)
+                        project_with_schema(
+                            field_value,
+                            nested_type,
+                            children,
+                            registry,
+                            inject_typename,
+                        )
                     },
                     None => field_value.clone(),
                 };
@@ -645,9 +655,26 @@ mod tests {
         ];
 
         let projection = Projection::from_selections(&selections);
-        let result = project_with_schema(&input, None, &projection, &registry);
+        let result = project_with_schema(&input, None, &projection, &registry, true);
 
         assert_eq!(result, json!({"g": [[{"tagName": "t"}], null]}));
+    }
+
+    #[test]
+    fn test_without_injection_typename_is_written_where_selected_only() {
+        let registry = create_field_projection_test_schema();
+        let input = json!({"id": 1, "profile": {"bio": "b"}});
+        let selections = vec![
+            aliased("id", "id", false),
+            aliased("profile", "profile", true),
+            aliased("profile.__typename", "profile.kind", false),
+            aliased("profile.bio", "profile.bio", false),
+        ];
+
+        let projection = Projection::from_selections(&selections);
+        let result = project_with_schema(&input, Some("User"), &projection, &registry, false);
+
+        assert_eq!(result, json!({"id": 1, "profile": {"kind": "Profile", "bio": "b"}}));
     }
 
     #[test]
@@ -660,7 +687,7 @@ mod tests {
         ];
 
         let projection = Projection::from_selections(&selections);
-        let result = project_with_schema(&input, None, &projection, &registry);
+        let result = project_with_schema(&input, None, &projection, &registry, true);
 
         assert_eq!(result, json!({"dns1": {"ipAddress": "1.1.1.1"}}));
     }

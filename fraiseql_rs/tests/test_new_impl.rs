@@ -10,7 +10,8 @@ fn main() {
     ];
 
     println!("Testing v0.2 zero-copy implementation...");
-    let result = build_graphql_response(json_rows, "users", Some("User"), None, None, None, None);
+    let result =
+        build_graphql_response(json_rows, "users", Some("User"), None, None, None, None, None);
     match result {
         Ok(bytes) => {
             println!("✓ Implementation succeeded");

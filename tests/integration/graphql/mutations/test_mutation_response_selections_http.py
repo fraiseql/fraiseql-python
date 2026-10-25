@@ -160,70 +160,43 @@ def _post(client: TestClient, query: str) -> dict:
 _CASES = {
     "aliased nested field": (
         _success("location { id other: owner { id } }"),
-        {
-            "updateLocation": {
-                "__typename": "UpdateLocationSuccess",
-                "location": {
-                    "__typename": "Location",
-                    "id": "l1",
-                    "other": {"__typename": "Person", "id": "p1"},
-                },
-            }
-        },
+        {"updateLocation": {"location": {"id": "l1", "other": {"id": "p1"}}}},
     ),
     "aliases on the root, a leaf and the entity": (
         _success("msg: message loc: location { ident: id }", root="m: updateLocation"),
-        {
-            "m": {
-                "__typename": "UpdateLocationSuccess",
-                "msg": "ok",
-                "loc": {"__typename": "Location", "ident": "l1"},
-            }
-        },
+        {"m": {"msg": "ok", "loc": {"ident": "l1"}}},
     ),
     "list elements filtered": (
         _success("location { tags { id } }"),
-        {
-            "updateLocation": {
-                "__typename": "UpdateLocationSuccess",
-                "location": {
-                    "__typename": "Location",
-                    "tags": [{"__typename": "Tag", "id": "t1"}, {"__typename": "Tag", "id": "t2"}],
-                },
-            }
-        },
+        {"updateLocation": {"location": {"tags": [{"id": "t1"}, {"id": "t2"}]}}},
     ),
     "typename only": (
         'mutation { updateLocation(input: {id: "l1"}) { __typename } }',
         {"updateLocation": {"__typename": "UpdateLocationSuccess"}},
     ),
+    "typename where selected": (
+        _success("t: __typename location { __typename owner { __typename id } }"),
+        {
+            "updateLocation": {
+                "t": "UpdateLocationSuccess",
+                "location": {
+                    "__typename": "Location",
+                    "owner": {"__typename": "Person", "id": "p1"},
+                },
+            }
+        },
+    ),
     "error fragment only": (
         'mutation { updateLocation(input: {id: "l1"}) { ... on UpdateLocationError { message } } }',
-        {"updateLocation": {"__typename": "UpdateLocationSuccess"}},
+        {"updateLocation": {}},
     ),
     "interface field picks the matching fragment": (
         _success("location { owner { ... on Person { name } ... on Org { title } } }"),
-        {
-            "updateLocation": {
-                "__typename": "UpdateLocationSuccess",
-                "location": {
-                    "__typename": "Location",
-                    "owner": {"__typename": "Person", "name": "Ada"},
-                },
-            }
-        },
+        {"updateLocation": {"location": {"owner": {"name": "Ada"}}}},
     ),
     "union field picks the matching fragment": (
         _success("location { ownerU { ... on Person { name } ... on Org { title } } }"),
-        {
-            "updateLocation": {
-                "__typename": "UpdateLocationSuccess",
-                "location": {
-                    "__typename": "Location",
-                    "ownerU": {"__typename": "Org", "title": "ACME"},
-                },
-            }
-        },
+        {"updateLocation": {"location": {"ownerU": {"title": "ACME"}}}},
     ),
 }
 
@@ -249,7 +222,7 @@ class TestMutationResponseSelectionsOverHttp:
             " ... on UpdateLocationError { why: message code } } }",
         )
 
-        assert data == {"r": {"__typename": "UpdateLocationError", "why": "ok", "code": 404}}
+        assert data == {"r": {"why": "ok", "code": 404}}
 
     # Outside HTTP mode graphql-core builds the entity's Python type from the dict,
     # which holds only the selected fields, and may hold JSONB keys the type lacks
@@ -267,21 +240,4 @@ class TestMutationResponseSelectionsOverHttp:
         )
 
         assert result.errors is None
-        # graphql-core writes __typename only where it is selected
-        assert result.data == _strip_unselected_typename(expected, query)
-
-
-def _strip_unselected_typename(data: object, query: str) -> object:
-    """graphql-core leaves __typename out unless selected; the HTTP response keeps it."""
-    if isinstance(data, list):
-        return [_strip_unselected_typename(item, query) for item in data]
-    if isinstance(data, dict):
-        stripped = {
-            key: _strip_unselected_typename(value, query)
-            for key, value in data.items()
-            if key != "__typename"
-        }
-        if "__typename" in data and "__typename" in query and len(stripped) == 0:
-            stripped["__typename"] = data["__typename"]
-        return stripped
-    return data
+        assert result.data == expected

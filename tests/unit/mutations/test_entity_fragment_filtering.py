@@ -92,7 +92,7 @@ def test_named_fragment_on_entity_keeps_its_fields(fraiseql_rs: Any) -> None:
         fragment LocFields on Location { id name }""",
     )
 
-    assert data["location"] == {"__typename": "Location", "id": "l1", "name": "HQ"}
+    assert data["location"] == {"id": "l1", "name": "HQ"}
 
 
 def test_named_fragment_inside_success_fragment_keeps_the_entity(fraiseql_rs: Any) -> None:
@@ -102,7 +102,7 @@ def test_named_fragment_inside_success_fragment_keeps_the_entity(fraiseql_rs: An
         fragment SF on UpdateLocationSuccess { location { id } }""",
     )
 
-    assert data["location"] == {"__typename": "Location", "id": "l1"}
+    assert data["location"] == {"id": "l1"}
 
 
 def test_named_fragment_under_interface_field_keeps_its_fields(fraiseql_rs: Any) -> None:
@@ -113,7 +113,7 @@ def test_named_fragment_under_interface_field_keeps_its_fields(fraiseql_rs: Any)
         fragment PersonFields on Person { name }""",
     )
 
-    assert data["location"]["owner"] == {"__typename": "Person", "name": "Ada"}
+    assert data["location"]["owner"] == {"name": "Ada"}
 
 
 def test_inline_fragment_under_interface_field_selects_its_fields(fraiseql_rs: Any) -> None:
@@ -123,7 +123,7 @@ def test_inline_fragment_under_interface_field_selects_its_fields(fraiseql_rs: A
             location { id owner { ... on Person { name } } } } } }""",
     )
 
-    assert data["location"]["owner"] == {"__typename": "Person", "name": "Ada"}
+    assert data["location"]["owner"] == {"name": "Ada"}
 
 
 def test_field_and_inline_fragment_under_interface_field(fraiseql_rs: Any) -> None:
@@ -133,7 +133,7 @@ def test_field_and_inline_fragment_under_interface_field(fraiseql_rs: Any) -> No
             location { id owner { id ... on Person { name } } } } } }""",
     )
 
-    assert data["location"]["owner"] == {"__typename": "Person", "id": "p1", "name": "Ada"}
+    assert data["location"]["owner"] == {"id": "p1", "name": "Ada"}
 
 
 def test_fragments_under_union_field_leak_nothing(fraiseql_rs: Any) -> None:
@@ -143,10 +143,7 @@ def test_fragments_under_union_field_leak_nothing(fraiseql_rs: Any) -> None:
             location { ownerU { __typename ... on Person { name } ... on Org { title } } } } } }""",
     )
 
-    assert data["location"] == {
-        "__typename": "Location",
-        "ownerU": {"__typename": "Org", "title": "ACME"},
-    }
+    assert data["location"] == {"ownerU": {"__typename": "Org", "title": "ACME"}}
 
 
 def test_typename_only_under_interface_field(fraiseql_rs: Any) -> None:

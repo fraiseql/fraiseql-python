@@ -267,7 +267,9 @@ def _response_selections(
     field named "fields" or "__on" can't collide with the document's own keys.
 
     by_alias picks response keys (HTTP mode, where Rust's response goes to the client
-    as is) or field names (graphql-core completes the result). Fields in leaf_fields,
+    as is, so the document also asks for ``__typename`` only where it is selected:
+    ``"typename": "selected"``) or field names (graphql-core completes the result,
+    and reads every object's ``__typename``). Fields in leaf_fields,
     such as cascade (filtered on its own), are copied without a sub-selection.
     """
     schema = _real_schema(info)
@@ -292,11 +294,17 @@ def _response_selections(
         )
         return {"__type": type_name, "fields": fields}
 
-    return {
+    document = {
         "format": SELECTION_FORMAT,
         "success": for_type(success_type_name),
         "error": for_type(error_type_name),
     }
+    if by_alias:
+        # The response goes to the client as is: __typename only where selected.
+        # graphql-core, completing the result otherwise, reads it to resolve the
+        # union, an interface, and drops it where it isn't selected.
+        document["typename"] = "selected"
+    return document
 
 
 def _object_type_name(annotation: Any) -> str | None:

@@ -82,10 +82,7 @@ class TestCascadeEdgeCases:
         assert "errors" not in result
         response_data = result["data"]["createPostWithEntity"]
 
-        assert response_data == {
-            "__typename": "CreatePostWithEntitySuccess",
-            "message": response_data["message"],
-        }
+        assert response_data == {"message": response_data["message"]}
 
     @pytest.mark.asyncio
     async def test_cascade_with_nested_field_selections(self, cascade_http_client):

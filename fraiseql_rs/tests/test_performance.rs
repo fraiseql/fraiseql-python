@@ -80,6 +80,7 @@ fn main() {
                 None,
                 None,
                 None,
+                None,
             )
             .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
         });
@@ -99,6 +100,7 @@ fn main() {
                 medium_workload.clone(),
                 "users",
                 Some("User"),
+                None,
                 None,
                 None,
                 None,

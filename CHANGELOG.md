@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`__typename` is in the response only where the query selects it.** The Rust
+  pipeline gave every object of a known type a `__typename`, selected or not: a
+  query or mutation selecting `post { id }` got `{"__typename": "Post", "id": ...}`.
+  The GraphQL spec has the response hold exactly the selected fields, and
+  graphql-core (outside HTTP mode) already did. Now `db.find` / `db.find_one`
+  (one root field or several) and mutations in HTTP mode write `__typename` where
+  it is selected, under its alias (`t: __typename`) at any depth, and nowhere
+  else; a mutation selecting only an error fragment gets `{}` on success. **A
+  client reading an unselected `__typename` must select it**: Apollo Client,
+  urql's Graphcache and Relay add it to their queries themselves. Cascade
+  entities keep the `__typename` of their data. `build_graphql_response` takes
+  `inject_typename=False` for this, the mutation selection document
+  `"typename": "selected"`, and `mutation_response_type` gives the type a
+  mutation result answers with. `docs/core/rust-pipeline-integration.md` is
+  updated.
+
 - **`CSRFProtectionMiddleware` classifies a GraphQL request by parsing its
   document.** It used to look at how the query text starts. Now a document that
   contains a mutation needs a token whatever precedes the mutation and whichever

@@ -133,17 +133,13 @@ class TestAliases:
     def test_aliased_entity_field(self, rs: Any) -> None:
         location = _location(rs, "{ id other: owner { id } }")
 
-        assert location == {
-            "__typename": "Location",
-            "id": "l1",
-            "other": {"__typename": "Person", "id": "p1"},
-        }
+        assert location == {"id": "l1", "other": {"id": "p1"}}
 
     def test_one_field_under_two_aliases_keeps_both_selections(self, rs: Any) -> None:
         location = _location(rs, "{ id owner { name } other: owner { id } }")
 
-        assert location["owner"] == {"__typename": "Person", "name": "Ada"}
-        assert location["other"] == {"__typename": "Person", "id": "p1"}
+        assert location["owner"] == {"name": "Ada"}
+        assert location["other"] == {"id": "p1"}
 
     def test_root_and_leaf_aliases(self, rs: Any) -> None:
         data = _respond(
@@ -152,19 +148,48 @@ class TestAliases:
             " msg: message loc: location { ident: id } } } }",
         )
 
-        assert data == {
-            "m": {
-                "__typename": "UpdateLocationSuccess",
-                "msg": "ok",
-                "loc": {"__typename": "Location", "ident": "l1"},
-            }
-        }
+        assert data == {"m": {"msg": "ok", "loc": {"ident": "l1"}}}
 
     def test_aliased_typename(self, rs: Any) -> None:
         data = _respond(rs, "mutation { updateLocation { t: __typename } }")
 
+        assert data == {"updateLocation": {"t": "UpdateLocationSuccess"}}
+
+
+class TestTypename:
+    """In HTTP mode the response holds __typename where the query selects it only."""
+
+    def test_selected_at_every_level(self, rs: Any) -> None:
+        data = _respond(
+            rs,
+            "mutation { updateLocation { __typename ... on UpdateLocationSuccess {"
+            " location { __typename tags { __typename id } owner { __typename id } } } } }",
+        )
+
         assert data == {
-            "updateLocation": {"__typename": "UpdateLocationSuccess", "t": "UpdateLocationSuccess"}
+            "updateLocation": {
+                "__typename": "UpdateLocationSuccess",
+                "location": {
+                    "__typename": "Location",
+                    "tags": [{"__typename": "Tag", "id": "t1"}, {"__typename": "Tag", "id": "t2"}],
+                    "owner": {"__typename": "Person", "id": "p1"},
+                },
+            }
+        }
+
+    def test_outside_http_mode_every_object_keeps_it(self, rs: Any) -> None:
+        # graphql-core resolves the union and the interfaces from it
+        data = _respond(
+            rs,
+            "mutation { updateLocation { ... on UpdateLocationSuccess { location { id } } } }",
+            by_alias=False,
+        )
+
+        assert data == {
+            "updateLocation": {
+                "__typename": "UpdateLocationSuccess",
+                "location": {"__typename": "Location", "id": "l1"},
+            }
         }
 
 
@@ -172,36 +197,29 @@ class TestUnselectedData:
     def test_list_elements_are_filtered(self, rs: Any) -> None:
         location = _location(rs, "{ id tags { id } }")
 
-        assert location["tags"] == [
-            {"__typename": "Tag", "id": "t1"},
-            {"__typename": "Tag", "id": "t2"},
-        ]
+        assert location["tags"] == [{"id": "t1"}, {"id": "t2"}]
 
     def test_nested_lists_are_filtered(self, rs: Any) -> None:
         location = _location(rs, "{ grid { label } }")
 
-        assert location["grid"] == [[{"__typename": "Tag", "label": "a"}]]
+        assert location["grid"] == [[{"label": "a"}]]
 
     def test_typename_only_returns_typename_only(self, rs: Any) -> None:
         data = _respond(rs, "mutation { updateLocation { __typename } }")
 
         assert data == {"updateLocation": {"__typename": "UpdateLocationSuccess"}}
 
-    def test_only_an_error_fragment_returns_typename_only(self, rs: Any) -> None:
+    def test_only_an_error_fragment_returns_nothing(self, rs: Any) -> None:
         data = _respond(
             rs, "mutation { updateLocation { ... on UpdateLocationError { message } } }"
         )
 
-        assert data == {"updateLocation": {"__typename": "UpdateLocationSuccess"}}
+        assert data == {"updateLocation": {}}
 
     def test_entity_field_named_fields_is_filtered(self, rs: Any) -> None:
         location = _location(rs, "{ id fields { kind } }")
 
-        assert location == {
-            "__typename": "Location",
-            "id": "l1",
-            "fields": {"__typename": "Meta", "kind": "k"},
-        }
+        assert location == {"id": "l1", "fields": {"kind": "k"}}
 
     def test_fragment_on_the_union_applies(self, rs: Any) -> None:
         data = _respond(
@@ -217,31 +235,31 @@ class TestTypeConditions:
     def test_interface_field_keeps_the_matching_fragment_only(self, rs: Any) -> None:
         location = _location(rs, "{ owner { ... on Person { name } ... on Org { title } } }")
 
-        assert location["owner"] == {"__typename": "Person", "name": "Ada"}
+        assert location["owner"] == {"name": "Ada"}
 
     def test_union_field_keeps_the_matching_fragment_only(self, rs: Any) -> None:
         location = _location(rs, "{ ownerU { ... on Person { name } ... on Org { title } } }")
 
-        assert location["ownerU"] == {"__typename": "Org", "title": "ACME"}
+        assert location["ownerU"] == {"title": "ACME"}
 
     def test_interface_condition_under_union_field(self, rs: Any) -> None:
         location = _location(rs, "{ ownerU { ... on Node { id } ... on Person { name } } }")
 
-        assert location["ownerU"] == {"__typename": "Org", "id": "o1"}
+        assert location["ownerU"] == {"id": "o1"}
 
     def test_list_of_interfaces_is_filtered_per_element(self, rs: Any) -> None:
         location = _location(rs, "{ owners { id ... on Person { name } ... on Org { title } } }")
 
         assert location["owners"] == [
-            {"__typename": "Person", "id": "p1", "name": "Ada"},
-            {"__typename": "Org", "id": "o1", "title": "ACME"},
+            {"id": "p1", "name": "Ada"},
+            {"id": "o1", "title": "ACME"},
         ]
 
     def test_named_fragment_on_an_object_type_under_interface(self, rs: Any) -> None:
         data = _respond(
             rs,
             """mutation { updateLocation { ... on UpdateLocationSuccess {
-                location { owner { ...P ...O } } } } }
+                location { owner { __typename ...P ...O } } } } }
             fragment P on Person { name }
             fragment O on Org { title }""",
         )
@@ -266,21 +284,14 @@ class TestErrorResponse:
             result=_FAILURE,
         )
 
-        assert data == {
-            "updateLocation": {
-                "__typename": "UpdateLocationError",
-                "why": "bad",
-                "c": 422,
-                "errors": [{"__typename": "Error", "message": "bad"}],
-            }
-        }
+        assert data == {"updateLocation": {"why": "bad", "c": 422, "errors": [{"message": "bad"}]}}
 
     def test_unselected_code_is_left_out(self, rs: Any) -> None:
         data = _respond(
             rs, "mutation { updateLocation { ... on UpdateLocationError { message } } }", _FAILURE
         )
 
-        assert data == {"updateLocation": {"__typename": "UpdateLocationError", "message": "bad"}}
+        assert data == {"updateLocation": {"message": "bad"}}
 
 
 class TestOutsideHttpMode:

@@ -85,11 +85,7 @@ def test_rust_with_named_fragment_fields(fraiseql_rs):
 
     data = json.loads(response_json)["data"]["createMachine"]
 
-    assert data == {
-        "__typename": "CreateMachineSuccess",
-        "status": "success",
-        "machine": {"__typename": "Machine", "id": "123"},
-    }
+    assert data == {"status": "success", "machine": {"id": "123"}}
 
 
 def test_empty_named_fragment():

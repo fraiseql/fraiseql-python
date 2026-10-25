@@ -86,22 +86,27 @@ sequenceDiagram
 
 - Concatenate JSON array
 - Transform JSONB to GraphQL JSON
-- Convert field names to camelCase
-- Inject __typename
+- Keep the selected fields only, each under its response key (alias)
+- Write `__typename` where the query selects it
 - Return UTF-8 bytes directly for HTTP
 
-### `__typename` is always included
+### `__typename` is included where the query selects it
 
-Responses built by the Rust pipeline include `__typename` on every object whose
-type is known, whether or not the query selected it. This applies to query
-results and to mutation results, including nested entities and cascade data.
-For example, a mutation selecting `post { id title }` returns
-`{"__typename": "Post", "id": ..., "title": ...}`.
+A response built by the Rust pipeline holds exactly the selected fields, as the
+GraphQL spec requires: `__typename` too is written only where the query selects
+it, under its alias if it has one. A mutation selecting `post { id title }`
+returns `{"id": ..., "title": ...}`; `post { __typename id }` returns
+`{"__typename": "Post", "id": ...}`. This applies to query results (`db.find`,
+`db.find_one`, several root fields) and to mutation results, including nested
+entities. Clients that normalize by type (Apollo Client, urql's Graphcache,
+Relay) add `__typename` to the queries they send, so they get it.
 
-This is deliberate, and it differs from the GraphQL spec, which returns only
-selected fields. The response skips graphql-core on the HTTP path, so it isn't
-filtered afterwards. Clients that normalize by type, such as Apollo Client's
-cache, need `__typename` anyway and usually add it to every selection.
+Where graphql-core completes the result instead (a `find` below the root, or a
+mutation outside HTTP mode), the data Rust hands it keeps `__typename` on every
+object of a known type: graphql-core reads it to resolve unions and interfaces,
+and leaves it out of the response where it isn't selected. Cascade entities
+(`cascade.updated`, `cascade.deleted`) keep the `__typename` their data has, the
+entity's type, as the GraphQL Cascade format defines it.
 
 A mutation entity's `__typename` comes from the SQL function's `entity_type`, a
 `__typename` key in the entity's data, or the schema type of the success type's

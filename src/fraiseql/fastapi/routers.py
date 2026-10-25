@@ -773,7 +773,8 @@ def _build_field_selections_recursive(
             continue
         if not hasattr(sel, "name") or not sel.name:
             continue
-        if sel.name.value.startswith("__"):
+        # __typename is answered (Rust writes only the selected fields)
+        if sel.name.value.startswith("__") and sel.name.value != "__typename":
             continue
         if not _should_include_field(sel, variables):
             continue

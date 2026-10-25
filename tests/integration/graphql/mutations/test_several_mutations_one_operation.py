@@ -137,11 +137,9 @@ class TestSeveralMutationsInOneOperation:
             client, f'mutation {{ createLabel(input: {{name: "four"}}) {_SELECTION} }}'
         )
 
+        # __typename is selected on the result, not on the label
         assert data == {
-            "createLabel": {
-                "__typename": "CreateLabelSuccess",
-                "label": {"__typename": "Label", "name": "four"},
-            }
+            "createLabel": {"__typename": "CreateLabelSuccess", "label": {"name": "four"}}
         }
 
     def test_a_failing_field_keeps_its_error_next_to_a_success(self, client) -> None:

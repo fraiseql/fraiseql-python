@@ -154,16 +154,34 @@ pub fn filter_entity_fields(entity: &Value, selections: &Value) -> Value {
 /// assert_eq!(project_selection(tags, &selection), json!([{"__typename": "Tag", "key": "t1"}]));
 /// ```
 pub fn project_selection(value: Value, selection: &Value) -> Value {
+    project_selection_with(value, selection, false)
+}
+
+/// [`project_selection`], where `typename_where_selected` writes `__typename` only
+/// where the selection has it (under its alias): the response then holds exactly
+/// the selected fields. An object's type still picks its `__on` fields.
+pub fn project_selection_with(
+    value: Value,
+    selection: &Value,
+    typename_where_selected: bool,
+) -> Value {
     match value {
-        Value::Array(items) => {
-            Value::Array(items.into_iter().map(|item| project_selection(item, selection)).collect())
-        },
-        Value::Object(map) => project_object(map, selection),
+        Value::Array(items) => Value::Array(
+            items
+                .into_iter()
+                .map(|item| project_selection_with(item, selection, typename_where_selected))
+                .collect(),
+        ),
+        Value::Object(map) => project_object(map, selection, typename_where_selected),
         other => other,
     }
 }
 
-fn project_object(mut map: Map<String, Value>, selection: &Value) -> Value {
+fn project_object(
+    mut map: Map<String, Value>,
+    selection: &Value,
+    typename_where_selected: bool,
+) -> Value {
     let type_name = map
         .get("__typename")
         .and_then(Value::as_str)
@@ -185,7 +203,7 @@ fn project_object(mut map: Map<String, Value>, selection: &Value) -> Value {
     }
 
     let mut projected = Map::new();
-    if let Some(type_name) = &type_name {
+    if let (false, Some(type_name)) = (typename_where_selected, &type_name) {
         projected.insert("__typename".to_string(), json!(type_name));
     }
     for field in fields.into_iter().flatten() {
@@ -213,7 +231,7 @@ fn project_object(mut map: Map<String, Value>, selection: &Value) -> Value {
         };
         let value = match field.get("selections") {
             Some(sub_selection) if !sub_selection.is_null() => {
-                project_selection(field_value, sub_selection)
+                project_selection_with(field_value, sub_selection, typename_where_selected)
             },
             _ => field_value,
         };

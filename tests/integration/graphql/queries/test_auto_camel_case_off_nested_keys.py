@@ -70,11 +70,11 @@ class TestAutoCamelCaseOff:
     def test_nested_object_keeps_its_snake_case_key(self, client) -> None:
         [note] = self._notes(client, "{ notes { author_info { first_name } } }")
 
-        assert note["author_info"] == {"__typename": "NoteAuthor", "first_name": "f"}
+        assert note["author_info"] == {"first_name": "f"}
         assert "authorInfo" not in note
 
     def test_leaf_keys_are_the_requested_ones(self, client) -> None:
         [note] = self._notes(client, "{ notes { id created_at author_info { last_name } } }")
 
-        assert set(note) == {"__typename", "id", "created_at", "author_info"}
-        assert set(note["author_info"]) == {"__typename", "last_name"}
+        assert set(note) == {"id", "created_at", "author_info"}
+        assert set(note["author_info"]) == {"last_name"}

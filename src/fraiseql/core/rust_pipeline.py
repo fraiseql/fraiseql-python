@@ -254,6 +254,7 @@ async def execute_via_rust_pipeline(
     field_paths: Optional[list[list[str]]] = None,
     field_selections: Optional[list[dict[str, Any]]] = None,
     include_graphql_wrapper: bool = True,
+    inject_typename: bool = True,
 ) -> RustResponseBytes | list | dict:
     """Execute query and build HTTP response entirely in Rust.
 
@@ -274,6 +275,10 @@ async def execute_via_rust_pipeline(
         field_selections: Optional field selections with aliases and type info (NEW for Phase 3)
         include_graphql_wrapper: If True (default), wraps result in {"data":{"field_name":...}}.
                                  If False, returns just the field data (for multi-field queries).
+        inject_typename: If True (default), every object of a known type gets its
+                         __typename. If False, __typename is written only where
+                         field_selections select it: for a response that goes to the
+                         client as is, which holds exactly the selected fields.
 
     Returns:
         If include_graphql_wrapper=True: RustResponseBytes with complete GraphQL response
@@ -331,6 +336,7 @@ async def execute_via_rust_pipeline(
                 field_selections=field_selections,  # Pass list directly, not JSON string
                 is_list=True,
                 include_graphql_wrapper=include_graphql_wrapper,
+                inject_typename=inject_typename,
             )
 
             if include_graphql_wrapper:
@@ -367,6 +373,7 @@ async def execute_via_rust_pipeline(
             field_selections=field_selections,  # Pass list directly, not JSON string
             is_list=False,
             include_graphql_wrapper=include_graphql_wrapper,
+            inject_typename=inject_typename,
         )
 
         if include_graphql_wrapper:

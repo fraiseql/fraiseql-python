@@ -233,11 +233,15 @@ fn python_to_json(value: &Bound<'_, pyo3::types::PyAny>) -> PyResult<serde_json:
 /// alias, type_name)     is_list: True for list responses (always array), False for single object
 /// responses     include_graphql_wrapper: True to wrap in {"data":{"field_name":...}} (default),
 /// False for field-only mode
+///     inject_typename: True (default) gives every object of a known type its
+/// __typename; False writes __typename only where field_selections select it, for a
+/// response that goes to the client as is
 ///
 /// Returns:
 ///     UTF-8 encoded GraphQL response bytes ready for HTTP
 #[pyfunction]
-#[pyo3(signature = (json_strings, field_name, type_name=None, field_paths=None, field_selections=None, is_list=None, include_graphql_wrapper=None))]
+#[pyo3(signature = (json_strings, field_name, type_name=None, field_paths=None, field_selections=None, is_list=None, include_graphql_wrapper=None, inject_typename=None))]
+#[allow(clippy::too_many_arguments)]
 pub fn build_graphql_response(
     json_strings: Vec<String>,
     field_name: &str,
@@ -246,6 +250,7 @@ pub fn build_graphql_response(
     field_selections: Option<Bound<'_, pyo3::types::PyList>>,
     is_list: Option<bool>,
     include_graphql_wrapper: Option<bool>,
+    inject_typename: Option<bool>,
 ) -> PyResult<Vec<u8>> {
     // Convert Python list to Vec<Value> if provided using the helper function
     let selections_json = if let Some(py_list) = field_selections {
@@ -268,6 +273,7 @@ pub fn build_graphql_response(
         selections_opt,
         is_list,
         include_graphql_wrapper,
+        inject_typename,
     )
 }
 
@@ -441,6 +447,31 @@ pub fn build_mutation_response(
         &document,
     )
     .map_err(pyo3::exceptions::PyValueError::new_err)
+}
+
+/// The type name a mutation result answers with: the success type or the error type
+///
+/// It is the type `build_mutation_response` builds for the same `mutation_json`,
+/// for a caller to check the response when the query doesn't select `__typename`
+/// (so the response doesn't hold it).
+///
+/// Examples:
+///     >>> mutation_response_type('{"status": "created", "entity": {}}', "S", "E")
+///     'S'
+///
+/// Raises:
+///     ValueError: If mutation_json is malformed
+#[pyfunction]
+#[pyo3(signature = (mutation_json, success_type, error_type, entity_type=None))]
+pub fn mutation_response_type(
+    mutation_json: &str,
+    success_type: &str,
+    error_type: &str,
+    entity_type: Option<&str>,
+) -> PyResult<String> {
+    mutation::response_type_name(mutation_json, success_type, error_type, entity_type)
+        .map(str::to_string)
+        .map_err(pyo3::exceptions::PyValueError::new_err)
 }
 
 /// Reset the schema registry for testing purposes
@@ -677,6 +708,7 @@ fn fraiseql_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     // Add mutation response building
     m.add_function(wrap_pyfunction!(build_mutation_response, m)?)?;
+    m.add_function(wrap_pyfunction!(mutation_response_type, m)?)?;
     m.add("MUTATION_SELECTION_FORMAT", mutation::SELECTION_FORMAT)?;
 
     // Add GraphQL execution functions (Phase 4)
