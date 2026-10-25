@@ -65,33 +65,40 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
             # Uses multiplier-based formula to ensure meaningful test on all hardware
             iterations = max(10, int(20 * self.chaos_config.load_multiplier))
 
-            for _i in range(iterations):  # More samples for statistical significance
-                start = time.time()
-                try:
-                    # Simulate operation that may fail due to packet loss
-                    if random.random() < loss_percentage:
-                        # Packet loss - operation fails
-                        raise ConnectionError("Packet loss")
+            # DETERMINISTIC SCHEDULE: the packets lost at loss_percentage (at least
+            # one), 70% of them recovered by the retry, in an order shuffled with a
+            # fixed seed (was an unseeded random.random() per operation)
+            lost = max(1, round(iterations * loss_percentage))
+            recovered = round(lost * 0.7)
+            outcomes = (
+                ["ok"] * (iterations - lost)
+                + ["retried"] * recovered
+                + ["lost"] * (lost - recovered)
+            )
+            random.Random(int(loss_percentage * 100)).shuffle(outcomes)
 
-                    time.sleep(0.010)
-                    chaos_times.append((time.time() - start) * 1000)
+            # The times are the simulated client's, plus a simulated 50ms retry delay:
+            # sleeping and timing the sleeps measured time.sleep's overshoot, which the
+            # machine's load sets, and the recovery check compared two such measurements.
+            retry_delay_ms = 50.0
+            for outcome in outcomes:
+                if outcome == "ok":
+                    result = client.execute_query(operation)
+                    chaos_times.append(result["_execution_time_ms"])
                     chaos_successes += 1
+                    continue
 
-                except ConnectionError:
-                    chaos_failures += 1
-                    self.metrics.record_error()
+                # Packet loss - operation fails
+                chaos_failures += 1
+                self.metrics.record_error()
 
-                    # Simulate retry logic
-                    retry_count += 1
-                    if random.random() < 0.7:  # 70% retry success rate
-                        time.sleep(0.050)  # Retry delay
-                        try:
-                            time.sleep(0.010)
-                            chaos_times.append((time.time() - start) * 1000)
-                            chaos_successes += 1
-                            retry_count -= 1  # Successful retry
-                        except Exception:
-                            pass  # Retry failed
+                # Simulate retry logic
+                retry_count += 1
+                if outcome == "retried":
+                    result = client.execute_query(operation)
+                    chaos_times.append(retry_delay_ms + result["_execution_time_ms"])
+                    chaos_successes += 1
+                    retry_count -= 1  # Successful retry
 
             self.metrics.record_query_time(statistics.mean(chaos_times) if chaos_times else 1000.0)
 
@@ -107,9 +114,8 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
             iterations = max(5, int(10 * self.chaos_config.load_multiplier))
 
             for _i in range(iterations):
-                start = time.time()
-                time.sleep(0.010)
-                recovery_times.append((time.time() - start) * 1000)
+                result = client.execute_query(operation)
+                recovery_times.append(result["_execution_time_ms"])
                 recovery_successes += 1
 
             avg_recovery = statistics.mean(recovery_times)
@@ -117,12 +123,11 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
             self.metrics.end_test()
 
             # Validate packet loss behavior
-            expected_failures = int(20 * loss_percentage * 0.3)  # Account for retries
-            assert chaos_failures >= expected_failures, (
-                f"Expected ~{expected_failures} failures at {loss_percentage * 100}% loss, got {chaos_failures}"
+            assert chaos_failures == lost, (
+                f"Expected {lost} failures at {loss_percentage * 100}% loss, got {chaos_failures}"
             )
 
-            success_rate = chaos_successes / 20.0
+            success_rate = chaos_successes / len(outcomes)
             min_success_rate = 1.0 - (loss_percentage * 2)  # Allow for retry effectiveness
             assert success_rate >= min_success_rate, (
                 f"Success rate {success_rate:.2f} too low for {loss_percentage * 100}% loss"
