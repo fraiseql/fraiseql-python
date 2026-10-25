@@ -413,42 +413,58 @@ def create_fraiseql_app(
             return existing_lifespan(app)
         return _on_event_handlers(app)
 
+    async def _open_pool() -> Any:
+        return await create_db_pool(
+            str(config.database_url),
+            min_size=2,  # Keep 2 connections warm for better performance
+            max_size=config.database_pool_size + config.database_max_overflow,
+            timeout=config.database_pool_timeout,
+            max_lifetime=config.database_pool_recycle,
+        )
+
+    async def _close_pool(pool: Any) -> None:
+        """Close the pool a lifespan opened, and unset it if it is still the global one.
+
+        A closed pool left set would be what the next startup (a second
+        ``TestClient(app)``) finds, keeps, and fails every query on.
+        """
+        try:
+            if get_db_pool() is pool:
+                set_db_pool(None)
+        except RuntimeError:
+            pass
+        await pool.close()
+
     # Create lifespan context manager for the app
     if lifespan is None:
         # Use default lifespan that manages database pool
         @asynccontextmanager
         async def default_lifespan(app: FastAPI) -> AsyncGenerator[Any]:
             """Manage application lifecycle."""
-            # Startup - only create pool if one doesn't already exist
+            # Startup - only create pool if no open one is set already
             # (allows test fixtures to inject their own pool)
             try:
                 existing_pool = get_db_pool()
             except RuntimeError:
                 existing_pool = None
-            pool_created_here = False
+            if existing_pool is not None and getattr(existing_pool, "closed", False) is True:
+                existing_pool = None
 
+            pool = None
             if existing_pool is None:
-                pool = await create_db_pool(
-                    str(config.database_url),
-                    min_size=2,  # Keep 2 connections warm for better performance
-                    max_size=config.database_pool_size + config.database_max_overflow,
-                    timeout=config.database_pool_timeout,
-                    max_lifetime=config.database_pool_recycle,
-                )
+                pool = await _open_pool()
                 set_db_pool(pool)
-                pool_created_here = True
 
-            async with _app_hooks(app) as state:
-                yield state
+            try:
+                async with _app_hooks(app) as state:
+                    yield state
+            finally:
+                # Shutdown - only close the pool we created
+                if pool is not None:
+                    await _close_pool(pool)
 
-            # Shutdown - only close pool if we created it
-            if pool_created_here:
-                pool_to_close = get_db_pool()
-                if pool_to_close:
-                    await pool_to_close.close()
-
-            if auth_provider and hasattr(auth_provider, "close"):
-                await auth_provider.close()
+                if auth_provider and hasattr(auth_provider, "close"):
+                    await auth_provider.close()
 
         lifespan_to_use = default_lifespan
     else:
@@ -457,26 +473,19 @@ def create_fraiseql_app(
         async def wrapped_lifespan(app: FastAPI) -> AsyncGenerator[Any]:
             """Wrap user lifespan with FraiseQL resource management."""
             # Startup - initialize database pool
-            pool = await create_db_pool(
-                str(config.database_url),
-                min_size=2,  # Keep 2 connections warm for better performance
-                max_size=config.database_pool_size + config.database_max_overflow,
-                timeout=config.database_pool_timeout,
-                max_lifetime=config.database_pool_recycle,
-            )
+            pool = await _open_pool()
             set_db_pool(pool)
 
-            # Call user's lifespan
-            async with lifespan(app), _app_hooks(app) as state:
-                yield state
+            try:
+                # Call user's lifespan
+                async with lifespan(app), _app_hooks(app) as state:
+                    yield state
+            finally:
+                # Shutdown - cleanup our resources
+                await _close_pool(pool)
 
-            # Shutdown - cleanup our resources
-            pool_to_close = get_db_pool()
-            if pool_to_close:
-                await pool_to_close.close()
-
-            if auth_provider and hasattr(auth_provider, "close"):
-                await auth_provider.close()
+                if auth_provider and hasattr(auth_provider, "close"):
+                    await auth_provider.close()
 
         lifespan_to_use = wrapped_lifespan
 

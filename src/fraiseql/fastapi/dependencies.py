@@ -25,8 +25,8 @@ def get_db_pool() -> Any:
     return _db_pool
 
 
-def set_db_pool(pool: AsyncConnectionPool) -> None:
-    """Set the database connection pool (called by create_app)."""
+def set_db_pool(pool: AsyncConnectionPool | None) -> None:
+    """Set the database connection pool (called by create_app), or unset it with None."""
     global _db_pool
     _db_pool = pool
 

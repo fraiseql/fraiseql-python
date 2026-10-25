@@ -630,6 +630,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `ProjectLoader` and `TasksByProjectLoader` take a `table=` (default `users`,
   `projects`, `tasks`; a schema-qualified name works).
 
+- **An app's lifespan can run more than once.** On shutdown it closed its
+  database pool but left it set as the global pool, and the next startup (a
+  second `with TestClient(app)`, say) kept that closed pool, so every query
+  failed with "the pool is already closed". Shutdown now unsets the pool it
+  opened (when it is still the global one), the next startup opens a new one,
+  and a closed pool found at startup is replaced. The pool and the auth
+  provider are also closed when startup or the app's own lifespan raises.
+  `set_db_pool(None)` unsets the pool.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't
