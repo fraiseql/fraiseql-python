@@ -20,8 +20,13 @@ async def get_status(info) -> TestStatus:
 
 
 @pytest.fixture
-def test_app():
-    """Create a test FraiseQL app with database."""
+def test_app(clear_registry):
+    """Create a test FraiseQL app with database.
+
+    The registry is cleared first: collecting other test modules in the same process
+    runs their module-level @fraiseql.query decorators, and this app should only
+    carry the type and query it passes.
+    """
     app = create_fraiseql_app(
         database_url="postgresql://postgres:postgres@localhost:5432/fraiseql_test",
         types=[TestStatus],
@@ -32,7 +37,7 @@ def test_app():
 
 
 @pytest.fixture
-def test_app_no_db():
+def test_app_no_db(clear_registry):
     """Create a test FraiseQL app without database (for testing failures)."""
     app = create_fraiseql_app(
         database_url="postgresql://invalid-host:5432/test",

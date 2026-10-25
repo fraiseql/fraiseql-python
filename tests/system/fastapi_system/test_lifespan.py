@@ -34,8 +34,13 @@ async def get_status(info) -> Status:
 
 
 @pytest.fixture(autouse=True)
-def reset_events() -> None:
-    """Reset lifecycle events before each test."""
+def reset_events(clear_registry) -> None:
+    """Reset lifecycle events and the schema registry before each test.
+
+    Collecting other test modules in the same process runs their module-level
+    @fraiseql.query decorators, which register into the process-wide schema
+    registry; the apps built here pass their types and queries explicitly.
+    """
     global lifecycle_events
     lifecycle_events = []
     yield
