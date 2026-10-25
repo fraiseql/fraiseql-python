@@ -508,19 +508,14 @@ class TestEdgeCases:
         assert "name" not in sql_str
         assert "(data ->> 'age')::numeric > 21" in sql_str
 
-    def test_unsupported_operators_ignored(self) -> None:
-        """Test that unsupported operators are silently ignored."""
+    def test_unsupported_operator_raises(self) -> None:
+        """An unsupported operator raises: dropping it widened the query."""
         WhereType = safe_create_where_type(SampleModel)
 
         where = WhereType(name={"invalid_op": "value", "eq": "test"})
 
-        sql = where.to_sql()
-        assert sql is not None
-        sql_str = sql.as_string(None)
-
-        # Invalid operator ignored, valid one used
-        assert "(data ->> 'name') = 'test'" in sql_str
-        assert "invalid_op" not in sql_str
+        with pytest.raises(ValueError, match=r"'name'.*'invalid_op'"):
+            where.to_sql()
 
 
 @pytest.mark.unit

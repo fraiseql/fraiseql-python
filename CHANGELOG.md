@@ -306,6 +306,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `docs/reference/decorators.md` used the suffix form; they now nest the
   operator.
 
+- **A generated where type raises on an operator it can't render.**
+  `safe_create_where_type(...)(...).to_sql()` (and `CQRSRepository.query`,
+  `select_from_json_view` and `find_by_view`, which build on the same code)
+  dropped any operator unknown for
+  the field's detected type, while the field's other filters survived:
+  `{"age": {"bogus": 3}, "name": {"eq": "x"}}` filtered on the name only, an
+  ltree `depth_eq` / `isdescendant` on a field not typed `LTree` filtered on
+  nothing, and `like` / `ne` were dropped too (`neq` is the operator). So was
+  `quantized_distance`, whose vector type is removed in this release. It now
+  raises `ValueError` naming the field, the operator and the operators that
+  type has. `db.find` already raised for an unknown operator.
+
 - **A `vector` column of a view without a JSONB column comes back as a list.**
   `row_to_json` writes a pgvector `vector` through its text output, so a field
   typed `list[float]` received the string `"[0.1,0.2,0.3]"`. Columns the type

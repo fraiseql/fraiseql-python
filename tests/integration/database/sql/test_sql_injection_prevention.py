@@ -284,14 +284,10 @@ class TestSQLInjectionPrevention:
         """
         where = CategoryNodeWhere(path={operator: value})
 
-        composed = where.to_sql()
-
-        # Without explicit field type, depth operators on string fields return None
-        # This is CORRECT behavior - prevents misapplication of ltree operators
-        assert composed is None, (
-            f"Depth operator {operator} should return None without field type specification. "
-            "This prevents incorrect operator application and maintains type safety."
-        )
+        # Without explicit field type, a depth operator on a string field raises.
+        # It used to be dropped, which left the query unfiltered.
+        with pytest.raises(ValueError, match=operator):
+            where.to_sql()
 
     def test_ltree_hierarchy_operators_require_field_type(self) -> None:
         """Test that ltree hierarchy operators require field type specification.
@@ -302,15 +298,10 @@ class TestSQLInjectionPrevention:
         # Test with a valid ltree path
         where = CategoryNodeWhere(path={"isdescendant": "top.middle.leaf"})
 
-        composed = where.to_sql()
-
-        # Without explicit field type, ltree operators on string fields return None
-        # This is CORRECT behavior - maintains type safety
-        assert composed is None, (
-            "LTree operators should return None without field type specification. "
-            "This is the correct behavior that maintains type safety and prevents "
-            "incorrect operator application to non-ltree fields."
-        )
+        # Without explicit field type, an ltree operator on a string field raises.
+        # It used to be dropped, which left the query unfiltered.
+        with pytest.raises(ValueError, match="isdescendant"):
+            where.to_sql()
 
     def test_empty_and_none_values(self) -> None:
         """Test that empty and None values are handled safely."""

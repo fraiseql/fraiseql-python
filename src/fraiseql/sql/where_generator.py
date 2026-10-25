@@ -137,7 +137,10 @@ def _make_filter_field_composed(
         field_type: Optional type hint for the field.
 
     Returns:
-        Composed SQL WHERE clause for the field, or None if no valid operators found.
+        Composed SQL WHERE clause for the field, or None if every operator's value is None.
+
+    Raises:
+        ValueError: An operator is unknown for the field's type, or its value is unusable.
     """
     conditions = []
 
@@ -187,9 +190,11 @@ def _make_filter_field_composed(
                 field_name=name,
             )
             conditions.append(condition)
-        except ValueError:
-            # Skip unsupported operators
-            continue
+        except ValueError as e:
+            # Skipping it would drop this filter while its siblings survived,
+            # so the query would match rows it was meant to exclude.
+            msg = f"where: field {name!r}, operator {op!r}: {e}"
+            raise ValueError(msg) from e
 
     if not conditions:
         return None

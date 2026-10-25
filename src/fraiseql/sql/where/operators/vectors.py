@@ -33,12 +33,10 @@ VECTOR_DISTANCE_OPERATORS = frozenset(
 #: therefore never serve as a WHERE predicate (#510), mapped to the two halves
 #: of the error each one raises: what it used to render, and what to do instead.
 #:
-#: These stay registered in ``OPERATOR_MAP`` deliberately. Deleting the entries
-#: would make ``get_operator_function`` raise ``ValueError``, which
-#: ``_make_filter_field_composed`` swallows with ``except ValueError: continue``
-#: -- the filter would vanish while its sibling scoping filters survived, and
-#: the query would succeed against a wider set of rows than was asked for.
-#: A registered builder that raises ``WhereClauseError`` fails loudly instead.
+#: These stay registered in ``OPERATOR_MAP`` so that the error names what the
+#: operator renders and what to do instead. (``_make_filter_field_composed``
+#: used to swallow a ``ValueError`` and drop the filter; it now re-raises it,
+#: but a ``WhereClauseError`` from a registered builder says more.)
 NON_PREDICATE_OPERATORS: dict[str, tuple[str, str]] = {
     "custom_distance": (
         "a call to a caller-supplied function",
@@ -87,11 +85,10 @@ def warn_missing_threshold(field_name: str | None, operator: str, *, stacklevel:
 def _reject(message: str, operator: str, value: object) -> WhereClauseError:
     """Build the error raised for an unusable vector filter payload.
 
-    Deliberately *not* a :class:`ValueError`. ``_make_filter_field_composed``
-    wraps operator construction in ``except ValueError: continue``, so a
-    ``ValueError`` here would drop the predicate from the WHERE clause while
-    every sibling filter survived -- the query would then succeed and return
-    rows the similarity threshold was meant to exclude.
+    A :class:`WhereClauseError` rather than a :class:`ValueError`:
+    ``_make_filter_field_composed`` used to swallow ``ValueError`` and drop the
+    predicate while every sibling filter survived, returning rows the
+    similarity threshold was meant to exclude. (It now re-raises it.)
     """
     return WhereClauseError(
         f"{message} (operator {operator!r}, got {value!r})",
@@ -103,8 +100,7 @@ def _reject(message: str, operator: str, value: object) -> WhereClauseError:
 def _reject_non_predicate(operator: str) -> WhereClauseError:
     """Build the error raised for a vector operator that is not a predicate.
 
-    Like :func:`_reject`, deliberately not a :class:`ValueError`: the caller
-    swallows those and drops the filter rather than failing the query.
+    A :class:`WhereClauseError`, like :func:`_reject`.
     """
     renders, remedy = NON_PREDICATE_OPERATORS[operator]
     return WhereClauseError(

@@ -242,7 +242,7 @@ class TestCQRSRepositoryQueries:
             email: str
 
         _ = await repository.find_by_view(
-            "vw_active_users", where={"email": {"like": "%@example.com"}}, limit=5
+            "vw_active_users", where={"email": {"eq": "user@example.com"}}, limit=5
         )
 
         # Check cursor was called
