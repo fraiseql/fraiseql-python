@@ -325,6 +325,12 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
 
         self.metrics.start_test()
 
+        # The times are the simulated client's: sleeping and timing the sleeps
+        # measured time.sleep's overshoot, and the recovery check compared two such
+        # measurements
+        client = MockFraiseQLClient()
+        operation = FraiseQLTestScenarios.simple_user_query()
+
         # Phase 1: Baseline
         baseline_times = []
         # Scale iterations based on hardware (5 on baseline, 3-20 adaptive)
@@ -332,9 +338,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
         for _i in range(iterations):
-            start = time.time()
-            time.sleep(0.010)
-            baseline_times.append((time.time() - start) * 1000)
+            baseline_times.append(client.execute_query(operation)["_execution_time_ms"])
 
         avg_baseline = statistics.mean(baseline_times)
 
@@ -349,17 +353,22 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(4, int(8 * self.chaos_config.load_multiplier))
 
-        for _i in range(iterations):
-            start = time.time()
+        # DETERMINISTIC SCHEDULE: 25% of the operations fail (at least one), in an
+        # order shuffled with a fixed seed (an unseeded random.random() drew no
+        # failure about 1 run in 75)
+        failures = max(1, round(iterations * 0.25))
+        outcomes = [True] * failures + [False] * (iterations - failures)
+        random.Random("network_recovery_after_corruption").shuffle(outcomes)
+
+        for i, fails in enumerate(outcomes):
             try:
                 # High chance of failure under corruption
-                if random.random() < 0.25:  # 25% failure rate
+                if fails:  # 25% failure rate
                     raise ConnectionError("Network corruption")
 
-                # Variable timing due to corruption
-                delay = 0.010 + random.uniform(0, 0.200)  # 10-210ms
-                time.sleep(delay)
-                corruption_times.append((time.time() - start) * 1000)
+                # Variable timing due to corruption: 0-200ms extra latency
+                client.inject_latency((i * 73) % 200)
+                corruption_times.append(client.execute_query(operation)["_execution_time_ms"])
 
             except ConnectionError:
                 corruption_errors += 1
@@ -367,6 +376,7 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
 
         # Phase 3: Network recovery
         toxiproxy.remove_all_toxics("fraiseql_postgres")
+        client.reset_chaos()
 
         recovery_times = []
         # Scale iterations based on hardware (5 on baseline, 3-20 adaptive)
@@ -374,9 +384,8 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
         iterations = max(3, int(5 * self.chaos_config.load_multiplier))
 
         for _i in range(iterations):
-            start = time.time()
-            time.sleep(0.010)  # Should be back to normal
-            recovery_times.append((time.time() - start) * 1000)
+            # Should be back to normal
+            recovery_times.append(client.execute_query(operation)["_execution_time_ms"])
 
         avg_recovery = statistics.mean(recovery_times)
 
