@@ -66,7 +66,7 @@ async def search_users(
 ) -> list[User]:
     db = info.context["db"]
     where = {"name": {"icontains": name_filter}} if name_filter else None
-    # Exclusive Rust pipeline handles camelCase conversion and __typename injection
+    # The Rust pipeline converts to camelCase and writes __typename where it is selected
     return await db.find("v_user", where=where, limit=limit)
 ```
 
@@ -132,7 +132,7 @@ async def get_user_stats(info, user_id: ID) -> UserStats:
 - Use async/await for database operations
 - Access repository via `info.context["db"]` (provides exclusive Rust pipeline integration)
 - Access user context via `info.context["user"]` (if authentication enabled)
-- Exclusive Rust pipeline automatically handles camelCase conversion and __typename injection
+- The Rust pipeline converts keys to camelCase and writes `__typename` where the query selects it
 
 ## Auto-Wired Query Parameters
 
