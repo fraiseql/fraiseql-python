@@ -278,6 +278,18 @@ LTREE_NON_FILTERS = {
 
 LTREE_FUNCTION_FILTERS = {*LTREE_INDEX_COMPARISONS, "lca", *LTREE_NON_FILTERS}
 
+# ltree hierarchy and pattern filters: path <operator> %s::<value type>. Both
+# sides are typed: a JSONB field's ->> is text, and text <@ unknown is ambiguous
+LTREE_MATCH_OPERATORS = {
+    "ancestor_of": ("@>", "ltree"),
+    "descendant_of": ("<@", "ltree"),
+    "isdescendant": ("<@", "ltree"),
+    "matches_lquery": ("~", "lquery"),
+    "matches_ltxtquery": ("@", "ltxtquery"),
+    "matches_any_lquery": ("?", "lquery[]"),
+    "in_array": ("<@", "ltree[]"),
+}
+
 # List operators (fallback)
 LIST_OPERATORS = {
     "notin": "NOT IN",
@@ -357,7 +369,8 @@ class FieldCondition:
             as a datetime or date: a JSONB comparison then casts both sides,
             ``(data->>'created_at')::timestamptz >= %s::timestamptz``, instead
             of comparing ISO strings as text. A datetime or date value casts
-            without it.
+            without it. ``"ltree"`` for a field declared as ``LTree``: paths
+            compare label by label.
 
     Examples:
         # FK lookup: machine.id = '123'
@@ -397,7 +410,7 @@ class FieldCondition:
     lookup_strategy: Literal["fk_column", "jsonb_path", "sql_column"]
     target_column: str
     jsonb_path: list[str] | None = None
-    temporal_cast: Literal["timestamptz", "date"] | None = None
+    temporal_cast: Literal["timestamptz", "date", "ltree"] | None = None
 
     def __post_init__(self):
         """Validate the condition after initialization."""
@@ -475,6 +488,9 @@ class FieldCondition:
                 )
                 return sql, params
 
+            if self.operator in LTREE_MATCH_OPERATORS:
+                return self._ltree_match_sql(Identifier(self.target_column))
+
             if self.operator in LTREE_DEPTH_COMPARISONS:
                 return self._ltree_depth_sql(Identifier(self.target_column))
 
@@ -545,6 +561,9 @@ class FieldCondition:
                     entity_schema, entity_name, str(self.value), ltree_op, jsonb_expr
                 )
                 return sql, params
+
+            if self.operator in LTREE_MATCH_OPERATORS:
+                return self._ltree_match_sql(Composed([SQL("("), jsonb_expr, SQL(")::ltree")]))
 
             if self.operator in LTREE_DEPTH_COMPARISONS:
                 # ->> gives text; nlevel() needs an ltree
@@ -639,6 +658,9 @@ class FieldCondition:
                     Identifier(self.target_column),
                 )
                 return sql, params
+
+            if self.operator in LTREE_MATCH_OPERATORS:
+                return self._ltree_match_sql(Identifier(self.target_column))
 
             if self.operator in LTREE_DEPTH_COMPARISONS:
                 return self._ltree_depth_sql(Identifier(self.target_column))
@@ -906,6 +928,28 @@ class FieldCondition:
             raise ValueError(f"Unknown lookup_strategy: {self.lookup_strategy}")
 
         return sql, params
+
+    def _ltree_match_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
+        """ancestor_of, descendant_of, matches_*, in_array: path @> %s::ltree...
+
+        Raises:
+            ValueError: For matches_any_lquery / in_array without a non-empty
+                list, or another of these operators given a list.
+        """
+        sql_op, value_type = LTREE_MATCH_OPERATORS[self.operator]
+        value = self.value
+        if value_type.endswith("[]"):
+            if not isinstance(value, (list, tuple)) or not value:
+                raise ValueError(
+                    f"ltree operator '{self.operator}' takes a non-empty list, got {value!r}"
+                )
+            param: Any = [str(v) for v in value]
+        else:
+            if isinstance(value, (list, tuple, dict)):
+                raise ValueError(f"ltree operator '{self.operator}' takes one path, got {value!r}")
+            param = str(value)
+        sql = Composed([path_expr, SQL(f" {sql_op} %s::{value_type}")])
+        return sql, [param]
 
     def _ltree_depth_sql(self, path_expr: Composed | Identifier) -> tuple[Composed, list[Any]]:
         """Compare the path's depth with the value: nlevel(path) > %s."""

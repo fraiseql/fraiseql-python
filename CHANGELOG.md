@@ -402,6 +402,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `indexEq: {label: "astronomy", position: 1}` in GraphQL, where these fields
   are now typed `LTreeIndexInput` instead of `Int`. `lca` keeps the rows whose
   path is the lowest common ancestor of the given paths.
+- **The ltree filters `ancestor_of`, `descendant_of`, `isdescendant`,
+  `matches_ltxtquery`, `matches_any_lquery` and `in_array` work on a JSONB
+  field.** `data ->> 'path'` is text and the value went untyped, so `db.find`
+  failed with `operator is not unique: text <@ unknown` (or `text @> unknown`,
+  `text @ unknown`, `text ? unknown`); `in_array` failed on a native `ltree`
+  column too (`ltree syntax error`). Both sides are typed now:
+  `(data ->> 'path')::ltree <@ %s::ltree`, `~ %s::lquery`, `@ %s::ltxtquery`,
+  `? %s::lquery[]`, `<@ %s::ltree[]`. `matches_any_lquery` and `in_array` take a
+  non-empty list. A JSONB field the type declares `LTree` also compares as
+  `ltree` with `eq`, `lt`, `gte`, `in`...: as text, `top.sciences` sorted
+  before `top.science.zoology`.
 
 - **`error: NotFound | Conflict` on a class mutation is reported at schema
   build.** Decorating it raised

@@ -21,7 +21,11 @@ LTree is PostgreSQL's specialized data type for efficiently storing and querying
 
 ## Path Comparison Operators
 
-Path comparison operators use **lexicographic ordering** to compare paths as strings, where each label in the path is compared in order.
+Path comparison operators compare paths **label by label**, as `ltree` values, not as
+strings: `top.science.zoology < top.sciences`, since `science < sciences`. A JSONB
+field compares this way when the type declares it `LTree`; a native `ltree` column
+always does. Every operator on this page casts the JSONB text (`data ->> 'path'`) to
+`ltree` and types its value (`::ltree`, `::lquery`, `::ltxtquery`).
 
 ### Equality Operators
 
@@ -270,7 +274,7 @@ query {
 - `"astronomy | geology"` → either "astronomy" OR "geology" present
 - `"!archive"` → does NOT contain "archive"
 
-**PostgreSQL:** `(path)::ltree ? 'science & astronomy'::ltxtquery`
+**PostgreSQL:** `(path)::ltree @ 'science & astronomy'::ltxtquery`
 
 ---
 
@@ -494,7 +498,8 @@ a label's position with `index_eq` / `index_gte`, and on a prefix with
 
 ### `in_array` - Path in Array
 
-**Use when:** Check if path is in a list
+**Use when:** Check if path is one of the paths in a list, or below one of them
+(ltree's `ltree <@ ltree[]`; for an exact match, use `in`)
 
 ```graphql
 query {

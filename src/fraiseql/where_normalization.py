@@ -632,19 +632,34 @@ def _declared_temporal_cast(
     return None
 
 
+def _declared_ltree(source_type: type, field_path: list[str]) -> bool:
+    """Whether *field_path* names a field *source_type* declares as ``LTree``."""
+    from fraiseql.sql.graphql_order_by_generator import _resolve_field_type
+    from fraiseql.types.scalars.ltree import LTreeField
+
+    field_type = _resolve_field_type(source_type, tuple(field_path))
+    return isinstance(field_type, type) and issubclass(field_type, LTreeField)
+
+
 def annotate_temporal_casts(clause: WhereClause, source_type: type | None) -> None:
-    """Mark the JSONB conditions on datetime / date fields of *source_type*.
+    """Mark the JSONB conditions on datetime / date / ltree fields of *source_type*.
 
     A JSONB field holds an ISO string, and ``->>`` compares it as text:
     ``'2025-01-01T00:00:00+00:00' >= '2025-01-01T00:00:00Z'`` is false. A
     condition on a field the type declares as ``datetime`` or ``date`` gets
-    ``temporal_cast`` set, and compares as ``timestamptz`` / ``date``.
+    ``temporal_cast`` set, and compares as ``timestamptz`` / ``date``. One on an
+    ``LTree`` field compares as ``ltree``, label by label (as text,
+    ``'a-b' < 'a.c'``; as paths, ``a.c < a-b``).
     """
     if source_type is None:
         return
     for condition in clause.conditions:
         if condition.lookup_strategy == "jsonb_path" and condition.temporal_cast is None:
             condition.temporal_cast = _declared_temporal_cast(source_type, condition.field_path)
+            if condition.temporal_cast is None and _declared_ltree(
+                source_type, condition.field_path
+            ):
+                condition.temporal_cast = "ltree"
     for nested in clause.nested_clauses:
         annotate_temporal_casts(nested, source_type)
     if clause.not_clause:
