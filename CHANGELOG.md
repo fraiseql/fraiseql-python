@@ -124,6 +124,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **An APQ request whose query doesn't hash to its `sha256Hash` is refused.** The text
+  was stored under the hash anyway (with a logged warning), so any client could replace
+  the query behind a hash other clients send, and hash-only requests then ran its text.
+  In `optional` and `required` mode such a request now gets HTTP 400 `provided sha does
+  not match query` (code `BAD_REQUEST`, as Apollo Server answers) and nothing is stored
+  or run.
 - **Cached APQ responses expire after `apq_response_cache_ttl` seconds** (default 600;
   0 keeps them). Nothing read the setting, so a cached response was served until the
   process stopped (`memory`) or forever (`postgresql`). The `memory` and `postgresql`
@@ -156,7 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   carrying an unknown hash together with its query text was stored and run, so any
   client could get any query approved. Now it is refused with
   `PERSISTED_QUERY_NOT_IN_LIST` and nothing is stored; only hashes the server already
-  knows run, and a known hash runs the stored text, not the text sent with it.
+  knows run, with the text the server stored.
   `POST /graphql/rust` (opt-in, query text only) refuses every request in this mode
   with `ARBITRARY_QUERY_NOT_ALLOWED`. `optional` and `disabled` are unchanged.
 - **`execute_function` and `execute_function_with_context` return the object a

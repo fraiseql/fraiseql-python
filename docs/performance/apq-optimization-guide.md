@@ -146,8 +146,9 @@ app = create_fraiseql_app(config=config, types=[User, Post])
 
 In `required` mode a client cannot get a query approved: a hash the server doesn't
 know is refused even when the request carries the query text (`PERSISTED_QUERY_NOT_IN_LIST`,
-nothing is stored), and a known hash runs the text the server stored, never the text sent
-with it. The queries that run are the ones you register (below) and, with the
+nothing is stored). A query sent with a hash must hash to it in every mode that
+processes APQ (else HTTP 400 `provided sha does not match query`), so a known hash
+always runs the text the server stored. The queries that run are the ones you register (below) and, with the
 `postgresql` backend, whatever is already in its table.
 
 **Benefits of `required` mode:**

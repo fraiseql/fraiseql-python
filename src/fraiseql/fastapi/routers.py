@@ -1440,6 +1440,17 @@ def create_graphql_router(
                     "PERSISTED_QUERY_NOT_FOUND", "PersistedQueryNotFound"
                 )
 
+            # A query sent with a hash must be the text of that hash, in every mode that
+            # processes APQ: otherwise any text could be stored under the hash of a query
+            # other clients use (Apollo Server refuses it the same way).
+            if request.query:
+                from fraiseql.middleware.apq import create_hash_mismatch_error
+                from fraiseql.storage.apq_store import compute_query_hash
+
+                if compute_query_hash(request.query) != sha256_hash:
+                    logger.debug(f"APQ request refused: hash mismatch {sha256_hash[:8]}...")
+                    return FraiseQLJSONResponse(create_hash_mismatch_error(), status_code=400)
+
             # Get APQ backend for caching
             apq_backend = get_apq_backend(config)
 
@@ -1447,7 +1458,7 @@ def create_graphql_router(
             if request.query and not apq_mode.allows_arbitrary_queries():
                 # 'required' mode: clients cannot register queries. Only a hash the server
                 # already knows (apq_queries_dir, or registered by the operator) runs, and
-                # it runs the stored text, never the text the client sent with it.
+                # it runs the stored text (the text sent matches its hash, checked above).
                 from fraiseql.middleware.apq import create_query_not_in_list_error
 
                 approved_query = apq_backend.get_persisted_query(

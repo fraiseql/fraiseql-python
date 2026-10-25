@@ -98,14 +98,16 @@ def test_required_mode_runs_a_registered_hash_sent_with_its_query(make_app) -> N
     assert _post(app, _apq_body(_sha(query))) == {"data": {"hello": "Hello, approved!"}}
 
 
-def test_required_mode_runs_the_stored_text_not_the_text_sent(make_app) -> None:
+def test_required_mode_never_runs_the_text_sent_with_a_known_hash(make_app) -> None:
     config, app = make_app(apq_mode="required")
     approved = '{ hello(name: "approved") }'
     get_apq_backend(config).register_queries([approved])
 
     result = _post(app, _apq_body(_sha(approved), '{ hello(name: "swapped") }'))
 
-    assert result == {"data": {"hello": "Hello, approved!"}}
+    # The text doesn't match the hash: refused (see test_apq_hash_mismatch.py)
+    assert "data" not in result
+    assert result["errors"][0]["message"] == "provided sha does not match query"
 
 
 def test_optional_mode_still_registers_on_first_request(make_app) -> None:

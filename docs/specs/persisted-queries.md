@@ -88,7 +88,8 @@ config = FraiseQLConfig(
 **Behavior**:
 
 - ✅ Accepts both persisted query hashes and full query strings
-- ✅ Allows new query registration (hash + query) on first request
+- ✅ Allows new query registration (hash + query) on first request; the query must
+  hash to `sha256Hash` (see Hash Mismatch below)
 - ✅ Automatically stores queries for future hash-only requests
 - ✅ Useful for development and gradual client migration
 
@@ -155,8 +156,8 @@ config = FraiseQLConfig(
 - ❌ Rejects all arbitrary (non-hash) queries
 - ❌ Clients cannot register queries: a request with a hash the server doesn't know
   and the query text is refused (`PERSISTED_QUERY_NOT_IN_LIST`), and nothing is stored
-- ✅ A known hash sent with a query text runs the stored text; the text in the
-  request is ignored
+- ✅ A query text sent with a hash must hash to it (see Hash Mismatch below), so a
+  known hash always runs the text the server stored
 - ✅ Prevents query injection attacks and unauthorised GraphQL exploration
 - ❌ `POST /graphql/rust` (when `enable_rust_endpoint=True`) takes query text only, so
   it refuses every request with `ARBITRARY_QUERY_NOT_ALLOWED`
@@ -1142,6 +1143,18 @@ fraiseql_apq_response_cache_size_bytes
 
 1. Configure client for APQ (Apollo Client, Relay, etc.)
 2. Enable APQ in client SDK
+
+### Hash Mismatch (`provided sha does not match query`)
+
+**Symptom**: a request carrying both `sha256Hash` and `query` gets HTTP 400 with
+`provided sha does not match query` (code `BAD_REQUEST`, as Apollo Server answers)
+
+**Cause**: the SHA-256 of the query text is not `sha256Hash`. In `optional` and
+`required` mode such a request is refused and nothing is stored, so no client can store
+a text under the hash of another query. (`disabled` mode ignores the extension and
+stores nothing.)
+
+**Solution**: hash the exact text you send (UTF-8, SHA-256, lowercase hex).
 
 ### PERSISTED_QUERY_NOT_IN_LIST Error
 

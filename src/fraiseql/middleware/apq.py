@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 __all__ = [
     "create_apq_error_response",
     "create_arbitrary_query_rejected_error",
+    "create_hash_mismatch_error",
     "create_query_not_in_list_error",
     "execute_persisted_query",
     "get_apq_hash",
@@ -216,6 +217,18 @@ def create_arbitrary_query_rejected_error() -> dict[str, Any]:
         details="Configure your client to use Automatic Persisted Queries (APQ) "
         "or register queries at build time.",
     )
+
+
+def create_hash_mismatch_error() -> dict[str, Any]:
+    """Create the error response for a query that doesn't hash to its ``sha256Hash``.
+
+    Same message and code as Apollo Server (sent with HTTP 400). Nothing is stored or
+    run for such a request.
+
+    Returns:
+        Standardized GraphQL error response
+    """
+    return create_apq_error_response("BAD_REQUEST", "provided sha does not match query")
 
 
 def create_query_not_in_list_error() -> dict[str, Any]:
