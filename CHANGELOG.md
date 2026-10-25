@@ -205,6 +205,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read, so `coordinate_distance_method="postgis"` in code still built Haversine
   SQL. The app's config now wins when it sets the method; without it, the
   environment variable is read as before.
+- **`BodySizeLimiterMiddleware` passes the request body on to the app.** It
+  read the body to measure it, then gave the app behind it an empty one, so
+  every GraphQL `POST` behind it got a 422. It is now a plain ASGI middleware:
+  a body within `max_body_size` reaches the app unchanged, and a larger one
+  still gets 413, whether `Content-Length` announces it or the body streams in
+  chunks without one. The `dispatch()` method is gone with
+  `BaseHTTPMiddleware`; `app.add_middleware(BodySizeLimiterMiddleware,
+  config=...)` is unchanged.
 
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
