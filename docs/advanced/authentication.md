@@ -575,11 +575,13 @@ EXISTS`. To apply it with your own migrations instead:
 python -c "import fraiseql.auth.native, pathlib; print(pathlib.Path(fraiseql.auth.native.__file__).parent / 'migrations' / '001_native_auth_schema.sql')"
 ```
 
+The router's endpoints borrow a connection from `app.state.db_pool` (a psycopg
+`AsyncConnectionPool`) when your app sets one, else from the pool
+`create_fraiseql_app` opens. A connection a middleware of yours puts in
+`request.state.db_connection` is used instead.
+
 In this release these don't make a working login flow on their own:
 
-- The router's endpoints take their connection from `request.app.state.db_pool.acquire()`,
-  which a psycopg pool doesn't have (the request fails with a 500), or from
-  `request.state.db_connection`, which a middleware of yours must set.
 - The router signs and checks tokens with the `JWT_SECRET_KEY` environment variable
   (falling back to a fixed test key), not with the provider's `secret_key`: set
   `JWT_SECRET_KEY`, and give the provider the same value.

@@ -900,6 +900,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with `IF NOT EXISTS`, so it can be applied at every startup. It now runs in one
   transaction with `SET LOCAL search_path`, so the pooled connection no longer keeps
   the schema in its `search_path` afterwards.
+- **The native auth router's endpoints get a connection from a psycopg pool.** They
+  called `app.state.db_pool.acquire()`, which `AsyncConnectionPool` doesn't have, so
+  `POST /auth/register`, `/auth/login` and every other endpoint answered 500. They
+  now use `pool.connection()`, on `app.state.db_pool` or else on the pool
+  `create_fraiseql_app` opens (503 when there is none).
 
 ## [1.30.0] - 2026-10-22
 

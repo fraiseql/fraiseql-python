@@ -9,6 +9,7 @@ from uuid import UUID, uuid4
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from psycopg import AsyncConnection
+from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from fraiseql.auth.native.models import User
@@ -146,17 +147,43 @@ security = HTTPBearer(auto_error=False)
 auth_router = APIRouter(tags=["auth"])
 
 
+def _request_pool(request: Request) -> AsyncConnectionPool | None:
+    """The psycopg pool the endpoints take their connection from.
+
+    ``app.state.db_pool`` when the app sets one, else the pool ``create_fraiseql_app``
+    opened.
+    """
+    pool = getattr(request.app.state, "db_pool", None)
+    if pool is not None:
+        return pool
+    from fraiseql.fastapi.dependencies import get_db_pool
+
+    try:
+        return get_db_pool()
+    except RuntimeError:
+        return None
+
+
 # Dependency to get database connection
 async def get_db(request: Request) -> AsyncGenerator[AsyncConnection]:
-    """Get database connection from request."""
-    # In a real app, this would come from app state or dependency injection
-    # For tests, we'll get it from the request state
-    if hasattr(request.app.state, "db_pool"):
-        async with request.app.state.db_pool.acquire() as conn:
-            yield conn
-    else:
-        # For testing, we expect the connection to be injected
-        yield request.state.db_connection
+    """Get a database connection for the request.
+
+    A connection a middleware put in ``request.state.db_connection`` is used as is;
+    otherwise one is borrowed from the pool (see ``_request_pool``) for the request.
+    """
+    injected = getattr(request.state, "db_connection", None)
+    if injected is not None:
+        yield injected
+        return
+
+    pool = _request_pool(request)
+    if pool is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database pool not initialized",
+        )
+    async with pool.connection() as conn:
+        yield conn
 
 
 # Dependency to get schema (for multi-tenant support)
