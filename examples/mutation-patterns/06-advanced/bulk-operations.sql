@@ -190,7 +190,7 @@ DECLARE
     new_status text;
     updated_count int;
 BEGIN
-    user_ids := input_payload->'userIds';
+    user_ids := input_payload->'user_ids';
     new_status := input_payload->>'status';
 
     -- Validate status
@@ -232,7 +232,7 @@ $$ LANGUAGE plpgsql;
 
 -- Update multiple users to inactive
 SELECT * FROM bulk_update_user_status('{
-    "userIds": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
+    "user_ids": ["550e8400-e29b-41d4-a716-446655440000", "550e8400-e29b-41d4-a716-446655440001"],
     "status": "inactive"
 }'::jsonb);
 -- Returns: status='updated', metadata with updated_count

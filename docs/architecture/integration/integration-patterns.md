@@ -79,7 +79,7 @@ SELECT
       || jsonb_build_object(
            'orders',
            COALESCE(
-             (SELECT jsonb_agg(o.data ORDER BY o.data->>'createdAt' DESC)
+             (SELECT jsonb_agg(o.data ORDER BY o.data->>'created_at' DESC)
               FROM remote_v_order o
               WHERE o.fk_user = u.id),
              '[]'::jsonb
@@ -142,7 +142,7 @@ DECLARE
     new_id UUID := gen_random_uuid();
 BEGIN
     INSERT INTO tb_order (id, fk_user, data)
-    VALUES (new_id, (input->>'userId')::uuid, input);
+    VALUES (new_id, (input->>'user_id')::uuid, input);
 
     -- Emit an event on commit; any LISTENer on this channel receives it.
     PERFORM pg_notify(
@@ -180,10 +180,10 @@ DECLARE
     new_id UUID := gen_random_uuid();
 BEGIN
     INSERT INTO tb_order (id, fk_user, data)
-    VALUES (new_id, (input->>'userId')::uuid, input);
+    VALUES (new_id, (input->>'user_id')::uuid, input);
 
     INSERT INTO tb_outbox (event_type, payload)
-    VALUES ('order_created', jsonb_build_object('orderId', new_id));
+    VALUES ('order_created', jsonb_build_object('order_id', new_id));
 
     RETURN jsonb_build_object('success', true, 'id', new_id);
 END;

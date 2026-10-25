@@ -72,9 +72,9 @@ SELECT
     u.id,                                       -- public UUID, used for WHERE id = $1
     jsonb_build_object(
         'id', u.id,
-        'firstName', u.first_name,
-        'lastName', u.last_name,
-        'fullName', concat_ws(' ', u.first_name, u.last_name),
+        'first_name', u.first_name,
+        'last_name', u.last_name,
+        'full_name', concat_ws(' ', u.first_name, u.last_name),
         'age', extract(YEAR FROM age(u.birth_date))::int
     ) AS data
 FROM tb_user u;
@@ -160,10 +160,10 @@ SELECT
     u.id,
     jsonb_build_object(
         'id', u.id,
-        'postCount', count(DISTINCT p.pk_post),
-        'commentCount', count(DISTINCT c.pk_comment),
-        'likeCount', count(DISTINCT l.pk_like),
-        'avgPostLength', avg(length(p.content))
+        'post_count', count(DISTINCT p.pk_post),
+        'comment_count', count(DISTINCT c.pk_comment),
+        'like_count', count(DISTINCT l.pk_like),
+        'avg_post_length', avg(length(p.content))
     ) AS data,
     now()
 FROM tb_user u
@@ -462,7 +462,7 @@ SELECT
                 jsonb_build_object(
                     'id', g.id,
                     'name', g.name,
-                    'joinedAt', ug.joined_at
+                    'joined_at', ug.joined_at
                 )
             ) FILTER (WHERE g.pk_group IS NOT NULL),
             '[]'::jsonb
@@ -592,7 +592,7 @@ class User:
 
 ```sql
 -- inside v_user's jsonb_build_object:
---   'fullName', concat_ws(' ', u.first_name, u.last_name)
+--   'full_name', concat_ws(' ', u.first_name, u.last_name)
 ```
 
 ### Pattern 2: Complex aggregation (use `tv_*`)
@@ -615,7 +615,7 @@ class User:
 
 ```sql
 -- inside the view's jsonb_build_object:
-'statusLabel', CASE o.status
+'status_label', CASE o.status
     WHEN 'pending'   THEN 'Waiting for payment'
     WHEN 'confirmed' THEN 'Order confirmed'
     WHEN 'shipped'   THEN 'In transit'

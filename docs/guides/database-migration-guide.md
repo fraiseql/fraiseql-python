@@ -205,7 +205,7 @@ SELECT
         'id', u.id,
         'name', u.name,
         'email', u.email,
-        'createdAt', u.created_at,
+        'created_at', u.created_at,
         'organization', jsonb_build_object(
             'id', o.id,
             'name', o.name
@@ -393,9 +393,9 @@ SELECT
     u.id,
     jsonb_build_object(
         'id', u.id,
-        'postCount', COUNT(DISTINCT p.pk_post),
-        'commentCount', COUNT(DISTINCT c.pk_comment),
-        'avgLikesPerPost', COALESCE(AVG(l.like_count), 0)
+        'post_count', COUNT(DISTINCT p.pk_post),
+        'comment_count', COUNT(DISTINCT c.pk_comment),
+        'avg_likes_per_post', COALESCE(AVG(l.like_count), 0)
     )
 FROM tb_user u
 LEFT JOIN tb_post p ON p.fk_user = u.pk_user

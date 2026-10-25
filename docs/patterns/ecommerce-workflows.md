@@ -292,7 +292,7 @@ SELECT
     'description',  p.description,
     'price',        p.price,
     'status',       p.status,
-    'inStock',      COALESCE(SUM(inv.quantity_available) > 0, false),
+    'in_stock',      COALESCE(SUM(inv.quantity_available) > 0, false),
     'rating',       COALESCE(AVG(r.rating), 0),
     'variants', (
       SELECT jsonb_agg(jsonb_build_object(
@@ -301,7 +301,7 @@ SELECT
         'sku',               pv.sku,
         'price',             p.price + COALESCE(pv.price_modifier, 0),
         'weight',            pv.weight,
-        'availableQuantity', COALESCE(vinv.quantity_available, 0)
+        'available_quantity', COALESCE(vinv.quantity_available, 0)
       ))
       FROM tb_product_variant pv
       LEFT JOIN tb_inventory vinv ON vinv.fk_product_variant = pv.pk_product_variant
@@ -321,21 +321,21 @@ SELECT
   o.fk_customer,                                   -- kept for filtering / RLS, not in data
   jsonb_build_object(
     'id',             o.id,
-    'orderNumber',    o.order_number,
+    'order_number',    o.order_number,
     'status',         o.status,
     'subtotal',       o.subtotal,
     'tax',            o.tax,
-    'shippingCost',   o.shipping_cost,
+    'shipping_cost',   o.shipping_cost,
     'total',          o.total,
     'currency',       o.currency,
-    'paymentStatus',  o.payment_status,
-    'createdAt',      o.created_at,
-    'shippedAt',      o.shipped_at,
+    'payment_status',  o.payment_status,
+    'created_at',      o.created_at,
+    'shipped_at',      o.shipped_at,
     'items', (
       SELECT jsonb_agg(jsonb_build_object(
         'id',        oi.id,
         'quantity',  oi.quantity,
-        'unitPrice', oi.unit_price,
+        'unit_price', oi.unit_price,
         'total',     oi.total
       ))
       FROM tb_order_item oi
@@ -850,10 +850,10 @@ SELECT
   DATE_TRUNC('day', o.created_at)::DATE AS id,    -- bucket key, used as the view id
   jsonb_build_object(
     'day',               DATE_TRUNC('day', o.created_at)::DATE,
-    'totalRevenue',      SUM(o.total) FILTER (WHERE o.payment_status = 'completed'),
-    'orderCount',        COUNT(*),
-    'averageOrderValue', AVG(o.total),
-    'cancelledCount',    COUNT(*) FILTER (WHERE o.status = 'cancelled')
+    'total_revenue',      SUM(o.total) FILTER (WHERE o.payment_status = 'completed'),
+    'order_count',        COUNT(*),
+    'average_order_value', AVG(o.total),
+    'cancelled_count',    COUNT(*) FILTER (WHERE o.status = 'cancelled')
   ) AS data
 FROM tb_order o
 GROUP BY DATE_TRUNC('day', o.created_at);

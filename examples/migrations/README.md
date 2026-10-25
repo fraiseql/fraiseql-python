@@ -257,9 +257,9 @@ UPDATE table_name
 SET jsonb_data = jsonb_set(
     jsonb_data,
     '{createdAt}',
-    to_jsonb(to_utc_z(jsonb_data->>'createdAt'::timestamptz))
+    to_jsonb(to_utc_z(jsonb_data->>'created_at'::timestamptz))
 )
-WHERE jsonb_data->>'createdAt' NOT LIKE '%Z';
+WHERE jsonb_data->>'created_at' NOT LIKE '%Z';
 ```
 
 ### 2. Batch Processing
@@ -268,12 +268,12 @@ WHERE jsonb_data->>'createdAt' NOT LIKE '%Z';
 -- Process large tables in batches
 UPDATE table_name
 SET jsonb_data = jsonb_data || jsonb_build_object(
-    'createdAt', to_utc_z(jsonb_data->>'createdAt'::timestamptz),
-    'updatedAt', to_utc_z(jsonb_data->>'updatedAt'::timestamptz)
+    'created_at', to_utc_z(jsonb_data->>'created_at'::timestamptz),
+    'updated_at', to_utc_z(jsonb_data->>'updated_at'::timestamptz)
 )
 WHERE id IN (
     SELECT id FROM table_name
-    WHERE jsonb_data->>'createdAt' NOT LIKE '%Z'
+    WHERE jsonb_data->>'created_at' NOT LIKE '%Z'
     LIMIT 1000
 );
 ```
@@ -285,13 +285,13 @@ WHERE id IN (
 ```sql
 -- Verify all timestamps have Z suffix
 SELECT COUNT(*) as total_records,
-       COUNT(*) FILTER (WHERE jsonb_data->>'createdAt' LIKE '%Z') as utc_formatted
+       COUNT(*) FILTER (WHERE jsonb_data->>'created_at' LIKE '%Z') as utc_formatted
 FROM table_name;
 
 -- Check for any malformed timestamps
-SELECT id, jsonb_data->>'createdAt' as created_at
+SELECT id, jsonb_data->>'created_at' as created_at
 FROM table_name
-WHERE jsonb_data->>'createdAt' NOT LIKE '____-__-__T__:__:__.__Z';
+WHERE jsonb_data->>'created_at' NOT LIKE '____-__-__T__:__:__.__Z';
 ```
 
 ## Next Steps

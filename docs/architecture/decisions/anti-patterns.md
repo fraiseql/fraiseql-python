@@ -94,7 +94,7 @@ SELECT
             SELECT jsonb_agg(jsonb_build_object(
                 'id',           p.id,
                 'title',        p.title,
-                'commentCount', (SELECT count(*) FROM tb_comment c
+                'comment_count', (SELECT count(*) FROM tb_comment c
                                  WHERE c.fk_post = p.pk_post)
             ))
             FROM tb_post p
@@ -684,7 +684,7 @@ SELECT
         'status',    o.status,
         'lines',     (SELECT jsonb_agg(...) FROM tb_order_line ...),
         'history',   (SELECT jsonb_agg(...) FROM tb_order_event ...),  -- huge, rarely read
-        'rawAudit',  o.audit_blob                                      -- never requested
+        'raw_audit',  o.audit_blob                                      -- never requested
     ) AS data
 FROM tb_order o;
 

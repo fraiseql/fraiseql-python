@@ -513,7 +513,7 @@ SELECT
         'id', c.id,
         'name', c.name,
         -- Full card number only for admins; everyone else gets the last 4.
-        'cardNumber',
+        'card_number',
             CASE
                 WHEN current_setting('app.is_super_admin', true)::boolean
                     THEN c.card_number
@@ -728,7 +728,7 @@ SELECT
     p.id,
     jsonb_build_object(
         'id', p.id,
-        'cardNumber',
+        'card_number',
             CASE
                 WHEN current_setting('app.is_super_admin', true)::boolean
                     THEN p.card_number

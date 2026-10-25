@@ -310,7 +310,7 @@ SELECT
     'id', id,
     'title', title,
     'content', content,
-    'searchVector', search_vector::text
+    'search_vector', search_vector::text
   ) as data,
   search_vector  -- Keep for efficient filtering
 FROM tb_post;

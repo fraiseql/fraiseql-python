@@ -216,9 +216,9 @@ SELECT
         'name', u.name,
         'email', u.email,
         'bio', u.bio,
-        'avatarUrl', u.avatar_url,
-        'createdAt', u.created_at,
-        'updatedAt', u.updated_at
+        'avatar_url', u.avatar_url,
+        'created_at', u.created_at,
+        'updated_at', u.updated_at
     ) AS data
 FROM tb_user u;
 
@@ -231,12 +231,12 @@ SELECT
         'title', p.title,
         'content', p.content,
         'published', p.published,
-        'authorName', a.name,
-        'authorEmail', a.email,
-        'likeCount', (SELECT count(*) FROM tb_like l WHERE l.fk_post = p.pk_post),
-        'commentCount', (SELECT count(*) FROM tb_comment c WHERE c.fk_post = p.pk_post),
-        'createdAt', p.created_at,
-        'updatedAt', p.updated_at
+        'author_name', a.name,
+        'author_email', a.email,
+        'like_count', (SELECT count(*) FROM tb_like l WHERE l.fk_post = p.pk_post),
+        'comment_count', (SELECT count(*) FROM tb_comment c WHERE c.fk_post = p.pk_post),
+        'created_at', p.created_at,
+        'updated_at', p.updated_at
     ) AS data
 FROM tb_post p
 JOIN tb_user a ON a.pk_user = p.fk_author;
@@ -248,9 +248,9 @@ SELECT
     jsonb_build_object(
         'id', c.id,
         'content', c.content,
-        'authorName', a.name,
-        'authorAvatarUrl', a.avatar_url,
-        'createdAt', c.created_at
+        'author_name', a.name,
+        'author_avatar_url', a.avatar_url,
+        'created_at', c.created_at
     ) AS data
 FROM tb_comment c
 JOIN tb_post p ON p.pk_post = c.fk_post
@@ -271,7 +271,7 @@ BEGIN
         input->>'name',
         input->>'email',
         input->>'bio',
-        input->>'avatarUrl'
+        input->>'avatar_url'
     )
     RETURNING id INTO new_id;
 
@@ -287,7 +287,7 @@ DECLARE
     author_pk BIGINT;
     new_id    UUID;
 BEGIN
-    SELECT pk_user INTO author_pk FROM tb_user WHERE id = (input->>'authorId')::uuid;
+    SELECT pk_user INTO author_pk FROM tb_user WHERE id = (input->>'author_id')::uuid;
     IF author_pk IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', 'Author not found');
     END IF;
@@ -347,8 +347,8 @@ DECLARE
     author_pk BIGINT;
     new_id    UUID;
 BEGIN
-    SELECT pk_post INTO post_pk   FROM tb_post WHERE id = (input->>'postId')::uuid;
-    SELECT pk_user INTO author_pk FROM tb_user WHERE id = (input->>'userId')::uuid;
+    SELECT pk_post INTO post_pk   FROM tb_post WHERE id = (input->>'post_id')::uuid;
+    SELECT pk_user INTO author_pk FROM tb_user WHERE id = (input->>'user_id')::uuid;
     IF post_pk IS NULL OR author_pk IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', 'Post or user not found');
     END IF;
@@ -367,8 +367,8 @@ DECLARE
     post_pk BIGINT;
     user_pk BIGINT;
 BEGIN
-    SELECT pk_post INTO post_pk FROM tb_post WHERE id = (input->>'postId')::uuid;
-    SELECT pk_user INTO user_pk FROM tb_user WHERE id = (input->>'userId')::uuid;
+    SELECT pk_post INTO post_pk FROM tb_post WHERE id = (input->>'post_id')::uuid;
+    SELECT pk_user INTO user_pk FROM tb_user WHERE id = (input->>'user_id')::uuid;
     IF post_pk IS NULL OR user_pk IS NULL THEN
         RETURN jsonb_build_object('success', false, 'message', 'Post or user not found');
     END IF;
@@ -377,7 +377,7 @@ BEGIN
     VALUES (post_pk, user_pk)
     ON CONFLICT (fk_post, fk_user) DO NOTHING;
 
-    RETURN jsonb_build_object('success', true, 'id', input->>'postId');
+    RETURN jsonb_build_object('success', true, 'id', input->>'post_id');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -387,12 +387,12 @@ DECLARE
     post_pk BIGINT;
     user_pk BIGINT;
 BEGIN
-    SELECT pk_post INTO post_pk FROM tb_post WHERE id = (input->>'postId')::uuid;
-    SELECT pk_user INTO user_pk FROM tb_user WHERE id = (input->>'userId')::uuid;
+    SELECT pk_post INTO post_pk FROM tb_post WHERE id = (input->>'post_id')::uuid;
+    SELECT pk_user INTO user_pk FROM tb_user WHERE id = (input->>'user_id')::uuid;
 
     DELETE FROM tb_like WHERE fk_post = post_pk AND fk_user = user_pk;
 
-    RETURN jsonb_build_object('success', true, 'id', input->>'postId');
+    RETURN jsonb_build_object('success', true, 'id', input->>'post_id');
 END;
 $$ LANGUAGE plpgsql;
 
@@ -613,7 +613,7 @@ async def create_post(info, input: CreatePostInput) -> PostSuccess | MutationErr
         {
             "title": input.title,
             "content": input.content,
-            "authorId": str(input.author_id),
+            "author_id": str(input.author_id),
             "published": input.published,
         },
     )
@@ -658,8 +658,8 @@ async def create_comment(info, input: CreateCommentInput) -> CreateCommentSucces
     result = await db.execute_function(
         "fn_create_comment",
         {
-            "postId": str(input.post_id),
-            "userId": str(input.user_id),
+            "post_id": str(input.post_id),
+            "user_id": str(input.user_id),
             "content": input.content,
         },
     )
@@ -674,7 +674,7 @@ async def create_comment(info, input: CreateCommentInput) -> CreateCommentSucces
 async def like_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationError:
     db = info.context["db"]
     result = await db.execute_function(
-        "fn_like_post", {"postId": str(post_id), "userId": str(user_id)}
+        "fn_like_post", {"post_id": str(post_id), "user_id": str(user_id)}
     )
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not like post"))
@@ -687,7 +687,7 @@ async def like_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationErr
 async def unlike_post(info, post_id: ID, user_id: ID) -> LikeSuccess | MutationError:
     db = info.context["db"]
     result = await db.execute_function(
-        "fn_unlike_post", {"postId": str(post_id), "userId": str(user_id)}
+        "fn_unlike_post", {"post_id": str(post_id), "user_id": str(user_id)}
     )
     if not result.get("success"):
         return MutationError(message=result.get("message", "Could not unlike post"))
@@ -1331,9 +1331,9 @@ psql blog_db -f backend/schema.sql
 
 ### A query returns `null` for a field
 
-The field name in the GraphQL query must match the camelCase form of the Python field (and the
-key inside the view's `data` JSONB). For example the Python field `author_name` is `authorName`
-in GraphQL and `'authorName'` in `jsonb_build_object(...)`.
+The field name in the GraphQL query must be the camelCase form of the Python field, and the key
+inside the view's `data` JSONB must be the Python field name itself. For example the Python field
+`author_name` is `authorName` in GraphQL and `'author_name'` in `jsonb_build_object(...)`.
 
 ### A component shows "Loading…" forever
 

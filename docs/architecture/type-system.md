@@ -289,7 +289,7 @@ SELECT
         'address', jsonb_build_object(
             'street', street,
             'city', city,
-            'zipCode', zip_code
+            'zip_code', zip_code
         )
     ) AS data
 FROM tb_user;

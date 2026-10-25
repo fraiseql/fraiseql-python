@@ -78,8 +78,8 @@ DECLARE
     comment_content text;
     comment_record record;
 BEGIN
-    post_id := (input_payload->>'postId')::uuid;
-    user_id := (input_payload->>'userId')::uuid;
+    post_id := (input_payload->>'post_id')::uuid;
+    user_id := (input_payload->>'user_id')::uuid;
     comment_content := input_payload->>'content';
 
     -- Check if post exists
@@ -140,24 +140,24 @@ SELECT * FROM get_user_details('{
 
 -- Post not found when adding comment
 SELECT * FROM add_comment('{
-    "postId": "00000000-0000-0000-0000-000000000000",
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "post_id": "00000000-0000-0000-0000-000000000000",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "content": "Great post!"
 }'::jsonb);
 -- Returns: status='not_found:post', message='Post with ID 00000000-0000-0000-0000-000000000000 not found'
 
 -- User not found when adding comment
 SELECT * FROM add_comment('{
-    "postId": "660e8400-e29b-41d4-a716-446655440000",
-    "userId": "00000000-0000-0000-0000-000000000000",
+    "post_id": "660e8400-e29b-41d4-a716-446655440000",
+    "user_id": "00000000-0000-0000-0000-000000000000",
     "content": "Great post!"
 }'::jsonb);
 -- Returns: status='not_found:user', message='User with ID 00000000-0000-0000-0000-000000000000 not found'
 
 -- Success case
 SELECT * FROM add_comment('{
-    "postId": "660e8400-e29b-41d4-a716-446655440000",
-    "userId": "550e8400-e29b-41d4-a716-446655440000",
+    "post_id": "660e8400-e29b-41d4-a716-446655440000",
+    "user_id": "550e8400-e29b-41d4-a716-446655440000",
     "content": "This is a great post!"
 }'::jsonb);
 -- Returns: status='created', entity with comment data

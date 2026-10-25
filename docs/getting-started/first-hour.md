@@ -358,8 +358,8 @@ SELECT
         'title', title,
         'content', content,
         'tags', tags,
-        'createdAt', created_at,
-        'updatedAt', updated_at
+        'created_at', created_at,
+        'updated_at', updated_at
     ) as data  -- Required: contains GraphQL response
 FROM tb_note;
 ```

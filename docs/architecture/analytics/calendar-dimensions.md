@@ -101,7 +101,7 @@ SELECT
     jsonb_build_object(
         'id', s.id,
         'revenue', s.revenue,
-        'occurredAt', s.occurred_at,
+        'occurred_at', s.occurred_at,
         'month', s.date_info->>'month',
         'quarter', s.date_info->>'quarter',
         'year', s.date_info->>'year'
@@ -609,7 +609,7 @@ SELECT
     jsonb_build_object(
         'id', s.id,
         'revenue', s.revenue,
-        'occurredAt', s.occurred_at,
+        'occurred_at', s.occurred_at,
         'month', s.date_info->>'month',
         'quarter', s.date_info->>'quarter',
         'year', s.date_info->>'year'
@@ -678,7 +678,7 @@ NEW.date_info = NEW.date_info || jsonb_build_object(
 );
 ```
 
-Expose `data->>'fiscalYear'` from the view and add a matching field on the FraiseQL type;
+Expose `data->>'fiscal_year'` from the view and add a matching field on the FraiseQL type;
 FraiseQL will return it like any other column.
 
 ### Partial calendar coverage

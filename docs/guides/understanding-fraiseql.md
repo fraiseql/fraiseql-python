@@ -108,7 +108,7 @@ SELECT
         'id', id,                -- Required: every JSONB object must have id
         'name', name,
         'email', email,
-        'createdAt', created_at
+        'created_at', created_at
     ) as data                    -- Required: contains the GraphQL response
 FROM tb_user;
 ```
@@ -135,8 +135,8 @@ CREATE TABLE tv_user_stats (
     data JSONB GENERATED ALWAYS AS (
         jsonb_build_object(
             'id', id,                   -- Required: every table view must have id
-            'totalPosts', total_posts,
-            'lastPostDate', last_post_date
+            'total_posts', total_posts,
+            'last_post_date', last_post_date
         )
     ) STORED
 );

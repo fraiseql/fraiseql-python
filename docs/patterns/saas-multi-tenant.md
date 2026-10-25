@@ -211,8 +211,8 @@ SELECT
     'name',        p.name,
     'description', p.description,
     'status',      p.status,
-    'ownerId',     p.owner_id,
-    'createdAt',   p.created_at
+    'owner_id',     p.owner_id,
+    'created_at',   p.created_at
   ) AS data
 FROM tb_project p;
 
@@ -226,9 +226,9 @@ SELECT
     'title',      t.title,
     'status',     t.status,
     'priority',   t.priority,
-    'assignedTo', t.assigned_to,
-    'dueDate',    t.due_date,
-    'createdAt',  t.created_at
+    'assigned_to', t.assigned_to,
+    'due_date',    t.due_date,
+    'created_at',  t.created_at
   ) AS data
 FROM tb_task t;
 ```
@@ -722,7 +722,7 @@ BEGIN
     now()::DATE, (now() + INTERVAL '1 month')::DATE
   );
 
-  RETURN jsonb_build_object('success', true, 'tenantId', v_tenant_id, 'ownerId', v_user_id);
+  RETURN jsonb_build_object('success', true, 'tenant_id', v_tenant_id, 'owner_id', v_user_id);
 END;
 $$ LANGUAGE plpgsql;
 ```

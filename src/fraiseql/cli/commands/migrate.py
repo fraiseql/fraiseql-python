@@ -167,8 +167,8 @@ SELECT jsonb_build_object(
     'id', id,
     'username', username,
     'email', email,
-    'createdAt', created_at,
-    'updatedAt', updated_at
+    'created_at', created_at,
+    'updated_at', updated_at
 ) AS data
 FROM users;
 """

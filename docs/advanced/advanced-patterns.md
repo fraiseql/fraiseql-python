@@ -185,7 +185,7 @@ BEGIN
                 FROM tb_organisation o
                 WHERE o.pk_organisation = u.fk_organisation  -- Fast INT join!
             ),
-            'createdAt', u.created_at
+            'created_at', u.created_at
         ),
         NOW()
     FROM tb_user u
@@ -208,7 +208,7 @@ BEGIN
             'identifier', p.identifier,
             'title', p.title,
             'content', p.content,
-            'createdAt', p.created_at,
+            'created_at', p.created_at,
             'author', (
                 SELECT jsonb_build_object(
                     'id', u.id::text,
@@ -822,7 +822,7 @@ BEGIN
                 FROM tb_organisation o
                 WHERE o.pk_organisation = u.fk_organisation
             ),
-            'createdAt', u.created_at
+            'created_at', u.created_at
         ),
         NOW()
     FROM tb_user u
@@ -843,7 +843,7 @@ BEGIN
             'identifier', p.identifier,
             'title', p.title,
             'content', p.content,
-            'createdAt', p.created_at,
+            'created_at', p.created_at,
             'author', (
                 SELECT jsonb_build_object(
                     'id', u.id::text,

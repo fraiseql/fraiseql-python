@@ -115,7 +115,7 @@ SELECT
             'id', p.id,
             'title', p.title,
             'content', p.content,
-            'createdAt', p.created_at,
+            'created_at', p.created_at,
             'comments', COALESCE(comments.data, '[]'::jsonb)
         )
         ORDER BY p.created_at DESC
@@ -129,7 +129,7 @@ LEFT JOIN (
             jsonb_build_object(
                 'id', c.id,
                 'text', c.text,
-                'createdAt', c.created_at
+                'created_at', c.created_at
             )
             ORDER BY c.created_at DESC
         ) AS data

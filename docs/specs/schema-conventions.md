@@ -166,8 +166,8 @@ SELECT
     jsonb_build_object(
         'id', id,
         'title', title,
-        'userId', (SELECT id FROM tb_user WHERE pk_user = fk_user),
-        'createdAt', created_at
+        'user_id', (SELECT id FROM tb_user WHERE pk_user = fk_user),
+        'created_at', created_at
     ) AS data
 FROM tb_post
 WHERE deleted_at IS NULL;
@@ -290,8 +290,8 @@ SELECT
         'identifier', identifier,
         'email', email,
         'name', name,
-        'createdAt', created_at,
-        'updatedAt', updated_at
+        'created_at', created_at,
+        'updated_at', updated_at
     ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;
@@ -301,16 +301,19 @@ WHERE deleted_at IS NULL;
 
 - The column must be named `data` (configurable via `jsonb_column`, default `"data"`)
 - Type: `JSONB`
-- Contains the fully-formed projection in GraphQL field case
+- Contains the fully-formed projection, keyed by Python field name (snake_case)
 - Place it at the END of the SELECT (last column) by convention
 - Never null (use `{}` for empty objects, `[]` for empty arrays)
 - Never put `pk_*` or `fk_*` inside `data`
 
 **Field naming in JSONB:**
 
-- Convert snake_case to camelCase
-- `created_at` → `createdAt`
-- `user_id` → `userId`
+- Use the Python field name, in snake_case: `'created_at', created_at`, `'user_id', ...`
+- Don't camelCase the keys. `where` and `orderBy` convert the GraphQL field name to snake_case
+  and look up `data ->> 'created_at'`; with a `'createdAt'` key, a filter on that field matches
+  nothing and a sort on it does nothing.
+- The GraphQL response is camelCase anyway: FraiseQL converts the keys on output
+  (`created_at` → `createdAt`).
 
 At startup, FraiseQL maps each `@fraiseql.type` field to a key in this `data` JSONB. The hot
 path reads `data` and shapes it to the requested GraphQL fields (the optional `fraiseql_rs`
@@ -351,7 +354,7 @@ SELECT
         'identifier', identifier,
         'email', email,
         'name', name,
-        'createdAt', created_at
+        'created_at', created_at
     ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;                 -- Soft delete
@@ -360,7 +363,7 @@ WHERE deleted_at IS NULL;                 -- Soft delete
 **Must include:**
 
 - `id` for public identity (and `WHERE id = $1` lookups)
-- `data` JSONB with camelCase fields
+- `data` JSONB with snake_case keys
 - A soft-delete filter
 
 ### 4.2 Related Entity View with Foreign Key
@@ -374,8 +377,8 @@ SELECT
         'id', id,
         'identifier', identifier,
         'title', title,
-        'userId', (SELECT id FROM tb_user WHERE pk_user = fk_user),
-        'createdAt', created_at
+        'user_id', (SELECT id FROM tb_user WHERE pk_user = fk_user),
+        'created_at', created_at
     ) AS data
 FROM tb_post
 WHERE deleted_at IS NULL;
@@ -787,7 +790,7 @@ SELECT
         'id', u.id,
         'identifier', u.identifier,
         'email', u.email,
-        'roleIds', COALESCE(ur.role_ids, ARRAY[]::UUID[])
+        'role_ids', COALESCE(ur.role_ids, ARRAY[]::UUID[])
     ) AS data
 FROM tb_user u
 LEFT JOIN v_user_role_ids_by_user ur ON ur.fk_user = u.pk_user
@@ -890,7 +893,7 @@ When creating a schema for FraiseQL:
 - [ ] Pre-aggregated views named `v_{entities}_by_{parent}`
 - [ ] Mutation functions return the standard JSON response
 - [ ] Relevant columns are indexed
-- [ ] JSONB fields use camelCase
+- [ ] JSONB keys use snake_case (the Python field names)
 - [ ] No `pk_*` / `fk_*` inside `data`
 - [ ] No nullable JSONB (use `{}` or `[]`)
 

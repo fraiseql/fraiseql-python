@@ -110,3 +110,14 @@ def test_create_works_without_confiture(tmp_path: Path) -> None:
 
     assert result.exit_code == 0, result.output
     assert len(list(tmp_path.glob("*_add_things.py"))) == 1
+
+
+def test_init_example_view_uses_snake_case_jsonb_keys(tmp_path: Path) -> None:
+    # where/orderBy look up `data ->> 'created_at'`; camelCase keys never match
+    result = CliRunner().invoke(migrate, ["init", str(tmp_path)])
+
+    assert result.exit_code == 0, result.output
+    view_sql = (tmp_path / "db" / "schema" / "10_tables" / "example.sql").read_text()
+    assert "'created_at', created_at" in view_sql
+    assert "'updated_at', updated_at" in view_sql
+    assert not re.search(r"'[a-z]+[A-Z]\w*'", view_sql)

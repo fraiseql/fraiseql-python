@@ -602,7 +602,7 @@ SELECT
         'id', id,
         'name', name,
         'email', email,
-        'createdAt', created_at
+        'created_at', created_at
     ) AS data
 FROM tb_user
 WHERE deleted_at IS NULL;  -- Soft deletes

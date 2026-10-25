@@ -142,7 +142,7 @@ class EntitySync:
                         jsonb_build_object(
                             'id', u.id,
                             'username', u.username,
-                            'fullName', u.full_name
+                            'full_name', u.full_name
                         ) as author
                     FROM tb_post p
                     JOIN tb_user u ON u.id = p.author_id
@@ -161,7 +161,7 @@ class EntitySync:
                     "content": post_data["content"],
                     "published": post_data["published"],
                     "author": post_data["author"],
-                    "createdAt": post_data["created_at"].isoformat(),
+                    "created_at": post_data["created_at"].isoformat(),
                 }
 
                 # 3. Upsert to query side (tv_post)
@@ -221,7 +221,7 @@ async def sync_post_with_comments(self, post_ids: list[UUID]) -> None:
                         "id": str(c["id"]),
                         "content": c["content"],
                         "author": c["author"],
-                        "createdAt": c["created_at"].isoformat(),
+                        "created_at": c["created_at"].isoformat(),
                     }
                     for c in comments
                 ],

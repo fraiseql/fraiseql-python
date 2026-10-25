@@ -74,7 +74,7 @@ SELECT
         'id', id,
         'name', name,
         'email', email,
-        'createdAt', created_at
+        'created_at', created_at
     ) AS data
 FROM tb_user;
 ```
@@ -261,7 +261,7 @@ SELECT
         'name', name,
         'email', email,
         'identifier', identifier,
-        'createdAt', created_at
+        'created_at', created_at
     ) AS data
 FROM tb_user;
 
@@ -407,8 +407,8 @@ SELECT
     c.id,  -- Public UUID
     jsonb_build_object(
         'id', c.id,
-        'userId', u.id,  -- Public UUID relationship
-        'postId', p.id,  -- Public UUID relationship
+        'user_id', u.id,  -- Public UUID relationship
+        'post_id', p.id,  -- Public UUID relationship
         'content', c.content
     ) AS data
 FROM tb_comment c
@@ -585,7 +585,7 @@ $$ LANGUAGE plpgsql;
 3. **Return JSONB from functions**
 
    ```sql
-   RETURN jsonb_build_object('success', true, 'userId', v_id);  -- ✅ Structured
+   RETURN jsonb_build_object('success', true, 'user_id', v_id);  -- ✅ Structured
    ```
 
 4. **Expose only public `id` in views**

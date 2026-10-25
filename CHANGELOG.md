@@ -65,6 +65,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (`Cascade.updated` takes no arguments, and the entity is a JSON scalar).
   Responses are unchanged.
 
+- **The docs, the examples and the `fraiseql migrate init` scaffold build views
+  with snake_case JSONB keys** (`'created_at', created_at`, not `'createdAt'`).
+  `where` and `orderBy` look up the snake_case key (`data ->> 'created_at'`), so
+  on a view built the documented way a filter on a multi-word field matched
+  nothing and a sort on it did nothing. The response is camelCase either way.
+  `docs/specs/schema-conventions.md` now prescribes snake_case keys, and the
+  mutation examples that read `input->>'userId'` read `input->>'user_id'`, the key
+  FraiseQL sends.
+
 ### Deprecated
 
 - **`FraiseQLConfig.entity_routing`**, which has no effect. It was validated and

@@ -125,7 +125,7 @@ CREATE INDEX idx_tv_order_status
   "id": "d613dfba-3440-4c90-bb7b-877175621e08",
   "status": "shipped",
   "total": 299.99,
-  "createdAt": "2025-10-09T10:30:00Z",
+  "created_at": "2025-10-09T10:30:00Z",
   "user": {
     "id": "a1b2c3d4-...",
     "email": "customer@example.com",
@@ -134,14 +134,14 @@ CREATE INDEX idx_tv_order_status
   "items": [
     {
       "id": "item-1",
-      "productName": "Widget Pro",
+      "product_name": "Widget Pro",
       "quantity": 2,
       "price": 149.99
     }
   ],
   "shipping": {
     "address": "123 Main St",
-    "trackingNumber": "1Z999AA10123456784"
+    "tracking_number": "1Z999AA10123456784"
   }
 }
 ```
@@ -187,7 +187,7 @@ SELECT
         'id', o.id,
         'status', o.status,
         'total', o.total,
-        'createdAt', o.created_at,
+        'created_at', o.created_at,
         'user', (
             SELECT jsonb_build_object(
                 'id', u.id,
@@ -201,7 +201,7 @@ SELECT
             (
                 SELECT jsonb_agg(jsonb_build_object(
                     'id', i.id,
-                    'productName', i.product_name,
+                    'product_name', i.product_name,
                     'quantity', i.quantity,
                     'price', i.price
                 ) ORDER BY i.created_at)
@@ -267,7 +267,7 @@ BEGIN
                 'id', o.id,
                 'status', o.status,
                 'total', o.total,
-                'createdAt', o.created_at,
+                'created_at', o.created_at,
                 'user', jsonb_build_object(
                     'id', COALESCE(NEW.id, OLD.id),
                     'email', COALESCE(NEW.email, OLD.email),
@@ -277,7 +277,7 @@ BEGIN
                     (
                         SELECT jsonb_agg(jsonb_build_object(
                             'id', i.id,
-                            'productName', i.product_name,
+                            'product_name', i.product_name,
                             'quantity', i.quantity,
                             'price', i.price
                         ) ORDER BY i.created_at)
@@ -303,7 +303,7 @@ BEGIN
             'id', o.id,
             'status', o.status,
             'total', o.total,
-            'createdAt', o.created_at,
+            'created_at', o.created_at,
             'user', (
                 SELECT jsonb_build_object(
                     'id', u.id,
@@ -317,7 +317,7 @@ BEGIN
                 (
                     SELECT jsonb_agg(jsonb_build_object(
                         'id', i.id,
-                        'productName', i.product_name,
+                        'product_name', i.product_name,
                         'quantity', i.quantity,
                         'price', i.price
                     ) ORDER BY i.created_at)
@@ -432,7 +432,7 @@ CREATE TABLE tv_order_bad (
 -- Query: Slow (sequential scan)
 SELECT data FROM tv_order_bad
 WHERE data->>'status' = 'shipped'
-ORDER BY (data->>'createdAt')::timestamptz DESC;
+ORDER BY (data->>'created_at')::timestamptz DESC;
 ```
 
 #### 2. JSONB `data` Column Structure
@@ -441,7 +441,7 @@ ORDER BY (data->>'createdAt')::timestamptz DESC;
 
 - Complete GraphQL response (all nested data)
 - Include `__typename` for GraphQL unions/interfaces
-- Use camelCase field names (GraphQL convention)
+- Use snake_case keys (the Python field names); `where` and `orderBy` look them up by that name, and the GraphQL response is camelCased on output
 - Pre-compute expensive aggregations
 
 **Example Structure**:
@@ -451,11 +451,11 @@ ORDER BY (data->>'createdAt')::timestamptz DESC;
   "__typename": "Order",          // ✅ Required for GraphQL
   "id": "...",                     // ✅ Always include
   "status": "shipped",             // ✅ Duplicate of real column (for consistency)
-  "createdAt": "2025-10-09...",    // ✅ ISO 8601 format
+  "created_at": "2025-10-09...",   // ✅ ISO 8601 format
   "user": { ... },                 // ✅ Complete nested object
   "items": [ ... ],                // ✅ Complete nested array
-  "itemCount": 3,                  // ✅ Pre-computed aggregation
-  "totalAmount": 299.99            // ✅ Pre-computed sum
+  "item_count": 3,                 // ✅ Pre-computed aggregation
+  "total_amount": 299.99           // ✅ Pre-computed sum
 }
 ```
 
@@ -1058,12 +1058,12 @@ SELECT
     'id', u.id,
     'email', u.email,
     'name', u.name,
-    'createdAt', u.created_at,
+    'created_at', u.created_at,
     'posts', (
       SELECT jsonb_agg(jsonb_build_object(
         'id', p.id,
         'title', p.title,
-        'createdAt', p.created_at
+        'created_at', p.created_at
       ) ORDER BY p.created_at DESC)
       FROM posts p
       WHERE p.user_id = u.id
@@ -1108,7 +1108,7 @@ SELECT
     'sku', p.sku,
     'name', p.name,
     'price', p.price,
-    'categoryId', p.category_id
+    'category_id', p.category_id
   ) as data
 FROM products p
 WHERE p.deleted_at IS NULL;
@@ -1141,7 +1141,7 @@ SELECT
     'items', (
       SELECT jsonb_agg(jsonb_build_object(
         'id', i.id,
-        'productName', i.product_name,
+        'product_name', i.product_name,
         'quantity', i.quantity,
         'price', i.price
       ) ORDER BY i.created_at)
@@ -1153,7 +1153,7 @@ SELECT
         'address', s.address,
         'city', s.city,
         'status', s.status,
-        'trackingNumber', s.tracking_number
+        'tracking_number', s.tracking_number
       )
       FROM tb_shipment s
       WHERE s.order_id = o.id
@@ -1177,7 +1177,7 @@ SELECT
     'id', p.id,
     'title', p.title,
     'content', p.content,
-    'approvedComments', (
+    'approved_comments', (
       SELECT jsonb_agg(jsonb_build_object(
         'id', c.id,
         'text', c.text,
@@ -1187,7 +1187,7 @@ SELECT
       WHERE c.post_id = p.id
         AND c.status = 'approved'  -- Conditional filter
     ),
-    'pendingCommentCount', (
+    'pending_comment_count', (
       SELECT COUNT(*)
       FROM comments c
       WHERE c.post_id = p.id
@@ -1330,7 +1330,7 @@ SELECT
     'id', p.id,
     'name', p.name,
     'description', p.description,
-    'createdAt', p.created_at
+    'created_at', p.created_at
   ) as data
 FROM projects p;
 
@@ -1442,7 +1442,7 @@ SELECT
   jsonb_build_object(
     'id', u.id,
     'name', u.name,
-    'latestPost', p.data
+    'latest_post', p.data
   ) as data
 FROM users u
 LEFT JOIN LATERAL (
@@ -1477,9 +1477,9 @@ CREATE VIEW tv_latest_order_per_user AS
 SELECT DISTINCT ON (user_id)
   user_id,
   jsonb_build_object(
-    'orderId', id,
+    'order_id', id,
     'total', total,
-    'createdAt', created_at
+    'created_at', created_at
   ) as data
 FROM tb_order
 ORDER BY user_id, created_at DESC;
@@ -1627,7 +1627,7 @@ SELECT
     'id', n.id,
     'type', n.type,
     'read', n.read_at IS NOT NULL,
-    'createdAt', n.created_at,
+    'created_at', n.created_at,
     -- Polymorphic entity resolution
     'entity', CASE n.entity_type
       WHEN 'Post' THEN (
@@ -1699,7 +1699,7 @@ SELECT
     'id', id,
     'type', activity_type,
     'details', details,
-    'createdAt', created_at
+    'created_at', created_at
   ) as data
 FROM (
   SELECT
@@ -1707,7 +1707,7 @@ FROM (
     user_id,
     'page_view' AS activity_type,
     jsonb_build_object(
-      'pageUrl', page_url,
+      'page_url', page_url,
       'referrer', referrer,
       'duration', duration_seconds
     ) AS details,
@@ -1721,8 +1721,8 @@ FROM (
     user_id,
     'button_click' AS activity_type,
     jsonb_build_object(
-      'buttonId', button_id,
-      'pageUrl', page_url
+      'button_id', button_id,
+      'page_url', page_url
     ) AS details,
     created_at
   FROM button_clicks
@@ -1734,7 +1734,7 @@ FROM (
     user_id,
     'form_submission' AS activity_type,
     jsonb_build_object(
-      'formId', form_id,
+      'form_id', form_id,
       'fields', form_data
     ) AS details,
     created_at

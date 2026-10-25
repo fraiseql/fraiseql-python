@@ -152,11 +152,11 @@ SELECT
     jsonb_build_object(
         'id',            d.id,
         'title',         d.title,
-        'contentType',   d.content_type,
+        'content_type',   d.content_type,
         'content',       d.content,
-        'createdBy',     d.created_by,
-        'createdAt',     d.created_at,
-        'updatedAt',     d.updated_at
+        'created_by',     d.created_by,
+        'created_at',     d.created_at,
+        'updated_at',     d.updated_at
     ) AS data
 FROM tb_document d
 WHERE d.deleted_at IS NULL;
@@ -167,10 +167,10 @@ SELECT
     d.id AS document_id,
     jsonb_build_object(
         'id',           c.id,
-        'userId',       c.user_id,
+        'user_id',       c.user_id,
         'operation',    c.operation,
-        'vectorClock',  c.vector_clock,
-        'createdAt',    c.created_at
+        'vector_clock',  c.vector_clock,
+        'created_at',    c.created_at
     ) AS data
 FROM tb_document_change c
 JOIN tb_document d ON d.pk_document = c.fk_document;
@@ -180,12 +180,12 @@ SELECT
     p.id,
     d.id AS document_id,
     jsonb_build_object(
-        'userId',         p.user_id,
-        'cursorPosition', p.cursor_position,
-        'selectionStart', p.selection_start,
-        'selectionEnd',   p.selection_end,
+        'user_id',         p.user_id,
+        'cursor_position', p.cursor_position,
+        'selection_start', p.selection_start,
+        'selection_end',   p.selection_end,
         'color',          p.color,
-        'lastActivity',   p.last_activity
+        'last_activity',   p.last_activity
     ) AS data
 FROM tb_presence p
 JOIN tb_document d ON d.pk_document = p.fk_document;
@@ -196,11 +196,11 @@ SELECT
     d.id AS document_id,
     jsonb_build_object(
         'id',         c.id,
-        'userId',     c.user_id,
+        'user_id',     c.user_id,
         'content',    c.content,
         'position',   c.position,
         'resolved',   c.resolved,
-        'createdAt',  c.created_at
+        'created_at',  c.created_at
     ) AS data
 FROM tb_comment c
 JOIN tb_document d ON d.pk_document = c.fk_document;
