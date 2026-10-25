@@ -210,20 +210,32 @@ class TestUserContextCaching:
 class TestPerformance:
     """Test authentication performance targets."""
 
+    # Each target is checked against the fastest of several runs. A creation takes
+    # 1.5-6ms here, so on a loaded machine (e.g. under pytest -n 8) one run that
+    # the scheduler preempts goes past 10ms although creation itself didn't get
+    # slower; every run being that slow would mean it did.
+    _RUNS = 5
+
     def test_provider_creation_is_fast(self):
         """Provider creation (no network I/O) should complete in under 10ms."""
-        start = time.perf_counter()
-        provider = PyAuthProvider.auth0("example.auth0.com", ["https://api.example.com"])
-        elapsed_ms = (time.perf_counter() - start) * 1000
-        assert provider is not None
+        timings_ms = []
+        for i in range(self._RUNS):
+            start = time.perf_counter()
+            provider = PyAuthProvider.auth0(f"example{i}.auth0.com", ["https://api.example.com"])
+            timings_ms.append((time.perf_counter() - start) * 1000)
+            assert provider is not None
+        elapsed_ms = min(timings_ms)
         assert elapsed_ms < 10, f"Provider creation took {elapsed_ms:.2f}ms, expected <10ms"
 
     def test_multiple_provider_creations_are_fast(self):
         """Creating 10 providers should stay under 100ms total."""
-        start = time.perf_counter()
-        for i in range(10):
-            PyAuthProvider.auth0(f"tenant{i}.auth0.com", [f"https://api{i}.example.com"])
-        elapsed_ms = (time.perf_counter() - start) * 1000
+        timings_ms = []
+        for run in range(self._RUNS):
+            start = time.perf_counter()
+            for i in range(10):
+                PyAuthProvider.auth0(f"tenant{run}-{i}.auth0.com", [f"https://api{i}.example.com"])
+            timings_ms.append((time.perf_counter() - start) * 1000)
+        elapsed_ms = min(timings_ms)
         assert elapsed_ms < 100, f"10 provider creations took {elapsed_ms:.2f}ms, expected <100ms"
 
     @pytest.mark.skip(

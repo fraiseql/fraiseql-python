@@ -408,8 +408,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clear the queries other modules register at import; under `-n 8` the workers
   raced on one database (`CREATE EXTENSION` on a fresh database, the cascade
   functions in `public`, and the audit and RBAC fixtures finding another class's
-  tables); and three chaos tests drew their failures with an unseeded `random` or
-  timed `time.sleep` against a tight bound.
+  tables); three chaos tests drew their failures with an unseeded `random` or
+  timed `time.sleep` against a tight bound; and the memory-pressure chaos test
+  and the Rust auth provider timing tests held a single run of a sub-10ms
+  operation to a bound that one scheduler delay on a loaded machine exceeded.
 
 ## [1.30.0] - 2026-10-22
 
