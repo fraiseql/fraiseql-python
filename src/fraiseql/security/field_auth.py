@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import functools
 import inspect
 import json
 import logging
@@ -25,6 +24,7 @@ from graphql.utilities.type_info import TypeInfoVisitor
 
 from fraiseql.core.resolver_invocation import invoke_resolver
 from fraiseql.security.authorization import AuthorizationDecision, normalize_decision
+from fraiseql.utils.annotations import set_annotations, wraps
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -115,7 +115,7 @@ def _copy_resolver_metadata(wrapper: Any, func: Any) -> None:
     wrapper.__name__ = getattr(func, "__name__", wrapper.__name__)
     wrapper.__doc__ = func.__doc__
     if hasattr(func, "__annotations__"):
-        wrapper.__annotations__ = func.__annotations__.copy()
+        set_annotations(wrapper, func.__annotations__.copy())
     if hasattr(func, "__fraiseql_field__"):
         wrapper.__fraiseql_field__ = func.__fraiseql_field__
         wrapper.__fraiseql_field_resolver__ = func.__fraiseql_field_resolver__
@@ -457,7 +457,7 @@ def gate_field_resolver(resolver: Callable[..., Any], *, field: str) -> Callable
     ``@authorize_field``-decorated resolver AND-composes the two checks (both must allow).
     """
 
-    @functools.wraps(resolver)
+    @wraps(resolver)
     async def _gated(root: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
         decision = await _auto_field_authorization(info, field=field, arguments=kwargs)
         _enforce_field_decision(decision, error_message=None, info=info)

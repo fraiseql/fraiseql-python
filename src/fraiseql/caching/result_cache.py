@@ -4,10 +4,11 @@ This module provides the main caching functionality with support for
 different backends, automatic key generation, and cache invalidation.
 """
 
-import functools
 import logging
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Protocol, TypeVar
+
+from fraiseql.utils.annotations import wraps
 
 from .cache_key import CacheKeyBuilder
 
@@ -215,7 +216,7 @@ def cached_query(
     """
 
     def decorator(func: Callable) -> Callable:
-        @functools.wraps(func)
+        @wraps(func)
         async def wrapper(*args: Any, **kwargs: Any) -> Any:
             # Check for skip_cache parameter
             skip_cache = kwargs.pop("skip_cache", False)

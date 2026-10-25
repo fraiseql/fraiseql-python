@@ -9,6 +9,7 @@ from graphql import GraphQLResolveInfo
 
 from fraiseql.optimization.dataloader import DataLoader
 from fraiseql.optimization.registry import get_loader
+from fraiseql.utils.annotations import set_annotations
 
 logger = logging.getLogger(__name__)
 
@@ -202,7 +203,7 @@ def dataloader_field(
         # Preserve method metadata
         auto_resolver.__name__ = method.__name__
         auto_resolver.__doc__ = method.__doc__ or f"Auto-generated DataLoader field for {key_field}"
-        auto_resolver.__annotations__ = method.__annotations__
+        set_annotations(auto_resolver, method.__annotations__)
 
         # Add DataLoader metadata for schema building
         auto_resolver.__fraiseql_dataloader__ = {

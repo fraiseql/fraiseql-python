@@ -9,10 +9,10 @@ Provides enhanced OpenTelemetry tracing with GraphQL-aware features:
 
 import types
 from dataclasses import dataclass, field
-from functools import wraps
 from typing import Any, Callable, Optional
 
 from fraiseql.tracing.opentelemetry import get_tracer
+from fraiseql.utils.annotations import wraps
 
 try:
     from opentelemetry import trace

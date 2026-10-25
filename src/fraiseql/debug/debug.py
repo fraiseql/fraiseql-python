@@ -4,7 +4,6 @@ This module provides tools to help developers debug and optimize their
 GraphQL queries and resolvers.
 """
 
-import functools
 import inspect
 import json
 import time
@@ -17,6 +16,7 @@ from graphql import GraphQLResolveInfo
 from fraiseql.db import DatabaseQuery
 from fraiseql.fastapi.dependencies import get_db_pool
 from fraiseql.partial_instantiation import get_available_fields, is_partial_instance
+from fraiseql.utils.annotations import wraps
 
 logger = structlog.get_logger()
 
@@ -113,7 +113,7 @@ def profile_resolver(
     def decorator(func: T) -> T:
         if inspect.iscoroutinefunction(func):
 
-            @functools.wraps(func)
+            @wraps(func)
             async def async_wrapper(parent: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
                 start_time = time.perf_counter()
                 resolver_name = func.__name__
@@ -164,7 +164,7 @@ def profile_resolver(
 
             return cast(T, async_wrapper)
 
-        @functools.wraps(func)
+        @wraps(func)
         def sync_wrapper(parent: Any, info: GraphQLResolveInfo, **kwargs: Any) -> Any:
             start_time = time.perf_counter()
             resolver_name = func.__name__

@@ -8,10 +8,11 @@ import logging
 from contextlib import contextmanager
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
-from functools import wraps
 from typing import Any, Awaitable, Callable, Generator, Optional
 
 from fastapi import FastAPI, Request, Response
+
+from fraiseql.utils.annotations import wraps
 
 logger = logging.getLogger(__name__)
 

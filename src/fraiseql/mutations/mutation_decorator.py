@@ -22,6 +22,7 @@ from graphql import (
 from fraiseql.mutations.error_config import MutationErrorConfig
 from fraiseql.mutations.rust_executor import SELECTION_FORMAT
 from fraiseql.types.definitions import UNSET
+from fraiseql.utils.annotations import set_annotations
 from fraiseql.utils.casing import to_camel_case, to_snake_case
 
 T = TypeVar("T")
@@ -860,7 +861,7 @@ class MutationDefinition:
             return_type = self.success_type or self.error_type
 
         # Create a fresh annotations dict to avoid any shared reference issues
-        resolver.__annotations__ = {"input": self.input_type, "return": return_type}
+        set_annotations(resolver, {"input": self.input_type, "return": return_type})
 
         return resolver
 

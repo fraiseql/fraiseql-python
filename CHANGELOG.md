@@ -647,6 +647,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   updated_at)`. The functions `generate crud` writes still add `id` to the
   entity they return themselves: they return the table's row, which the view's
   `data` doesn't reach (a deleted row isn't in the view).
+- **On Python 3.14, a decorator over `@fraiseql.field` no longer drops the
+  field.** 3.14's `functools.wraps` copies `__annotate__` instead of
+  `__annotations__`, so a wrapper around a function whose annotations were
+  assigned (`@fraiseql.field`, `@fraiseql.dataloader_field`, `@fraiseql.connection`,
+  the mutation resolvers) reported none: `@requires_auth` over `@fraiseql.field`
+  left the field out of the schema. Every fraiseql wrapper now uses
+  `fraiseql.utils.annotations.wraps`, and the decorators that assign annotations
+  give them an `__annotate__` too, so a `functools.wraps` decorator from your own
+  code keeps them as well.
 
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`

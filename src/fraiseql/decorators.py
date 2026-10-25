@@ -2,10 +2,8 @@
 
 import asyncio
 import inspect
-import sys
 import time
 from collections.abc import Callable
-from functools import wraps
 from typing import Any, Optional, TypeVar, overload
 
 from graphql import GraphQLResolveInfo
@@ -13,6 +11,7 @@ from graphql import GraphQLResolveInfo
 from fraiseql.core.resolver_invocation import invoke_resolver
 from fraiseql.gql.schema_builder import SchemaRegistry
 from fraiseql.types.generic import Connection
+from fraiseql.utils.annotations import set_annotations, wraps
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -601,7 +600,7 @@ def field(
 
         # Copy type annotations
         if hasattr(func, "__annotations__"):
-            wrapped_func.__annotations__ = func.__annotations__.copy()
+            set_annotations(wrapped_func, func.__annotations__.copy())
 
         return wrapped_func  # type: ignore[return-value]
 
@@ -942,19 +941,9 @@ def connection(
             "supports_global_jsonb": True,  # Indicate global config support
         }
 
-        # CRITICAL: Set __annotations__ so schema builder can extract types
-        # Without this, get_type_hints(wrapper) returns {}
-        if sys.version_info >= (3, 14):
-            # functools.wraps copies __annotate__ and no longer __annotations__:
-            # an outer @query reads the annotations through it
-            def annotate(format: int) -> dict[str, Any]:
-                if format > 3:  # Format.STRING: annotationlib renders the values
-                    raise NotImplementedError
-                return dict(wrapper_annotations)
-
-            wrapper.__annotate__ = annotate  # type: ignore[attr-defined]
-        else:
-            wrapper.__annotations__ = wrapper_annotations
+        # The schema builder reads the pagination arguments and the Connection
+        # return type from these, also through an outer @query
+        set_annotations(wrapper, wrapper_annotations)
         # Its own parameters, not func's (``wraps`` points inspect at func): an
         # outer @query binds the pagination arguments against this signature
         wrapper.__signature__ = inspect.signature(wrapper, follow_wrapped=False)  # type: ignore[attr-defined]

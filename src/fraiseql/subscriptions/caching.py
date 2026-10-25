@@ -7,10 +7,11 @@ import pickle
 import time
 from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from functools import wraps
 from typing import Any, Callable
 
 from graphql import GraphQLResolveInfo
+
+from fraiseql.utils.annotations import wraps
 
 logger = logging.getLogger(__name__)
 

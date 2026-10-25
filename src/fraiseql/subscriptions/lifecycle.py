@@ -3,10 +3,11 @@
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
-from functools import wraps
 from typing import Any
 
 from graphql import GraphQLResolveInfo
+
+from fraiseql.utils.annotations import wraps
 
 logger = logging.getLogger(__name__)
 

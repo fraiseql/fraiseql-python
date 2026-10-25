@@ -1,12 +1,12 @@
 """Authentication decorators for GraphQL resolvers."""
 
 from collections.abc import Callable, Coroutine
-from functools import wraps
 from typing import Any, ParamSpec, TypeVar
 
 from graphql import GraphQLError, GraphQLResolveInfo
 
 from fraiseql.auth.base import UserContext
+from fraiseql.utils.annotations import wraps
 
 P = ParamSpec("P")
 T = TypeVar("T")
