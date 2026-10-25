@@ -73,24 +73,7 @@ async def lifespan(app):
     )
     complexity_analyzer = QueryComplexityAnalyzer(complexity_config)
 
-    # Initialize in-memory rate limiter
-    # For distributed rate limiting, use PostgreSQL-based rate limiter
-    # (shared across all app instances)
-    rate_limiter = InMemoryRateLimiter(
-        RateLimitConfig(
-            requests_per_minute=30,  # 30 requests per minute
-            requests_per_hour=1000,  # 1000 requests per hour
-            burst_size=5,  # Allow bursts of 5 requests
-            key_func=get_rate_limit_key,  # Custom key function
-        )
-    )
-
-    # Add middleware
-    app.add_middleware(RateLimiterMiddleware, rate_limiter=rate_limiter)
-
     yield
-
-    # Cleanup (none needed for in-memory rate limiter)
 
 
 def get_rate_limit_key(request: Request) -> str:
@@ -224,6 +207,20 @@ def create_app(config: FraiseQLConfig | None = None) -> Any:
         context_getter=custom_context_getter,
         lifespan=lifespan,
     )
+
+    # In-memory rate limiter, with a custom key. Middleware must be added before
+    # the app starts (Starlette refuses it in the lifespan). For the plain per-IP
+    # limit, FraiseQLConfig(rate_limit_enabled=True, ...) installs the same
+    # middleware. For a limit shared across instances, use PostgreSQLRateLimiter.
+    rate_limiter = InMemoryRateLimiter(
+        RateLimitConfig(
+            requests_per_minute=30,  # 30 requests per minute
+            requests_per_hour=1000,  # 1000 requests per hour
+            burst_size=5,  # at least 5 requests a minute, even above requests_per_minute
+            key_func=get_rate_limit_key,  # Custom key function
+        )
+    )
+    app.add_middleware(RateLimiterMiddleware, rate_limiter=rate_limiter)
 
     # Add custom endpoint to check rate limit status
     @app.get("/rate-limit-status")

@@ -71,8 +71,8 @@ FRAISEQL_CORS_ORIGINS='["https://app.example.com"]'
 ```
 
 TLS is terminated in front of the app (load balancer, reverse proxy, or uvicorn's
-`--ssl-certfile` / `--ssl-keyfile`); FraiseQL has no TLS setting. The
-`rate_limit_*` fields exist on `FraiseQLConfig` but nothing reads them.
+`--ssl-certfile` / `--ssl-keyfile`); FraiseQL has no TLS setting. Rate limiting is
+off unless `rate_limit_enabled` is set (see [Rate Limiting](rate-limiting.md)).
 
 ## Configuration Priority
 

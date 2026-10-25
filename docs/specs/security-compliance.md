@@ -69,9 +69,9 @@ FraiseQL provides three pre-configured security profiles that bundle together re
 | **Rate Limit** | 100 req/min | 50 req/min | 10 req/min |
 | **Audit Level** | STANDARD | **ENHANCED** | **VERBOSE** |
 | **Field Audit** | Off | **On** | **On** |
-| **Query Depth** | 15 levels | 10 levels | 10 levels |
-| **Query Complexity** | Unlimited | Limited | **500 max** |
-| **Body Size** | No limit | 1 MB | **512 KB** |
+| **Query Depth** | 15 levels | 10 levels | **5 levels** |
+| **Query Complexity** | 1000 max | 1000 max | **500 max** |
+| **Body Size** | 1 MB | 1 MB | **512 KB** |
 
 ### STANDARD Profile (Default)
 
@@ -91,12 +91,32 @@ config = FraiseQLConfig(
 > **Applying a profile in 1.31:** `FraiseQLConfig` has no `security_profile` setting
 > (it ignores fields it doesn't declare). A profile is a `SecurityProfileConfig`
 > value. `ProfileEnforcer(profile).apply_to_app(app)` is meant to install its
-> middleware, but it fails when the app starts (it adds `SecurityHeadersMiddleware`
-> without a config), and the body-size and rate-limit middleware it uses don't work
-> with the current Starlette yet: the body limiter drops the request body, so every
-> GraphQL POST gets a 422, and a rate-limit hit becomes a 500. What works today is
-> the profile's introspection policy, as above, and the security headers (see
-> [Security Header Configuration](#security-header-configuration)).
+> middleware, but the app then fails to start (`apply_to_app` adds
+> `SecurityHeadersMiddleware`, and another middleware, without the config they
+> need). Install the profile's body-size limit and rate limit yourself instead:
+>
+> ```python
+> from fraiseql.middleware import (
+>     BodySizeLimiterMiddleware,
+>     InMemoryRateLimiter,
+>     RateLimiterMiddleware,
+> )
+> from fraiseql.security.profiles import ProfileEnforcer, get_profile
+>
+> enforcer = ProfileEnforcer(get_profile("regulated"))
+> app.add_middleware(BodySizeLimiterMiddleware, config=enforcer.get_body_size_config())
+> app.add_middleware(
+>     RateLimiterMiddleware,
+>     rate_limiter=InMemoryRateLimiter(enforcer.get_rate_limit_config()),
+> )
+> ```
+>
+> A body over the profile's `max_body_size` then gets 413, and a client over
+> `rate_limit_requests_per_minute` gets 429 with `Retry-After` (counted per client
+> IP, and per user when a middleware in front of it sets `request.state.user_id`, in each
+> process's memory). The profile's introspection policy works as above,
+> and the security headers as in
+> [Security Header Configuration](#security-header-configuration).
 
 **Settings**:
 
@@ -109,7 +129,8 @@ config = FraiseQLConfig(
 - Audit Level: STANDARD (basic event logging)
 - Field-Level Audit: Disabled
 - Query Depth Limit: 15 levels
-- Query Complexity: Unlimited (auto-estimated)
+- Query Complexity: 1000 max
+- Request Body Size: 1 MB limit
 
 **Use Cases**:
 
@@ -151,7 +172,7 @@ config = FraiseQLConfig(
 - Audit Level: **ENHANCED** (detailed event tracking)
 - Field-Level Audit: **Enabled** (track field access)
 - Query Depth Limit: **10 levels** (reduced from STANDARD)
-- Query Complexity: Limited to 5000 estimated units
+- Query Complexity: 1000 max
 - Request Body Size: 1 MB limit
 
 **Use Cases**:
@@ -205,7 +226,7 @@ config = FraiseQLConfig(
 - Rate Limiting: **10 requests/minute** (highly restrictive)
 - Audit Level: **VERBOSE** (comprehensive logging)
 - Field-Level Audit: **Enabled** (all field access tracked)
-- Query Depth Limit: **10 levels** (same as REGULATED)
+- Query Depth Limit: **5 levels**
 - Query Complexity: **500 max** (very low limit)
 - Request Body Size: **512 KB limit** (protective)
 - CSRF: Strict validation with referrer checking
@@ -1061,137 +1082,41 @@ HTTP/1.1 200 OK
 
 ## Rate Limiting
 
-FraiseQL provides sophisticated rate limiting based on GraphQL operations and query complexity.
+Rate limiting is off by default. [Rate Limiting](../configuration/rate-limiting.md)
+describes both ways to turn it on:
 
-### Rate Limiting Strategies
+- **`FraiseQLConfig(rate_limit_enabled=True)`**: `create_fraiseql_app` installs
+  `RateLimiterMiddleware`. It counts requests per client IP, in a sliding window, in
+  each process's memory, against `rate_limit_requests_per_minute` and
+  `rate_limit_requests_per_hour`. Every counted response carries `X-RateLimit-Limit`,
+  `X-RateLimit-Remaining` and `X-RateLimit-Reset`.
+- **`setup_rate_limiting(app)`** (from `fraiseql.security`): installs
+  `RateLimitMiddleware`, with limits per path pattern and, on `POST /graphql`, per
+  operation type (100 queries, 20 mutations, 10 subscriptions a minute) and per
+  estimated cost (200 / 100 / 20 a minute for the low / medium / high tier). Windows
+  are fixed; counts are kept in memory, or in Redis with `redis_client=`.
 
-**Fixed Window** (traditional):
-
-- Time divided into fixed buckets (minute, hour, day)
-- Count requests in current window
-- Simple but susceptible to burst at window boundaries
-
-**Sliding Window** (recommended):
-
-- Requests in past N seconds
-- More accurate burst detection
-- Slightly more overhead
-
-**Token Bucket** (smoothing):
-
-- Tokens generated at constant rate
-- Each request consumes tokens
-- Burst capacity configurable
-- Smooths traffic patterns
-
-**FraiseQL Default**: Sliding window with 1-minute window
-
-### Configuration by Operation Type
-
-```python
-rate_limit_config = RateLimitConfig(
-    strategies={
-        "query": {
-            "limit": 100,           # 100 queries/minute
-            "window": 60,           # 1 minute
-            "strategy": "sliding_window",
-        },
-        "mutation": {
-            "limit": 20,            # 20 mutations/minute (stricter)
-            "window": 60,
-            "strategy": "sliding_window",
-        },
-        "subscription": {
-            "limit": 10,            # 10 subscriptions
-            "window": 60,
-            "strategy": "token_bucket",  # Smooth out subscriptions
-        },
-    }
-)
-```
-
-### Complexity-Based Rate Limiting
-
-Automatically estimates query complexity and applies stricter limits to expensive queries:
-
-```python
-# Query complexity auto-estimation
-# Simple query (5 fields): ~10 units
-# Moderate query (20 fields, 1-2 levels): ~50 units
-# Complex query (100+ fields, nested): ~500+ units
-
-rate_limit_config = RateLimitConfig(
-    complexity_limits={
-        "low": {      # 0-50 complexity units
-            "limit": 200,
-            "window": 60,
-        },
-        "medium": {   # 50-200 complexity units
-            "limit": 100,
-            "window": 60,
-        },
-        "high": {     # 200-500 complexity units
-            "limit": 20,
-            "window": 60,
-        },
-        "critical": { # 500+ complexity units
-            "limit": 5,
-            "window": 60,
-        },
-    }
-)
-```
-
-### Response Headers
-
-FraiseQL includes rate limit information in response headers:
-
-```text
-HTTP/1.1 200 OK
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 87
-X-RateLimit-Window: 60
-X-RateLimit-Reset: 1631384400
-```
-
-**Rate Limit Exceeded** (HTTP 429):
+A request over a limit gets HTTP 429 with `Retry-After`. From `RateLimiterMiddleware`:
 
 ```json
 HTTP/1.1 429 Too Many Requests
 Retry-After: 45
 
+{"detail": "Rate limit exceeded. Retry after 45 seconds."}
+```
+
+From the GraphQL limits of `RateLimitMiddleware`:
+
+```json
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+
 {
   "errors": [{
-    "message": "Rate limit exceeded",
-    "extensions": {
-      "code": "RATE_LIMIT_EXCEEDED",
-      "limit": 100,
-      "reset_in": 45
-    }
+    "message": "Rate limit exceeded for mutation operations",
+    "extensions": {"code": "RATE_LIMITED", "limit": 20, "window": 60}
   }]
 }
-```
-
-### Store Implementations
-
-**In-Memory Store** (development):
-
-```python
-RateLimitConfig(
-    store="memory",  # No external dependencies
-    cleanup_interval=300,  # Cleanup every 5 minutes
-)
-```
-
-**Redis Store** (production):
-
-```python
-RateLimitConfig(
-    store="redis",
-    redis_url="redis://localhost:6379/0",
-    key_prefix="rate_limit:",
-    ttl=3600,  # Automatic cleanup after 1 hour
-)
 ```
 
 ---

@@ -97,11 +97,10 @@ rate(process_resident_memory_bytes[10m])
 **Key Metrics**:
 
 ```promql
-# Rate limit violations
-rate(fraiseql_rate_limit_exceeded_total[5m])
+# Rate-limited requests (FraiseQL has no rate-limit metric; count the 429s)
+sum by (endpoint) (rate(fraiseql_http_requests_total{status="429"}[5m]))
 
-# Top violators
-topk(10, sum by (user_id) (fraiseql_rate_limit_exceeded_total))
+# Top rejected clients: from the "rate_limit.exceeded" security log entries
 ```
 
 **Quick Actions**:
@@ -191,7 +190,7 @@ rate(fraiseql_graphql_query_complexity_exceeded_total[5m])
 | Symptom | Likely Runbook | Quick Check |
 |---------|---------------|-------------|
 | Queries timing out | [Database Performance](./database-performance-degradation.md) | Check `fraiseql_db_query_duration_seconds` |
-| 429 errors | [Rate Limiting](./rate-limiting-triggered.md) | Check `fraiseql_rate_limit_exceeded_total` |
+| 429 errors | [Rate Limiting](./rate-limiting-triggered.md) | Check `fraiseql_http_requests_total{status="429"}` |
 | 401/403 errors | [Authentication](./authentication-failures.md) | Check `fraiseql_auth_failures_total` |
 | OOMKilled | [Memory Usage](./high-memory-usage.md) | Check `process_resident_memory_bytes` |
 | CPU spike | [GraphQL DoS](./graphql-query-dos.md) | Check `fraiseql_graphql_query_duration_seconds` |
@@ -229,8 +228,8 @@ fraiseql_db_connections_total
 # Auth failures
 rate(fraiseql_auth_failures_total[5m])
 
-# Rate limit violations
-rate(fraiseql_rate_limit_exceeded_total[5m])
+# Rate-limited requests
+sum(rate(fraiseql_http_requests_total{status="429"}[5m]))
 ```
 
 **Performance Metrics**:

@@ -452,11 +452,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   security and KMS APIs (the production runbooks, database-api, kms, api
   index, authentication, multi-tenancy, event-sourcing pages among them); config
   examples drop fields `FraiseQLConfig` doesn't have and say which declared ones nothing
-  reads yet (`max_query_depth`, `complexity_*`, `rate_limit_*`); `order_by` uses
+  reads yet (`max_query_depth`, `complexity_*`); `order_by` uses
   `[{"field": "DESC"}]` (`find()` ignores tuples) and `where` uses `{"field": {"gte": …}}`
   (not `field__gte`); the OLAP page shows the real auto-aggregation shape; vector search
   queries a flat view; first-hour's timestamp step matches the quickstart table; and the
-  bulk-operations SQL example runs.
+  bulk-operations SQL example runs. The rate-limiting pages (configuration,
+  runbooks, deployment checklist, security spec) describe the two rate limiters as
+  they behave: which one the `rate_limit_*` settings install, the real 429 bodies
+  and headers, fixed windows in `setup_rate_limiting` (`strategy` and `burst` are
+  ignored), which client address each one keys on, and 429s counted in
+  `fraiseql_http_requests_total` (there is no `fraiseql_rate_limit_exceeded_total`);
+  the rate-limit checks no longer target `/health`, which is never limited; the
+  deployment checklist no longer passes `security_profile=` to
+  `create_fraiseql_app`; and `examples/security_features_example.py` adds its rate
+  limiter before the app starts, not in the lifespan, where Starlette refuses it.
 
 - **With `auto_camel_case=False`, a nested object answers under its own key.**
   `{ notes { author_info { first_name } } }` came back as

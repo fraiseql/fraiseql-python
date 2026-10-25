@@ -146,6 +146,7 @@ metadata:
 data:
   FRAISEQL_ENVIRONMENT: "production"
   FRAISEQL_INTROSPECTION_POLICY: "disabled"
+  FRAISEQL_RATE_LIMIT_ENABLED: "true"
   FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE: "100"
   FRAISEQL_APQ_MODE: "required"
   FRAISEQL_APQ_STORAGE_BACKEND: "postgresql"
@@ -646,17 +647,24 @@ config = FraiseQLConfig(
 
 ### Rate Limiting
 
+Rate limiting is off by default. With `rate_limit_enabled=True`,
+`create_fraiseql_app` limits each client IP, counted in each process's memory (see
+[Rate Limiting](../configuration/rate-limiting.md)):
+
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
     rate_limit_enabled=True,
-    rate_limit_requests_per_minute=100,      # 100 req/min = ~1.67 req/sec
-    rate_limit_requests_per_hour=5000,       # 5000 req/hour
-    rate_limit_burst_size=10,                # Allow 10 concurrent
-    rate_limit_window_type="sliding",        # More accurate
-    rate_limit_whitelist=["internal.ips"],
-    rate_limit_blacklist=["malicious.ips"]
+    rate_limit_requests_per_minute=100,      # in any 60 seconds
+    rate_limit_requests_per_hour=5000,       # in any hour
+    rate_limit_burst_size=10,                # allowed a minute even above the per-minute limit
+    rate_limit_whitelist=["10.0.0.5"],       # client IPs never limited
+    rate_limit_blacklist=["203.0.113.9"],    # client IPs always rejected (403)
 )
 ```
+
+Behind a reverse proxy, run uvicorn with `--proxy-headers
+--forwarded-allow-ips=<proxy address>`, or every client shares the proxy's limit.
 
 ### Query Complexity Limits
 

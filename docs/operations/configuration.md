@@ -419,18 +419,22 @@ config = FraiseQLConfig(
 
 | Field | Type | Default | Environment |
 |-------|------|---------|-------------|
-| `rate_limit_enabled` | bool | `true` | `FRAISEQL_RATE_LIMIT_ENABLED` |
+| `rate_limit_enabled` | bool | `false` | `FRAISEQL_RATE_LIMIT_ENABLED` |
 | `rate_limit_requests_per_minute` | int | `60` | `FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE` |
 | `rate_limit_requests_per_hour` | int | `1000` | `FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR` |
 | `rate_limit_burst_size` | int | `10` | `FRAISEQL_RATE_LIMIT_BURST_SIZE` |
-| `rate_limit_window_type` | str | `"sliding"` | `FRAISEQL_RATE_LIMIT_WINDOW_TYPE` |
+| `rate_limit_window_type` | str | `"sliding"` | `FRAISEQL_RATE_LIMIT_WINDOW_TYPE` (only `"sliding"` is implemented) |
+| `rate_limit_whitelist` | list[str] | `[]` | `FRAISEQL_RATE_LIMIT_WHITELIST` (JSON list of client IPs) |
+| `rate_limit_blacklist` | list[str] | `[]` | `FRAISEQL_RATE_LIMIT_BLACKLIST` (JSON list of client IPs) |
+
+With `rate_limit_enabled`, `create_fraiseql_app` limits each client IP, counted in
+each process's memory; see [Rate Limiting](../configuration/rate-limiting.md).
 
 ```python
 config = FraiseQLConfig(
     database_url="postgresql://app:pass@localhost/myapp",
     rate_limit_enabled=True,
     rate_limit_requests_per_minute=120,
-    rate_limit_window_type="sliding",
 )
 ```
 

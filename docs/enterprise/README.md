@@ -91,12 +91,15 @@ FRAISEQL_REVOCATION_TTL=86400
 
 ### Rate Limiting
 
-**Brute-force and abuse protection** on the GraphQL endpoint:
+**Brute-force and abuse protection**, off by default. With `rate_limit_enabled`,
+`create_fraiseql_app` limits every path but `/health`, `/ready`, `/metrics` and `/`,
+per client IP:
 
-- Per-minute and per-hour request ceilings.
+- Per-minute and per-hour request ceilings, in a sliding window.
 - Burst allowance for short traffic spikes.
-- Sliding or fixed time windows.
-- Whitelist/blacklist of client identifiers.
+- Allow and deny lists of client IPs.
+- Counts kept in each process's memory (see
+  [Rate Limiting](../configuration/rate-limiting.md) for a Redis-backed alternative).
 
 ```python
 config = FraiseQLConfig(
@@ -105,7 +108,6 @@ config = FraiseQLConfig(
     rate_limit_requests_per_minute=60,
     rate_limit_requests_per_hour=1000,
     rate_limit_burst_size=10,
-    rate_limit_window_type="sliding",  # "sliding" or "fixed"
 )
 ```
 
@@ -153,7 +155,7 @@ inspected or tampered with in transit.
 |---------|---------------------------|----------------------|
 | Error sanitization | `environment="production"` | `FRAISEQL_ENVIRONMENT` |
 | Token revocation | `revocation_enabled`, `revocation_check_enabled`, `revocation_ttl`, `revocation_store_type` | `FRAISEQL_REVOCATION_*` |
-| Rate limiting | `rate_limit_enabled`, `rate_limit_requests_per_minute`, `rate_limit_requests_per_hour`, `rate_limit_burst_size`, `rate_limit_window_type` | `FRAISEQL_RATE_LIMIT_*` |
+| Rate limiting | `rate_limit_enabled`, `rate_limit_requests_per_minute`, `rate_limit_requests_per_hour`, `rate_limit_burst_size`, `rate_limit_whitelist`, `rate_limit_blacklist` | `FRAISEQL_RATE_LIMIT_*` |
 | Query complexity | `complexity_enabled`, `complexity_max_score`, `complexity_max_depth` | `FRAISEQL_COMPLEXITY_*` |
 | Introspection control | `introspection_policy` | `FRAISEQL_INTROSPECTION_POLICY` |
 | CORS | `cors_enabled`, `cors_origins` | `FRAISEQL_CORS_*` |
