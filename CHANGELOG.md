@@ -691,6 +691,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per row of five fields, against 0.01 ms). With no type registered for the
   view or the field's type, the resolver can't run, and a warning says so.
 
+- **A nested-array `where` filters the elements.** A list field declared with
+  `fraise_field(supports_where_filtering=True)` returned every element for
+  `devices(where: {status: {eq: "active"}})`: graphql-core passes the argument to
+  its resolver as a dict, and the resolver only read where objects, so a dict
+  matched everything. It now reads the dict (GraphQL or Python field names, `AND`
+  / `OR` / `NOT`, an enum field compared by its value). An operator the Python
+  filter lacks (the filter types also offer `ilike`, `matches`...) is a GraphQL
+  error naming the supported ones; it used to match every element.
+
 - **`db.aggregate()` with more than one expression runs.** It wrote the
   expressions one after the other without commas
   (`SELECT SUM(amount) AS totalCOUNT(*) AS n`), a syntax error. They are now

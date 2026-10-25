@@ -230,8 +230,9 @@ class TestApplySingleOperator:
         assert _apply_single_operator(None, "isnull", False) is False
 
     def test_unknown_operator(self) -> None:
-        """Test unknown operator returns True."""
-        assert _apply_single_operator("value", "unknown_op", "anything") is True
+        """An unknown operator raises: matching every element would ignore the filter."""
+        with pytest.raises(ValueError, match="'unknown_op' is not supported"):
+            _apply_single_operator("value", "unknown_op", "anything")
 
 
 # Tests for _apply_field_filter_operators

@@ -178,7 +178,7 @@ query {
     # Filter servers with complex conditions
     servers(where: {
       AND: [
-        { status: { eq: ACTIVE } }
+        { status: { eq: "active" } }
         { cpuUsage: { lt: 80.0 } }
         { memoryGb: { gte: 16 } }
         { NOT: { ipAddress: { isnull: true } } }
@@ -204,7 +204,7 @@ All conditions must be true:
 where: {
   AND: [
     { hostname: { contains: "prod" } }
-    { status: { eq: ACTIVE } }
+    { status: { eq: "active" } }
   ]
 }
 ```
@@ -228,7 +228,7 @@ Inverts the condition:
 
 ```graphql
 where: {
-  NOT: { status: { eq: OFFLINE } }
+  NOT: { status: { eq: "offline" } }
 }
 ```
 
@@ -239,7 +239,7 @@ You can combine all operators with unlimited depth:
 ```graphql
 where: {
   AND: [
-    { status: { eq: ACTIVE } }
+    { status: { eq: "active" } }
     {
       OR: [
         { cpuUsage: { gte: 90 } }
@@ -257,6 +257,12 @@ where: {
 ```
 
 ## Field Operators
+
+The elements are filtered in Python, after the row is read, with the operators
+below. An enum field takes the enum's values (`{ status: { eq: "active" } }`). The
+filter types offer more operators than these (`ilike`, `matches`...); one outside
+these lists is a GraphQL error naming the supported ones, rather than a filter
+that matches every element.
 
 ### String Operators
 
@@ -319,7 +325,7 @@ For very large arrays (1000+ items), consider:
 ### Filter Active Items
 
 ```graphql
-items(where: { status: { eq: ACTIVE } })
+items(where: { status: { eq: "active" } })
 ```
 
 ### Search by Name
@@ -349,7 +355,7 @@ servers(where: { ipAddress: { isnull: false } })
 
 ```graphql
 servers(where: {
-  status: { in: [ACTIVE, MAINTENANCE] }
+  status: { in: ["active", "maintenance"] }
 })
 ```
 

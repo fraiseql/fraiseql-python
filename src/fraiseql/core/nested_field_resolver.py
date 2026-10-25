@@ -11,9 +11,13 @@ well with PostgreSQL views that pre-join related data into JSONB columns.
 """
 
 import logging
+from collections.abc import Mapping
+from enum import Enum
 from typing import Any, Callable, get_args, get_origin
 
 from graphql import GraphQLResolveInfo
+
+from fraiseql.utils.casing import to_snake_case
 
 logger = logging.getLogger(__name__)
 
@@ -279,10 +283,53 @@ async def _apply_where_filter_to_array(items: list, where_filter: Any, field_typ
     return filtered_items
 
 
+def _item_value(item: Any, field_name: str) -> Any:
+    """The value of an element's field: an attribute, or a key of a dict element.
+
+    ``field_name`` is the Python name or the GraphQL (camelCase) name.
+    """
+    snake = to_snake_case(field_name)
+    if isinstance(item, Mapping):
+        return item[snake] if snake in item else item.get(field_name)
+    value = getattr(item, snake, None)
+    return getattr(item, field_name, None) if value is None and snake != field_name else value
+
+
+async def _item_matches_where_dict(item: Any, where: Mapping[str, Any]) -> bool:
+    """Whether an element matches a ``where`` as graphql-core passes it: a dict."""
+    for key, condition in where.items():
+        if condition is None:
+            continue
+        if key == "AND":
+            for sub in condition:
+                if not await _item_matches_where_criteria(item, sub):
+                    return False
+        elif key == "OR":
+            if not condition:
+                return False
+            matched = False
+            for sub in condition:
+                if await _item_matches_where_criteria(item, sub):
+                    matched = True
+                    break
+            if not matched:
+                return False
+        elif key == "NOT":
+            if await _item_matches_where_criteria(item, condition):
+                return False
+        elif not _apply_field_filter_operators(_item_value(item, key), condition):
+            return False
+    return True
+
+
 async def _item_matches_where_criteria(item: Any, where_filter: Any) -> bool:
     """Check if an item matches the where filter criteria."""
     if not where_filter:
         return True
+
+    # graphql-core passes an input object argument as a dict (GraphQL names)
+    if isinstance(where_filter, Mapping):
+        return await _item_matches_where_dict(item, where_filter)
 
     # Convert where filter to SQL where type if it has the conversion method
     if hasattr(where_filter, "_to_sql_where"):
@@ -338,7 +385,7 @@ async def _item_matches_where_criteria(item: Any, where_filter: Any) -> bool:
             if field_filter is None:
                 continue
 
-            item_value = getattr(item, field_name, None)
+            item_value = _item_value(item, field_name)
             if not _apply_field_filter_operators(item_value, field_filter):
                 return False
         return True
@@ -350,7 +397,7 @@ async def _item_matches_where_criteria(item: Any, where_filter: Any) -> bool:
             if field_name in ("AND", "OR", "NOT") or field_filter is None:
                 continue
 
-            item_value = getattr(item, field_name, None)
+            item_value = _item_value(item, field_name)
             if not _apply_field_filter_operators(item_value, field_filter):
                 return False
         return True
@@ -399,7 +446,7 @@ async def _evaluate_sql_where_on_item(item: Any, sql_where: Any) -> bool:
         if field_name in ("AND", "OR", "NOT") or field_conditions is None:
             continue
 
-        item_value = getattr(item, field_name, None)
+        item_value = _item_value(item, field_name)
         if not _apply_field_filter_operators(item_value, field_conditions):
             return False
 
@@ -412,8 +459,10 @@ def _apply_field_filter_operators(item_value: Any, filter_conditions: Any) -> bo
         return True
 
     # Handle dict-based filter conditions
-    if isinstance(filter_conditions, dict):
+    if isinstance(filter_conditions, Mapping):
         for operator, filter_value in filter_conditions.items():
+            if filter_value is None:
+                continue  # an operator the query sets to null filters nothing
             if not _apply_single_operator(item_value, operator, filter_value):
                 return False
         return True
@@ -432,6 +481,9 @@ def _apply_field_filter_operators(item_value: Any, filter_conditions: Any) -> bo
 
 def _apply_single_operator(item_value: Any, operator: str, filter_value: Any) -> bool:
     """Apply a single filter operator to a value."""
+    # An enum field's filter takes the enum's values (a StringFilter)
+    if isinstance(item_value, Enum) and not isinstance(filter_value, Enum):
+        item_value = item_value.value
     # Handle both GraphQL standard names and internal names
     if operator in ("eq", "equals"):
         return item_value == filter_value
@@ -459,6 +511,34 @@ def _apply_single_operator(item_value: Any, operator: str, filter_value: Any) ->
         if filter_value:
             return item_value is None
         return item_value is not None
-    # Unknown operator - default to True
-    logger.warning(f"Unknown filter operator: {operator}")
-    return True
+    # Matching every element would ignore the filter without a word
+    supported = ", ".join(sorted(_OPERATORS))
+    msg = (
+        f"Operator {operator!r} is not supported in a nested array where "
+        f"(it is filtered in Python); supported operators: {supported}"
+    )
+    raise ValueError(msg)
+
+
+_OPERATORS = frozenset(
+    {
+        "eq",
+        "equals",
+        "neq",
+        "not",
+        "gt",
+        "gte",
+        "lt",
+        "lte",
+        "contains",
+        "startswith",
+        "startsWith",
+        "endswith",
+        "endsWith",
+        "in",
+        "in_",
+        "nin",
+        "notIn",
+        "isnull",
+    }
+)
