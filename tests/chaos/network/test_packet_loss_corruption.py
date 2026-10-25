@@ -258,23 +258,30 @@ class TestPacketLossCorruptionChaos(ChaosTestCase):
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         iterations = max(4, int(8 * self.chaos_config.load_multiplier))
 
-        for _i in range(iterations):
+        # Each packet, duplicate or not, costs a fixed simulated 2ms. The time is
+        # simulated rather than slept and measured: time.sleep(0.002) overshoots by
+        # whatever the machine's load adds, which alone pushed the average past the
+        # bound below on a busy machine.
+        packet_count = 5
+        packet_time_ms = 2.0
+        # DETERMINISTIC PATTERN: 0, 1, 2 duplicates in turn (was random.randint(0, 2))
+        duplicate_pattern = (0, 1, 2)
+
+        for i in range(iterations):
             # Simulate receiving some packets twice
-            packet_count = 5
-            duplicates = random.randint(0, 2)  # 0-2 duplicates
+            duplicates = duplicate_pattern[i % len(duplicate_pattern)]
 
-            start = time.time()
-            for _ in range(packet_count + duplicates):
-                time.sleep(0.002)  # 2ms per packet
-
-            total_time = (time.time() - start) * 1000
+            total_time = (packet_count + duplicates) * packet_time_ms
             duplicate_scenarios.append(total_time)
             self.metrics.record_query_time(total_time)
 
+        assert max(duplicate_scenarios) > packet_count * packet_time_ms, (
+            "Should simulate some duplicate packets"
+        )
         avg_duplicate_time = statistics.mean(duplicate_scenarios)
 
         # Duplicates shouldn't cause excessive delays
-        expected_max_time = 5 * 2 * 1.5  # 5 packets * 2ms * 1.5x overhead
+        expected_max_time = packet_count * packet_time_ms * 1.5  # 1.5x overhead
         assert avg_duplicate_time < expected_max_time, (
             f"Duplicate handling too slow: {avg_duplicate_time:.1f}ms > {expected_max_time}ms"
         )
