@@ -352,54 +352,50 @@ app.add_middleware(
 ### Token Security
 
 ```python
+import os
+from datetime import timedelta
+
 import fraiseql
+from fraiseql.auth.native import TokenManager
 
-# JWT configuration
-from fraiseql.auth import CustomJWTProvider
-
-auth_provider = CustomJWTProvider(
-    secret_key=os.getenv("JWT_SECRET_KEY"),  # NEVER hardcode
-    algorithm="HS256",
-    issuer="https://yourapp.com",
-    audience="https://api.yourapp.com"
+# JWT configuration (HS256 access and refresh tokens)
+token_manager = TokenManager(
+    secret_key=os.environ["JWT_SECRET_KEY"],  # NEVER hardcode
+    access_token_ttl=timedelta(hours=1),
+    refresh_token_ttl=timedelta(days=30),
 )
 
-# Token expiration
-ACCESS_TOKEN_TTL = 3600  # 1 hour
-REFRESH_TOKEN_TTL = 2592000  # 30 days
+
+@fraiseql.type
+class TokenPair:
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
 
 # Token rotation
 @fraiseql.mutation
-async def refresh_access_token(info, refresh_token: str) -> dict:
+async def refresh_access_token(info, refresh_token: str) -> TokenPair:
     """Rotate access token using refresh token."""
-    # Validate refresh token
-    payload = await auth_provider.validate_token(refresh_token)
+    # Checks the signature, the expiry and that it is a refresh token
+    payload = token_manager.verify_refresh_token(refresh_token)
 
-    # Check token type
-    if payload.get("token_type") != "refresh":
-        raise ValueError("Invalid token type")
-
-    # Generate new access token
-    new_access_token = generate_access_token(
-        user_id=payload["sub"],
-        ttl=ACCESS_TOKEN_TTL
-    )
-
-    # Optionally rotate refresh token too
-    new_refresh_token = generate_refresh_token(
-        user_id=payload["sub"],
-        ttl=REFRESH_TOKEN_TTL
-    )
+    # New access and refresh tokens, in the same token family
+    tokens = token_manager.generate_tokens(payload["sub"], family_id=payload["family"])
 
     # Revoke old refresh token
     await revocation_service.revoke_token(payload)
 
-    return {
-        "access_token": new_access_token,
-        "refresh_token": new_refresh_token,
-        "token_type": "bearer"
-    }
+    return TokenPair(
+        access_token=tokens["access_token"],
+        refresh_token=tokens["refresh_token"],
+    )
 ```
+
+`verify_refresh_token` raises `TokenExpiredError` or `InvalidTokenError` (from
+`fraiseql.auth.native`). For tokens from an identity provider (Auth0, or your own
+issuer with `iss` / `aud` claims), validate them in an `AuthProvider` instead: see
+[Authentication](../advanced/authentication.md#custom-jwt-provider).
 
 ### Password Security
 
@@ -441,50 +437,42 @@ class PasswordHasher:
 
 ### PII Protection
 
+Keep the sensitive values out of the type's annotated fields (every annotated field is
+in the schema), and expose them through field resolvers that check who asks:
+
 ```python
 import fraiseql
+from fraiseql.security import authorize_field
+from fraiseql.types import ID
 
-from dataclasses import dataclass
 
-@dataclass
-class User:
-    """User with PII protection."""
-    id: ID
-    email: str
-    name: str
-    _ssn: str | None = None  # Private field
-    _credit_card: str | None = None
-
-    @property
-    def ssn_masked(self) -> str | None:
-        """Return masked SSN."""
-        if not self._ssn:
-            return None
-        return f"***-**-{self._ssn[-4:]}"
-
-    @property
-    def credit_card_masked(self) -> str | None:
-        """Return masked credit card."""
-        if not self._credit_card:
-            return None
-        return f"****-****-****-{self._credit_card[-4:]}"
-
-# GraphQL type
-@fraiseql.type_
+@fraiseql.type
 class UserGQL:
     id: ID
     email: str
     name: str
 
-    # Only admins can see full SSN
-    @authorize_field(lambda obj, info: info.context["user"].has_role("admin"))
-    async def ssn(self) -> str | None:
+    # Only admins can see the full SSN
+    @fraiseql.field
+    @authorize_field(lambda info: info.context["user"].has_role("admin"))
+    async def ssn(self, info) -> str | None:
         return self._ssn
 
-    # Everyone sees masked version
-    async def ssn_masked(self) -> str | None:
-        return self.ssn_masked
+    # Everyone sees the masked version
+    @fraiseql.field
+    async def ssn_masked(self, info) -> str | None:
+        return f"***-**-{self._ssn[-4:]}" if self._ssn else None
+
+
+def to_graphql(row: dict) -> UserGQL:
+    user = UserGQL(id=row["id"], email=row["email"], name=row["name"])
+    user._ssn = row.get("ssn")  # an attribute, not a schema field
+    return user
 ```
+
+A denied `ssn` is `null`, with the error `Not authorized to access field 'ssn'`
+(code `FIELD_AUTHORIZATION_ERROR`). These resolvers run when graphql-core resolves the
+object, as for a resolver that returns `UserGQL` instances.
 
 ### Data Encryption
 

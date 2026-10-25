@@ -317,8 +317,9 @@ auth_provider = auth_config.create_provider()
 
 # Create app with authentication
 app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
     types=[User, Post, Order],
-    auth_provider=auth_provider
+    auth=auth_provider,  # or auth=auth_config
 )
 ```
 
@@ -445,9 +446,13 @@ async def get_management_api_token(domain: str, client_id: str, client_secret: s
 Implement custom JWT authentication for non-Auth0 providers:
 
 ```python
-from fraiseql.auth import AuthProvider, UserContext, InvalidTokenError, TokenExpiredError
-import jwt
 from typing import Any
+from uuid import UUID
+
+import jwt
+
+from fraiseql.auth import AuthProvider, UserContext
+from fraiseql.auth.base import InvalidTokenError, TokenExpiredError
 
 class CustomJWTProvider(AuthProvider):
     """Custom JWT authentication provider."""
@@ -492,7 +497,7 @@ class CustomJWTProvider(AuthProvider):
         payload = await self.validate_token(token)
 
         return UserContext(
-            user_id=UUID(payload.get("sub", payload.get("user_id"))),
+            user_id=str(UUID(payload.get("sub", payload.get("user_id")))),
             email=payload.get("email"),
             name=payload.get("name"),
             roles=payload.get("roles", []),
@@ -519,87 +524,62 @@ auth_provider = CustomJWTProvider(
 
 # Create app
 app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
     types=[User, Post],
-    auth_provider=auth_provider
+    auth=auth_provider,
 )
 ```
 
 ## Native Authentication
 
-FraiseQL includes native username/password authentication with session management:
+`fraiseql.auth.native` has the pieces of email/password authentication:
+
+- `TokenManager(secret_key, access_token_ttl=timedelta(minutes=15),
+  refresh_token_ttl=timedelta(days=30), algorithm="HS256")`: `generate_tokens(user_id,
+  family_id=None, user_claims=None)` returns `access_token`, `refresh_token`,
+  `family_id` and `expires_at`; `verify_access_token` / `verify_refresh_token` decode
+  one or raise `TokenExpiredError` / `InvalidTokenError` (from `fraiseql.auth.native`).
+- `NativeAuthProvider`, an `AuthProvider` that validates those access tokens and loads
+  the user from `tb_user`, built by `await create_native_auth_provider(db_pool,
+  schema="public", secret_key=None, access_token_ttl_minutes=15,
+  refresh_token_ttl_days=30)` (`secret_key` falls back to `JWT_SECRET_KEY`).
+- `get_native_auth_router()`, a FastAPI router with `POST /register` (`{"email",
+  "password", "name"}`; the password needs 8 characters with an upper-case letter, a
+  lower-case letter, a digit and a special character), `POST /login` (`{"email",
+  "password"}`, answering `{"user": {...}, "access_token", "refresh_token",
+  "token_type": "bearer"}`), `POST /refresh` (`{"refresh_token"}`), `GET /me`,
+  `POST /logout` (`{"refresh_token"}`, with the bearer token), `POST /forgot-password`,
+  `POST /reset-password`, `GET /sessions` and `DELETE /sessions/{session_id}`.
 
 ```python
-from fraiseql.auth.native import (
-    NativeAuthProvider,
-    NativeAuthFactory,
-    UserRepository,
-    create_auth_router
+from fraiseql.auth.native import create_native_auth_provider, get_native_auth_router
+
+# db_pool: a psycopg AsyncConnectionPool you opened
+auth_provider = await create_native_auth_provider(db_pool, secret_key="your-secret-key")
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    auth=auth_provider,
 )
-from fraiseql.types import ID
-
-# 1. Implement user repository
-class PostgresUserRepository(UserRepository):
-    """User repository backed by PostgreSQL."""
-
-    async def get_user_by_username(self, username: str) -> User | None:
-        return await db.find_one("v_user", "user", None, mandatory_filters={"username": username})
-
-    async def get_user_by_id(self, user_id: str) -> User | None:
-        return await db.find_one("v_user", "user", None, mandatory_filters={"id": user_id})
-
-    async def create_user(self, username: str, password_hash: str, email: str) -> User:
-        result = await db.execute_function("fn_create_user", {
-            "username": username,
-            "password_hash": password_hash,
-            "email": email
-        })
-        return await db.find_one("v_user", "user", None, mandatory_filters={"id": result["id"]})
-
-# 2. Create provider
-user_repo = PostgresUserRepository()
-
-auth_provider = NativeAuthFactory.create_provider(
-    user_repository=user_repo,
-    secret_key="your-secret-key",
-    access_token_ttl=3600,  # 1 hour
-    refresh_token_ttl=2592000  # 30 days
-)
-
-# 3. Mount authentication routes
-auth_router = create_auth_router(auth_provider)
-app.include_router(auth_router, prefix="/auth")
+app.include_router(get_native_auth_router(), prefix="/auth")
 ```
 
-**Authentication Endpoints:**
+In this release these don't make a working login flow on their own:
 
-```bash
-# Register
-POST /auth/register
-{
-  "username": "john",
-  "password": "secure_password",
-  "email": "john@example.com"
-}
+- The tables aren't shipped. `apply_native_auth_schema(db_pool)` reads
+  `migrations/001_native_auth_schema.sql`, which the package doesn't contain, and
+  raises `FileNotFoundError`. Create `tb_user`, `tb_session`, `tb_used_refresh_token`
+  and `tb_password_reset` yourself, with the columns `fraiseql/auth/native/models.py`
+  and `router.py` read.
+- The router's endpoints take their connection from `request.app.state.db_pool.acquire()`,
+  which a psycopg pool doesn't have (the request fails with a 500), or from
+  `request.state.db_connection`, which a middleware of yours must set.
+- The router signs and checks tokens with the `JWT_SECRET_KEY` environment variable
+  (falling back to a fixed test key), not with the provider's `secret_key`: set
+  `JWT_SECRET_KEY`, and give the provider the same value.
 
-# Login
-POST /auth/login
-{
-  "username": "john",
-  "password": "secure_password"
-}
-# Returns: {"access_token": "...", "refresh_token": "...", "token_type": "bearer"}
-
-# Refresh token
-POST /auth/refresh
-{
-  "refresh_token": "..."
-}
-# Returns: {"access_token": "...", "refresh_token": "..."}
-
-# Logout
-POST /auth/logout
-Authorization: Bearer <access_token>
-```
+See `examples/native_auth_app.py`.
 
 ## Authorization Decorators
 
@@ -608,7 +588,7 @@ Authorization: Bearer <access_token>
 Require authentication for any resolver:
 
 ```python
-import fraiseql, mutation
+import fraiseql
 from fraiseql.auth import requires_auth
 
 @fraiseql.query
@@ -666,7 +646,7 @@ async def delete_user(info, user_id: str) -> bool:
 Require specific role:
 
 ```python
-import fraiseql, mutation
+import fraiseql
 from fraiseql.auth import requires_role
 
 @fraiseql.query
@@ -836,7 +816,7 @@ accepted. A token of that user without `iat` is rejected from then on.
 
 ```python
 from fastapi import APIRouter, Header, HTTPException
-from fraiseql.auth import AuthenticationError
+from fraiseql.auth.base import AuthenticationError
 
 router = APIRouter()
 
@@ -923,59 +903,72 @@ app.add_middleware(
 
 ## Field-Level Authorization
 
-Restrict access to specific fields based on roles/permissions:
+Restrict access to specific fields based on roles/permissions. `authorize_field` wraps
+a field resolver (a method under `@fraiseql.field`); its check receives `info`, and the
+object as second argument if it takes two:
 
 ```python
 import fraiseql
-import fraiseql_
-from fraiseql.security import authorize_field, any_permission
+from fraiseql.security import any_permission, authorize_field
 from fraiseql.types import ID
 
-@type_
+
+def is_admin(info, *_) -> bool:  # any_permission also passes the object
+    return info.context["user"].has_role("admin")
+
+
+@fraiseql.type
 class User:
     id: ID
     name: str
-    email: str
 
-    # Only admins or user themselves can see email
-    @authorize_field(lambda user, info: (
-        info.context["user"].user_id == user.id or
-        info.context["user"].has_role("admin")
+    # Only admins or the user themselves can see the email
+    @fraiseql.field
+    @authorize_field(lambda info, user: (
+        info.context["user"].user_id == str(user.id) or is_admin(info)
     ))
-    async def email(self) -> str:
+    async def email(self, info) -> str | None:
         return self._email
 
     # Only admins can see internal notes
-    @authorize_field(any_permission("admin:all"))
-    async def internal_notes(self) -> str | None:
-        return self._internal_notes
+    @fraiseql.field
+    @authorize_field(any_permission(is_admin))
+    async def internal_notes(self, info) -> str | None:
+        return self._notes
+
+
+@fraiseql.query
+async def user(info, id: ID) -> User:
+    row = ...  # load the user, including the protected values
+    u = User(id=row["id"], name=row["name"])
+    u._email, u._notes = row["email"], row["notes"]  # attributes, not schema fields
+    return u
 ```
+
+A denied field answers `null`, with an error `Not authorized to access field 'email'`
+(code `FIELD_AUTHORIZATION_ERROR`); make such a field nullable, or the error nulls its
+parent. Keep the protected values out of the type's annotated fields: every annotated
+field (an `_email: str` too, as `Email`) is in the schema, readable without the check.
+The checks run when graphql-core resolves the object, as for a resolver that returns
+`User(...)` instances like the one above.
 
 **Authorization Patterns:**
 
 ```python
 # Permission-based
-@authorize_field(lambda obj, info: info.context["user"].has_permission("users:read_pii"))
-async def ssn(self) -> str:
-    return self._ssn
+@authorize_field(lambda info: info.context["user"].has_permission("users:read_pii"))
 
 # Role-based
-@authorize_field(lambda obj, info: info.context["user"].has_role("admin"))
-async def audit_log(self) -> list[AuditEvent]:
-    return self._audit_log
+@authorize_field(lambda info: info.context["user"].has_role("admin"))
 
-# Owner-based
-@authorize_field(lambda order, info: order.user_id == info.context["user"].user_id)
-async def payment_details(self) -> PaymentDetails:
-    return self._payment_details
+# Owner-based (the object is the second argument)
+@authorize_field(lambda info, order: order.user_id == info.context["user"].user_id)
 
 # Combined
-@authorize_field(lambda obj, info: (
-    info.context["user"].has_permission("orders:read_all") or
-    obj.user_id == info.context["user"].user_id
+@authorize_field(lambda info, obj: (
+    info.context["user"].has_permission("orders:read_all")
+    or obj.user_id == info.context["user"].user_id
 ))
-async def internal_status(self) -> str:
-    return self._internal_status
 ```
 
 ## Multi-Provider Setup
@@ -983,10 +976,12 @@ async def internal_status(self) -> str:
 Support multiple authentication methods simultaneously:
 
 ```python
-from fraiseql.auth import Auth0Provider, CustomJWTProvider
-from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.auth import Auth0Provider, AuthProvider, UserContext
+from fraiseql.auth.base import InvalidTokenError
 
-class MultiAuthProvider:
+# CustomJWTProvider: the class from "Custom JWT Provider" above
+
+class MultiAuthProvider(AuthProvider):
     """Support multiple authentication providers."""
 
     def __init__(self):
@@ -1112,7 +1107,12 @@ async def delete_order(info, order_id: str) -> bool:
 Log all authentication and authorization events:
 
 ```python
-from fraiseql.audit import get_security_logger, SecurityEventType
+from fraiseql.audit import (
+    SecurityEvent,
+    SecurityEventSeverity,
+    SecurityEventType,
+    get_security_logger,
+)
 
 security_logger = get_security_logger()
 
@@ -1132,7 +1132,7 @@ security_logger.log_auth_failure(
 # Log authorization failure
 security_logger.log_event(
     SecurityEvent(
-        event_type=SecurityEventType.AUTH_PERMISSION_DENIED,
+        event_type=SecurityEventType.AUTHZ_PERMISSION_DENIED,
         severity=SecurityEventSeverity.WARNING,
         user_id=user.user_id,
         metadata={"required_permission": "orders:delete", "resource": order_id}

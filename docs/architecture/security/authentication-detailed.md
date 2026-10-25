@@ -1943,7 +1943,7 @@ async def resolve_user_with_fallback(
 
 ## 12. Error Handling
 
-FraiseQL v1's built-in authentication errors live in `fraiseql.auth` and subclass plain
+FraiseQL v1's built-in authentication errors live in `fraiseql.auth.base` and subclass plain
 `Exception`: `AuthenticationError`, `TokenExpiredError`, `InvalidTokenError`,
 `InsufficientPermissionsError`. Authorization *denials* do not raise an HTTP 4xx from a
 router — they surface as a GraphQL error with a stable `extensions.code` (default
@@ -1951,7 +1951,7 @@ router — they surface as a GraphQL error with a stable `extensions.code` (defa
 `fraiseql.security`.
 
 ```python
-from fraiseql.auth import AuthenticationError  # base; subclasses Exception
+from fraiseql.auth.base import AuthenticationError  # base; subclasses Exception
 
 class InvalidCredentialsError(AuthenticationError):
     """Invalid username/password."""
