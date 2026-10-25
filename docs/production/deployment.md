@@ -424,33 +424,27 @@ FRAISEQL_AUTH_PROVIDER=auth0
 FRAISEQL_AUTH0_DOMAIN=your-tenant.auth0.com
 FRAISEQL_AUTH0_API_IDENTIFIER=https://api.yourapp.com
 
-# Performance
-FRAISEQL_TURBO_ROUTER_ENABLED=true
-FRAISEQL_ENABLE_QUERY_CACHING=true
-FRAISEQL_CACHE_TTL=300
+# Performance (the Rust pipeline and TurboRouter are always on)
+FRAISEQL_TURBO_ROUTER_CACHE_SIZE=1000
 
 # GraphQL
 FRAISEQL_INTROSPECTION_POLICY=disabled
 FRAISEQL_ENABLE_PLAYGROUND=false
-FRAISEQL_MAX_QUERY_DEPTH=10
 FRAISEQL_QUERY_TIMEOUT=30
 
-# Monitoring
-FRAISEQL_ENABLE_METRICS=true
-FRAISEQL_METRICS_PATH=/metrics
+# Monitoring: /metrics comes from setup_metrics(app) in code, not a variable
 SENTRY_DSN=https://...@sentry.io/...
 SENTRY_ENVIRONMENT=production
 SENTRY_TRACES_SAMPLE_RATE=0.1
 
 # CORS
 FRAISEQL_CORS_ENABLED=true
-FRAISEQL_CORS_ORIGINS=https://app.yourapp.com,https://www.yourapp.com
-
-# Rate Limiting
-FRAISEQL_RATE_LIMIT_ENABLED=true
-FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=60
-FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR=1000
+FRAISEQL_CORS_ORIGINS='["https://app.yourapp.com","https://www.yourapp.com"]'
 ```
+
+List values such as `FRAISEQL_CORS_ORIGINS` are JSON. `FraiseQLConfig` also declares
+`max_query_depth`, `cache_ttl` and `rate_limit_*` fields, but nothing reads them, so
+they are left out here.
 
 ### Kubernetes Secrets
 

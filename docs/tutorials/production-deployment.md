@@ -114,9 +114,6 @@ services:
       DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       ENV: production
       LOG_LEVEL: info
-      RUST_ENABLED: "true"
-      APQ_ENABLED: "true"
-      APQ_STORAGE_BACKEND: postgresql
     ports:
       - "8000:8000"
     depends_on:
@@ -212,70 +209,58 @@ http {
 
 ```python
 # src/app.py
+import logging
 import os
-from fraiseql import FraiseQL, FraiseQLConfig
-from fraiseql.monitoring import setup_sentry, setup_prometheus
-from psycopg_pool import AsyncConnectionPool
+
+from fraiseql import FraiseQLConfig, create_fraiseql_app
+from fraiseql.monitoring import setup_metrics
+
+from src.models import Comment, Post, User
+from src.mutations import CreateComment, CreatePost
+from src.queries import get_post, get_posts
 
 # Load environment
 ENV = os.getenv("ENV", "development")
-DATABASE_URL = os.getenv("DATABASE_URL")
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "info").upper())
 
 # Configuration
 config = FraiseQLConfig(
-    database_url=DATABASE_URL,
+    database_url=os.environ["DATABASE_URL"],
+    environment="production" if ENV == "production" else "development",
 
-    # Performance
-    rust_enabled=os.getenv("RUST_ENABLED", "true").lower() == "true",
-    apq_enabled=os.getenv("APQ_ENABLED", "true").lower() == "true",
-    apq_storage_backend=os.getenv("APQ_STORAGE_BACKEND", "postgresql"),
-    enable_turbo_router=True,
+    # The connection pool is opened and closed by the app's lifespan; its size
+    # comes from FRAISEQL_DATABASE_POOL_SIZE (default 20)
 
-    # Security
+    # Security: environment="production" also turns the playground off and
+    # sets introspection_policy to "disabled"
     enable_playground=(ENV != "production"),
-    complexity_enabled=True,
-    complexity_max_score=1000,
-    query_depth_limit=10,
-
-    # Monitoring
-    enable_logging=True,
-    log_level=os.getenv("LOG_LEVEL", "info"),
 )
 
-# Initialize app
-app = FraiseQL(config=config)
-
-# Connection pool
-pool = AsyncConnectionPool(
-    conninfo=DATABASE_URL,
-    min_size=5,
-    max_size=20,
-    timeout=5.0
+# Initialize app (the Rust pipeline is always on; there is nothing to enable)
+app = create_fraiseql_app(
+    config=config,
+    types=[User, Post, Comment],
+    queries=[get_post, get_posts],
+    mutations=[CreatePost, CreateComment],
 )
 
-# Monitoring setup
-if ENV == "production":
-    setup_sentry(
-        dsn=os.getenv("SENTRY_DSN"),
+# Prometheus metrics at /metrics
+setup_metrics(app)
+
+# Error reporting (sentry-sdk's own FastAPI integration)
+if ENV == "production" and os.getenv("SENTRY_DSN"):
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
         environment=ENV,
-        traces_sample_rate=0.1
+        traces_sample_rate=0.1,
     )
-
-    setup_prometheus(app)
-
-# Health check endpoint
-@app.get("/health")
-async def health_check():
-    """Health check for load balancer."""
-    async with pool.connection() as conn:
-        await conn.execute("SELECT 1")
-    return {"status": "healthy"}
-
-# Graceful shutdown
-@app.on_event("shutdown")
-async def shutdown():
-    await pool.close()
 ```
+
+The app already serves `GET /health` (liveness: the process is up) and
+`GET /ready` (readiness: the pool answers a query and the schema is loaded), so
+the Dockerfile, nginx and Kubernetes probes below need no handler of your own.
 
 ## Step 5: Environment Variables
 
@@ -291,11 +276,6 @@ DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
 ENV=production
 LOG_LEVEL=info
 SECRET_KEY=<generate-with-openssl-rand-hex-32>
-
-# Performance
-RUST_ENABLED=true
-APQ_ENABLED=true
-APQ_STORAGE_BACKEND=postgresql
 
 # Monitoring
 SENTRY_DSN=https://...@sentry.io/...
@@ -534,18 +514,14 @@ log_min_duration_statement = 100  # Log queries > 100ms
 
 ```python
 config = FraiseQLConfig(
-    # Layer 0: Rust (10-80x faster)
-    rust_enabled=True,
+    database_url=os.environ["DATABASE_URL"],
 
-    # Layer 1: APQ (5-10x faster)
-    apq_enabled=True,
-    apq_storage_backend="postgresql",
-
-    # Layer 2: TurboRouter (3-5x faster)
-    enable_turbo_router=True,
+    # The Rust pipeline and TurboRouter are always on; this sizes the
+    # TurboRouter's registry of prepared queries
     turbo_router_cache_size=500,
 
-    # Combined: 0.5-2ms cached responses
+    # APQ: "optional" (the default) accepts query hashes and full queries
+    apq_mode="optional",
 )
 ```
 
@@ -554,14 +530,16 @@ config = FraiseQLConfig(
 ### High Memory Usage
 
 ```bash
-# Check connection pool
-docker exec api python -c "
-from src.app import pool
-print(f'Pool size: {pool.get_stats()}')
+# Check that the pool answers (503 with the failing check otherwise)
+docker-compose exec api python -c "
+import urllib.request
+print(urllib.request.urlopen('http://localhost:8000/ready').read().decode())
 "
 
-# Adjust pool size
-MAX_POOL_SIZE=10 docker-compose restart api
+# Lower the pool size (FraiseQLConfig reads FRAISEQL_-prefixed variables)
+# and restart: set it in the api service's environment, e.g.
+#   FRAISEQL_DATABASE_POOL_SIZE: "10"
+docker-compose up -d api
 ```
 
 ### Slow Queries

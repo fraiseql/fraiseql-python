@@ -138,8 +138,8 @@ from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 config = FraiseQLConfig(
     database_url="postgresql://localhost/db",
     apq_mode="required",              # Only allow persisted queries
-    apq_queries_dir="./graphql/",     # Auto-register queries from directory
 )
+# Register the allowed queries at startup: see Query Registration Methods
 
 app = create_fraiseql_app(config=config, types=[User, Post])
 ```
@@ -159,10 +159,15 @@ Load all `.graphql` and `.gql` files at startup:
 
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://localhost/db",
     apq_mode="required",
-    apq_queries_dir="./graphql/queries/",  # Recursively loads all .graphql files
+    apq_queries_dir="./graphql/queries/",  # Meant to load all .graphql files (see the note)
 )
 ```
+
+> **Note:** nothing reads `apq_queries_dir` in 1.31, so the directory isn't loaded and
+> hash-only requests for its queries get `PERSISTED_QUERY_NOT_FOUND`. Use Method 3
+> until it is.
 
 **Directory structure example:**
 
@@ -182,10 +187,11 @@ graphql/
 Register queries at startup using the backend API:
 
 ```python
-from fraiseql.storage.backends.factory import create_apq_backend
+from fraiseql.middleware.apq_caching import get_apq_backend
 
-# Get the APQ backend
-backend = create_apq_backend(config)
+# Get the APQ backend the /graphql route uses for this config
+# (create_apq_backend(config) builds a separate one the route never reads)
+backend = get_apq_backend(config)
 
 # Register allowed queries
 queries = [
@@ -202,15 +208,14 @@ print(f"Registered {len(registered)} queries")
 #### Method 3: Load from Files Programmatically
 
 ```python
+from fraiseql.middleware.apq_caching import get_apq_backend
 from fraiseql.storage.query_loader import load_queries_from_directory
-from fraiseql.storage.backends.factory import create_apq_backend
 
 # Load queries from directory
 queries = load_queries_from_directory("./graphql/")
 
-# Register with backend
-backend = create_apq_backend(config)
-backend.register_queries(queries)
+# Register with the backend the /graphql route uses
+get_apq_backend(config).register_queries(queries)
 ```
 
 ### Error Response for Rejected Queries
@@ -300,21 +305,27 @@ from fraiseql.fastapi.config import FraiseQLConfig
 
 # Query cache only (recommended starting point)
 config = FraiseQLConfig(
-    db_url="postgresql://...",
+    database_url="postgresql://...",
     apq_storage_backend="memory",  # or "postgresql"
     apq_cache_responses=False,     # Response caching disabled
 )
 
 # Full APQ with response caching
 config = FraiseQLConfig(
-    db_url="postgresql://...",
+    database_url="postgresql://...",
     apq_storage_backend="memory",
     apq_cache_responses=True,      # Enable response caching
-    apq_backend_config={
-        "response_ttl": 300,        # 5 minutes
-    }
 )
 ```
+
+Cached responses have no TTL: one stays in the backend until the backend is
+cleared or the process stops. (`apq_response_cache_ttl` is a `FraiseQLConfig` field,
+but nothing reads it.)
+
+> **Note:** in 1.31 the `/graphql` route returns the Rust-built response before it
+> reaches the step that stores it, so with `apq_cache_responses=True` the response
+> cache stays empty and every hash-only request is executed. The persisted-query
+> (hash → query text) cache is unaffected.
 
 ### Storage Backend Options
 
@@ -348,21 +359,24 @@ config = FraiseQLConfig(
 
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://...",
     apq_storage_backend="postgresql",
     apq_backend_config={
-        "db_url": "postgresql://...",
-        "table_name": "apq_cache",
-        "response_ttl": 300,  # 5 minutes
+        "table_prefix": "apq_",  # Tables apq_queries and apq_responses (the default)
     }
 )
 ```
 
-**Pros:**
+> **Note:** the `postgresql` backend doesn't open a database connection of its own
+> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
+> don't survive a restart and aren't shared between instances; clients re-register
+> a hash they get `PERSISTED_QUERY_NOT_FOUND` for.
+
+**Pros (once the backend has its connection):**
 
 - Shared across instances
 - Survives restarts
 - Leverages existing PostgreSQL infrastructure
-- Automatic cleanup via TTL
 
 **Cons:**
 
@@ -527,19 +541,15 @@ cached_response = handle_apq_request_with_cache(
 )
 ```
 
-#### Strategy: TTL Tuning
+#### Strategy: Clearing Cached Responses
 
-Adjust response TTL based on data freshness requirements:
+There is no response TTL to tune. A cached response stays until you clear the
+backend's cached responses:
 
 ```python
-# Aggressive caching (5-15 minutes)
-apq_backend_config={"response_ttl": 900}  # 15 minutes
+from fraiseql.middleware.apq_caching import get_apq_backend
 
-# Moderate caching (1-5 minutes)
-apq_backend_config={"response_ttl": 300}  # 5 minutes
-
-# Short-term caching (30-60 seconds)
-apq_backend_config={"response_ttl": 60}  # 1 minute
+get_apq_backend(config).clear_storage()  # memory backend
 ```
 
 #### Strategy: Selective Caching
@@ -650,10 +660,6 @@ curl http://localhost:8000/admin/apq/health
    - Different users get different responses
    - Solution: Implement tenant isolation with context
 
-4. **Cache expired**
-   - TTL too short for query patterns
-   - Solution: Increase `response_ttl` in config
-
 ### Problem: High Memory Usage
 
 **Diagnosis:**
@@ -664,19 +670,13 @@ curl http://localhost:8000/admin/apq/metrics | grep storage_bytes
 
 **Solutions:**
 
-1. **Switch to PostgreSQL backend:**
+1. **Turn response caching off** if responses dominate:
 
    ```python
-   config = FraiseQLConfig(apq_storage_backend="postgresql")
+   config = FraiseQLConfig(database_url="postgresql://...", apq_cache_responses=False)
    ```
 
-2. **Reduce response TTL:**
-
-   ```python
-   apq_backend_config={"response_ttl": 60}  # Shorter expiration
-   ```
-
-3. **Implement cache size limits:**
+2. **Implement cache size limits:**
 
    ```python
    from fraiseql.storage.apq_store import get_storage_stats, clear_storage
@@ -699,22 +699,15 @@ Response cache serving outdated data after mutations
    config = FraiseQLConfig(apq_cache_responses=False)
    ```
 
-2. **Reduce TTL for volatile data:**
+2. **Clear the cached responses after a mutation:**
 
    ```python
-   apq_backend_config={"response_ttl": 30}  # 30 seconds
+   from fraiseql.middleware.apq_caching import get_apq_backend
+
+   get_apq_backend(config).clear_storage()  # Drops the cached responses
    ```
 
-3. **Implement cache invalidation:**
-
-   ```python
-   from fraiseql.storage import apq_store
-
-   # After mutation
-   apq_store.clear_storage()  # Clear all caches
-   ```
-
-4. **Use materialized views instead:**
+3. **Use materialized views instead:**
    - FraiseQL already uses `tv_{entity}` materialized views
    - These provide data-level caching at PostgreSQL layer
    - More appropriate for frequently changing data
@@ -786,8 +779,8 @@ Before enabling in production:
 1. **Baseline without APQ:**
 
    ```bash
-   # Disable APQ
-   config = FraiseQLConfig(apq_storage_backend=None)
+   # Disable APQ (hashes are ignored, every request sends its query)
+   config = FraiseQLConfig(database_url="postgresql://...", apq_mode="disabled")
 
    # Run load test
    ab -n 10000 -c 100 http://localhost:8000/graphql
@@ -836,10 +829,9 @@ Before enabling in production:
 **Phase 3: Response Caching** (if applicable)
 
 1. Enable for read-only, public queries only
-2. Start with short TTL (60s)
+2. Clear the backend after the mutations that change those queries' data
 3. Monitor for stale data issues
-4. Gradually increase TTL if no issues
-5. Rollback plan: Set `apq_cache_responses=False`
+4. Rollback plan: Set `apq_cache_responses=False`
 
 ### 5. Maintenance
 
@@ -859,7 +851,6 @@ Before enabling in production:
 
 - Review and optimize top queries
 - Audit cache effectiveness
-- Update TTL configuration if needed
 
 **Quarterly:**
 
@@ -928,8 +919,8 @@ Combine FraiseQL caching layers:
                   ↓
 ┌────────────────────────────────────────────────────┐
 │ APQ Response Cache                                 │
-│ • FraiseQL in-process or Redis                     │
-│ • 1-5 minute TTL                                   │
+│ • FraiseQL in-process                              │
+│ • No TTL: cleared explicitly                       │
 │ • All cacheable queries                            │
 └─────────────────┬──────────────────────────────────┘
                   │ Response cache miss

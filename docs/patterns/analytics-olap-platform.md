@@ -42,71 +42,93 @@ The internal `pk_*`/`fk_*` BIGINT keys used for fast joins are **never** exposed
 ## Runtime Auto-Aggregation
 
 This is the core OLAP capability. When a GraphQL query against a view-backed type
-selects aggregate fields, FraiseQL builds the `GROUP BY` and the aggregate
-expressions for you at runtime — no compiler, no plan artifacts, no special
-decorator. The supported PostgreSQL aggregates are:
+selects dimension and measure fields (and not `id`), FraiseQL builds the `GROUP BY`
+and the aggregate expressions for you at runtime — no compiler, no plan artifacts,
+no special decorator.
 
-`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`, `STDDEV`, `VARIANCE`
-
-You declare which measures a view-backed type can aggregate, and which fields act
-as group-by dimensions, when you register the type for its view:
+The type nests its dimensions and its measures in two objects, matching two nested
+objects in the view's `data`:
 
 ```python
+from datetime import date
+
 import fraiseql
-from fraiseql.types import ID, Date
+from fraiseql.types import ID
+
+
+@fraiseql.type
+class EventDimensions:
+    """What an event can be grouped by."""
+    event_date: date
+    product_id: str
+    category: str
+    region: str
+    source: str
+
+
+@fraiseql.type
+class EventMeasures:
+    """What an event group adds up."""
+    revenue: float
+    quantity: int
+    sessions: int
+
 
 @fraiseql.type(sql_source="v_event", jsonb_column="data")
 class Event:
     """A single analytics event, read from v_event."""
     id: ID
-    event_date: Date
-    product_id: str
-    category: str
-    region: str
-    source: str
-    device_type: str
-    revenue: float
-    quantity: int
-    sessions: int
+    dimensions: EventDimensions
+    measures: EventMeasures
 ```
+
+You declare which object holds the dimensions, and the aggregate function of each
+measure (by its path in `data`), when you register the type for its view:
 
 ```python
 from fraiseql.db import register_type_for_view
 
-# Declare the aggregations FraiseQL may derive at runtime for this view.
 register_type_for_view(
     "v_event",
     Event,
+    has_jsonb_data=True,
     aggregation={
-        "group_by": ["event_date", "product_id", "category", "region", "source"],
+        "dimensions": "dimensions",
         "measures": {
-            "revenue": ["SUM", "AVG", "MIN", "MAX"],
-            "quantity": ["SUM", "AVG"],
-            "sessions": ["SUM"],
-            "id": ["COUNT"],
+            "measures.revenue": "SUM",
+            "measures.quantity": "SUM",
+            "measures.sessions": "SUM",
         },
     },
 )
 ```
 
-A GraphQL query then picks the dimensions and measures it wants, and FraiseQL
-derives the SQL:
+Each measure has one function: `SUM`, `AVG`, `COUNT`, `MIN`, `MAX`, `ARRAY_AGG`,
+`STRING_AGG`, `BOOL_AND`, `BOOL_OR`, `JSON_AGG` or `JSONB_AGG`. For two aggregates of
+the same value (a sum and an average of revenue), put the value in `data` twice under
+two measure names.
+
+A GraphQL query then picks the dimensions and measures it wants. The dimensions it
+selects become the `GROUP BY`, and each selected measure its aggregate:
 
 ```graphql
 query RevenueByProduct($start: Date!, $end: Date!) {
-  events(
-    where: { eventDate: { gte: $start, lte: $end } }
-    groupBy: [PRODUCT_ID, CATEGORY]
-  ) {
-    productId
-    category
-    revenueSum
-    revenueAvg
-    quantitySum
-    count
+  revenueByProduct(start: $start, end: $end) {
+    dimensions {
+      productId
+      category
+    }
+    measures {
+      revenue
+      quantity
+    }
   }
 }
 ```
+
+returns one row per (`productId`, `category`), with `revenue` and `quantity` summed
+over the events of that group in the date range. Selecting `id` turns the
+aggregation off and returns the individual events.
 
 FraiseQL's repository (`_derive_auto_aggregation` / `_parse_aggregation_expr` in
 `db.py`) turns the selected dimensions into a `GROUP BY` clause and the selected
@@ -133,7 +155,7 @@ dimension values) needed to slice them.
 
 ```sql
 CREATE TABLE tb_event (
-    pk_event       BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    pk_event       BIGINT GENERATED ALWAYS AS IDENTITY,
     id             UUID NOT NULL DEFAULT gen_random_uuid(),
 
     -- Measures: numeric columns for fast aggregation
@@ -149,7 +171,10 @@ CREATE TABLE tb_event (
 
     -- Filters: indexed columns for fast WHERE / time-range scans
     occurred_at    TIMESTAMPTZ NOT NULL,
-    event_date     DATE NOT NULL  -- partition key
+    event_date     DATE NOT NULL,  -- partition key
+
+    -- A partitioned table's primary key must include the partition key
+    PRIMARY KEY (pk_event, event_date)
 ) PARTITION BY RANGE (event_date);
 
 CREATE TABLE tb_event_2026_01 PARTITION OF tb_event
@@ -239,15 +264,19 @@ SELECT
     e.quantity,
     e.sessions,
     jsonb_build_object(
-        'event_date',  e.event_date,
-        'product_id',  p.id,
-        'category',    p.category,
-        'region',      p.region,
-        'source',      e.attributes ->> 'source',
-        'device_type', e.attributes ->> 'device_type',
-        'revenue',     e.revenue,
-        'quantity',    e.quantity,
-        'sessions',    e.sessions
+        'id', e.id,
+        'dimensions', jsonb_build_object(
+            'event_date',  e.event_date,
+            'product_id',  p.id,
+            'category',    p.category,
+            'region',      p.region,
+            'source',      e.attributes ->> 'source'
+        ),
+        'measures', jsonb_build_object(
+            'revenue',  e.revenue,
+            'quantity', e.quantity,
+            'sessions', e.sessions
+        )
     ) AS data
 FROM tb_event e
 LEFT JOIN tb_dim_product p ON p.pk_product = e.fk_product;
@@ -380,21 +409,23 @@ GROUP BY cohort_date, days_since_signup;
 Define the view-backed types and the queries that read them, then build the app.
 
 ```python
+from datetime import date
+
 import fraiseql
 from fraiseql.fastapi import create_fraiseql_app
-from fraiseql.types import ID, Date
+from fraiseql.types import ID
 
 
 @fraiseql.type(sql_source="v_daily_revenue_trend", jsonb_column="data")
 class DailyRevenue:
     id: ID
-    event_date: Date
+    event_date: date
     revenue: float
     revenue_delta: float | None
 
 
 @fraiseql.query
-async def daily_revenue(info, start: Date, end: Date) -> list[DailyRevenue]:
+async def daily_revenue(info, start: date, end: date) -> list[DailyRevenue]:
     """Daily revenue trend over a date range."""
     db = info.context["db"]
     return await db.find(
@@ -404,18 +435,18 @@ async def daily_revenue(info, start: Date, end: Date) -> list[DailyRevenue]:
 
 
 @fraiseql.query
-async def revenue_by_product(info, start: Date, end: Date) -> list[Event]:
-    """Revenue segmented by product, aggregated at runtime."""
+async def revenue_by_product(info, start: date, end: date) -> list[Event]:
+    """Events in a date range, aggregated by the dimensions the query selects."""
     db = info.context["db"]
     return await db.find(
         "v_event",
-        where={"event_date": {"gte": start, "lte": end}},
+        where={"dimensions": {"event_date": {"gte": start, "lte": end}}},
     )
 
 
 app = create_fraiseql_app(
     database_url="postgresql://localhost/analytics",
-    types=[Event, DailyRevenue],
+    types=[Event, EventDimensions, EventMeasures, DailyRevenue],
     queries=[daily_revenue, revenue_by_product],
     production=True,  # False enables the GraphQL playground
 )
@@ -515,16 +546,20 @@ by PostgreSQL `LISTEN/NOTIFY`; FraiseQL streams whatever it yields over WebSocke
 import asyncio
 from collections.abc import AsyncGenerator
 
+from psycopg.sql import SQL
+
 import fraiseql
+from fraiseql.db import DatabaseQuery
 
 
 @fraiseql.subscription
 async def realtime_metrics(info) -> AsyncGenerator[dict, None]:
     """Stream rolling metrics for the last hour every 10 seconds."""
     db = info.context["db"]
+    query = DatabaseQuery(SQL("SELECT data FROM v_realtime_metrics"), {})
     while True:
-        rows = await db.find("v_realtime_metrics")
-        yield rows[0] if rows else {}
+        rows = await db.run(query)
+        yield rows[0]["data"] if rows else {}
         await asyncio.sleep(10)
 ```
 

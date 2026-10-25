@@ -357,8 +357,19 @@ class PartitioningStrategy:
 ### 2.4 Query Statistics
 
 ```python
+from typing import Any
+
+from psycopg import sql
+from psycopg.rows import dict_row
+
+from fraiseql.db import FraiseQLRepository
+
+
 class QueryStatisticsManager:
     """Maintain statistics for query optimization"""
+
+    def __init__(self, db: FraiseQLRepository):
+        self.pool = db.get_pool()
 
     async def analyze_tables(self, tables: list[str]) -> None:
         """Update table statistics for query planner
@@ -366,12 +377,18 @@ class QueryStatisticsManager:
         Without stats, planner guesses row counts (inefficient)
         With stats, planner makes optimal decisions
         """
-        for table in tables:
-            await self.db.execute(f"ANALYZE {table}")
+        async with self.pool.connection() as conn:
+            for table in tables:
+                await conn.execute(sql.SQL("ANALYZE {}").format(sql.Identifier(table)))
 
     async def analyze_column(self, table: str, column: str) -> None:
         """Analyze specific column (e.g., after data update)"""
-        await self.db.execute(f"ANALYZE {table} ({column})")
+        async with self.pool.connection() as conn:
+            await conn.execute(
+                sql.SQL("ANALYZE {} ({})").format(
+                    sql.Identifier(table), sql.Identifier(column)
+                )
+            )
 
     async def view_column_statistics(
         self,
@@ -379,16 +396,21 @@ class QueryStatisticsManager:
         column: str
     ) -> dict[str, Any]:
         """Inspect column statistics for debugging"""
-        result = await self.db.query("""
-            SELECT
-                attname,
-                n_distinct,
-                n_distinct_inherited,
-                avg_width,
-                correlation
-            FROM pg_stats
-            WHERE tablename = $1 AND attname = $2
-        """, table, column)
+        async with (
+            self.pool.connection() as conn,
+            conn.cursor(row_factory=dict_row) as cur,
+        ):
+            await cur.execute("""
+                SELECT
+                    attname,
+                    n_distinct,
+                    inherited,
+                    avg_width,
+                    correlation
+                FROM pg_stats
+                WHERE tablename = %s AND attname = %s
+            """, (table, column))
+            result = await cur.fetchone()
 
         return {
             "column": column,
@@ -961,8 +983,14 @@ class ConnectionPoolOptimizer:
 ### 6.1 Query Profiling
 
 ```python
+from fraiseql.db import FraiseQLRepository
+
+
 class QueryProfiler:
     """Profile query execution for optimization"""
+
+    def __init__(self, db: FraiseQLRepository):
+        self.pool = db.get_pool()
 
     async def profile_query(
         self,
@@ -976,12 +1004,17 @@ class QueryProfiler:
         - Row count at each step
         - Index usage
         - Memory allocated
+
+        `query` is trusted SQL with psycopg `%s` placeholders for `params`.
+        EXPLAIN ANALYZE runs the statement: profile reads, or roll back.
         """
-        # Get execution plan
-        plan = await self.db.query_one(
-            f"EXPLAIN (ANALYZE, BUFFERS, TIMING) {query}",
-            params or []
-        )
+        # Get execution plan (FORMAT JSON: one row, one column, a one-element list)
+        async with self.pool.connection() as conn:
+            result = await conn.execute(
+                f"EXPLAIN (ANALYZE, BUFFERS, TIMING, FORMAT JSON) {query}",
+                params or []
+            )
+            plan = (await result.fetchone())[0][0]
 
         # Parse plan into profile
         profile = self._parse_plan(plan)
@@ -993,15 +1026,18 @@ class QueryProfiler:
 
         profile = QueryProfile()
 
-        for step in plan["Plan"]:
+        def walk(node: dict) -> None:
             profile.add_step(
-                name=step["Node Type"],
-                rows_output=step["Actual Rows"],
-                execution_time_ms=step["Actual Time"][1] - step["Actual Time"][0],
-                buffers_hit=step["Shared Hit Blocks"],
-                buffers_read=step["Shared Read Blocks"],
+                name=node["Node Type"],
+                rows_output=node["Actual Rows"],
+                execution_time_ms=node["Actual Total Time"] - node["Actual Startup Time"],
+                buffers_hit=node["Shared Hit Blocks"],
+                buffers_read=node["Shared Read Blocks"],
             )
+            for child in node.get("Plans", []):
+                walk(child)
 
+        walk(plan["Plan"])
         return profile
 
 

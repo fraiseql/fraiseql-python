@@ -126,18 +126,34 @@ def mutation(func: Callable) -> Callable
 **Example:**
 
 ```python
+@fraiseql.input
+class CreateUserInput:
+    name: str
+    email: str
+
+
+@fraiseql.success
+class CreateUserSuccess:
+    user: User
+
+
+@fraiseql.error
+class CreateUserError:
+    message: str
+
+
 @fraiseql.mutation
-async def create_user(info, name: str, email: str) -> MutationResponse[User]:
-    """Create a new user."""
-    db = info.context["db"]
-
-    result = await db.execute_function(
-        "fn_create_user",
-        {"name": name, "email": email}
-    )
-
-    return MutationResponse.from_db(result)
+class CreateUser:
+    """Create a new user: calls the SQL function create_user(input jsonb)."""
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: CreateUserError
 ```
+
+The SQL function returns a `mutation_response` row; fraiseql turns it into
+`CreateUserSuccess` or `CreateUserError` (see [Mutation SQL Requirements](../guides/mutation-sql-requirements.md)).
+A plain `async def` resolver decorated with `@fraiseql.mutation` works too, and can
+call any function with `db.execute_function(...)`.
 
 **See Also:**
 
@@ -241,7 +257,7 @@ users = await db.find(
     "users",
     info,
     where={"status": {"eq": "active"}},
-    order_by=[("created_at", "DESC")],
+    order_by=[{"created_at": "DESC"}],
     limit=10
 )
 ```
@@ -252,7 +268,7 @@ users = await db.find(
 - `field_name`: GraphQL field name
 - `info`: GraphQL info object
 - `where`: Filter conditions (dict or WhereInput)
-- `order_by`: List of (field, direction) tuples
+- `order_by`: List of `{field: "ASC" | "DESC"}` dicts
 - `limit`: Maximum records to return
 - `offset`: Records to skip
 
@@ -294,19 +310,29 @@ result = await db.execute_function(
 
 ### Connection Management
 
+`create_fraiseql_app` creates and opens the pool. In a resolver, `db.get_pool()`
+returns it (a psycopg `AsyncConnectionPool`):
+
 ```python
-from fraiseql.db import create_database_pool
+@fraiseql.query
+async def user_emails(info) -> list[str]:
+    db = info.context["db"]
+    async with db.get_pool().connection() as conn:
+        cursor = await conn.execute("SELECT email FROM tb_user ORDER BY email")
+        return [row[0] for row in await cursor.fetchall()]
+```
 
-# Create connection pool
-pool = await create_database_pool(
-    "postgresql://localhost/mydb",
-    min_size=5,
-    max_size=20
-)
+Outside the app, `create_db_pool` from `fraiseql.fastapi.app` builds the same kind of
+pool (it returns date and time values as text, as fraiseql expects):
 
-# Get connection from pool
-async with pool.acquire() as conn:
-    result = await conn.fetch("SELECT * FROM users")
+```python
+from fraiseql.fastapi.app import create_db_pool
+
+pool = await create_db_pool("postgresql://localhost/mydb", min_size=5, max_size=20)
+async with pool.connection() as conn:
+    cursor = await conn.execute("SELECT email FROM tb_user")
+    rows = await cursor.fetchall()
+await pool.close()
 ```
 
 **See Also:**
@@ -315,55 +341,55 @@ async with pool.acquire() as conn:
 
 ---
 
-## Schema
+## Application
 
-### `Schema`
+### `create_fraiseql_app`
 
-Main GraphQL schema class.
+Build the FastAPI application that serves the GraphQL schema.
 
-**Signature:**
+**Signature** (main parameters):
 
 ```python
-class Schema:
-    def __init__(
-        self,
-        database_url: str,
-        types: list[type] | None = None,
-        queries: list[Callable] | None = None,
-        mutations: list[Callable] | None = None,
-        auth_provider: AuthProvider | None = None,
-        max_query_complexity: int = 1000,
-        query_timeout_seconds: int = 30
-    )
+from fraiseql.fastapi import create_fraiseql_app
+
+def create_fraiseql_app(
+    *,
+    database_url: str | None = None,
+    types: Sequence[type] = (),
+    mutations: Sequence[Callable] = (),
+    queries: Sequence[Callable] = (),
+    config: FraiseQLConfig | None = None,
+    auth: Auth0Config | AuthProvider | None = None,
+    context_getter: Callable[[Request], Awaitable[dict]] | None = None,
+    production: bool = False,
+    # ... see the function's docstring for the rest
+) -> FastAPI
 ```
 
 **Example:**
 
 ```python
-from fraiseql import Schema
+from fastapi.testclient import TestClient
 
-schema = Schema(
+from fraiseql.fastapi import create_fraiseql_app
+
+app = create_fraiseql_app(
     database_url="postgresql://localhost/mydb",
-    types=[User, Post, Comment],
-    queries=[users, user, posts],
-    mutations=[create_user, update_user],
-    max_query_complexity=1000
+    types=[User],
+    queries=[users, user],
+    mutations=[CreateUser],
 )
 
-# Execute query
-result = await schema.execute("""
-    {
-      users {
-        id
-        name
-      }
-    }
-""")
+# Serve it with uvicorn, or execute a query in a test:
+with TestClient(app) as client:
+    response = client.post("/graphql", json={"query": "{ users { id name } }"})
+    print(response.json()["data"]["users"])
 ```
 
 **See Also:**
 
 - [Quick Reference](../reference/quick-reference.md)
+- [Configuration](../core/configuration.md)
 
 ---
 
@@ -371,29 +397,31 @@ result = await schema.execute("""
 
 ### Rate Limiting
 
+`RateLimitMiddleware` (from `fraiseql.security`) limits requests per client; add it
+to the app like any Starlette middleware:
+
 ```python
-from fraiseql.security import RateLimiter
+from fraiseql.security import RateLimit, RateLimitMiddleware
 
-rate_limiter = RateLimiter(
-    requests_per_minute=60,
-    burst=10
-)
-
-# Use in schema
-schema = Schema(
-    database_url="...",
-    rate_limiter=rate_limiter
+app = create_fraiseql_app(database_url="...", types=[User], queries=[users])
+app.add_middleware(
+    RateLimitMiddleware,
+    default_limit=RateLimit(requests=60, window=60),  # 60 requests per minute
 )
 ```
 
-### Query Complexity Analysis
+A client over the limit gets HTTP 429.
+
+### Query Timeout
 
 ```python
-schema = Schema(
-    database_url="...",
-    max_query_complexity=1000,  # Prevent DoS via complex queries
-    query_timeout_seconds=30     # Maximum query execution time
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
+
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    query_timeout=30,  # seconds: statement_timeout for db.run() and db.execute_function()
 )
+app = create_fraiseql_app(config=config, types=[User], queries=[users])
 ```
 
 **See Also:**
@@ -466,25 +494,27 @@ where={
 
 ## Types
 
-### `MutationResponse[T]`
+### Mutation results: `@fraiseql.success` / `@fraiseql.error`
 
-Standard mutation response type.
+A class-based mutation names a success type and an error type; GraphQL exposes them
+as a union, and fraiseql picks one from the `status` of the SQL function's
+`mutation_response`:
 
 ```python
-from fraiseql.types import MutationResponse
+@fraiseql.success
+class CreateUserSuccess:
+    user: User  # the function's entity, under the field named after its type
 
-@fraiseql.mutation
-async def create_user(info, ...) -> MutationResponse[User]:
-    result = await db.execute_function("fn_create_user", ...)
-    return MutationResponse.from_db(result)
+
+@fraiseql.error
+class CreateUserError:
+    message: str
 ```
 
-**Fields:**
-
-- `status`: Status code string (e.g., "created", "validation:error")
-- `message`: Human-readable message
-- `entity`: The created/updated entity (type `T`)
-- `errors`: List of error objects
+`@fraiseql.success` adds `status`, `message`, `updated_fields` and `id`; `@fraiseql.error`
+adds `status`, `message`, `errors` and `code` (an HTTP-style number derived from the
+status, such as 409 for `conflict:`). A `status` with an error prefix (`failed:`,
+`validation:`, `not_found:`, `conflict:`, ...) selects the error type.
 
 ---
 
@@ -531,7 +561,7 @@ async def users(
         info,
         limit=limit,
         offset=offset,
-        order_by=[("created_at", "DESC")]
+        order_by=[{"created_at": "DESC"}]
     )
 ```
 
@@ -553,18 +583,29 @@ class Post:
 
 ### Error Handling
 
-```python
-@fraiseql.mutation
-async def create_user(info, name: str) -> MutationResponse[User]:
-    try:
-        result = await db.execute_function("fn_create_user", {"name": name})
-        return MutationResponse.from_db(result)
-    except ValidationError as e:
-        return MutationResponse(
-            status="validation:error",
-            message=str(e),
-            errors=[{"code": 422, "message": str(e)}]
-        )
+Validate in the SQL function and return a failure status; fraiseql returns the error
+type of the mutation instead of raising:
+
+```sql
+CREATE OR REPLACE FUNCTION create_user(input jsonb)
+RETURNS mutation_response AS $$
+DECLARE
+    new_id uuid;
+BEGIN
+    IF EXISTS (SELECT 1 FROM tb_user WHERE email = input->>'email') THEN
+        RETURN ROW('conflict:email', 'Email already registered', NULL, 'User',
+                   NULL, NULL, NULL, NULL)::mutation_response;
+    END IF;
+
+    INSERT INTO tb_user (name, email)
+    VALUES (input->>'name', input->>'email')
+    RETURNING id INTO new_id;
+
+    RETURN ROW('new', 'User created', new_id::text, 'User',
+               (SELECT data FROM v_user WHERE id = new_id),
+               NULL, NULL, NULL)::mutation_response;
+END;
+$$ LANGUAGE plpgsql;
 ```
 
 **See Also:**

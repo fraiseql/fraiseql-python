@@ -279,18 +279,26 @@ setup_metrics(app, config)
 
 ### Environment Variables
 
-```bash
-# Enable/disable
-FRAISEQL_METRICS_ENABLED=true
+`MetricsConfig` doesn't read environment variables (there are no
+`FRAISEQL_METRICS_*` settings). To drive it from the environment, read the
+variables yourself:
 
-# Metric prefix
-FRAISEQL_METRICS_NAMESPACE=myapp
+```python
+import os
 
-# Endpoint path
-FRAISEQL_METRICS_PATH=/internal/metrics
+from fraiseql.monitoring import MetricsConfig, setup_metrics
 
-# Histogram buckets (comma-separated)
-FRAISEQL_METRICS_BUCKETS=0.005,0.01,0.025,0.05,0.1,0.25,0.5,1,2.5,5,10
+config = MetricsConfig(
+    enabled=os.getenv("METRICS_ENABLED", "true") == "true",
+    namespace=os.getenv("METRICS_NAMESPACE", "fraiseql"),
+    metrics_path=os.getenv("METRICS_PATH", "/metrics"),
+    buckets=[
+        float(b)
+        for b in os.getenv("METRICS_BUCKETS", "0.005,0.01,0.05,0.1,0.5,1,5").split(",")
+    ],
+)
+
+setup_metrics(app, config)
 ```
 
 ### Prometheus Configuration
@@ -449,15 +457,25 @@ FraiseQL automatically creates spans for:
 
 ### Environment Variables
 
-```bash
-FRAISEQL_TRACING_ENABLED=true
-FRAISEQL_TRACING_SERVICE_NAME=my-service
-FRAISEQL_TRACING_SERVICE_VERSION=1.0.0
-FRAISEQL_TRACING_ENVIRONMENT=production
-FRAISEQL_TRACING_SAMPLE_RATE=1.0
-FRAISEQL_TRACING_EXPORT_FORMAT=otlp
-FRAISEQL_TRACING_EXPORT_ENDPOINT=localhost:4317
-FRAISEQL_TRACING_EXPORT_TIMEOUT_MS=30000
+`TracingConfig` doesn't read environment variables either (there are no
+`FRAISEQL_TRACING_*` settings); pass the values in, from `os.environ` if you
+like:
+
+```python
+import os
+
+from fraiseql.tracing import TracingConfig, setup_tracing
+
+config = TracingConfig(
+    service_name=os.getenv("SERVICE_NAME", "my-service"),
+    service_version=os.getenv("SERVICE_VERSION", "1.0.0"),
+    deployment_environment=os.getenv("ENVIRONMENT", "production"),
+    sample_rate=float(os.getenv("TRACING_SAMPLE_RATE", "1.0")),
+    export_format="otlp",
+    export_endpoint=os.getenv("OTLP_ENDPOINT", "localhost:4317"),
+)
+
+setup_tracing(app, config)
 ```
 
 ---

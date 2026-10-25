@@ -109,7 +109,8 @@ async def get_post(info, id: ID) -> Post | None:
         return None
 ```
 
-Query using custom repository methods:
+Query using a repository aggregate helper (`count`, `sum`, `avg`, `min`, `max`,
+`aggregate`; they return plain Python values):
 
 ```python
 import fraiseql
@@ -119,13 +120,8 @@ from fraiseql.types import ID
 @fraiseql.query
 async def get_user_stats(info, user_id: ID) -> UserStats:
     db = info.context["db"]
-    # Custom SQL query for complex aggregations
-    # Exclusive Rust pipeline handles result processing automatically
-    result = await db.execute_raw(
-        "SELECT count(*) as post_count FROM posts WHERE user_id = $1",
-        user_id
-    )
-    return UserStats(post_count=result[0]["post_count"])
+    post_count = await db.count("v_post", where={"author_id": {"eq": user_id}})
+    return UserStats(post_count=post_count)
 ```
 
 **Notes**:
@@ -204,16 +200,10 @@ Queries returning `Connection[FraiseType]` automatically get Relay pagination pa
 | `where` | `{TypeName}WhereInput` | Filter conditions |
 | `orderBy` | `[{TypeName}OrderByInput!]` | Sort criteria |
 
-**Example**:
-
-```python
-from fraiseql.types.generic import Connection
-
-@fraiseql.query
-async def users_connection(info) -> Connection[User]:
-    db = info.context["db"]
-    return await db.paginate("v_user", info=info)
-```
+The resolver receives these arguments and returns the `Connection`; the
+[`@connection` decorator](#connection-decorator) builds such
+resolvers. For offset pages, return `list[User]` and use the `limit` / `offset`
+arguments above.
 
 ### Manual Parameter Override
 
@@ -461,7 +451,10 @@ class User:
 Field with caching:
 
 ```python
+from psycopg.sql import SQL
+
 import fraiseql
+from fraiseql.db import DatabaseQuery
 from fraiseql.types import ID
 
 @fraiseql.type
@@ -481,11 +474,13 @@ class Post:
 
         # Fallback to database
         db = info.context["db"]
-        result = await db.execute_raw(
-            "SELECT count(*) FROM likes WHERE post_id = $1",
-            self.id
+        rows = await db.run(
+            DatabaseQuery(
+                SQL("SELECT count(*) AS n FROM tb_like WHERE post_id = %(post_id)s"),
+                {"post_id": self.id},
+            )
         )
-        count = result[0]["count"]
+        count = rows[0]["n"]
 
         # Cache for 5 minutes
         if cache:
@@ -1065,6 +1060,13 @@ Subscription with database polling:
 
 ```python
 import asyncio
+from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
+
+from psycopg.sql import SQL
+
+from fraiseql import subscription
+from fraiseql.db import DatabaseQuery
 from fraiseql.types import ID
 
 @subscription
@@ -1073,22 +1075,26 @@ async def on_task_updates(
     project_id: ID
 ) -> AsyncGenerator[Task, None]:
     db = info.context["db"]
-    last_check = datetime.utcnow()
+    last_check = datetime.now(UTC)
+    query = SQL(
+        "SELECT data FROM v_task"
+        " WHERE data->>'project_id' = %(project_id)s"
+        " AND (data->>'updated_at')::timestamptz > %(since)s"
+        " ORDER BY data->>'updated_at'"
+    )
 
     while True:
-        # Poll for new/updated tasks
-        updated_tasks = await db.find(
-            "v_task",
-            where={
-                "project_id": project_id,
-                "updated_at__gt": last_check
-            }
+        # Poll for new/updated tasks: db.run returns plain rows (find() returns
+        # a ready-made GraphQL response, which a subscription can't yield)
+        checked_at = datetime.now(UTC)
+        rows = await db.run(
+            DatabaseQuery(query, {"project_id": str(project_id), "since": last_check})
         )
 
-        for task in updated_tasks:
-            yield task
+        for row in rows:
+            yield Task(**row["data"])  # v_task's data keys are Task's fields
 
-        last_check = datetime.utcnow()
+        last_check = checked_at
         await asyncio.sleep(1)  # Poll every second
 ```
 

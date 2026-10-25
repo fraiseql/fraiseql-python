@@ -798,19 +798,26 @@ FraiseQL supports both PostgreSQL error tables and Loki log aggregation. Each se
 
 **Purpose**: Structured error tracking with management and analytics.
 
-**Table Structure**:
+**Table Structure**: fraiseql's error tracker (`fraiseql.monitoring.init_error_tracker`)
+writes to `tb_error_log`, created by `src/fraiseql/monitoring/schema.sql`. The columns
+this page uses:
 
 ```sql
-CREATE TABLE monitoring.errors (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    fingerprint TEXT NOT NULL,  -- Error grouping
-    first_seen_at TIMESTAMPTZ NOT NULL,
-    last_seen_at TIMESTAMPTZ NOT NULL,
-    occurrence_count INT NOT NULL DEFAULT 1,
-    message TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS tb_error_log (
+    error_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    error_fingerprint TEXT NOT NULL,  -- Error grouping
+    error_type TEXT NOT NULL,
+    error_message TEXT NOT NULL,
     stack_trace TEXT,
-    metadata JSONB,
-    status TEXT DEFAULT 'new' CHECK (status IN ('new', 'investigating', 'resolved', 'ignored'))
+    user_context JSONB DEFAULT '{}'::jsonb,
+    application_context JSONB DEFAULT '{}'::jsonb,
+    first_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    occurrence_count INT DEFAULT 1,
+    status TEXT DEFAULT 'unresolved'
+        CHECK (status IN ('unresolved', 'resolved', 'ignored', 'investigating')),
+    trace_id TEXT,
+    -- ... plus request_context, severity, tags, environment, resolution columns
 );
 ```
 
@@ -827,9 +834,9 @@ CREATE TABLE monitoring.errors (
 
 ```sql
 -- Top 10 unresolved errors
-SELECT fingerprint, message, occurrence_count, last_seen_at
-FROM monitoring.errors
-WHERE status = 'new'
+SELECT error_fingerprint, error_message, occurrence_count, last_seen
+FROM tb_error_log
+WHERE status = 'unresolved'
 ORDER BY occurrence_count DESC
 LIMIT 10;
 ```
@@ -878,23 +885,37 @@ LIMIT 10;
 
 ### Recommended Workflow
 
+**0. Initialize the error tracker at startup** (after loading
+`src/fraiseql/monitoring/schema.sql`), with a psycopg pool of its own:
+
+```python
+from psycopg_pool import AsyncConnectionPool
+from fraiseql.monitoring import init_error_tracker
+
+tracker_pool = AsyncConnectionPool(DATABASE_URL, open=False)
+await tracker_pool.open()
+init_error_tracker(tracker_pool, environment="production")
+```
+
 **1. Capture errors in both systems**:
 
 ```python
 import logging
-from fraiseql import error_tracking
+from fraiseql.monitoring import get_error_tracker
 
 logger = logging.getLogger(__name__)
 
 try:
     result = await process_user_action(user_id, action)
 except Exception as e:
-    # PostgreSQL: Structured error tracking
-    await error_tracking.log_error(
-        fingerprint=error_tracking.fingerprint(e),
-        message=str(e),
-        stack_trace=traceback.format_exc(),
-        metadata={"user_id": user_id, "action": action}
+    # PostgreSQL: Structured error tracking (grouped by fingerprint;
+    # the stack trace is taken from the exception)
+    error_id = await get_error_tracker().capture_exception(
+        e,
+        context={
+            "user": {"user_id": user_id},
+            "application": {"action": action},
+        },
     )
 
     # Loki: Full context via structured logging
@@ -903,6 +924,7 @@ except Exception as e:
         extra={
             "user_id": user_id,
             "action": action,
+            "error_id": error_id,  # Links to tb_error_log
             "error": str(e),
             "trace_id": current_trace_id()  # For correlation
         }
@@ -928,7 +950,7 @@ Step 3: View trace in Jaeger/Tempo
   ↓ Identify: Which service caused the error
 
 Step 4: Mark error as resolved in PostgreSQL
-  ↓ UPDATE monitoring.errors SET status='resolved' WHERE fingerprint='...'
+  ↓ await get_error_tracker().resolve_error(error_id, resolved_by="alice")
 ```
 
 **3. Retention strategy**:
@@ -971,28 +993,24 @@ Loki Logs:
 
 ### Integration Example
 
-**Store error fingerprint in both systems**:
+**Store the error id in both systems**:
 
 ```python
+from fraiseql.monitoring import get_error_tracker
+
+
 async def handle_error(error: Exception, context: dict):
-    fingerprint = error_tracking.fingerprint(error)
+    # PostgreSQL: insert the error, or bump occurrence_count for its fingerprint
+    error_id = await get_error_tracker().capture_exception(
+        error, context={"application": context}
+    )
 
-    # PostgreSQL: Update or insert error
-    await db.execute("""
-        INSERT INTO monitoring.errors
-            (fingerprint, message, metadata, first_seen_at, last_seen_at)
-        VALUES ($1, $2, $3, NOW(), NOW())
-        ON CONFLICT (fingerprint) DO UPDATE
-        SET occurrence_count = errors.occurrence_count + 1,
-            last_seen_at = NOW()
-    """, fingerprint, str(error), json.dumps(context))
-
-    # Loki: Log with fingerprint for correlation
+    # Loki: Log with the error id for correlation
     logger.error(
         "Error occurred",
         extra={
             **context,
-            "error_fingerprint": fingerprint,  # Links to PostgreSQL
+            "error_id": error_id,  # Links to tb_error_log
             "error_message": str(error)
         }
     )
@@ -1002,15 +1020,11 @@ async def handle_error(error: Exception, context: dict):
 
 ```python
 # Get error from PostgreSQL
-error = await db.fetch_one("""
-    SELECT fingerprint, message, metadata
-    FROM monitoring.errors
-    WHERE id = $1
-""", error_id)
+error = await get_error_tracker().get_error(error_id)
 
-# Get logs from Loki for that fingerprint
+# Get logs from Loki for that error
 logs = await loki_client.query(
-    f'{{job="fraiseql"}} | json | error_fingerprint="{error.fingerprint}" [24h]'
+    f'{{job="fraiseql"}} | json | error_id="{error["error_id"]}" [24h]'
 )
 
 # Show: Error details + all log context

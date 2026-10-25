@@ -158,7 +158,7 @@ class ValidationError:
 async def notes(info) -> list[Note]:
     """Get all notes."""
     db = info.context["db"]
-    return await db.find("v_note", "notes", info, order_by=[("created_at", "DESC")])
+    return await db.find("v_note", "notes", info, order_by=[{"created_at": "DESC"}])
 
 
 @fraiseql.query
@@ -168,7 +168,7 @@ async def notes_filtered(info, title_contains: str | None = None) -> list[Note]:
     where = {}
     if title_contains:
         where = {"title": {"ilike": f"%{title_contains}%"}}
-    return await db.find("v_note", "notesFiltered", info, where=where, order_by=[("created_at", "DESC")])
+    return await db.find("v_note", "notesFiltered", info, where=where, order_by=[{"created_at": "DESC"}])
 
 
 @fraiseql.query

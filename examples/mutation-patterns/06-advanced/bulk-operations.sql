@@ -158,12 +158,12 @@ SELECT * FROM bulk_create_users('{
 }'::jsonb);
 -- Returns: status='created', metadata with 3 successful results
 
--- Partial success
+-- Partial success: the second user's email already exists, the third has none
 SELECT * FROM bulk_create_users('{
     "users": [
         {"email": "partial1@example.com", "name": "Partial User 1"},
-        {"email": "john@example.com", "name": "Duplicate Email"},  -- duplicate
-        {"email": "", "name": "No Email"},                        -- invalid
+        {"email": "john@example.com", "name": "Duplicate Email"},
+        {"email": "", "name": "No Email"},
         {"email": "partial2@example.com", "name": "Partial User 2"}
     ]
 }'::jsonb);

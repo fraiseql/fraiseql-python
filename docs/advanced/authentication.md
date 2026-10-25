@@ -23,16 +23,19 @@ Complete guide to implementing enterprise-grade authentication and authorization
 Complete example: JWT authentication with FraiseQL.
 
 Prerequisites:
-- pip install "fraiseql<2" pyjwt cryptography
+- pip install "fraiseql<2" pyjwt cryptography httpx  (httpx: for the TestClient below)
 - Generate a secret key: python -c "import secrets; print(secrets.token_hex(32))"
 """
 
-import asyncio
-from datetime import datetime, timedelta
-from uuid import UUID, uuid4
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
+
 import jwt
+from fastapi.testclient import TestClient
+
 import fraiseql
 from fraiseql.auth import AuthProvider, UserContext, requires_auth, requires_role
+from fraiseql.fastapi import create_fraiseql_app
 
 # 1. Create custom JWT auth provider
 class SimpleJWTProvider(AuthProvider):
@@ -75,51 +78,45 @@ class User:
     name: str
     email: str
 
-# 3. Protected queries and mutations
+# 3. Protected queries
 @fraiseql.query
 @requires_auth  # ← Requires authentication
-async def current_user(info) -> User:
+async def current_user(info) -> User | None:
     """Get current authenticated user."""
     user_context = info.context["user"]  # UserContext available here
     db = info.context["db"]
-
-    return await db.fetch_one(
-        "SELECT * FROM v_user WHERE data->>'id' = $1",
-        str(user_context.user_id)
-    )
+    return await db.find_one("v_user", mandatory_filters={"id": user_context.user_id})
 
 @fraiseql.query
 @requires_role("admin")  # ← Requires admin role
 async def all_users(info) -> list[User]:
     """Admin-only: Get all users."""
     db = info.context["db"]
-    return await db.fetch("SELECT * FROM v_user")
+    return await db.find("v_user")
 
-# 4. Set up schema with auth
-async def main():
-    # Create auth provider
-    auth_provider = SimpleJWTProvider(secret_key="your-secret-key-here")
+# 4. Build the app with the auth provider: it reads the Authorization header
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[current_user, all_users],
+    auth=SimpleJWTProvider(secret_key="your-secret-key-here"),
+)
 
-    # Create schema with auth
-    schema = fraiseql.Schema(
-        database_url="postgresql://localhost/mydb",
-        auth_provider=auth_provider
-    )
-
-    # Generate test token
+def main():
+    # Generate a test token for an existing user (a row of v_user)
     token = jwt.encode(
         {
-            "user_id": str(uuid4()),
+            "user_id": "8f14e45f-ceea-467f-a8ad-0e7b8a3b1c2d",
             "email": "alice@example.com",
             "name": "Alice",
             "roles": ["admin"],
-            "exp": datetime.utcnow() + timedelta(hours=1)
+            "exp": datetime.now(UTC) + timedelta(hours=1),
         },
         "your-secret-key-here",
-        algorithm="HS256"
+        algorithm="HS256",
     )
 
-    # Execute authenticated query
+    # Execute an authenticated query
     query = """
     {
       currentUser {
@@ -129,22 +126,21 @@ async def main():
       }
     }
     """
+    with TestClient(app) as client:
+        result = client.post(
+            "/graphql",
+            json={"query": query},
+            headers={"Authorization": f"Bearer {token}"},  # ← Pass the token
+        ).json()
 
-    result = await schema.execute(
-        query,
-        context={
-            "authorization": f"Bearer {token}"  # ← Pass token in context
-        }
-    )
-
-    if result.errors:
-        print(f"❌ Errors: {result.errors}")
+    if result.get("errors"):
+        print(f"❌ Errors: {result['errors']}")
     else:
-        user = result.data['currentUser']
+        user = result["data"]["currentUser"]
         print(f"✅ Authenticated as: {user['name']} ({user['email']})")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
 ```
 
 **Expected Output:**
@@ -153,10 +149,11 @@ if __name__ == "__main__":
 ✅ Authenticated as: Alice (alice@example.com)
 ```
 
-**Without Token (Unauthorized):**
+**Without Token (Unauthorized):** the request is rejected before GraphQL runs, with
+HTTP 401 and:
 
 ```
-❌ Errors: [{'message': 'Authentication required', 'locations': [...]}]
+{"detail": "Authentication required"}
 ```
 
 ---

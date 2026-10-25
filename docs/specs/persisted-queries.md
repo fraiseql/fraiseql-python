@@ -475,7 +475,7 @@ _query_storage = {
 <!-- Code example in Python -->
 config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
-    apq_storage_backend="database",
+    apq_storage_backend="postgresql",
     apq_backend_config={
         "table_prefix": "apq_",
         "auto_create_tables": True,
@@ -484,6 +484,11 @@ config = FraiseQLConfig(
 )
 ```
 <!-- Code example in TEXT -->
+
+> **Note:** the `postgresql` backend doesn't open a database connection of its own
+> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
+> don't survive a restart and aren't shared between instances, and the tables below
+> are not created.
 
 **Database Tables**:
 
@@ -638,10 +643,27 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="required",
     apq_storage_backend="postgresql",
-    apq_queries_dir="./src/graphql",  # Auto-load at startup
+    apq_queries_dir="./src/graphql",  # Meant to auto-load at startup (see the note)
 )
 ```
 <!-- Code example in TEXT -->
+
+> **Note:** nothing reads `apq_queries_dir` in 1.31: the directory isn't scanned and
+> hash-only requests for its operations get `PERSISTED_QUERY_NOT_FOUND`. Until it is,
+> register the operations yourself at startup:
+>
+> ```python
+> from pathlib import Path
+>
+> from fraiseql.storage.apq_store import compute_query_hash, store_persisted_query
+>
+> for path in Path("./src/graphql").rglob("*.graphql"):
+>     text = path.read_text()
+>     store_persisted_query(compute_query_hash(text), text)
+> ```
+>
+> The hash is the SHA-256 of the exact text the client sends, so register each
+> operation the way your client's build emits it.
 
 **Behavior**:
 
@@ -782,16 +804,12 @@ Return Response
 config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="optional",
-    apq_storage_backend="database",
-    # Query result caching configuration (see Caching Specification)
-    cache_enabled=True,
-    cache_default_ttl=300,              # 5 minutes default
-    cache_include_complexity=True,
+    apq_storage_backend="postgresql",
 )
 ```
 <!-- Code example in TEXT -->
 
-**Note**: Query result caching is configured separately from APQ. See the Caching Specification for complete configuration options including TTL, backends, and complexity-aware settings.
+**Note**: Query result caching is not a `FraiseQLConfig` setting; it is configured separately from APQ. See the Caching Specification for complete configuration options including TTL, backends, and complexity-aware settings.
 
 ### Cache Key Generation (Query Result Caching)
 
@@ -897,10 +915,13 @@ config = FraiseQLConfig(
     apq_mode="optional",                    # Allow registration
     apq_storage_backend="memory",           # Fast, no persistence needed
     apq_cache_responses=True,               # Optimization
-    apq_response_cache_ttl=300,             # 5 minutes
 )
 ```
 <!-- Code example in TEXT -->
+
+`apq_response_cache_ttl` is accepted but nothing reads it: cached responses don't
+expire. In 1.31 the `/graphql` route returns the Rust-built response before the
+step that stores it, so the response cache stays empty for now.
 
 **Environment Variables**:
 
@@ -910,8 +931,6 @@ FRAISEQL_DATABASE_URL=postgresql://localhost/fraiseql_db
 FRAISEQL_APQ_MODE=optional
 FRAISEQL_APQ_STORAGE_BACKEND=memory
 FRAISEQL_APQ_CACHE_RESPONSES=true
-FRAISEQL_APQ_RESPONSE_CACHE_TTL=300
-FRAISEQL_APQ_QUERIES_DIR=./src/graphql
 ```
 <!-- Code example in TEXT -->
 
@@ -922,9 +941,8 @@ FRAISEQL_APQ_QUERIES_DIR=./src/graphql
 config = FraiseQLConfig(
     database_url="postgresql://pg-staging/fraiseql_db",
     apq_mode="optional",                    # Allow client registration
-    apq_storage_backend="database",         # Persistent
+    apq_storage_backend="postgresql",       # Meant to be persistent (see the backend note)
     apq_cache_responses=True,
-    apq_response_cache_ttl=600,             # 10 minutes
     apq_backend_config={
         "auto_create_tables": True,
     }
@@ -939,10 +957,9 @@ config = FraiseQLConfig(
 config = FraiseQLConfig(
     database_url="postgresql://pg-prod-1/fraiseql_db",
     apq_mode="required",                    # Only persisted queries
-    apq_storage_backend="database",         # Persistent, shared
+    apq_storage_backend="postgresql",       # Meant to be persistent, shared (see the backend note)
     apq_cache_responses=True,
-    apq_response_cache_ttl=1800,            # 30 minutes
-    apq_queries_dir="./dist/graphql",       # Pre-built queries
+    apq_queries_dir="./dist/graphql",       # Pre-built queries (not read yet, see above)
     apq_backend_config={
         "table_prefix": "apq_",
         "auto_create_tables": False,        # Pre-created for safety
@@ -958,9 +975,8 @@ config = FraiseQLConfig(
 <!-- Code example in BASH -->
 # Production APQ configuration
 FRAISEQL_APQ_MODE=required
-FRAISEQL_APQ_STORAGE_BACKEND=database
+FRAISEQL_APQ_STORAGE_BACKEND=postgresql
 FRAISEQL_APQ_CACHE_RESPONSES=true
-FRAISEQL_APQ_RESPONSE_CACHE_TTL=1800
 FRAISEQL_APQ_QUERIES_DIR=/app/dist/graphql
 ```
 <!-- Code example in TEXT -->
@@ -1085,16 +1101,14 @@ fraiseql_apq_response_cache_size_bytes
 **Causes**:
 
 1. Each query executes with different variables (unique cache keys)
-2. TTL too short for query frequency
-3. Response caching disabled
-4. Queries have errors (not cached)
+2. Response caching disabled
+3. Queries have errors (not cached)
 
 **Solutions**:
 
 1. Verify queries are reused with same variables (use APQ registration metrics)
-2. Increase `apq_response_cache_ttl`
-3. Enable with `apq_cache_responses=true`
-4. Check for errors in responses (not cached by design)
+2. Enable with `apq_cache_responses=true`
+3. Check for errors in responses (not cached by design)
 
 ### ARBITRARY_QUERY_NOT_ALLOWED Error
 
@@ -1141,8 +1155,10 @@ fraiseql_apq_response_cache_size_bytes
 
 **Solutions**:
 
-1. Switch to database backend: `apq_storage_backend="database"`
-2. Pre-register queries: set `apq_queries_dir` and restart
+1. Pre-register queries at startup with `store_persisted_query` (see Build-Time
+   Registration; `apq_queries_dir` isn't read yet)
+2. A persistent backend: `apq_storage_backend="postgresql"` doesn't persist yet
+   (see the backend note)
 
 ---
 

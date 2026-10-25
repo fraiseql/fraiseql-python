@@ -54,8 +54,8 @@ app = create_fraiseql_app(
 
 ## Environment Variables
 
-`FraiseQLConfig` reads any `FRAISEQL_`-prefixed environment variable (or matching key in a
-local `.env` file):
+`FraiseQLConfig` reads `FRAISEQL_<FIELD>` for each of its fields (or the matching key in a
+local `.env` file); variables that don't name a field are ignored:
 
 ```bash
 # Database
@@ -64,14 +64,15 @@ FRAISEQL_DATABASE_POOL_SIZE=20
 FRAISEQL_DATABASE_POOL_TIMEOUT=30
 
 # Security
-FRAISEQL_ENABLE_TLS=true
-FRAISEQL_TLS_CERT=/path/to/cert.pem
-FRAISEQL_TLS_KEY=/path/to/key.pem
-
-# Rate Limiting
-FRAISEQL_RATE_LIMIT_ENABLED=true
-FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=100
+FRAISEQL_ENVIRONMENT=production
+FRAISEQL_INTROSPECTION_POLICY=disabled
+FRAISEQL_CORS_ENABLED=true
+FRAISEQL_CORS_ORIGINS='["https://app.example.com"]'
 ```
+
+TLS is terminated in front of the app (load balancer, reverse proxy, or uvicorn's
+`--ssl-certfile` / `--ssl-keyfile`); FraiseQL has no TLS setting. The
+`rate_limit_*` fields exist on `FraiseQLConfig` but nothing reads them.
 
 ## Configuration Priority
 

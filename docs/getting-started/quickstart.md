@@ -150,7 +150,7 @@ async def notes(info) -> list[Note]:
     """Get all notes."""
     db = info.context["db"]
     # field_name auto-inferred from function name "notes"
-    return await db.find("v_note", order_by=[("created_at", "DESC")])
+    return await db.find("v_note", order_by=[{"created_at": "DESC"}])
 
 @fraiseql.query
 async def note(info, id: ID) -> Note | None:

@@ -188,31 +188,26 @@ jq -r 'select(.event == "security.rate_limit") |
 
 ### Step 4: Review Current Rate Limits
 
-**Check Configuration**:
+fraiseql's rate limits are whatever the app passes to `RateLimitMiddleware` (or
+`setup_rate_limiting`) where it builds the app; look there. There are no
+environment variables for them: `FraiseQLConfig` declares `rate_limit_*` settings,
+but nothing reads them.
 
-```python
-# Via application code
-from fraiseql.security import RateLimiter
+`setup_rate_limiting(app)` without arguments installs these limits, per client:
 
-# Default limits (example)
-limits = {
-    "default": "100/minute",      # 100 requests per minute
-    "authenticated": "500/minute", # Higher for authenticated users
-    "graphql": "50/minute",       # GraphQL-specific limit
-}
-```
+| Path | Limit |
+|------|-------|
+| `/graphql` | 60 requests a minute |
+| `/auth/*` | 5 requests every 5 minutes |
+| `/api/*` | 100 requests a minute |
+| Any path (`default_limit`) | 100 requests a minute |
+| `/graphql`, by operation type | 100 queries, 20 mutations, 10 subscriptions a minute |
+| `/graphql`, by estimated cost | 200 cheap, 100 medium, 20 expensive requests a minute |
 
-**Via Environment Variables**:
-
-```bash
-# Check current configuration
-env | grep RATE_LIMIT
-
-# Example output:
-# FRAISEQL_RATE_LIMIT_DEFAULT=100/minute
-# FRAISEQL_RATE_LIMIT_GRAPHQL=50/minute
-# FRAISEQL_RATE_LIMIT_BURST=20
-```
+A client is `request.state.user_id` when a middleware of yours sets it, otherwise the
+IP (the first `X-Forwarded-For` address, then `X-Real-IP`, then the peer address).
+Windows are fixed (the count resets when a window ends), and the counters live in
+each instance's memory. `/health`, `/ready` and `/metrics` are never limited.
 
 ---
 
@@ -220,115 +215,71 @@ env | grep RATE_LIMIT
 
 ### For Legitimate Users (5 minutes)
 
-#### 1. Temporarily Increase User Limit
+#### 1. Raise the Limit
+
+There is no per-user override at runtime: raise the rule's limit and redeploy.
 
 ```python
-from fraiseql.security import RateLimiter
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.security import RateLimit, RateLimitRule, setup_rate_limiting
 
-# Grant temporary exemption
-rate_limiter = RateLimiter()
-await rate_limiter.set_user_limit(
-    user_id="user_789",
-    limit=200,  # Increased from 100
-    duration_seconds=3600,  # 1 hour
+app = create_fraiseql_app(database_url="postgresql://localhost/mydb", types=[User], queries=[users])
+
+setup_rate_limiting(
+    app,
+    custom_rules=[
+        RateLimitRule(
+            path_pattern="/graphql",
+            rate_limit=RateLimit(requests=200, window=60),  # Increased from 60
+            message="GraphQL rate limit exceeded",
+        ),
+    ],
+    default_limit=RateLimit(requests=200, window=60),
 )
 ```
 
-**Via Admin API** (if implemented):
+`custom_rules` replaces the default rules, so list every path you want limited.
 
-```bash
-curl -X POST http://localhost:8000/admin/rate-limits \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user_789",
-    "limit": 200,
-    "duration_seconds": 3600
-  }'
-```
+#### 2. Exempt a Trusted Client (If Safe)
 
-#### 2. Whitelist Specific IP (If Safe)
+A rule's `exempt_func` lets a request through every limit when it returns `True`:
 
 ```python
-from fraiseql.security import RateLimiter
+TRUSTED_IPS = {"203.0.113.42"}  # Partner API integration
 
-# Whitelist trusted IP
-rate_limiter = RateLimiter()
-await rate_limiter.add_to_whitelist(
-    ip_address="203.0.113.42",
-    reason="Legitimate high-volume integration",
-    expiry_seconds=86400,  # 24 hours
+
+def is_trusted(request) -> bool:
+    return request.client is not None and request.client.host in TRUSTED_IPS
+
+
+setup_rate_limiting(
+    app,
+    custom_rules=[
+        RateLimitRule(
+            path_pattern="/graphql",
+            rate_limit=RateLimit(requests=60, window=60),
+            exempt_func=is_trusted,
+        ),
+    ],
 )
-```
-
-**Configuration File**:
-
-```yaml
-# config/rate_limits.yml
-whitelisted_ips:
-  - ip: "203.0.113.42"
-    reason: "Partner API integration"
-    expires_at: "2025-12-30T12:00:00Z"
 ```
 
 #### 3. Notify User
 
-```python
-# Send notification about rate limit
-from fraiseql.notifications import send_notification
-
-await send_notification(
-    user_id="user_789",
-    type="rate_limit_info",
-    message="You've temporarily hit our rate limit. We've increased your limit for the next hour.",
-    details={
-        "current_limit": 200,
-        "expires_at": "2025-12-29T13:30:00Z"
-    }
-)
-```
+fraiseql has no user notification API; tell the user through your usual support
+channel what limit they hit and when it resets (`Retry-After` on the 429 response).
 
 ### For Abusive Traffic (10 minutes)
 
 #### 1. Temporary Block
 
-```python
-from fraiseql.security import RateLimiter
-
-# Block user temporarily
-rate_limiter = RateLimiter()
-await rate_limiter.block_user(
-    user_id="user_999",
-    duration_seconds=3600,  # 1 hour
-    reason="Excessive rate limit violations"
-)
-```
-
-**Via Admin API**:
-
-```bash
-curl -X POST http://localhost:8000/admin/blocks \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user_999",
-    "duration_seconds": 3600,
-    "reason": "Excessive rate limit violations"
-  }'
-```
+fraiseql has no block list. Block an authenticated user with an operation
+authorizer that denies them (see
+[Block Attacking User/IP](./graphql-query-dos.md#2-block-attacking-userip)).
 
 #### 2. IP-Based Blocking
 
-```python
-# Block IP address
-await rate_limiter.block_ip(
-    ip_address="198.51.100.23",
-    duration_seconds=7200,  # 2 hours
-    reason="Suspected bot activity"
-)
-```
-
-**Firewall Rule** (if persistent abuse):
+Block the address at the firewall or load balancer:
 
 ```bash
 # Add iptables rule (requires root)
@@ -336,18 +287,6 @@ sudo iptables -A INPUT -s 198.51.100.23 -j DROP
 
 # Or use cloud provider firewall
 # AWS Security Group, GCP Firewall Rule, etc.
-```
-
-#### 3. CAPTCHA Challenge (If Available)
-
-```python
-# Require CAPTCHA for suspicious users
-from fraiseql.security import CaptchaChallenge
-
-await CaptchaChallenge.enable_for_user(
-    user_id="user_999",
-    duration_seconds=3600
-)
 ```
 
 ### Adjusting Global Rate Limits (30 minutes)
@@ -377,53 +316,27 @@ jq -r 'select(.event == "http.request" and .context.status != 429) |
 
 #### 2. Update Rate Limit Configuration
 
-```python
-# config/rate_limits.py
-RATE_LIMITS = {
-    # Increase if legitimate traffic is being blocked
-    "default": "150/minute",  # Increased from 100
-
-    # Different limits for different user tiers
-    "free_tier": "50/minute",
-    "pro_tier": "500/minute",
-    "enterprise_tier": "5000/minute",
-
-    # Endpoint-specific limits
-    "graphql_query": "100/minute",
-    "graphql_mutation": "50/minute",
-
-    # Burst allowance
-    "burst": 30,  # Allow short bursts above limit
-}
-```
-
-**Environment Variables**:
-
-```bash
-# Update production configuration
-export FRAISEQL_RATE_LIMIT_DEFAULT=150/minute
-export FRAISEQL_RATE_LIMIT_GRAPHQL_QUERY=100/minute
-export FRAISEQL_RATE_LIMIT_BURST=30
-```
-
-#### 3. Implement Tiered Rate Limits
+Set the new limits where the app installs the middleware, and redeploy:
 
 ```python
-from fraiseql.security import RateLimiter
+from fraiseql.security import RateLimit, RateLimitMiddleware, RateLimitRule
 
-class TieredRateLimiter(RateLimiter):
-    async def get_user_limit(self, user_id: str) -> int:
-        # Check user's subscription tier
-        user = await get_user(user_id)
-
-        limits = {
-            "free": 50,
-            "pro": 500,
-            "enterprise": 5000,
-        }
-
-        return limits.get(user.tier, 50)  # Default to free tier
+app.add_middleware(
+    RateLimitMiddleware,
+    rules=[
+        # Increase if legitimate traffic is being blocked
+        RateLimitRule(path_pattern="/graphql", rate_limit=RateLimit(requests=150, window=60)),
+        RateLimitRule(path_pattern="/auth/*", rate_limit=RateLimit(requests=5, window=300)),
+    ],
+    default_limit=RateLimit(requests=150, window=60),
+)
 ```
+
+#### 3. Tiered Rate Limits
+
+`RateLimitMiddleware` applies the same limits to every client; it has no per-tier
+limits. Enforce plan quotas at your API gateway, or run a separate deployment with
+higher limits for the clients that need them.
 
 ---
 
@@ -530,9 +443,9 @@ curl -X POST http://localhost:8000/graphql \
 ### 3. Monitor Logs
 
 ```bash
-# Check for continued violations
-jq -r 'select(.event == "security.rate_limit" and .context.user_id == "user_789")' \
-  /var/log/fraiseql/app.log | tail -10
+# Check for continued violations (fraiseql logs each one on the fraiseql.security
+# logger, with "event_type": "rate_limit.exceeded")
+grep 'rate_limit.exceeded' /var/log/fraiseql/app.log | tail -10
 
 # Should see no recent events for whitelisted/increased limit users
 ```
@@ -551,8 +464,7 @@ After resolving the incident:
 
 2. **Update Rate Limits**:
    - Adjust limits based on real traffic patterns
-   - Implement tiered limits for different user types
-   - Add burst allowance for short spikes
+   - Exempt trusted integrations with `exempt_func`
 
 3. **Improve Detection**:
    - Add monitoring for specific endpoints
@@ -561,67 +473,26 @@ After resolving the incident:
 
 4. **User Communication**:
    - Document rate limits in API docs
-   - Add rate limit headers to responses
+   - Document `Retry-After` handling for clients
    - Provide user-facing rate limit dashboard
 
 ---
 
 ## 💡 Best Practices
 
-### 1. Return Rate Limit Headers
+### 1. Tell Clients When to Retry
 
-```python
-from fastapi import Response
+A 429 from `RateLimitMiddleware` carries `Retry-After` (seconds), `X-RateLimit-Limit`
+and `X-RateLimit-Window`; on the GraphQL endpoint, by operation type or cost, its
+body is a GraphQL error with `"extensions": {"code": "RATE_LIMITED"}`. Clients should
+wait `Retry-After` seconds before retrying.
 
-@app.post("/graphql")
-async def graphql_endpoint(response: Response):
-    # Add rate limit headers
-    response.headers["X-RateLimit-Limit"] = "100"
-    response.headers["X-RateLimit-Remaining"] = "45"
-    response.headers["X-RateLimit-Reset"] = "1640000000"
+### 2. Share Counters Across Instances
 
-    # ... handle request ...
-```
-
-### 2. Implement Sliding Window
-
-```python
-from fraiseql.security import SlidingWindowRateLimiter
-
-# More accurate than fixed window
-rate_limiter = SlidingWindowRateLimiter(
-    limit=100,
-    window_seconds=60,
-)
-```
-
-### 3. Use Distributed Rate Limiting
-
-```python
-from fraiseql.security import RedisRateLimiter
-
-# For multi-instance deployments
-rate_limiter = RedisRateLimiter(
-    redis_url="redis://localhost:6379",
-    limit=100,
-    window_seconds=60,
-)
-```
-
-### 4. Graceful Degradation
-
-```python
-@app.post("/graphql")
-async def graphql_endpoint():
-    if await rate_limiter.is_limited(user_id):
-        # Return cached result instead of hard error
-        cached_result = await cache.get(request_hash)
-        if cached_result:
-            return cached_result
-
-    # Normal processing
-    return await execute_query(...)
-```
+The default store keeps the counters in each instance's memory, so N instances allow
+N times the limit. Pass a Redis-backed store to count across instances:
+`setup_rate_limiting(app, redis_client=redis_client)` or
+`RateLimitMiddleware(..., store=RedisRateLimitStore(redis_client))`.
 
 ---
 

@@ -1048,8 +1048,8 @@ Cache GraphQL queries by SHA-256 hash to reduce bandwidth and improve performanc
 from fraiseql import FraiseQLConfig
 
 config = FraiseQLConfig(
-    apq_storage_backend="memory",  # Default - LRU cache
-    apq_cache_size=1000             # Max cached queries
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="memory",  # Default: in-process, unbounded
 )
 ```
 
@@ -1057,19 +1057,18 @@ config = FraiseQLConfig(
 
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
     apq_storage_backend="postgresql",
-    apq_storage_schema="apq_cache",     # Schema for cache table
-    apq_cache_ttl=3600                   # TTL in seconds (optional)
+    apq_backend_config={"table_prefix": "apq_"},  # Tables apq_queries, apq_responses
 )
-
-# Creates table:
-# CREATE TABLE apq_cache.persisted_queries (
-#     query_hash TEXT PRIMARY KEY,
-#     query_text TEXT NOT NULL,
-#     created_at TIMESTAMPTZ DEFAULT NOW(),
-#     last_used TIMESTAMPTZ DEFAULT NOW()
-# );
 ```
+
+There is no TTL or size limit setting: stored queries stay until the process stops.
+
+> **Note:** the `postgresql` backend doesn't open a database connection of its own
+> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
+> don't survive a restart and aren't shared between instances; clients re-register
+> a hash they get `PERSISTED_QUERY_NOT_FOUND` for.
 
 **Client usage (Apollo Client):**
 
@@ -1278,9 +1277,12 @@ Disable schema introspection in production:
 
 ```python
 config = FraiseQLConfig(
-    introspection_enabled=False
+    database_url="postgresql://localhost/mydb",
+    introspection_policy="disabled",  # or "authenticated"; "public" is the default
 )
 ```
+
+`environment="production"` sets `introspection_policy` to `"disabled"` on its own.
 
 ## Related
 

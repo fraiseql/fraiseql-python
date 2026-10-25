@@ -304,7 +304,7 @@ cache = ResultCache(PostgresCache(pool))
 
 @cached_query(cache, ttl=60)
 async def trending_posts(limit: int = 20):
-    return await db.find("v_post", order_by=[("score", "desc")], limit=limit)
+    return await db.find("v_post", order_by=[{"score": "DESC"}], limit=limit)
 
 # Bypass on demand
 fresh = await trending_posts(limit=20, skip_cache=True)

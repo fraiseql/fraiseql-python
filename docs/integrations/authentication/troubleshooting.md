@@ -262,8 +262,9 @@ psql "$FRAISEQL_DATABASE_URL" -c "SELECT 1;"
 # If still failing, check the network path
 telnet prod-db.internal 5432
 
-# Then start the app with debug logging to see the pool error:
-FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app
+# Then start the app with debug logging (LOG_LEVEL is read by the
+# logging.basicConfig call shown under "Enable Debug Logging") to see the pool error:
+LOG_LEVEL=DEBUG uvicorn app:app
 ```
 
 ### "FATAL: database does not exist"
@@ -328,8 +329,8 @@ psql "$FRAISEQL_DATABASE_URL" -c \
 # If the connection pool is the bottleneck, raise it in your config:
 export FRAISEQL_DATABASE_POOL_SIZE=50
 
-# Then enable debug logging to confirm where the time goes:
-FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app
+# Then enable debug logging (see "Enable Debug Logging") to confirm where the time goes:
+LOG_LEVEL=DEBUG uvicorn app:app
 ```
 
 ### High CPU Usage
@@ -510,11 +511,19 @@ logging.getLogger("fraiseql").setLevel(logging.DEBUG)
 logging.getLogger("fraiseql.auth").setLevel(logging.DEBUG)
 ```
 
-You can also set the level via the `FRAISEQL_LOG_LEVEL` environment variable when
-launching the app:
+FraiseQL has no log-level setting or `FRAISEQL_LOG_LEVEL` variable. To pick the
+level when launching the app, read a variable of your own in the app module, and
+give the records a handler (uvicorn only configures its own loggers):
+
+```python
+import logging
+import os
+
+logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO").upper())
+```
 
 ```bash
-FRAISEQL_LOG_LEVEL=DEBUG uvicorn app:app --reload
+LOG_LEVEL=DEBUG uvicorn app:app --reload
 ```
 
 ### Check Detailed Logs

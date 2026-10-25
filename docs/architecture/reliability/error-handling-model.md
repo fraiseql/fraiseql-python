@@ -833,12 +833,9 @@ Server logs:
 
 ### 7.2 Debug Mode
 
-FraiseQL can run with debug mode enabled to include additional error context. Set `production=False` in `create_fraiseql_app(...)` or the `FRAISEQL_DEBUG` environment variable in development environments only:
+FraiseQL can run with debug mode enabled to include additional error context. Set `production=False` in `create_fraiseql_app(...)` in development environments only (there is no `FRAISEQL_DEBUG` variable):
 
 ```text
-# Enable debug mode (dev environments only)
-FRAISEQL_DEBUG=true
-
 Response with debug mode:
 {
   "errors": [{

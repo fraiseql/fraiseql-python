@@ -88,15 +88,22 @@ FraiseQL repositories encapsulate database access per bounded context:
 
 ```python
 from abc import ABC, abstractmethod
+from typing import Generic, TypeVar
+
+from psycopg import sql
+from psycopg.rows import dict_row
+from psycopg_pool import AsyncConnectionPool
+
 from fraiseql.types import ID
-from fraiseql.db import DatabasePool
 
 T = TypeVar('T')
 
 class Repository(ABC, Generic[T]):
     """Base repository for domain entities."""
 
-    def __init__(self, db_pool: DatabasePool, schema: str = "public"):
+    def __init__(self, db_pool: AsyncConnectionPool, schema: str = "public"):
+        # e.g. info.context["db"].get_pool(), or
+        # fraiseql.fastapi.dependencies.get_db_pool()
         self.db = db_pool
         self.schema = schema
         self.table_name = self._get_table_name()
@@ -106,24 +113,28 @@ class Repository(ABC, Generic[T]):
         """Get table name for this repository."""
         pass
 
+    @property
+    def _table(self) -> sql.Identifier:
+        return sql.Identifier(self.schema, self.table_name)
+
     async def get_by_id(self, id: ID) -> T | None:
         """Get entity by ID."""
         async with self.db.connection() as conn:
-            result = await conn.execute(
-                f"SELECT * FROM {self.schema}.{self.table_name} WHERE id = $1",
-                id
+            cur = await conn.cursor(row_factory=dict_row).execute(
+                sql.SQL("SELECT * FROM {} WHERE id = %s").format(self._table),
+                (id,)
             )
-            row = await result.fetchone()
+            row = await cur.fetchone()
             return self._map_to_entity(row) if row else None
 
     async def get_all(self, limit: int = 100) -> list[T]:
         """Get all entities."""
         async with self.db.connection() as conn:
-            result = await conn.execute(
-                f"SELECT * FROM {self.schema}.{self.table_name} LIMIT $1",
-                limit
+            cur = await conn.cursor(row_factory=dict_row).execute(
+                sql.SQL("SELECT * FROM {} LIMIT %s").format(self._table),
+                (limit,)
             )
-            return [self._map_to_entity(row) for row in await result.fetchall()]
+            return [self._map_to_entity(row) for row in await cur.fetchall()]
 
     async def save(self, entity: T) -> T:
         """Save entity (insert or update)."""
@@ -132,12 +143,13 @@ class Repository(ABC, Generic[T]):
 
     async def delete(self, id: ID) -> bool:
         """Delete entity by ID."""
+        # The pool commits when the block exits without an exception
         async with self.db.connection() as conn:
-            result = await conn.execute(
-                f"DELETE FROM {self.schema}.{self.table_name} WHERE id = $1",
-                id
+            cur = await conn.execute(
+                sql.SQL("DELETE FROM {} WHERE id = %s").format(self._table),
+                (id,)
             )
-            return result.rowcount > 0
+            return cur.rowcount > 0
 
     @abstractmethod
     def _map_to_entity(self, row) -> T:

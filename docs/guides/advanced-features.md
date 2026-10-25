@@ -428,31 +428,48 @@ CREATE EXTENSION IF NOT EXISTS vector;
 ALTER TABLE tb_post
 ADD COLUMN embedding vector(1536);  -- OpenAI embedding size
 
--- Create index for fast similarity search
-CREATE INDEX ON tb_post USING ivfflat (embedding vector_cosine_ops);
+-- Create index for fast similarity search (HNSW works from an empty table;
+-- an ivfflat index built before the data is loaded misses rows)
+CREATE INDEX ON tb_post USING hnsw (embedding vector_cosine_ops);
+
+-- Distance ordering runs on view columns: a search view exposes the
+-- post's fields as columns, without a data JSONB column
+CREATE VIEW v_post_search AS
+SELECT id, title, content, embedding
+FROM tb_post;
 ```
 
 ### Query with Vector Similarity
 
 ```python
+import fraiseql
+from fraiseql.types import ID
+
+
+# A type over the flat search view (no JSONB data column)
+@fraiseql.type(sql_source="v_post_search", jsonb_column=None)
+class PostMatch:
+    id: ID
+    title: str
+    content: str | None
+
+
 @fraiseql.query
 async def search_posts(
     info,
     query: str,
     limit: int = 10
-) -> list[Post]:
+) -> list[PostMatch]:
     """Semantic search for posts."""
     db = info.context["db"]
 
     # Get query embedding (e.g., from OpenAI)
     query_embedding = await get_embedding(query)
 
-    # Vector similarity search: nearest by cosine distance
-    from fraiseql.sql.order_by_generator import OrderBy, OrderBySet
-
+    # Vector similarity search: nearest by cosine distance (embedding <=> query)
     return await db.find(
-        "v_post",
-        order_by=OrderBySet([OrderBy("embedding.cosine_distance", value=query_embedding)]),
+        "v_post_search",
+        order_by={"embedding": {"cosine_distance": query_embedding}},
         limit=limit,
     )
 ```
@@ -486,28 +503,20 @@ async def semantic_search(
     info,
     query: str,
     limit: int = 5
-) -> list[Post]:
+) -> list[PostMatch]:
     """Semantic search with vector similarity."""
     db = info.context["db"]
 
     # Get query embedding
     embedding = await get_embedding(query)
 
-    # Find similar posts
-    posts = await db.execute_raw(
-        """
-        SELECT id, title, content,
-               embedding <=> $1::vector AS similarity
-        FROM v_post
-        WHERE embedding IS NOT NULL
-        ORDER BY embedding <=> $1::vector
-        LIMIT $2
-        """,
-        embedding,
-        limit
+    # Nearest posts by cosine distance (embedding <=> query), closest first
+    return await db.find(
+        "v_post_search",
+        where={"embedding": {"isnull": False}},
+        order_by={"embedding": {"cosine_distance": embedding}},
+        limit=limit,
     )
-
-    return posts
 ```
 
 ---
@@ -526,13 +535,11 @@ async def search_posts(
     """Full-text search in posts."""
     db = info.context["db"]
 
+    # tsv @@ websearch_to_tsquery(search)
     return await db.find(
         "v_post",
-        where={
-            "tsv": {"@@": {"to_tsquery": search}}
-        },
-        order_by=[("ts_rank(tsv, to_tsquery($1))", "DESC")],
-        limit=limit
+        where={"tsv": {"websearch_query": search}},
+        limit=limit,
     )
 ```
 
@@ -552,6 +559,20 @@ EXECUTE FUNCTION
 
 -- Index for fast full-text search
 CREATE INDEX ON tb_post USING gin(tsv);
+
+-- Expose tsv as a column of the view, next to data
+CREATE OR REPLACE VIEW v_post AS
+SELECT id, tsv, jsonb_build_object('id', id, 'title', title, 'content', content) AS data
+FROM tb_post;
+```
+
+Register the view's columns, so the `tsv` filter runs on the column rather than on a
+`data` key:
+
+```python
+from fraiseql.db import register_type_for_view
+
+register_type_for_view("v_post", Post, table_columns={"id", "tsv", "data"}, has_jsonb_data=True)
 ```
 
 ### JSONB Queries
@@ -637,7 +658,7 @@ async def author(self, info) -> User:
 ### 2. Index Vector Columns
 
 ```sql
--- IVFFlat index (faster queries, good for most cases)
+-- IVFFlat index (faster to build; create it after loading the data)
 CREATE INDEX ON tb_post USING ivfflat (embedding vector_cosine_ops);
 
 -- HNSW index (best quality, slower inserts)

@@ -127,14 +127,14 @@ fraiseql_db_connections_total
 
 **Via Application Code**:
 
-```python
-from fraiseql import FraiseQL
+The repository exposes its psycopg pool, whose `get_stats()` counts connections and
+waiting requests (from inside the running app, e.g. a resolver or an admin route):
 
-app = FraiseQL(...)
-pool_stats = await app.db.get_pool_stats()
-print(f"Active: {pool_stats['active']}")
-print(f"Idle: {pool_stats['idle']}")
-print(f"Total: {pool_stats['total']}")
+```python
+pool_stats = info.context["db"].get_pool().get_stats()
+print(f"Open: {pool_stats['pool_size']}")
+print(f"Idle: {pool_stats['pool_available']}")
+print(f"Waiting for a connection: {pool_stats.get('requests_waiting', 0)}")
 ```
 
 ### Step 3: Identify Problematic Queries
@@ -229,24 +229,33 @@ FROM pg_statio_user_tables;
 
 #### 1. Verify Query Timeout Configuration
 
+`query_timeout` (seconds, default 30) becomes a `SET LOCAL statement_timeout` on the
+statements the repository runs through `db.run()` and on mutation functions
+(`execute_function`); PostgreSQL cancels one that runs longer:
+
 ```python
-# Check current timeout setting
-from fraiseql import FraiseQL
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
-app = FraiseQL(...)
-
-# Default is 30 seconds
-conn = await app.db.get_connection(query_timeout=30)
-
-# For slow queries, temporarily increase timeout
-conn = await app.db.get_connection(query_timeout=60)
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    query_timeout=60,  # For slow queries, temporarily increase from 30
+)
+app = create_fraiseql_app(config=config, types=[Order], queries=[orders])
 ```
 
-**Environment Variable Override**:
+**Environment Variable Override** (read when the app is built from a `FraiseQLConfig`):
 
 ```bash
 # In production environment
 export FRAISEQL_QUERY_TIMEOUT=60  # seconds
+```
+
+`find()`, `find_one()` and the other reads don't get it, so bound every statement
+the app sends with a timeout on its database role as well; new pool connections
+pick it up:
+
+```sql
+ALTER ROLE app_user SET statement_timeout = '30s';
 ```
 
 #### 2. Kill Long-Running Queries (If Critical)
@@ -267,21 +276,23 @@ SELECT pg_terminate_backend(<pid>);
 
 #### 3. Temporarily Increase Connection Pool Size
 
-```python
-from fraiseql import FraiseQL
+The pool opens at most `database_pool_size + database_max_overflow` connections:
 
-# Default configuration
-app = FraiseQL(
-    db_pool_size=20,      # Increase from default (usually 10)
-    db_max_overflow=10,   # Increase from default (usually 5)
+```python
+from fraiseql.fastapi import FraiseQLConfig
+
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=30,  # Default: 20 (create_fraiseql_app uses 10 in development)
+    database_max_overflow=10,  # Default: 10
 )
 ```
 
-**Environment Variables**:
+**Environment Variables** (read when the app is built from a `FraiseQLConfig`):
 
 ```bash
-export FRAISEQL_DB_POOL_SIZE=20
-export FRAISEQL_DB_MAX_OVERFLOW=10
+export FRAISEQL_DATABASE_POOL_SIZE=30
+export FRAISEQL_DATABASE_MAX_OVERFLOW=10
 ```
 
 ### Short-Term Fixes (15-30 minutes)
@@ -337,13 +348,14 @@ ON order_items(order_id);
 # Rule of thumb: pool_size = (available_connections / number_of_app_instances) * 0.8
 
 # Example for PostgreSQL with max_connections=100, 2 app instances
-pool_size = (100 / 2) * 0.8  # = 40 per instance
+pool_size = (100 / 2) * 0.8  # = 40 connections per instance, overflow included
 
-app = FraiseQL(
-    db_pool_size=40,
-    db_max_overflow=10,
-    db_pool_timeout=30,  # seconds to wait for connection
-    db_pool_recycle=3600,  # recycle connections after 1 hour
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=30,
+    database_max_overflow=10,  # 30 + 10 = 40
+    database_pool_timeout=30,  # seconds to wait for connection
+    database_pool_recycle=3600,  # recycle connections after 1 hour
 )
 ```
 
@@ -351,36 +363,18 @@ app = FraiseQL(
 
 #### 1. Implement Query Result Caching
 
-```python
-from fraiseql import FraiseQL
-from fraiseql.caching import RedisCache
+Cache expensive reads with `fraiseql.caching` (`PostgresCache` + `ResultCache` +
+`CachedRepository`, stored in a PostgreSQL UNLOGGED table): see
+[Caching](../../performance/caching.md) for the setup and invalidation.
 
-# Enable caching for expensive queries
-cache = RedisCache(url="redis://localhost:6379")
-
-app = FraiseQL(
-    cache=cache,
-    cache_ttl=300,  # 5 minutes default TTL
-)
-
-# Query results automatically cached
-# Cache key based on query hash
-```
+For reads that are expensive to compute rather than frequent, pre-compose them into
+a `tv_` projection table instead.
 
 #### 2. Use Database Read Replicas
 
-```python
-from fraiseql import FraiseQL
-
-app = FraiseQL(
-    db_url="postgresql://primary:5432/db",
-    read_replica_urls=[
-        "postgresql://replica1:5432/db",
-        "postgresql://replica2:5432/db",
-    ],
-    read_replica_strategy="round_robin",  # or "random"
-)
-```
+fraiseql connects to one `database_url` and has no read/write routing. To offload
+reads, run a separate deployment of the API pointed at a replica (or at a
+connection pooler that routes to replicas), and send read-only traffic to it.
 
 #### 3. Partition Large Tables
 
@@ -401,30 +395,47 @@ CREATE TABLE orders_2025_02 PARTITION OF orders
 FOR VALUES FROM ('2025-02-01') TO ('2025-03-01');
 ```
 
-#### 4. Implement DataLoader for N+1 Queries
+#### 4. Compose Related Rows in the View (N+1 Queries)
+
+A fraiseql query reads one view; embed related rows in its `data` JSONB and the
+whole tree comes back from a single SQL statement, however many orders there are:
+
+```sql
+CREATE VIEW v_order AS
+SELECT
+    o.id,
+    jsonb_build_object(
+        'id', o.id,
+        'total', o.total,
+        'created_at', o.created_at,
+        'user', jsonb_build_object('id', u.id, 'name', u.name)
+    ) AS data
+FROM tb_order o
+JOIN tb_user u ON u.pk_user = o.fk_user;
+```
 
 ```python
-from fraiseql import FraiseQL
-from fraiseql.dataloaders import DataLoader
+import fraiseql
+from fraiseql.types import ID
 
-class UserLoader(DataLoader):
-    async def batch_load_fn(self, user_ids):
-        # Load multiple users in single query
-        query = "SELECT * FROM users WHERE id = ANY($1)"
-        rows = await db.fetch(query, user_ids)
-        return [row for row in rows]
 
-# Use in GraphQL resolvers
-@app.query.field("orders")
-async def resolve_orders(info):
-    orders = await db.fetch("SELECT * FROM orders")
+@fraiseql.type
+class OrderUser:
+    id: ID
+    name: str
 
-    # Efficiently load users (batched)
-    user_loader = info.context["user_loader"]
-    for order in orders:
-        order.user = await user_loader.load(order.user_id)
 
-    return orders
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
+class Order:
+    id: ID
+    total: float
+    user: OrderUser
+
+
+@fraiseql.query
+async def orders(info, limit: int = 100) -> list[Order]:
+    db = info.context["db"]
+    return await db.find("v_order", limit=limit)
 ```
 
 ---

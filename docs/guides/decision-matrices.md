@@ -580,13 +580,13 @@ class User:
 
 | Feature | Memory Backend | PostgreSQL Backend |
 |---------|---------------|-------------------|
-| **Multi-instance Support** | ❌ No (each instance has own cache) | ✅ Yes (shared cache) |
-| **Persistence** | ❌ Lost on restart | ✅ Survives restarts |
+| **Multi-instance Support** | ❌ No (each instance has own cache) | ⚠️ Not yet (see the note below) |
+| **Persistence** | ❌ Lost on restart | ⚠️ Not yet (see the note below) |
 | **Performance** | ✅ Fastest (no network) | ⚠️ Network overhead (~1ms) |
 | **Setup Complexity** | ✅ Zero config | ⚠️ Requires migration |
 | **Use Case** | Single instance, development | Multi-instance, production |
 | **Cache Size** | Limited by RAM | Limited by disk |
-| **TTL Support** | ✅ Yes | ✅ Yes |
+| **TTL Support** | ❌ No | ❌ No |
 
 **Decision tree:**
 
@@ -613,8 +613,8 @@ flowchart TD
 from fraiseql import FraiseQLConfig
 
 config = FraiseQLConfig(
-    apq_storage_backend="memory",  # Default
-    apq_cache_size=1000             # Max cached queries
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="memory",  # Default: in-process, unbounded
 )
 ```
 
@@ -622,19 +622,18 @@ config = FraiseQLConfig(
 
 ```python
 config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
     apq_storage_backend="postgresql",
-    apq_storage_schema="apq_cache",
-    apq_cache_ttl=3600  # 1 hour TTL
+    apq_backend_config={"table_prefix": "apq_"},  # Tables apq_queries, apq_responses
 )
-
-# Automatically creates:
-# CREATE TABLE apq_cache.persisted_queries (
-#     query_hash TEXT PRIMARY KEY,
-#     query_text TEXT NOT NULL,
-#     created_at TIMESTAMPTZ DEFAULT NOW(),
-#     last_used TIMESTAMPTZ DEFAULT NOW()
-# );
 ```
+
+There is no TTL or size limit setting: stored queries stay until the process stops.
+
+> **Note:** the `postgresql` backend doesn't open a database connection of its own
+> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
+> don't survive a restart and aren't shared between instances; clients re-register
+> a hash they get `PERSISTED_QUERY_NOT_FOUND` for.
 
 ---
 

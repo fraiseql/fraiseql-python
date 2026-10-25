@@ -525,7 +525,7 @@ async def get_top_products(
 
     return await db.find(
         "products",
-        order_by=[("sales_count", "DESC")],
+        order_by=[{"sales_count": "DESC"}],
         limit=limit,
         mandatory_filters={"category": category, "status": "published"},
     )
@@ -564,7 +564,7 @@ cache_key = key_builder.build_key(
     query_name="users",
     tenant_id="tenant-123",      # Tenant isolation
     filters={"status": "active", "role": "admin"},
-    order_by=[("created_at", "DESC")],
+    order_by=[{"created_at": "DESC"}],
     limit=10,
     offset=0
 )

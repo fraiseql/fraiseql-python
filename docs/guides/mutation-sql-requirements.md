@@ -26,9 +26,12 @@ Prerequisites:
 - Run the SQL setup below first
 """
 
-import asyncio
 from uuid import UUID
+
+from fastapi.testclient import TestClient
+
 import fraiseql
+from fraiseql import create_fraiseql_app
 
 # SQL Setup (run this first in your database):
 SQL_SETUP = """
@@ -52,7 +55,12 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Create mutation function
+-- 3. Create the read view (FraiseQL reads JSONB `data` from views)
+CREATE OR REPLACE VIEW v_user AS
+SELECT id, jsonb_build_object('id', id, 'name', name, 'email', email) AS data
+FROM users;
+
+-- 4. Create mutation function
 CREATE OR REPLACE FUNCTION create_user(input_payload jsonb)
 RETURNS mutation_response AS $$
 DECLARE
@@ -88,64 +96,84 @@ $$ LANGUAGE plpgsql;
 
 # Python Integration:
 
-@fraiseql.type(sql_source="users")
+@fraiseql.type(sql_source="v_user")
 class User:
     id: UUID
     name: str
     email: str
 
-@fraiseql.mutation
-async def create_user(info, name: str, email: str) -> fraiseql.MutationResponse[User]:
-    """Create a new user."""
-    db = info.context["db"]
+@fraiseql.input
+class CreateUserInput:
+    name: str | None = None
+    email: str | None = None
 
-    # Call PostgreSQL function
-    result = await db.execute(
-        "SELECT * FROM create_user($1::jsonb)",
-        fraiseql.json.dumps({"name": name, "email": email})
+@fraiseql.success
+class CreateUserSuccess:
+    user: User  # filled from mutation_response.entity
+
+@fraiseql.error
+class CreateUserError:
+    pass  # status, message and errors are added automatically
+
+@fraiseql.mutation(function="create_user")
+class CreateUser:
+    """Create a new user: calls create_user(input jsonb)."""
+    input: CreateUserInput
+    success: CreateUserSuccess
+    error: CreateUserError
+
+@fraiseql.query
+async def users(info) -> list[User]:
+    return await info.context["db"].find("v_user")
+
+MUTATION = """
+mutation CreateUser($input: CreateUserInput!) {
+  createUser(input: $input) {
+    ... on CreateUserSuccess {
+      status
+      message
+      user { id name email }
+    }
+    ... on CreateUserError {
+      status
+      message
+      errors { code identifier message }
+    }
+  }
+}
+"""
+
+def main():
+    app = create_fraiseql_app(
+        database_url="postgresql://localhost/mydb",
+        types=[User],
+        queries=[users],
+        mutations=[CreateUser],
     )
 
-    return fraiseql.MutationResponse.from_db(result[0])
+    with TestClient(app) as client:
+        for user_input in (
+            {"name": "Alice Johnson", "email": "alice@example.com"},
+            {"email": "nobody@example.com"},  # no name: validation error
+        ):
+            result = client.post(
+                "/graphql", json={"query": MUTATION, "variables": {"input": user_input}}
+            ).json()
 
-async def main():
-    schema = fraiseql.Schema("postgresql://localhost/mydb")
-
-    # Execute mutation
-    mutation = """
-    mutation {
-      createUser(name: "Alice Johnson", email: "alice@example.com") {
-        status
-        message
-        entity {
-          id
-          name
-          email
-        }
-        errors {
-          code
-          identifier
-          message
-        }
-      }
-    }
-    """
-
-    result = await schema.execute(mutation)
-
-    if result.errors:
-        print(f"❌ GraphQL Errors: {result.errors}")
-    else:
-        response = result.data['createUser']
-        if response['status'] == 'created':
-            print(f"✅ {response['message']}")
-            print(f"   User ID: {response['entity']['id']}")
-        else:
-            print(f"⚠️  {response['message']}")
-            for error in response.get('errors', []):
-                print(f"   - {error['identifier']}: {error['message']}")
+            if "errors" in result:
+                print(f"❌ GraphQL Errors: {result['errors']}")
+                continue
+            response = result["data"]["createUser"]
+            if response["status"] == "created":
+                print(f"✅ {response['message']}")
+                print(f"   User ID: {response['user']['id']}")
+            else:
+                print(f"⚠️  {response['message']}")
+                for error in response["errors"]:
+                    print(f"   - {error['identifier']}: {error['message']}")
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
 ```
 
 **Expected Output (Success):**

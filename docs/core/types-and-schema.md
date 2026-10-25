@@ -718,20 +718,6 @@ async def users_connection(
     pass  # Implementation handled by decorator
 ```
 
-**Manual usage**:
-
-```python
-import fraiseql
-
-from fraiseql.types import create_connection
-
-@fraiseql.query
-async def users_connection(info, first: int = 20) -> Connection[User]:
-    db = info.context["db"]
-    result = await db.paginate("v_user", first=first)
-    return create_connection(result, User)
-```
-
 ### PaginatedResponse (Offset Pagination)
 
 **Alias**: `PaginatedResponse = Connection`

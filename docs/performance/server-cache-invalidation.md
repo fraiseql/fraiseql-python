@@ -448,10 +448,11 @@ When using explicit sync, CASCADE happens at the **query side** (tv_*):
 
 ```python
 # Command side: Update tb_user
-await db.execute(
-    "UPDATE tb_user SET name = $1 WHERE id = $2",
-    "Alice Smith", user_id
-)
+async with db.get_pool().connection() as conn:
+    await conn.execute(
+        "UPDATE tb_user SET name = %s WHERE id = %s",
+        ("Alice Smith", user_id),
+    )
 
 # Explicit sync to query side
 await sync.sync_user([user_id])

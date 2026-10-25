@@ -190,8 +190,9 @@ jq -r 'select(.event == "security.auth_failure") |
 jq -r 'select(.event == "security.token_expired")' \
   /var/log/fraiseql/app.log | wc -l
 
-# Check token lifetime configuration
-echo $FRAISEQL_TOKEN_LIFETIME_SECONDS
+# Lifetime of a failing token, in seconds (exp - iat); the issuer sets it,
+# fraiseql only checks exp
+echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq '.exp - .iat'
 ```
 
 **Likely Causes**:
@@ -211,8 +212,9 @@ echo $FRAISEQL_TOKEN_LIFETIME_SECONDS
 **Check**:
 
 ```bash
-# Check JWT signing key
-echo $FRAISEQL_JWT_SECRET | wc -c  # Should be 32+ characters
+# Check the signing secret your auth provider validates with (here JWT_SECRET,
+# the variable the provider below reads; fraiseql reads none itself)
+echo $JWT_SECRET | wc -c  # Should be 32+ characters
 
 # Check if key changed recently
 git log --since="24 hours ago" --grep="JWT_SECRET" --oneline
@@ -288,64 +290,28 @@ psql -c "SELECT 1" postgresql://localhost/fraiseql
 
 ### For Token Expiration Issues (5-10 minutes)
 
+fraiseql validates tokens through the provider passed as `create_fraiseql_app(auth=...)`;
+it doesn't issue them. Token lifetimes and the refresh flow belong to the issuer:
+with Auth0 (`auth=Auth0Config(...)`), set the API's token expiration in the Auth0
+dashboard; with your own issuer, in its configuration.
+
 #### 1. Increase Token Lifetime (If Too Short)
 
-```python
-# config/auth.py
-TOKEN_LIFETIME_SECONDS = 3600  # Increase from 900 (15 min) to 3600 (1 hour)
-REFRESH_TOKEN_LIFETIME_SECONDS = 86400  # 24 hours
-```
+Raise the access token lifetime at the issuer (e.g. Auth0 > APIs > your API >
+Token Expiration), then have clients log in again. Existing tokens keep their old
+`exp`.
 
-**Environment Variable**:
+#### 2. Make Sure Clients Refresh Tokens
 
-```bash
-export FRAISEQL_TOKEN_LIFETIME_SECONDS=3600
-export FRAISEQL_REFRESH_TOKEN_LIFETIME_SECONDS=86400
+The issuer's refresh endpoint (Auth0: `POST https://<domain>/oauth/token` with
+`grant_type=refresh_token`) returns a new access token; the client should call it
+before `exp`, or on a 401, and retry with the new token.
 
-# Restart application
-systemctl restart fraiseql
-```
+#### 3. Allow a Little Clock Skew
 
-#### 2. Implement Token Refresh Endpoint
-
-```python
-from fraiseql import FraiseQL
-from fraiseql.auth import create_access_token, verify_refresh_token
-
-app = FraiseQL()
-
-@app.post("/auth/refresh")
-async def refresh_token(refresh_token: str):
-    # Verify refresh token
-    payload = verify_refresh_token(refresh_token)
-    if not payload:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
-
-    # Issue new access token
-    new_access_token = create_access_token(
-        user_id=payload["user_id"],
-        expires_in=3600,
-    )
-
-    return {
-        "access_token": new_access_token,
-        "token_type": "bearer",
-        "expires_in": 3600,
-    }
-```
-
-#### 3. Implement Grace Period for Token Expiry
-
-```python
-from fraiseql.auth import TokenValidator
-
-# Allow recently expired tokens (within 5 minutes)
-validator = TokenValidator(
-    grace_period_seconds=300,  # 5 minutes
-)
-
-# Tokens expired < 5 min ago still valid
-```
+A provider of your own can accept tokens that expired a few seconds to minutes ago
+with PyJWT's `leeway` (the provider below takes `leeway_seconds`). Keep it small:
+it extends every token's life.
 
 ### For Token Signature Issues (10-15 minutes)
 
@@ -353,10 +319,10 @@ validator = TokenValidator(
 
 ```bash
 # Check current secret (all instances must match!)
-echo $FRAISEQL_JWT_SECRET
+echo $JWT_SECRET
 
 # Update secret if needed (COORDINATED ROLLOUT REQUIRED)
-export FRAISEQL_JWT_SECRET="new-secret-key-at-least-32-chars-long"
+export JWT_SECRET="new-secret-key-at-least-32-chars-long"
 
 # Restart all instances simultaneously
 kubectl rollout restart deployment fraiseql
@@ -364,43 +330,78 @@ kubectl rollout restart deployment fraiseql
 
 #### 2. Implement Key Rotation with Grace Period
 
+With Auth0, signing keys rotate through the tenant's JWKS, which `Auth0Provider`
+fetches, so there's nothing to do in fraiseql. A provider of your own that checks
+an HS256 secret can accept the previous secret while tokens signed with it are
+still alive:
+
 ```python
-from fraiseql.auth import JWTManager
+import os
 
-# Support multiple keys during rotation
-jwt_manager = JWTManager(
-    primary_secret=os.getenv("FRAISEQL_JWT_SECRET"),
-    fallback_secrets=[
-        os.getenv("FRAISEQL_JWT_SECRET_OLD"),  # Accept old key during transition
-    ],
-    grace_period_hours=24,  # Accept old keys for 24 hours
+import jwt
+
+from fraiseql.auth import AuthProvider, UserContext
+from fraiseql.auth.base import AuthenticationError
+from fraiseql.fastapi import create_fraiseql_app
+
+
+class RotatingJWTProvider(AuthProvider):
+    """Validate HS256 tokens signed with the current or the previous secret."""
+
+    def __init__(self, secrets: list[str], leeway_seconds: int = 0) -> None:
+        self.secrets = [secret for secret in secrets if secret]
+        self.leeway_seconds = leeway_seconds
+
+    async def validate_token(self, token: str) -> dict:
+        for secret in self.secrets:
+            try:
+                return jwt.decode(
+                    token, secret, algorithms=["HS256"], leeway=self.leeway_seconds
+                )
+            except jwt.InvalidSignatureError:
+                continue  # Try the next secret
+            except jwt.InvalidTokenError as e:
+                raise AuthenticationError(str(e)) from e
+        raise AuthenticationError("Invalid token signature")
+
+    async def get_user_from_token(self, token: str) -> UserContext:
+        payload = await self.validate_token(token)
+        return UserContext(
+            user_id=payload["sub"],
+            roles=payload.get("roles", []),
+            permissions=payload.get("permissions", []),
+        )
+
+
+auth_provider = RotatingJWTProvider(
+    secrets=[os.environ["JWT_SECRET"], os.environ.get("JWT_SECRET_OLD", "")],
+    leeway_seconds=30,
 )
-
-# Sign with primary key
-token = jwt_manager.encode(payload)
-
-# Verify with primary OR fallback keys
-payload = jwt_manager.decode(token)
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[me],
+    auth=auth_provider,
+)
 ```
+
+With an auth provider, a request whose token fails validation (or that has none)
+gets a 401 `{"detail": "Authentication required"}`.
 
 **Rotation Process**:
 
 ```bash
-# Step 1: Add new key as fallback (no restart needed)
-export FRAISEQL_JWT_SECRET_NEW="new-key-here"
-
-# Step 2: Wait 24 hours (all old tokens expire)
-
-# Step 3: Promote new key to primary
-export FRAISEQL_JWT_SECRET="$FRAISEQL_JWT_SECRET_NEW"
-export FRAISEQL_JWT_SECRET_OLD="$FRAISEQL_JWT_SECRET"
-unset FRAISEQL_JWT_SECRET_NEW
-
-# Step 4: Restart application
+# Step 1: Keep the current key as the old one, sign new tokens with the new key
+export JWT_SECRET_OLD="$JWT_SECRET"
+export JWT_SECRET="new-key-here"
 kubectl rollout restart deployment fraiseql
 
-# Step 5: Wait 24 hours, remove old key
-unset FRAISEQL_JWT_SECRET_OLD
+# Step 2: Switch the issuer to the new key; wait until every token signed with the
+# old key has expired (the longest token lifetime)
+
+# Step 3: Remove the old key
+unset JWT_SECRET_OLD
+kubectl rollout restart deployment fraiseql
 ```
 
 #### 3. Fix Clock Skew (If Present)
@@ -420,60 +421,39 @@ sudo systemctl start ntpd
 
 ### For Brute Force Attacks (5 minutes)
 
+fraiseql has no block list, account lockout or CAPTCHA: credentials are checked by
+your identity provider (Auth0 has brute-force protection and bot detection settings
+for this), and fraiseql only sees tokens.
+
 #### 1. Block Attacking IPs
 
-```python
-from fraiseql.security import BlockList
-
-# Block IP immediately
-await BlockList.add_ip(
-    ip_address="203.0.113.88",
-    duration_seconds=86400,  # 24 hours
-    reason="Brute force attack detected"
-)
-```
-
-**Via Firewall**:
-
 ```bash
-# Block at firewall level (more efficient)
+# Block at firewall level
 sudo iptables -A INPUT -s 203.0.113.88 -j DROP
 
 # Or use cloud provider firewall
 # AWS Security Group, GCP Firewall Rule, etc.
 ```
 
-#### 2. Enable Account Lockout
+#### 2. Rate Limit Authentication Endpoints
+
+If the login endpoints are served by this app, limit them per client with
+`RateLimitMiddleware` (5 requests every 5 minutes on `/auth/*` with the defaults of
+`setup_rate_limiting`; see [Rate Limiting](./rate-limiting-triggered.md)):
 
 ```python
-from fraiseql.auth import AccountLockout
+from fraiseql.security import RateLimit, RateLimitRule, setup_rate_limiting
 
-# Lock account after 5 failed attempts
-lockout = AccountLockout(
-    max_attempts=5,
-    lockout_duration_seconds=1800,  # 30 minutes
-    window_seconds=300,  # 5-minute window
+setup_rate_limiting(
+    app,
+    custom_rules=[
+        RateLimitRule(
+            path_pattern="/auth/*",
+            rate_limit=RateLimit(requests=5, window=300),
+            message="Too many login attempts",
+        ),
+    ],
 )
-
-app.add_plugin(lockout)
-
-# Locked accounts require admin unlock or automatic expiry
-```
-
-#### 3. Implement CAPTCHA for Failed Attempts
-
-```python
-from fraiseql.security import CaptchaChallenge
-
-# Require CAPTCHA after 3 failed attempts
-captcha = CaptchaChallenge(
-    trigger_after_failures=3,
-    captcha_provider="recaptcha",
-    site_key=os.getenv("RECAPTCHA_SITE_KEY"),
-    secret_key=os.getenv("RECAPTCHA_SECRET_KEY"),
-)
-
-app.add_plugin(captcha)
 ```
 
 ### For Service Degradation (15 minutes)
@@ -496,66 +476,23 @@ curl -s https://oauth.provider.com/.well-known/openid-configuration
 # Check database connectivity
 psql -c "SELECT 1" $DATABASE_URL
 
-# Check connection pool
-curl -s http://localhost:8000/health/detailed | jq .database
+# Check that the app reaches the database (503 with the failing check if not)
+curl -s http://localhost:8000/ready | jq .checks
 ```
 
-**Cache/Redis Health**:
+**Cache/Redis Health** (if the app uses Redis, e.g. for rate limit counters):
 
 ```bash
 # Check Redis connectivity
 redis-cli ping
-
-# Check cache stats
-curl -s http://localhost:8000/health/detailed | jq .cache
 ```
 
-#### 2. Implement Fallback Authentication
+#### 2. Ride Out an Identity Provider Outage
 
-```python
-from fraiseql.auth import AuthManager
-
-# Fallback to local auth if OAuth unavailable
-auth_manager = AuthManager(
-    primary_provider="oauth",
-    fallback_provider="local",
-    fallback_timeout_seconds=5,
-)
-
-@app.post("/auth/login")
-async def login(credentials):
-    try:
-        # Try OAuth first
-        return await auth_manager.authenticate(
-            credentials,
-            provider="oauth",
-            timeout=5,
-        )
-    except TimeoutError:
-        # Fallback to local auth
-        return await auth_manager.authenticate(
-            credentials,
-            provider="local",
-        )
-```
-
-#### 3. Implement Circuit Breaker
-
-```python
-from fraiseql.resilience import CircuitBreaker
-
-# Prevent cascading failures
-oauth_circuit = CircuitBreaker(
-    failure_threshold=5,     # Open after 5 failures
-    timeout_seconds=60,      # Stay open for 60 seconds
-    expected_exception=ConnectionError,
-)
-
-@oauth_circuit.protected
-async def oauth_authenticate(token):
-    # This will fail fast if circuit is open
-    return await oauth_provider.validate(token)
-```
+fraiseql has no fallback authentication or circuit breaker. `Auth0Provider` caches
+the JWKS signing keys it has fetched (`cache_jwks=True`, the default; the key set for
+an hour), so validating tokens already issued keeps working through a short Auth0
+outage. New logins wait for the provider to recover.
 
 ---
 

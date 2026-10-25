@@ -296,7 +296,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `FraiseQLConfig` doesn't have (`jsonb_extraction_enabled`, `jsonb_default_columns`,
   `jsonb_auto_detect`, `field_projection`, `schema_registry`, `enable_query_caching`,
   `enable_turbo_router`, the `turbo_*` admission options), and `register_type_for_view`
-  and `UNSET` are imported from where they live.
+  and `UNSET` are imported from where they live. The remaining pages followed:
+  `execute_raw`, `paginate`, `execute`, `fetch`, `query`, `save`, `connection()`, a
+  `PsycopgRepository` / `QueryOptions` API, a `FraiseQL()` / `Schema` app class,
+  `MutationResponse` and other made-up classes are replaced by `run(DatabaseQuery)`,
+  `get_pool()`, `find(limit=, offset=)`, `count`, `create_fraiseql_app` and the real
+  security and KMS APIs (the production runbooks, database-api, kms, api
+  index, authentication, multi-tenancy, event-sourcing pages among them); config
+  examples drop fields `FraiseQLConfig` doesn't have and say which declared ones nothing
+  reads yet (`max_query_depth`, `complexity_*`, `rate_limit_*`); `order_by` uses
+  `[{"field": "DESC"}]` (`find()` ignores tuples) and `where` uses `{"field": {"gte": …}}`
+  (not `field__gte`); the OLAP page shows the real auto-aggregation shape; vector search
+  queries a flat view; first-hour's timestamp step matches the quickstart table; and the
+  bulk-operations SQL example runs.
 
 ## [1.30.0] - 2026-10-22
 

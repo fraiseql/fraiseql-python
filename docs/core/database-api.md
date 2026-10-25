@@ -6,13 +6,16 @@ Repository pattern for async database operations with type safety, structured qu
 
 ## Overview
 
-FraiseQL provides a repository layer for database operations that:
+FraiseQL provides a repository layer (`FraiseQLRepository`, in `fraiseql.db`) for database operations that:
 
 - Executes structured queries against JSONB views
 - Supports dynamic filtering with operators
 - Handles pagination and ordering
-- Provides tenant isolation
+- Sets per-request PostgreSQL session variables (tenant, user) for Row-Level Security
 - Returns RustResponseBytes for automatic GraphQL processing
+
+This page is a guide. The full method reference, with every parameter, is
+[Database API Reference](../reference/database.md).
 
 ## Query Flow Architecture
 
@@ -40,6 +43,38 @@ FraiseQL provides a repository layer for database operations that:
 
 Core repository class for async database operations with exclusive Rust pipeline integration.
 
+### Getting a Repository
+
+`create_fraiseql_app()` opens the connection pool and puts a repository in every
+request's context. Resolvers read it from `info.context["db"]`:
+
+```python
+@fraiseql.query
+async def users(info) -> list[User]:
+    db = info.context["db"]
+    return await db.find("v_user")
+```
+
+Outside a request (scripts, background jobs), build one from a psycopg pool:
+
+```python
+from psycopg_pool import AsyncConnectionPool
+
+from fraiseql.db import FraiseQLRepository
+
+pool = AsyncConnectionPool("postgresql://localhost/mydb", min_size=5, max_size=20, open=False)
+await pool.open()
+
+db = FraiseQLRepository(pool)
+total = await db.count("v_user")
+```
+
+**Parameters**:
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| pool | AsyncConnectionPool | Yes | psycopg connection pool |
+| context | dict | No | Request context; `tenant_id`, `user_id`, `contact_id` and `roles` become session variables |
+
 ### Key Methods
 
 #### find(view_name, field_name, **kwargs)
@@ -59,14 +94,14 @@ async def users(info, limit: int = 100) -> list[User]:
 @fraiseql.query
 async def filtered_users(info, min_age: int = 18) -> list[User]:
     db = info.context["db"]
-    return await db.find("v_user", "filteredUsers", where={"age__gte": min_age})
+    return await db.find("v_user", "filteredUsers", where={"age": {"gte": min_age}})
 ```
 
 **Parameters:**
 
 - `view_name: str` - Database view name (e.g., "v_user")
 - `field_name: str` - GraphQL field name for response wrapping (e.g., "users")
-- `**kwargs` - Query parameters: `where`, `limit`, `offset`, `order_by`
+- `**kwargs` - Query parameters: `where`, `limit`, `offset`, `order_by`, `mandatory_filters`
 
 **Returns:** Result handled automatically by framework (annotate resolver with `list[User]`)
 
@@ -89,165 +124,46 @@ async def user(info, id: ID) -> User | None:
 
 - `view_name: str` - Database view name
 - `field_name: str` - GraphQL field name for response wrapping
-- `**kwargs` - Filter conditions (e.g., `id=user_id`, `where={...}`)
+- `**kwargs` - `mandatory_filters={column: value}` (equality on view columns), `where={...}`
 
 **Returns:** Result handled automatically (annotate with `User | None`)
 
-- `where: dict` - WHERE clause filters (optional)
-- `**kwargs` - Additional filters
+#### Other methods
 
-**Returns:** Python objects (slower path)
+| Method | Returns | Use |
+|--------|---------|-----|
+| `count(view, where=..., mandatory_filters=...)` | `int` | Row count for the same filters as `find()` |
+| `exists(view, where=..., mandatory_filters=...)` | `bool` | Whether any row matches |
+| `execute_function(name, input)` | `dict` | Call a PostgreSQL mutation function |
+| `run(DatabaseQuery(...))` | `list[dict]` | Raw SQL with session variables applied |
+| `run_in_transaction(func, *args)` | result of `func` | Several statements in one transaction |
+| `get_pool()` | `AsyncConnectionPool` | The underlying psycopg pool |
 
-### Initialization
-
-```python
-from psycopg_pool import AsyncConnectionPool
-
-pool = AsyncConnectionPool(
-    conninfo="postgresql://localhost/mydb",
-    min_size=5,
-    max_size=20
-)
-
-db = PsycopgRepository(
-    pool=pool,
-    tenant_id="tenant-123"  # Optional: tenant context
-)
-```
-
-**Parameters**:
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| pool | AsyncConnectionPool | Yes | Connection pool instance |
-| tenant_id | str | None | No | Tenant identifier for multi-tenant contexts |
-
-### select_from_json_view()
-
-Primary method for querying JSONB views with filtering, pagination, and ordering.
-
-**Signature**:
-
-```python
-async def select_from_json_view(
-    self,
-    tenant_id: uuid.UUID,
-    view_name: str,
-    *,
-    options: QueryOptions | None = None,
-) -> tuple[Sequence[dict[str, object]], int | None]
-```
-
-**Parameters**:
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| tenant_id | UUID | Yes | Tenant identifier for multi-tenant filtering |
-| view_name | str | Yes | Database view name (e.g., "v_orders") |
-| options | QueryOptions | None | No | Query options (filters, pagination, ordering) |
-
-**Returns**: `tuple[Sequence[dict[str, object]], int | None]`
-
-- First element: List of result dictionaries from json_data column
-- Second element: Total count (if paginated), None otherwise
-
-**Example**:
-
-```python
-from fraiseql.db import PsycopgRepository, QueryOptions
-from fraiseql.db.pagination import (
-    PaginationInput,
-    OrderByInstructions,
-    OrderByInstruction,
-    OrderDirection
-)
-
-db = PsycopgRepository(connection_pool)
-
-options = QueryOptions(
-    filters={
-        "status": "active",
-        "created_at__min": "2024-01-01",
-        "price__max": 100.00
-    },
-    order_by=OrderByInstructions(
-        instructions=[
-            OrderByInstruction(field="created_at", direction=OrderDirection.DESC)
-        ]
-    ),
-    pagination=PaginationInput(limit=50, offset=0)
-)
-
-data, total = await db.select_from_json_view(
-    tenant_id=tenant_id,
-    view_name="v_orders",
-    options=options
-)
-
-print(f"Retrieved {len(data)} orders out of {total} total")
-for order in data:
-    print(f"Order {order['id']}: {order['status']}")
-```
+See the [reference](../reference/database.md) for each.
 
 ### Standard GraphQL Query Pattern
 
-When writing GraphQL queries (not direct repository calls), always include standard parameters for filtering, pagination, and ordering:
+A query returning `list[T]` gets `where`, `orderBy`, `limit` and `offset` arguments in
+the schema whether or not the resolver declares them. `db.find()` on `T`'s view applies
+the values the client sent:
 
 ```python
-import fraiseql
-from fraiseql.db.pagination import (
-    QueryOptions,
-    PaginationInput,
-    OrderByInstructions,
-    OrderByInstruction,
-    OrderDirection
-)
-from fraiseql.filters import UserWhereInput
-
 @fraiseql.query
-async def users(
-    info,
-    where: UserWhereInput | None = None,
-    limit: int | None = None,
-    offset: int | None = None,
-    order_by: list[OrderByInstruction] | None = None
-) -> list[User]:
+async def users(info) -> list[User]:
     """List users with filtering, pagination, and ordering."""
-    # Extract context (standard pattern)
     db = info.context["db"]
-    tenant_id = info.context["tenant_id"]
-
-    # Build query options
-    options = QueryOptions(
-        filters=where,
-        pagination=PaginationInput(limit=limit, offset=offset),
-        order_by=OrderByInstructions(instructions=order_by) if order_by else None
-    )
-
-    # Execute query
-    results, total = await db.select_from_json_view(
-        tenant_id=tenant_id,
-        view_name="v_user",
-        options=options
-    )
-
-    return results
+    return await db.find("v_user")
 ```
-
-**Key Points**:
-
-- **`where`**: Typed filter input (not plain dict)
-- **`limit`/`offset`**: Standard pagination parameters
-- **`order_by`**: Ordering instructions for consistent results
-- **Always extract `db` and `tenant_id`** from context first
 
 **GraphQL Usage**:
 
 ```graphql
 query {
   users(
-    where: { status: { eq: "active" } }
+    where: { isActive: { eq: true } }
+    orderBy: [{ createdAt: DESC }]
     limit: 10
     offset: 0
-    orderBy: [{ field: "created_at", direction: DESC }]
   ) {
     id
     name
@@ -256,42 +172,36 @@ query {
 }
 ```
 
+A keyword you pass to `db.find()` yourself wins over the client's value.
+
 ### ⚠️ Default Ordering for List Queries
 
-**IMPORTANT**: All list queries MUST have default ordering for consistent pagination.
+**IMPORTANT**: List queries should have a default ordering for consistent pagination.
+Declare `order_by` on the resolver (FraiseQL then passes the client's value to it) and
+fall back to your default:
 
 ```python
+from fraiseql.sql import create_graphql_order_by_input
+
+UserOrderByInput = create_graphql_order_by_input(User)
+
 @fraiseql.query
 async def users(
     info,
-    where: UserWhereInput | None = None,
+    order_by: list[UserOrderByInput] | None = None,
     limit: int | None = None,
     offset: int | None = None,
-    order_by: list[OrderByInstruction] | None = None
 ) -> list[User]:
     """List users with default ordering."""
     db = info.context["db"]
-    tenant_id = info.context["tenant_id"]
 
     # ✅ CORRECT: Default ordering if not specified
-    if order_by is None:
-        order_by = [
-            OrderByInstruction(field="created_at", direction=OrderDirection.DESC)
-        ]
-
-    options = QueryOptions(
-        filters=where,
-        pagination=PaginationInput(limit=limit, offset=offset),
-        order_by=OrderByInstructions(instructions=order_by)
+    return await db.find(
+        "v_user",
+        order_by=order_by or {"created_at": "DESC"},
+        limit=limit,
+        offset=offset,
     )
-
-    results, total = await db.select_from_json_view(
-        tenant_id=tenant_id,
-        view_name="v_user",
-        options=options
-    )
-
-    return results
 ```
 
 **Why Default Ordering Matters**:
@@ -306,168 +216,11 @@ async def users(
 - Use `name ASC` for alphabetical lists
 - Use `id ASC` for stable ordering
 
-### fetch_one()
-
-Fetch single row from database.
-
-**Signature**:
-
-```python
-async def fetch_one(
-    self,
-    query: Composed,
-    args: tuple[object, ...] = ()
-) -> dict[str, object]
-```
-
-**Parameters**:
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| query | Composed | Yes | Psycopg Composed SQL query |
-| args | tuple | () | No | Query parameters |
-
-**Returns**: Dictionary representing single row
-
-**Raises**:
-
-- `ValueError` - No row returned
-- `DatabaseConnectionError` - Connection failure
-- `DatabaseQueryError` - Query execution error
-
-**Example**:
-
-```python
-from psycopg.sql import SQL, Identifier, Placeholder
-
-query = SQL("SELECT json_data FROM {} WHERE id = {}").format(
-    Identifier("v_user"),
-    Placeholder()
-)
-
-user = await db.fetch_one(query, (user_id,))
-```
-
-### fetch_all()
-
-Fetch all rows from database query.
-
-**Signature**:
-
-```python
-async def fetch_all(
-    self,
-    query: Composed,
-    args: tuple[object, ...] = ()
-) -> list[dict[str, object]]
-```
-
-**Parameters**:
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| query | Composed | Yes | Psycopg Composed SQL query |
-| args | tuple | () | No | Query parameters |
-
-**Returns**: List of dictionaries representing all rows
-
-**Example**:
-
-```python
-query = SQL("SELECT json_data FROM {} WHERE tenant_id = {}").format(
-    Identifier("v_orders"),
-    Placeholder()
-)
-
-orders = await db.fetch_all(query, (tenant_id,))
-```
-
-### execute()
-
-Execute query without returning results (INSERT, UPDATE, DELETE).
-
-**Signature**:
-
-```python
-async def execute(
-    self,
-    query: Composed,
-    args: tuple[object, ...] = ()
-) -> None
-```
-
-**Example**:
-
-```python
-query = SQL("UPDATE {} SET status = {} WHERE id = {}").format(
-    Identifier("tb_orders"),
-    Placeholder(),
-    Placeholder()
-)
-
-await db.execute(query, ("shipped", order_id))
-```
-
-### execute_many()
-
-Execute query multiple times with different parameters in single transaction.
-
-**Signature**:
-
-```python
-async def execute_many(
-    self,
-    query: Composed,
-    args_list: list[tuple[object, ...]]
-) -> None
-```
-
-**Example**:
-
-```python
-query = SQL("INSERT INTO {} (name, email) VALUES ({}, {})").format(
-    Identifier("tb_users"),
-    Placeholder(),
-    Placeholder()
-)
-
-await db.execute_many(query, [
-    ("Alice", "alice@example.com"),
-    ("Bob", "bob@example.com"),
-    ("Charlie", "charlie@example.com")
-])
-```
-
-## QueryOptions
-
-Structured query parameters for filtering, pagination, and ordering.
-
-**Definition**:
-
-```python
-@dataclass
-class QueryOptions:
-    aggregations: dict[str, str] | None = None
-    order_by: OrderByInstructions | None = None
-    dimension_key: str | None = None
-    pagination: PaginationInput | None = None
-    filters: dict[str, object] | None = None
-    where: ToSQLProtocol | None = None
-    ignore_tenant_column: bool = False
-```
-
-**Fields**:
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| aggregations | dict[str, str] | None | None | Aggregation functions (SUM, AVG, COUNT, MIN, MAX) |
-| order_by | OrderByInstructions | None | None | Ordering specifications |
-| dimension_key | str | None | None | JSON dimension key for nested ordering |
-| pagination | PaginationInput | None | None | Pagination parameters (limit, offset) |
-| filters | dict[str, object] | None | None | Dynamic filters with operators |
-| where | ToSQLProtocol | None | None | Custom WHERE clause object |
-| ignore_tenant_column | bool | False | False | Bypass tenant filtering |
-
 ## Dynamic Filters
 
-Filter syntax supports multiple operators for flexible querying.
+`where` takes a dict of `{field: {operator: value}}` (or a generated `WhereInput`,
+below). Field names are the GraphQL/JSONB field names; camelCase is converted to
+snake_case.
 
 > **💡 Advanced Filtering**: For comprehensive PostgreSQL operator support including arrays, full-text search, JSONB queries, and regex, see **[Filter Operators Reference](../advanced/filter-operators.md)** and **[Advanced Filtering Examples](../examples/advanced-filtering.md)**.
 
@@ -475,77 +228,45 @@ Filter syntax supports multiple operators for flexible querying.
 
 | Operator | SQL Equivalent | Example | Description |
 |----------|----------------|---------|-------------|
-| (none) | = | `{"status": "active"}` | Exact match |
-| __min | >= | `{"created_at__min": "2024-01-01"}` | Greater than or equal |
-| __max | <= | `{"price__max": 100}` | Less than or equal |
-| __in | IN | `{"status__in": ["active", "pending"]}` | Match any value in list |
-| __contains | <@ | `{"path__contains": "electronics"}` | ltree path containment |
-
-**NULL Handling**:
-
-```python
-filters = {
-    "description": None  # Translates to: WHERE description IS NULL
-}
-```
+| (plain value) | = | `{"status": "active"}` | Exact match |
+| `eq` / `neq` | = / != | `{"status": {"neq": "deleted"}}` | Equality |
+| `gt` / `gte` / `lt` / `lte` | > / >= / < / <= | `{"age": {"gte": 18}}` | Comparison |
+| `in` / `nin` | IN / NOT IN | `{"status": {"in": ["active", "pending"]}}` | Match any value in list |
+| `contains` / `icontains` | LIKE / ILIKE | `{"name": {"icontains": "john"}}` | Substring |
+| `startswith` / `endswith` | LIKE | `{"email": {"endswith": "@example.com"}}` | Prefix / suffix |
+| `isnull` | IS NULL / IS NOT NULL | `{"deleted_at": {"isnull": True}}` | Null check |
 
 ### Filter Examples
-
-**Simple equality**:
-
-```python
-options = QueryOptions(
-    filters={"status": "active"}
-)
-# SQL: WHERE status = 'active'
-```
 
 **Range queries**:
 
 ```python
-options = QueryOptions(
-    filters={
-        "created_at__min": "2024-01-01",
-        "created_at__max": "2024-12-31",
-        "price__min": 10.00,
-        "price__max": 100.00
-    }
+orders = await db.find(
+    "v_order",
+    where={
+        "created_at": {"gte": "2024-01-01", "lte": "2024-12-31"},
+        "total_amount": {"gte": 10, "lte": 100},
+    },
 )
-# SQL: WHERE created_at >= '2024-01-01' AND created_at <= '2024-12-31'
-#      AND price >= 10.00 AND price <= 100.00
 ```
 
-**IN operator**:
+**Multiple conditions** (combined with AND):
 
 ```python
-options = QueryOptions(
-    filters={
-        "status__in": ["active", "pending", "processing"]
-    }
+products = await db.find(
+    "v_product",
+    where={
+        "category": {"eq": "electronics"},
+        "price": {"lte": 500},
+        "in_stock": {"eq": True},
+        "vendor": {"in": ["vendor-a", "vendor-b"]},
+    },
 )
-# SQL: WHERE status IN ('active', 'pending', 'processing')
-```
-
-**Multiple conditions**:
-
-```python
-options = QueryOptions(
-    filters={
-        "category": "electronics",
-        "price__max": 500.00,
-        "in_stock": True,
-        "vendor__in": ["vendor-a", "vendor-b"]
-    }
-)
-# SQL: WHERE category = 'electronics'
-#      AND price <= 500.00
-#      AND in_stock = TRUE
-#      AND vendor IN ('vendor-a', 'vendor-b')
 ```
 
 ## Nested Object Filtering
 
-FraiseQL v1.0.0+ supports filtering on nested objects stored in JSONB columns.
+FraiseQL supports filtering on nested objects stored in JSONB columns.
 
 ### Dict-Based vs Typed Filters
 
@@ -568,8 +289,7 @@ results = await db.find("v_allocation", where=where)
 
 ```python
 # ✅ RECOMMENDED: Full type safety and IDE support
-from fraiseql.sql import create_graphql_where_input
-from fraiseql.filters import StringFilter
+from fraiseql.sql import StringFilter, create_graphql_where_input
 
 AllocationWhereInput = create_graphql_where_input(Allocation)
 MachineWhereInput = create_graphql_where_input(Machine)
@@ -594,21 +314,6 @@ results = await db.find("v_allocation", where=where)
 
 - **Typed**: Production code, complex filters, team projects
 - **Dict**: Quick scripts, simple filters, prototyping
-
-### Basic Nested Filter
-
-Filter on nested JSONB objects using dot notation:
-
-```python
-# Dictionary-based filtering (see "Dict-Based vs Typed Filters" above for typed alternative)
-where = {
-    "machine": {
-        "name": {"eq": "Server-01"}
-    }
-}
-results = await db.find("allocations", where=where)
-# SQL: WHERE data->'machine'->>'name' = 'Server-01'
-```
 
 ### Multiple Nesting Levels
 
@@ -651,53 +356,26 @@ FraiseQL uses consistent naming patterns for generated types:
 | **Input Types** | `Input` | `CreateUserInput` | Mutation inputs |
 | **Filter Types** | `WhereInput` | `UserWhereInput` | Query filtering |
 | **Field Filters** | `Filter` | `StringFilter`, `IntFilter` | Individual field filters |
+| **Ordering** | `OrderByInput` | `UserOrderByInput` | Sorting |
 | **Success Types** | `Success` | `CreateUserSuccess` | Successful mutation result |
 | **Error Types** | `Error` | `CreateUserError` | Failed mutation result |
-| **Ordering** | `OrderByInstruction` | - | Sorting configuration |
 
 **Example - Complete Type Usage**:
 
 ```python
-from fraiseql.sql import create_graphql_where_input
-from fraiseql.filters import StringFilter, IntFilter, BoolFilter
+from fraiseql.sql import BooleanFilter, IntFilter, StringFilter, create_graphql_where_input
 
 # Generated WhereInput types (always end with 'WhereInput')
 UserWhereInput = create_graphql_where_input(User)
-MachineWhereInput = create_graphql_where_input(Machine)
 
 # Field filters always end with 'Filter'
 where = UserWhereInput(
     name=StringFilter(contains="John"),      # StringFilter for text
     age=IntFilter(gte=18),                   # IntFilter for numbers
-    is_active=BoolFilter(eq=True)            # BoolFilter for booleans
+    is_active=BooleanFilter(eq=True)         # BooleanFilter for booleans
 )
 
 results = await db.find("v_user", where=where)
-```
-
-**Type Safety Benefits**:
-
-- ✅ IDE autocomplete for filter fields
-- ✅ Type checking catches field name typos
-- ✅ Clear documentation of available filters
-- ✅ Prevents invalid filter combinations
-
-### GraphQL WhereInput Objects
-
-Use generated WhereInput types for type-safe filtering:
-
-```python
-from fraiseql.sql import create_graphql_where_input
-
-MachineWhereInput = create_graphql_where_input(Machine)
-AllocationWhereInput = create_graphql_where_input(Allocation)
-
-where = AllocationWhereInput(
-    machine=MachineWhereInput(
-        name=StringFilter(eq="Server-01")
-    )
-)
-results = await db.find("allocations", where=where)
 ```
 
 ### Supported Operators
@@ -706,415 +384,116 @@ All standard operators work with nested objects:
 
 - `eq`, `neq` - equality/inequality
 - `gt`, `gte`, `lt`, `lte` - comparisons
-- `in`, `notin` - list membership
+- `in`, `nin` - list membership
 - `contains`, `startswith`, `endswith` - string patterns
-- `is_null` - null checks
-
-## Coordinate Filtering
-
-FraiseQL v1.0.0+ supports geographic coordinate filtering with PostgreSQL POINT type casting.
-
-### Basic Coordinate Equality
-
-Filter by exact coordinate match:
-
-```python
-# Dict-based filtering (simple but no type safety)
-# For type-safe alternative, use CoordinateFilter with CoordinateInput
-where = {
-    "coordinates": {"eq": (45.5, -122.6)}  # (latitude, longitude)
-}
-results = await db.find("locations", where=where)
-# SQL: WHERE (data->>'coordinates')::point = POINT(-122.6, 45.5)
-```
-
-### Coordinate List Operations
-
-Check if coordinates are in a list:
-
-```python
-# Dict-based (simple but no type safety for coordinate ordering)
-where = {
-    "coordinates": {"in": [
-        (45.5, -122.6),  # Seattle
-        (47.6097, -122.3425),  # Pike Place
-        (40.7128, -74.0060)  # NYC
-    ]}
-}
-# SQL: WHERE (data->>'coordinates')::point IN (POINT(-122.6, 45.5), ...)
-```
-
-### Distance-Based Filtering
-
-Find locations within distance:
-
-```python
-# Dict-based (simple but no type safety)
-where = {
-    "coordinates": {
-        "distance_within": ((45.5, -122.6), 5000)  # Center point, radius in meters
-    }
-}
-```
-
-FraiseQL supports three distance calculation methods:
-
-1. **Haversine Formula** (default, no dependencies)
-   - Pure SQL implementation using great-circle distance
-   - Accuracy: ±0.5% for distances < 1000km
-   - Works with standard PostgreSQL
-
-2. **PostGIS ST_DWithin** (most accurate)
-   - Geodesic distance on spheroid model
-   - Accuracy: ±0.1% at any distance
-   - Requires: `CREATE EXTENSION postgis;`
-
-3. **earthdistance** (moderate accuracy)
-   - PostgreSQL earthdistance extension
-   - Accuracy: ±1-2%
-   - Requires: `CREATE EXTENSION earthdistance;`
-
-#### Configuration
-
-Set the distance method in your config:
-
-```python
-from fraiseql.fastapi import FraiseQLConfig
-
-config = FraiseQLConfig(
-    database_url="postgresql://...",
-    coordinate_distance_method="haversine"  # default
-    # or "postgis" for production
-    # or "earthdistance" for legacy systems
-)
-```
-
-Or via environment variable:
-
-```bash
-export FRAISEQL_COORDINATE_DISTANCE_METHOD=postgis
-```
-
-### Coordinate Operators
-
-- `eq`, `neq` - exact coordinate equality
-- `in`, `notin` - coordinate list membership
-- `distance_within` - distance-based filtering
-
-**Note**: Coordinates are stored as `(latitude, longitude)` tuples but converted to PostgreSQL `POINT(longitude, latitude)` for spatial operations.
+- `isnull` - null checks
 
 ## Pagination
 
-Efficient pagination using ROW_NUMBER() window function.
-
-### PaginationInput
-
-**Definition**:
+Pass `limit` and `offset` to `find()`, with an `order_by` so pages are stable, and
+`count()` with the same `where` for the total:
 
 ```python
-@dataclass
-class PaginationInput:
-    limit: int | None = None
-    offset: int | None = None
+page, page_size = 2, 20
+where = {"status": {"eq": "active"}}
+
+orders = await db.find(
+    "v_order",
+    where=where,
+    order_by={"created_at": "DESC"},
+    limit=page_size,
+    offset=(page - 1) * page_size,
+)
+total = await db.count("v_order", where=where)
+has_next_page = page * page_size < total
 ```
-
-**Fields**:
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| limit | int | None | None | Maximum number of results (default: 250) |
-| offset | int | None | None | Number of results to skip (default: 0) |
-
-**Example**:
-
-```python
-# Page 1
-options = QueryOptions(
-    pagination=PaginationInput(limit=20, offset=0)
-)
-
-# Page 2
-options = QueryOptions(
-    pagination=PaginationInput(limit=20, offset=20)
-)
-
-# Page 3
-options = QueryOptions(
-    pagination=PaginationInput(limit=20, offset=40)
-)
-```
-
-### Pagination SQL Pattern
-
-FraiseQL uses efficient ROW_NUMBER() pagination:
-
-```sql
-WITH paginated_cte AS (
-    SELECT json_data,
-           ROW_NUMBER() OVER (ORDER BY created_at DESC) AS row_num
-    FROM v_orders
-    WHERE tenant_id = $1
-)
-SELECT * FROM paginated_cte
-WHERE row_num BETWEEN $2 AND $3
-```
-
-**Benefits**:
-
-- Consistent results across pages
-- Works with complex ORDER BY clauses
-- Efficient for moderate offsets
-- Returns total count separately
 
 ## Ordering
 
-Structured ordering with support for native columns, JSON fields, and aggregations.
-
-### OrderByInstructions
-
-**Definition**:
+`order_by` takes a dict for one field, a list of dicts for several (applied in order),
+or a generated `OrderByInput`. Nested JSONB paths use dots:
 
 ```python
-@dataclass
-class OrderByInstructions:
-    instructions: list[OrderByInstruction]
+# One field
+await db.find("v_order", order_by={"created_at": "DESC"})
 
-@dataclass
-class OrderByInstruction:
-    field: str
-    direction: OrderDirection
+# Several fields
+await db.find("v_order", order_by=[{"status": "ASC"}, {"total_amount": "DESC"}])
 
-class OrderDirection(Enum):
-    ASC = "asc"
-    DESC = "desc"
-```
-
-**Example**:
-
-```python
-options = QueryOptions(
-    order_by=OrderByInstructions(
-        instructions=[
-            OrderByInstruction(field="created_at", direction=OrderDirection.DESC),
-            OrderByInstruction(field="total_amount", direction=OrderDirection.ASC)
-        ]
-    )
-)
-```
-
-### Ordering Patterns
-
-**Native column ordering**:
-
-```python
-order_by=OrderByInstructions(instructions=[
-    OrderByInstruction(field="created_at", direction=OrderDirection.DESC)
-])
-# SQL: ORDER BY created_at DESC
-```
-
-**JSON field ordering**:
-
-```python
-order_by=OrderByInstructions(instructions=[
-    OrderByInstruction(field="customer_name", direction=OrderDirection.ASC)
-])
-# SQL: ORDER BY json_data->>'customer_name' ASC
-```
-
-**Aggregation ordering**:
-
-```python
-options = QueryOptions(
-    aggregations={"total": "SUM"},
-    order_by=OrderByInstructions(instructions=[
-        OrderByInstruction(field="total", direction=OrderDirection.DESC)
-    ])
-)
-# SQL: SUM(total) AS total_agg ORDER BY total_agg DESC
+# Nested field
+await db.find("v_order", order_by={"customer.name": "ASC"})
 ```
 
 ## Multi-Tenancy
 
-Automatic tenant filtering for multi-tenant applications.
+Two mechanisms, usually combined:
 
-### Tenant Column Detection
+**Session variables for Row-Level Security.** When the request context carries
+`tenant_id` (and `user_id`, `roles`), the repository sets `app.tenant_id` (and
+`app.user_id`, `app.is_super_admin`) with `set_config(..., true)` before each
+`find`/`find_one`/`count`/`exists`/`run`/`execute_function` query. RLS policies read
+them with `current_setting('app.tenant_id', true)`. See
+[Context and Session Variables](../reference/database.md#context-and-session-variables).
+
+**Explicit filters.** `mandatory_filters` adds an equality condition on a view column
+that the client's `where` can't remove:
 
 ```python
-from fraiseql.db.utils import get_tenant_column
-
-tenant_info = get_tenant_column(view_name="v_orders")
-# Returns: {"table": "tenant_id", "view": "tenant_id"}
+@fraiseql.query
+async def orders(info) -> list[Order]:
+    db = info.context["db"]
+    return await db.find("v_order", mandatory_filters={"tenant_id": info.context["tenant_id"]})
 ```
 
-**Tenant column mapping**:
+There is no switch that bypasses tenant filtering: an admin query simply leaves out
+`mandatory_filters`, and RLS policies can let `app.is_super_admin` through.
 
-- **Tables**: `tenant_id` - Foreign key to tenant table
-- **Views**: `tenant_id` - Denormalized tenant identifier
+## Raw SQL
 
-### Automatic Filtering
-
-Repository automatically adds tenant filter to all queries:
+For SQL that isn't a read of a view, `run()` executes a statement with the request's
+session variables applied, and `get_pool()` gives you the psycopg pool:
 
 ```python
-db = PsycopgRepository(pool, tenant_id="tenant-123")
+from psycopg.sql import SQL
 
-# This query:
-data, total = await db.select_from_json_view(
-    tenant_id=tenant_id,
-    view_name="v_orders"
+from fraiseql.db import DatabaseQuery
+
+rows = await db.run(
+    DatabaseQuery(
+        SQL("SELECT status, count(*) AS n FROM tb_order WHERE total_amount >= %(min)s GROUP BY status"),
+        {"min": 100},
+    )
 )
+# [{"status": "pending", "n": 1}, ...]
 
-# Automatically adds: WHERE tenant_id = $1
+async with db.get_pool().connection() as conn:
+    await conn.execute(
+        "UPDATE tb_order SET status = %s WHERE id = %s", ("shipped", order_id)
+    )
+# The pool commits when the block exits without an exception
 ```
 
-### Bypassing Tenant Filtering
-
-For admin queries that need cross-tenant access:
-
-```python
-options = QueryOptions(
-    ignore_tenant_column=True
-)
-
-data, total = await db.select_from_json_view(
-    tenant_id=tenant_id,
-    view_name="v_orders",
-    options=options
-)
-# No tenant_id filter applied
-```
-
-## SQL Builder Utilities
-
-Low-level utilities for constructing dynamic SQL queries.
-
-### build_filter_conditions_and_params()
-
-**Signature**:
-
-```python
-def build_filter_conditions_and_params(
-    filters: dict[str, object]
-) -> tuple[list[str], tuple[Scalar | ScalarList, ...]]
-```
-
-**Returns**: Tuple of (condition strings, parameters)
-
-**Example**:
-
-```python
-from fraiseql.db.sql_builder import (
-    build_filter_conditions_and_params
-)
-
-filters = {
-    "status": "active",
-    "price__min": 10.00,
-    "tags__in": ["electronics", "gadgets"]
-}
-
-conditions, params = build_filter_conditions_and_params(filters)
-# conditions: ["status = %s", "price >= %s", "tags IN (%s, %s)"]
-# params: ("active", 10.00, "electronics", "gadgets")
-```
-
-### generate_order_by_clause()
-
-**Signature**:
-
-```python
-def generate_order_by_clause(
-    order_by: OrderByInstructions,
-    aggregations: dict[str, str],
-    view_name: str,
-    alias_mapping: dict[str, str] | None = None,
-    dimension_key: str | None = None
-) -> tuple[Composed, list[Composed]]
-```
-
-**Returns**: Tuple of (ORDER BY clause, aggregated column expressions)
-
-### generate_pagination_query()
-
-**Signature**:
-
-```python
-def generate_pagination_query(
-    base_query: Composable,
-    order_by_clause: Composable,
-    aggregated_columns: Sequence[Composed],
-    pagination: PaginationInput | None
-) -> tuple[Composed, tuple[int, int]]
-```
-
-**Returns**: Tuple of (paginated query, (start_row, end_row))
+Placeholders are psycopg's (`%s`, `%(name)s`), never string formatting. Use
+`run_in_transaction()` to run several statements in one transaction; mutations should
+normally go through PostgreSQL functions and `execute_function()`.
 
 ## Error Handling
 
-Custom exceptions for database operations.
-
-### Exception Hierarchy
-
-```python
-from fraiseql.db.exceptions import (
-    DatabaseConnectionError,    # Connection pool or network errors
-    DatabaseQueryError,          # SQL execution errors
-    InvalidFilterError           # Filter validation errors
-)
-```
-
-**Usage**:
+Repository methods raise psycopg's exceptions (`psycopg.errors.*`, subclasses of
+`psycopg.Error`) for SQL errors, `psycopg_pool.PoolTimeout` when no connection is free,
+and `TypeError` / `ValueError` for a malformed `where` or an unknown keyword argument:
 
 ```python
+import psycopg
+
 try:
-    data, total = await db.select_from_json_view(
-        tenant_id=tenant_id,
-        view_name="v_orders",
-        options=options
-    )
-except DatabaseConnectionError as e:
-    logger.error(f"Database connection failed: {e}")
-    # Retry logic or fallback
-except DatabaseQueryError as e:
-    logger.error(f"Query execution failed: {e}")
-    # Check query syntax
-except InvalidFilterError as e:
-    logger.error(f"Invalid filter provided: {e}")
-    # Validate filter input
-```
-
-## Type Safety
-
-Repository uses Protocol-based typing for extensibility.
-
-### ToSQLProtocol
-
-Interface for objects that can generate SQL clauses:
-
-```python
-class ToSQLProtocol(Protocol):
-    def to_sql(self, view_name: str) -> Composed:
-        ...
-```
-
-**Example implementation**:
-
-```python
-from psycopg.sql import SQL, Identifier, Placeholder
-
-class CustomFilter:
-    def __init__(self, field: str, value: object):
-        self.field = field
-        self.value = value
-
-    def to_sql(self, view_name: str) -> Composed:
-        return SQL("{} = {}").format(
-            Identifier(self.field),
-            Placeholder()
-        )
-
-custom_filter = CustomFilter("status", "active")
-options = QueryOptions(where=custom_filter)
+    total = await db.count("v_order", where={"status": {"eq": "active"}})
+except psycopg.errors.UndefinedTable:
+    logger.error("v_order is missing - run the migrations")
+    raise
+except psycopg.Error as e:
+    logger.error(f"Query failed: {e}")
+    raise
 ```
 
 ## Best Practices
@@ -1122,100 +501,79 @@ options = QueryOptions(where=custom_filter)
 **Use structured queries**:
 
 ```python
-# Good: Structured with QueryOptions
-options = QueryOptions(
-    filters={"status": "active"},
-    pagination=PaginationInput(limit=50, offset=0),
-    order_by=OrderByInstructions(instructions=[...])
+# Good: filters, ordering and pagination through find()
+orders = await db.find(
+    "v_order",
+    where={"status": {"eq": "active"}},
+    order_by={"created_at": "DESC"},
+    limit=50,
 )
-data, total = await db.select_from_json_view(tenant_id, "v_orders", options=options)
 
-# Avoid: Raw SQL strings
-query = "SELECT * FROM v_orders WHERE status = 'active' LIMIT 50"
+# Avoid: Raw SQL strings for view reads
+query = "SELECT * FROM v_order WHERE status = 'active' LIMIT 50"
 ```
 
-**Use connection pooling**:
+**Use the shared connection pool**: take `info.context["db"]` (or `db.get_pool()`)
+rather than opening a connection per request.
 
-```python
-# Good: Shared connection pool
-pool = AsyncConnectionPool(conninfo=DATABASE_URL, min_size=5, max_size=20)
-db = PsycopgRepository(pool)
+**Handle pagination correctly**: compare `offset + page_size` with `db.count()` instead
+of assuming more results exist.
 
-# Avoid: Creating connections per request
-```
-
-**Handle pagination correctly**:
-
-```python
-# Good: Check total count
-data, total = await db.select_from_json_view(
-    tenant_id, "v_orders",
-    options=QueryOptions(pagination=PaginationInput(limit=20, offset=0))
-)
-has_next_page = len(data) + offset < total
-
-# Avoid: Assuming more results exist
-```
-
-**Use tenant filtering**:
-
-```python
-# Good: Automatic tenant isolation
-data, total = await db.select_from_json_view(tenant_id, "v_orders")
-
-# Avoid: Manual tenant filtering in WHERE clauses
-```
+**Use tenant isolation**: put `tenant_id` in the request context so RLS sees it, and use
+`mandatory_filters` where the view has a `tenant_id` column.
 
 ## Complete Example
 
 ```python
-import uuid
-from psycopg_pool import AsyncConnectionPool
-from fraiseql.db import PsycopgRepository, QueryOptions
-from fraiseql.db.pagination import (
-    PaginationInput,
-    OrderByInstructions,
-    OrderByInstruction,
-    OrderDirection
-)
+import fraiseql
+from fraiseql.types import ID
 
-# Initialize repository
-pool = AsyncConnectionPool(
-    conninfo="postgresql://localhost/mydb",
-    min_size=5,
-    max_size=20
-)
-db = PsycopgRepository(pool)
 
-# Query with filtering, pagination, and ordering
-tenant_id = uuid.uuid4()
-options = QueryOptions(
-    filters={
-        "status__in": ["active", "pending"],
-        "created_at__min": "2024-01-01",
-        "total_amount__min": 100.00
-    },
-    order_by=OrderByInstructions(
-        instructions=[
-            OrderByInstruction(field="created_at", direction=OrderDirection.DESC)
-        ]
-    ),
-    pagination=PaginationInput(limit=20, offset=0)
-)
+@fraiseql.type(sql_source="v_order", jsonb_column="data")
+class Order:
+    id: ID
+    status: str
+    total_amount: float
+    created_at: str
 
-data, total = await db.select_from_json_view(
-    tenant_id=tenant_id,
-    view_name="v_orders",
-    options=options
-)
 
-print(f"Retrieved {len(data)} of {total} orders")
-for order in data:
-    print(f"Order {order['id']}: ${order['total_amount']}")
+@fraiseql.query
+async def recent_orders(
+    info,
+    statuses: list[str],
+    min_total: float = 100,
+    limit: int = 20,
+    offset: int = 0,
+) -> list[Order]:
+    """The tenant's recent orders with a status in `statuses`."""
+    db = info.context["db"]
+    return await db.find(
+        "v_order",
+        where={
+            "status": {"in": statuses},
+            "created_at": {"gte": "2024-01-01"},
+            "total_amount": {"gte": min_total},
+        },
+        mandatory_filters={"tenant_id": info.context["tenant_id"]},
+        order_by={"created_at": "DESC"},
+        limit=limit,
+        offset=offset,
+    )
+```
+
+```graphql
+query {
+  recentOrders(statuses: ["active", "pending"]) {
+    id
+    status
+    totalAmount
+  }
+}
 ```
 
 ## See Also
 
+- [Database API Reference](../reference/database.md) - Every repository method and parameter
 - [Queries & Mutations](queries-and-mutations.md) - Using repository methods in GraphQL resolvers
 - [Database Patterns](../advanced/database-patterns.md) - View design and N+1 prevention
 - [Performance](../performance/index.md) - Query optimization

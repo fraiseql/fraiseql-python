@@ -246,8 +246,12 @@ async def sync_post_with_comments(self, post_ids: list[UUID]) -> None:
 ### Pattern 1: Sync After Create
 
 ```python
-@strawberry.mutation
-async def create_post(self, info, title: str, content: str, author_id: str) -> Post:
+import fraiseql
+from fraiseql.types import ID
+
+
+@fraiseql.mutation
+async def create_post(info, title: str, content: str, author_id: ID) -> Post:
     """Create a post and sync immediately."""
     pool = info.context["db_pool"]
     sync = info.context["sync"]
@@ -255,18 +259,18 @@ async def create_post(self, info, title: str, content: str, author_id: str) -> P
     # 1. Write to command side
     post_id = await pool.fetchval(
         "INSERT INTO tb_post (title, content, author_id) VALUES ($1, $2, $3) RETURNING id",
-        title, content, UUID(author_id)
+        title, content, author_id
     )
 
     # 2. EXPLICIT SYNC
     await sync.sync_post([post_id])
 
     # 3. Also sync author (post count changed)
-    await sync.sync_user([UUID(author_id)])
+    await sync.sync_user([author_id])
 
-    # 4. Read from query side
+    # 4. Read from query side (in a mutation, name the response field)
     db = info.context["db"]
-    return await db.find_one("tv_post", mandatory_filters={"id": post_id})
+    return await db.find_one("tv_post", "createPost", info, mandatory_filters={"id": post_id})
 ```
 
 ### Pattern 2: Batch Sync

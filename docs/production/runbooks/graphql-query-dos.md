@@ -281,70 +281,76 @@ jq -r 'select(.event == "graphql.expensive_query") | .context.query_hash' \
 
 ### Immediate Actions (< 5 minutes)
 
-#### 1. Enable Emergency Query Complexity Limits
+#### 1. Throttle GraphQL Traffic
+
+fraiseql does not enforce a query depth or complexity limit on the GraphQL endpoint:
+`FraiseQLConfig` accepts `max_query_depth` and the `complexity_*` settings, but
+nothing reads them, so setting them (or their `FRAISEQL_*` variables) changes
+nothing. The immediate levers are rate limiting, statement timeouts (below) and
+argument caps in resolvers.
+
+`RateLimitMiddleware` counts requests per client (`request.state.user_id` when set,
+otherwise the IP) for each rule's path and for every request (`default_limit`). On
+the GraphQL endpoint it also limits each client per operation type (100 queries,
+20 mutations a minute) and per estimated cost tier (200 cheap, 100 medium, 20
+expensive requests a minute). Over a limit, the client gets a 429 with `Retry-After`:
 
 ```python
-# Apply emergency limits (if not already configured)
-from fraiseql import FraiseQL
-from fraiseql.security import QueryComplexityAnalyzer
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.security import RateLimit, RateLimitMiddleware, RateLimitRule
 
-app = FraiseQL()
+app = create_fraiseql_app(database_url="postgresql://localhost/mydb", types=[User], queries=[users])
 
 # Emergency strict limits
-complexity_analyzer = QueryComplexityAnalyzer(
-    max_complexity=500,     # Reduce from 1000
-    max_depth=3,            # Reduce from 5
-    max_list_size=100,      # Reduce from 1000
+app.add_middleware(
+    RateLimitMiddleware,
+    rules=[RateLimitRule(path_pattern="/graphql", rate_limit=RateLimit(requests=30, window=60))],
+    default_limit=RateLimit(requests=100, window=60),
 )
-
-app.add_plugin(complexity_analyzer)
 ```
 
-**Environment Variable Override**:
-
-```bash
-# Apply immediately without code changes
-export FRAISEQL_MAX_QUERY_COMPLEXITY=500
-export FRAISEQL_MAX_QUERY_DEPTH=3
-export FRAISEQL_MAX_LIST_SIZE=100
-
-# Restart application
-systemctl restart fraiseql
-```
+The counters live in process memory, one set per instance; pass
+`store=RedisRateLimitStore(redis_client)` to share them. Changing the limits means a
+redeploy.
 
 #### 2. Block Attacking User/IP
 
-```python
-from fraiseql.security import BlockList
-
-# Block user
-await BlockList.add_user(
-    user_id="user_attack",
-    duration_seconds=3600,
-    reason="GraphQL DoS attack"
-)
-
-# Block IP
-await BlockList.add_ip(
-    ip_address="192.0.2.50",
-    duration_seconds=3600,
-    reason="GraphQL DoS attack"
-)
-```
-
-**Via Admin API**:
+fraiseql has no block list. Block an IP at the edge:
 
 ```bash
-curl -X POST http://localhost:8000/admin/blocks \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "user_id": "user_attack",
-    "ip_address": "192.0.2.50",
-    "duration_seconds": 3600,
-    "reason": "GraphQL DoS attack"
-  }'
+# Firewall, or the equivalent deny rule on your ingress / load balancer / WAF
+sudo iptables -A INPUT -s 192.0.2.50 -j DROP
 ```
+
+Block an authenticated user with an operation authorizer, which runs before every
+top-level query and mutation field:
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.security import AuthorizationDecision
+
+BLOCKED_USER_IDS = {"7d0c3c4e-0000-4000-8000-000000000001"}
+
+
+class BlockedUserAuthorizer:
+    async def authorize_operation(self, *, context, operation_type, operation_name, arguments):
+        user = context.get("user")
+        if user is not None and str(user.user_id) in BLOCKED_USER_IDS:
+            return AuthorizationDecision.deny(code="BLOCKED", message="Access suspended")
+        return True
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users],
+    auth=auth_provider,
+    authorizer=BlockedUserAuthorizer(),
+)
+```
+
+A blocked user's operations come back with a `BLOCKED` error. The set above changes
+with a redeploy; read it from a table instead to block without one.
 
 #### 3. Kill Long-Running Queries
 
@@ -369,230 +375,176 @@ SELECT pg_terminate_backend(<pid>);
 
 ### Short-Term Fixes (5-15 minutes)
 
-#### 1. Implement Query Depth Limiting
+#### 1. Limit Query Depth
+
+A fraiseql type's nested fields are keys of the JSONB `data` column its view builds,
+so a client can only nest as deep as that column goes. Keep cycles out of the views
+(a post embedding its author embedding their posts...), and nested selections stay
+bounded by the view, not by the client.
+
+#### 2. Reject Expensive Queries in the Resolver
+
+`fraiseql.validation.validate_query_complexity` scores the selection under a resolver:
+1 per field (or the cost you give it in `field_costs`), multiplied by 10 under each
+field whose name ends in "s":
 
 ```python
-from fraiseql import FraiseQL
-from fraiseql.validation import DepthLimitRule
+import fraiseql
+from graphql import GraphQLError
 
-app = FraiseQL()
+from fraiseql.validation import validate_query_complexity
 
-# Enforce maximum query depth
-depth_limit = DepthLimitRule(
-    max_depth=5,  # Prevents deeply nested queries
-    ignore_introspection=True,  # Allow schema introspection
-)
 
-app.add_validation_rule(depth_limit)
-```
+@fraiseql.query
+async def users(info, limit: int = 100) -> list[User]:
+    score, errors = validate_query_complexity(
+        info,
+        max_complexity=200,
+        field_costs={"posts": 10},  # Expensive relationship
+    )
+    if errors:
+        raise GraphQLError(errors[0])
 
-**Configuration**:
-
-```python
-# config/security.py
-GRAPHQL_SECURITY = {
-    "max_depth": 5,
-    "max_complexity": 1000,
-    "max_list_size": 1000,
-    "timeout_seconds": 30,
-}
-```
-
-#### 2. Implement Query Complexity Analysis
-
-```python
-from fraiseql.validation import ComplexityLimitRule
-
-# Calculate complexity based on field costs
-complexity_limit = ComplexityLimitRule(
-    max_complexity=1000,
-
-    # Assign cost to expensive fields
-    field_costs={
-        "User.posts": 10,           # Expensive relationship
-        "Post.comments": 10,         # Expensive relationship
-        "User.statistics": 50,       # Expensive computation
-    },
-
-    # List multipliers
-    list_multiplier=10,  # Multiply cost by list size
-)
-
-app.add_validation_rule(complexity_limit)
-```
-
-**How Complexity is Calculated**:
-
-```python
-# Example query
-"""
-query {
-  users(limit: 100) {     # 100 items
-    posts(limit: 50) {     # 100 * 50 = 5,000 items
-      comments(limit: 10)  # 5,000 * 10 = 50,000 items
-    }
-  }
-}
-"""
-
-# Complexity calculation:
-# users: 1 * 100 = 100
-# posts: 10 (field cost) * 100 * 50 = 50,000
-# comments: 10 (field cost) * 5,000 * 10 = 500,000
-# Total: ~550,000 (BLOCKED if max_complexity=1000)
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit)
 ```
 
 #### 3. Implement Query Timeout Enforcement
 
+`query_timeout` (seconds, default 30) becomes a `SET LOCAL statement_timeout` on the
+statements the repository runs through `db.run()` and on mutation functions
+(`execute_function`), so PostgreSQL cancels one that runs longer:
+
 ```python
-from fraiseql import FraiseQL
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
-app = FraiseQL()
-
-# Set query timeout (already implemented in FraiseQL)
-@app.context_value
-async def get_context(request):
-    return {
-        "db": app.db.get_connection(
-            query_timeout=10,  # 10 seconds for GraphQL queries
-            user_id=request.user.id,
-        )
-    }
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    query_timeout=10,  # seconds
+)
+app = create_fraiseql_app(config=config, types=[User], queries=[users])
 ```
 
-**PostgreSQL-level Timeout** (already configured):
+```bash
+# Or, when the app is built from a FraiseQLConfig as above
+export FRAISEQL_QUERY_TIMEOUT=10
+```
 
-```python
-# In db.py:119-133
-async def get_connection(self, query_timeout: int = 30):
-    conn = await self.pool.getconn()
-    timeout_ms = query_timeout * 1000
-    await conn.execute(f"SET statement_timeout = {timeout_ms}")
-    return conn
+`find()`, `find_one()` and the other reads don't get it, so bound every statement
+the app sends with a timeout on its database role as well; new pool connections
+pick it up:
+
+```sql
+ALTER ROLE app_user SET statement_timeout = '10s';
 ```
 
 #### 4. Implement Pagination Enforcement
 
 ```python
-from fraiseql import FraiseQL
+import fraiseql
 
-app = FraiseQL()
 
-@app.query.field("users")
-async def resolve_users(
-    info,
-    limit: int = 100,
-    offset: int = 0
-):
+@fraiseql.query
+async def users(info, limit: int = 100, offset: int = 0) -> list[User]:
     # Enforce maximum limit
     if limit > 1000:
         raise ValueError("Limit cannot exceed 1000")
 
-    # Enforce pagination for large offsets
+    # Refuse very deep offsets (PostgreSQL still reads the skipped rows)
     if offset > 10000:
-        raise ValueError("Use cursor-based pagination for large offsets")
+        raise ValueError("Offset cannot exceed 10000; narrow the query with where instead")
 
-    query = "SELECT * FROM users LIMIT $1 OFFSET $2"
-    return await info.context["db"].fetch(query, limit, offset)
+    db = info.context["db"]
+    return await db.find("v_user", order_by=[{"id": "ASC"}], limit=limit, offset=offset)
 ```
 
 ### Long-Term Solutions (1+ days)
 
-#### 1. Implement Query Allowlisting
+#### 1. Implement Operation Allowlisting
+
+An operation authorizer can allow only the top-level fields (and argument values) you
+expect, and deny the rest:
 
 ```python
-# Allow only pre-approved queries (strictest security)
-from fraiseql.security import QueryAllowList
+ALLOWED_OPERATIONS = {
+    ("query", "users"),
+    ("query", "user"),
+    ("mutation", "createUser"),
+}
 
-allowed_queries = QueryAllowList()
 
-# Register allowed queries
-allowed_queries.add(
-    name="GetUsers",
-    query="""
-        query GetUsers($limit: Int!) {
-          users(limit: $limit) {
-            id
-            name
-            email
-          }
-        }
-    """,
-    max_limit=100,
+class AllowListAuthorizer:
+    async def authorize_operation(self, *, context, operation_type, operation_name, arguments):
+        if (operation_type, operation_name) not in ALLOWED_OPERATIONS:
+            return False
+        # Cap list sizes for every client, whatever the resolver does
+        return arguments.get("limit", 0) <= 100
+
+
+app = create_fraiseql_app(
+    database_url="postgresql://localhost/mydb",
+    types=[User],
+    queries=[users, user],
+    mutations=[create_user],
+    authorizer=AllowListAuthorizer(),
 )
-
-# Only allowed queries can execute
-app.add_plugin(allowed_queries)
 ```
 
-#### 2. Implement Persisted Queries
+`operation_name` is the top-level field's GraphQL name; `arguments` are its
+arguments. See [Authorization](../../security/authorization.md).
 
-```python
-from fraiseql.security import PersistedQueries
+#### 2. Persisted Queries
 
-# Clients send query hash instead of full query
-persisted_queries = PersistedQueries(
-    storage="redis://localhost:6379",
-    allow_automatic_persisting=False,  # Manual approval only
-)
+Automatic persisted queries (APQ, on by default: `apq_mode="optional"`) let clients
+send a query's hash instead of its text, and with `apq_cache_responses=True` serve
+cached responses. They save bandwidth and parsing, but they don't restrict which
+queries run: with `apq_mode="required"`, requests without a hash are rejected, yet a
+client that sends a new query together with its hash registers and runs it.
 
-app.add_plugin(persisted_queries)
+#### 3. Compose Related Rows in the View (N+1 Prevention)
 
-# Client sends:
-# { "extensions": { "persistedQuery": { "sha256Hash": "abc123..." } } }
-# Instead of full query text
+A fraiseql query reads one view: embed related rows in its `data` JSONB and the whole
+tree comes back from a single SQL statement:
+
+```sql
+CREATE VIEW v_post AS
+SELECT
+    p.id,
+    jsonb_build_object(
+        'id', p.id,
+        'title', p.title,
+        'comments', COALESCE(
+            (SELECT jsonb_agg(jsonb_build_object('id', c.id, 'body', c.body) ORDER BY c.created_at)
+             FROM tb_comment c
+             WHERE c.fk_post = p.pk_post),
+            '[]'::jsonb
+        )
+    ) AS data
+FROM tb_post p;
 ```
 
-#### 3. Implement Query Cost Budget
-
 ```python
-from fraiseql.security import CostLimiter
+import fraiseql
+from fraiseql.types import ID
 
-# Users have limited query budget
-cost_limiter = CostLimiter(
-    storage="redis://localhost:6379",
 
-    # Tier-based budgets
-    budgets={
-        "free": 1000,      # 1000 complexity points per hour
-        "pro": 10000,      # 10000 complexity points per hour
-        "enterprise": 100000,
-    },
+@fraiseql.type
+class Comment:
+    id: ID
+    body: str
 
-    window_seconds=3600,  # 1-hour window
-)
 
-app.add_plugin(cost_limiter)
-```
+@fraiseql.type(sql_source="v_post", jsonb_column="data")
+class Post:
+    id: ID
+    title: str
+    comments: list[Comment]
 
-#### 4. Implement DataLoader (N+1 Prevention)
 
-```python
-from fraiseql.dataloaders import DataLoader
-
-class CommentLoader(DataLoader):
-    async def batch_load_fn(self, post_ids):
-        # Load all comments in single query
-        query = """
-            SELECT * FROM comments
-            WHERE post_id = ANY($1)
-        """
-        rows = await db.fetch(query, post_ids)
-
-        # Group by post_id
-        comments_by_post = {}
-        for row in rows:
-            comments_by_post.setdefault(row['post_id'], []).append(row)
-
-        return [comments_by_post.get(pid, []) for pid in post_ids]
-
-# Use in resolver
-@app.type.field("Post", "comments")
-async def resolve_comments(post, info):
-    loader = info.context["comment_loader"]
-    return await loader.load(post.id)
-
-# Converts N+1 queries into 1 query!
+@fraiseql.query
+async def posts(info, limit: int = 20) -> list[Post]:
+    db = info.context["db"]
+    return await db.find("v_post", limit=limit)
 ```
 
 ---
@@ -712,9 +664,10 @@ rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m])
 # Attempt query as blocked user
 curl -X POST http://localhost:8000/graphql \
   -H "Authorization: Bearer $BLOCKED_USER_TOKEN" \
+  -H "Content-Type: application/json" \
   -d '{"query": "{ users { id } }"}'
 
-# Should return 403 Forbidden
+# Should return an error with "extensions": {"code": "BLOCKED"}, and null for the field
 ```
 
 ### 4. Check Logs
@@ -740,10 +693,10 @@ After resolving the incident:
    - Duration and impact
 
 2. **Implement Permanent Protections**:
-   - Deploy query complexity limits
-   - Implement query depth limiting
-   - Add query allowlisting (if feasible)
-   - Enable persisted queries
+   - Rate limits per client and per operation type
+   - Complexity checks in the resolvers of expensive queries
+   - Views without nesting cycles (bounded depth)
+   - Operation allowlisting with an authorizer (if feasible)
 
 3. **Update Monitoring**:
    - Add alerts for complexity violations
@@ -752,7 +705,7 @@ After resolving the incident:
 
 4. **Security Improvements**:
    - Review authentication
-   - Implement query budgets
+   - Tighten the rate limits on expensive operations
    - Add WAF rules if applicable
 
 ---

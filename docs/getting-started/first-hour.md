@@ -78,8 +78,8 @@ First, add a tags column to your note table:
 ALTER TABLE tb_note ADD COLUMN tags TEXT[] DEFAULT '{}';
 
 -- Update sample data with tags
-UPDATE tb_note SET tags = ARRAY['work', 'urgent'] WHERE title = 'First Note';
-UPDATE tb_note SET tags = ARRAY['personal', 'ideas'] WHERE title = 'Second Note';
+UPDATE tb_note SET tags = ARRAY['work', 'urgent'] WHERE title = 'Welcome to FraiseQL';
+UPDATE tb_note SET tags = ARRAY['personal', 'ideas'] WHERE title = 'Type-safe queries';
 
 -- Add a note with 'work' in the title for filter examples
 INSERT INTO tb_note (title, content, tags)
@@ -100,6 +100,7 @@ SELECT
         'id', id,
         'title', title,
         'content', content,
+        'created_at', created_at,
         'tags', tags
     ) as data  -- Required: Contains the GraphQL response data
 FROM tb_note;
@@ -115,11 +116,12 @@ Add tags to your Note type:
 
 ```python
 # app.py
-@fraiseql.type
+@fraiseql.type(sql_source="v_note", jsonb_column="data")
 class Note:
     id: ID
     title: str
-    content: str
+    content: str | None
+    created_at: datetime
     tags: list[str]  # Add this line
 ```
 
@@ -155,8 +157,8 @@ query {
     tags
   }
 
-  # Filter notes by title containing "work"
-  workNotes: notes(where: { title: { contains: "work" } }) {
+  # Filter notes by title containing "Work" (contains is case-sensitive)
+  workNotes: notes(where: { title: { contains: "Work" } }) {
     title
     content
   }
@@ -170,7 +172,7 @@ query {
   # Combine multiple conditions
   complexFilter: notes(where: {
     AND: [
-      { title: { contains: "meeting" } },
+      { title: { contains: "Meeting" } },
       { tags: { contains: "work" } }
     ]
   }) {
@@ -312,17 +314,19 @@ async def delete_note(info, id: ID) -> DeleteNoteSuccess | DeleteNoteError:
 
 ## Minute 45-60: Production Patterns - Timestamps
 
-**Challenge**: Add `created_at` and `updated_at` timestamps with automatic updates.
+**Challenge**: Track when each note was last changed with an `updated_at` timestamp.
 
-### Step 1: Add Timestamp Columns
+### Step 1: Add the updated_at Column
+
+The quickstart's `tb_note` already has `created_at TIMESTAMP DEFAULT NOW()`, set once
+on insert. Add `updated_at` next to it, with the same type:
 
 ```sql
--- Add timestamp columns
-ALTER TABLE tb_note ADD COLUMN created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
-ALTER TABLE tb_note ADD COLUMN updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- Add the column; new rows get NOW() on insert
+ALTER TABLE tb_note ADD COLUMN updated_at TIMESTAMP DEFAULT NOW();
 
--- Update existing records
-UPDATE tb_note SET created_at = NOW(), updated_at = NOW();
+-- Existing notes haven't changed since they were created
+UPDATE tb_note SET updated_at = created_at;
 ```
 
 ### Step 2: Set updated_at Explicitly (No Trigger)
@@ -345,8 +349,7 @@ $$ LANGUAGE plpgsql;
 -- A mutation calls it the way delete_note calls fn_delete_note:
 --   await db.execute_function("fn_update_note", {"id": str(id), "title": title})
 
--- Or use DEFAULT for automatic creation timestamps:
--- created_at TIMESTAMPTZ DEFAULT NOW()  -- Set once on INSERT
+-- created_at needs nothing: its DEFAULT NOW() sets it once, on INSERT
 ```
 
 ### Step 3: Update View
@@ -361,8 +364,8 @@ SELECT
         'id', id,
         'title', title,
         'content', content,
-        'tags', tags,
         'created_at', created_at,
+        'tags', tags,
         'updated_at', updated_at
     ) as data  -- Required: contains GraphQL response
 FROM tb_note;
@@ -378,9 +381,9 @@ FROM tb_note;
 class Note:
     id: ID
     title: str
-    content: str
+    content: str | None
+    created_at: datetime
     tags: list[str]
-    created_at: datetime  # Add this
     updated_at: datetime  # Add this
 ```
 

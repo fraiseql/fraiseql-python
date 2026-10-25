@@ -159,40 +159,46 @@ Traditional stacks suffer from eventual consistency issues between services:
 Replace Redis APQ storage with PostgreSQL:
 
 ```python
-# Before: Redis-based APQ
+# Before: a Redis-backed APQ store, plugged in as a custom backend
 config = FraiseQLConfig(
-    apq_storage_backend="redis",
-    redis_url="redis://localhost:6379"
+    database_url="postgresql://localhost/db",
+    apq_storage_backend="custom",
+    apq_backend_config={"backend_class": "myapp.apq.RedisAPQBackend"},
 )
 
-# After: PostgreSQL-based APQ
+# After: PostgreSQL-based APQ (the default backend is "memory")
 config = FraiseQLConfig(
-    apq_storage_backend="postgresql",  # Default
-    database_url="postgresql://localhost/db"
+    database_url="postgresql://localhost/db",
+    apq_storage_backend="postgresql",
 )
 ```
+
+> **Note:** the `postgresql` backend doesn't open a database connection of its own
+> yet. Persisted queries are kept in the process's memory, as with `memory`, so they
+> don't survive a restart and aren't shared between instances.
 
 ### Phase 2: Replace Error Tracking
 
 Migrate from external services to PostgreSQL tables:
 
-```sql
--- Create error tracking tables
-CREATE TABLE error_events (
-    id serial PRIMARY KEY,
-    service_name varchar(100) DEFAULT 'fraiseql',
-    error_type varchar(100),
-    error_message text,
-    stack_trace text,
-    context jsonb,
-    occurred_at timestamp DEFAULT now()
-);
+```bash
+# Create the error tracking tables (tb_error_log, tb_error_occurrence, ...)
+psql "$DATABASE_URL" -f src/fraiseql/monitoring/schema.sql
+```
 
--- Add error tracking to your GraphQL config
-config = FraiseQLConfig(
-    error_tracking_table="error_events",
-    enable_error_logging=True
-)
+Error tracking is not a `FraiseQLConfig` setting: start the tracker on a psycopg
+pool and capture exceptions with it.
+
+```python
+from fraiseql.monitoring import init_error_tracker
+
+tracker = init_error_tracker(pool, environment="production")
+
+try:
+    ...
+except Exception as exc:
+    await tracker.capture_exception(exc, context={"operation": "createOrder"})
+    raise
 ```
 
 ### Phase 3: Consolidate Monitoring

@@ -560,7 +560,7 @@ class MutationError:
 async def users(info) -> list[User]:
     """Get all users."""
     db = info.context["db"]
-    return await db.find("v_user", "users", info, order_by=[("created_at", "DESC")])
+    return await db.find("v_user", "users", info, order_by=[{"created_at": "DESC"}])
 
 
 @fraiseql.query
@@ -576,7 +576,7 @@ async def posts(info, published_only: bool = True) -> list[Post]:
     db = info.context["db"]
     where = {"published": {"eq": True}} if published_only else {}
     return await db.find(
-        "v_post", "posts", info, where=where, order_by=[("created_at", "DESC")]
+        "v_post", "posts", info, where=where, order_by=[{"created_at": "DESC"}]
     )
 
 
@@ -596,7 +596,7 @@ async def comments(info, post_id: ID) -> list[Comment]:
         "comments",
         info,
         where={"post_id": {"eq": post_id}},
-        order_by=[("created_at", "ASC")],
+        order_by=[{"created_at": "ASC"}],
     )
 
 

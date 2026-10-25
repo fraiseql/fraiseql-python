@@ -1781,8 +1781,19 @@ class CredentialValidator:
 ### 10.1 Authentication Event Logging
 
 ```python
+from datetime import UTC, datetime
+from typing import Any
+
+from psycopg.types.json import Jsonb
+
+from fraiseql.db import FraiseQLRepository
+
+
 class AuthenticationAuditLog:
     """Log authentication events for compliance and investigation"""
+
+    def __init__(self, db: FraiseQLRepository):
+        self.db = db
 
     async def log_event(
         self,
@@ -1807,23 +1818,27 @@ class AuthenticationAuditLog:
         - SUSPICIOUS_ACTIVITY
         """
         event = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC),
             "event_type": event_type,
             "user_id": user_id,
             "tenant_id": tenant_id,
             "status": status,
             "ip_address": ip_address,
             "user_agent": user_agent,
-            "details": details or {}
+            "details": Jsonb(details or {})
         }
 
         # Store in immutable audit table
-        await self.db.execute("""
-            INSERT INTO audit_log_authentication (
-                timestamp, event_type, user_id, tenant_id,
-                status, ip_address, user_agent, details
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        """, event.values())
+        async with self.db.get_pool().connection() as conn:
+            await conn.execute("""
+                INSERT INTO audit_log_authentication (
+                    timestamp, event_type, user_id, tenant_id,
+                    status, ip_address, user_agent, details
+                ) VALUES (
+                    %(timestamp)s, %(event_type)s, %(user_id)s, %(tenant_id)s,
+                    %(status)s, %(ip_address)s, %(user_agent)s, %(details)s
+                )
+            """, event)
 ```
 
 ### 10.2 Compliance Requirements

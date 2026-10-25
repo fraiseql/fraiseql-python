@@ -359,17 +359,33 @@ curl -X POST http://grafana:3000/api/dashboards/db \
 
 ### Structured Logging
 
-Ensure structured logging is enabled:
+fraiseql logs through the standard `logging` module, on loggers named `fraiseql.*`
+(security events on `fraiseql.security`); it doesn't install handlers or choose a
+format. Write them as JSON lines with a formatter of your own (or a library such as
+python-json-logger):
 
 ```python
-from fraiseql.monitoring.logging import setup_logging
+import json
+import logging
 
-# Enable JSON structured logging
-setup_logging(
-    format="json",
-    level="INFO",
-    output="/var/log/fraiseql/app.log"
-)
+
+class JSONFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        return json.dumps(
+            {
+                "timestamp": self.formatTime(record),
+                "level": record.levelname,
+                "logger": record.name,
+                "event": record.getMessage(),
+            }
+        )
+
+
+handler = logging.FileHandler("/var/log/fraiseql/app.log")
+handler.setFormatter(JSONFormatter())
+fraiseql_logger = logging.getLogger("fraiseql")
+fraiseql_logger.addHandler(handler)
+fraiseql_logger.setLevel(logging.INFO)
 ```
 
 Query logs with `jq`:

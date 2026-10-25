@@ -38,19 +38,27 @@ FraiseQL uses parameterized queries exclusively:
 
 ```python
 import fraiseql
+from fraiseql.types import ID
 
-# SAFE: Parameterized query
-async def get_user(user_id: str) -> User:
-    async with db.connection() as conn:
+# SAFE: repository filters are always bound parameters
+@fraiseql.query
+async def get_user(info, user_id: ID) -> User | None:
+    db = info.context["db"]
+    return await db.find_one("v_user", mandatory_filters={"id": user_id})
+
+# SAFE: raw SQL with psycopg placeholders
+async def get_user_email(db, user_id: str) -> str | None:
+    async with db.get_pool().connection() as conn:
         result = await conn.execute(
-            "SELECT * FROM users WHERE id = $1",
-            user_id  # Automatically escaped
+            "SELECT email FROM tb_user WHERE id = %s",
+            (user_id,)  # Sent as a parameter, never spliced into the SQL
         )
-        return result.fetchone()
+        row = await result.fetchone()
+        return row[0] if row else None
 
 # UNSAFE: String interpolation (never do this!)
-# async def get_user_unsafe(user_id: str) -> User:
-#     query = f"SELECT * FROM users WHERE id = '{user_id}'"
+# async def get_user_unsafe(db, user_id: str):
+#     query = f"SELECT * FROM tb_user WHERE id = '{user_id}'"
 #     result = await conn.execute(query)  # VULNERABLE
 ```
 
@@ -527,16 +535,16 @@ class FieldEncryption:
 # Usage
 encryptor = FieldEncryption()
 
-# Store encrypted
+# Store encrypted (conn: a psycopg connection, e.g. from db.get_pool().connection())
 encrypted_ssn = encryptor.encrypt("123-45-6789")
 await conn.execute(
-    "INSERT INTO users (id, ssn_encrypted) VALUES ($1, $2)",
-    user_id, encrypted_ssn
+    "INSERT INTO users (id, ssn_encrypted) VALUES (%s, %s)",
+    (user_id, encrypted_ssn)
 )
 
 # Retrieve and decrypt
-result = await conn.execute("SELECT ssn_encrypted FROM users WHERE id = $1", user_id)
-encrypted = result.fetchone()["ssn_encrypted"]
+result = await conn.execute("SELECT ssn_encrypted FROM users WHERE id = %s", (user_id,))
+encrypted = (await result.fetchone())[0]
 ssn = encryptor.decrypt(encrypted)
 ```
 
@@ -608,21 +616,25 @@ import fraiseql
 async def update_order_status(info, order_id: str, status: str) -> Order:
     """Update order status - automatically logged."""
     user_id = info.context["user"].user_id
+    db = info.context["db"]
 
-    async with db.connection() as conn:
-        # Set user context for trigger
+    async with db.get_pool().connection() as conn:
+        # Set user context for trigger (transaction-local, like SET LOCAL)
         await conn.execute(
-            "SET LOCAL app.current_user_id = $1",
-            user_id
+            "SELECT set_config('app.current_user_id', %s, true)",
+            (str(user_id),)
         )
 
         # Update (trigger logs before/after state)
         await conn.execute(
-            "UPDATE orders SET status = $1 WHERE id = $2",
-            status, order_id
+            "UPDATE orders SET status = %s WHERE id = %s",
+            (status, order_id)
         )
+    # The pool commits when the block exits
 
-    return await fetch_order(order_id)
+    return await db.find_one(
+        "v_order", "updateOrderStatus", info, mandatory_filters={"id": order_id}
+    )
 ```
 
 ## Compliance
@@ -663,19 +675,19 @@ async def delete_my_account(info) -> bool:
     """GDPR: Right to be forgotten."""
     user_id = info.context["user"].user_id
 
-    async with db.connection() as conn:
-        async with conn.transaction():
-            # Anonymize or delete data
-            await conn.execute(
-                "UPDATE users SET email = $1, name = $2, deleted_at = NOW() WHERE id = $3",
-                f"deleted-{user_id}@deleted.com",
-                "Deleted User",
-                user_id
-            )
+    async def forget_user(conn):
+        # Anonymize or delete data
+        await conn.execute(
+            "UPDATE users SET email = %s, name = %s, deleted_at = NOW() WHERE id = %s",
+            (f"deleted-{user_id}@deleted.com", "Deleted User", user_id)
+        )
 
-            # Delete related data
-            await conn.execute("DELETE FROM user_sessions WHERE user_id = $1", user_id)
-            await conn.execute("DELETE FROM user_consents WHERE user_id = $1", user_id)
+        # Delete related data
+        await conn.execute("DELETE FROM user_sessions WHERE user_id = %s", (user_id,))
+        await conn.execute("DELETE FROM user_consents WHERE user_id = %s", (user_id,))
+
+    # One transaction: everything or nothing
+    await info.context["db"].run_in_transaction(forget_user)
 
     # Log deletion
     security_logger.log_event(

@@ -103,19 +103,14 @@ free -h
 
 **Via Application Endpoint**:
 
-```bash
-# Health check endpoint includes memory stats
-curl http://localhost:8000/health/detailed
+fraiseql's `/health` only reports that the process is up, and `/ready` that the
+database answers; neither reports memory. Read memory from the system commands
+above, or from `process_resident_memory_bytes` on `/metrics` when the app exposes
+Prometheus metrics (`fraiseql.monitoring.metrics.setup_metrics(app)`).
 
-# Expected response
-{
-  "status": "healthy",
-  "memory": {
-    "used_bytes": 1610612736,
-    "limit_bytes": 2147483648,
-    "usage_percent": 75.0
-  }
-}
+```bash
+curl http://localhost:8000/health
+# {"status": "healthy", "service": "fraiseql"}
 ```
 
 ### Step 2: Identify Memory Consumers
@@ -282,32 +277,35 @@ systemctl restart fraiseql
 
 #### 2. Force Garbage Collection
 
-```python
-# Via admin endpoint (if implemented)
-curl -X POST http://localhost:8000/admin/gc
+fraiseql has no endpoint for this; run it in a Python REPL attached to the process
+(e.g. with `py-spy` or a debugger), or restart the pod:
 
-# Or via Python REPL in container
+```python
 import gc
 gc.collect()
 ```
 
 #### 3. Reduce Connection Pool Size (Temporary)
 
-```python
-# Update configuration
-from fraiseql import FraiseQL
+The pool opens at most `database_pool_size + database_max_overflow` connections:
 
-app = FraiseQL(
-    db_pool_size=5,  # Reduce from default (10-20)
-    db_max_overflow=2,  # Reduce from default (5-10)
+```python
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
+
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=5,  # Default: 20 (create_fraiseql_app uses 10 in development)
+    database_max_overflow=2,  # Default: 10
 )
+app = create_fraiseql_app(config=config, types=[User], queries=[users])
 ```
 
-**Environment Variable**:
+**Environment Variable** (read when the app is built from a `FraiseQLConfig`, as above;
+`create_fraiseql_app(database_url=...)` without `config` sets the pool size itself):
 
 ```bash
-export FRAISEQL_DB_POOL_SIZE=5
-export FRAISEQL_DB_MAX_OVERFLOW=2
+export FRAISEQL_DATABASE_POOL_SIZE=5
+export FRAISEQL_DATABASE_MAX_OVERFLOW=2
 ```
 
 ### Short-Term Fixes (15-30 minutes)
@@ -357,10 +355,11 @@ objgraph.show_growth()
 concurrent_requests = 100 * 0.1  # = 10
 pool_size = concurrent_requests * 1.5  # Safety margin = 15
 
-app = FraiseQL(
-    db_pool_size=15,
-    db_max_overflow=5,
-    db_pool_timeout=30,
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_size=15,
+    database_max_overflow=5,
+    database_pool_timeout=30,  # Seconds a request waits for a free connection
 )
 ```
 
@@ -375,11 +374,11 @@ pool_size=10 → ~100MB
 #### 3. Implement Connection Recycling
 
 ```python
-from fraiseql import FraiseQL
+from fraiseql.fastapi import FraiseQLConfig
 
-app = FraiseQL(
-    db_pool_recycle=3600,  # Recycle connections after 1 hour
-    db_pool_pre_ping=True,  # Verify connections before use
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    database_pool_recycle=3600,  # Close and replace connections after 1 hour (default)
 )
 ```
 
@@ -387,32 +386,23 @@ app = FraiseQL(
 
 - Prevents connection memory bloat
 - Releases idle connection memory
-- Detects stale connections
 
-#### 4. Limit Cache Size (If Using In-Memory Cache)
+#### 4. Move In-Process Caches Out of the Process
 
-```python
-from fraiseql import FraiseQL
-from fraiseql.caching import LRUCache
-
-# Limit cache to 1000 entries (~10MB)
-cache = LRUCache(max_size=1000)
-
-app = FraiseQL(cache=cache)
-```
-
-**Switch to External Cache**:
+fraiseql's result cache (`fraiseql.caching.PostgresCache`, see
+[Caching](../../performance/caching.md)) lives in a PostgreSQL UNLOGGED table, not
+in application memory. What does live in the process is the automatic persisted
+queries (APQ) store, which defaults to memory and grows with each distinct query
+(and each cached response, with `apq_cache_responses=True`). Keep it in PostgreSQL
+instead:
 
 ```python
-from fraiseql.caching import RedisCache
+from fraiseql.fastapi import FraiseQLConfig
 
-# Use Redis instead of in-memory cache
-cache = RedisCache(
-    url="redis://localhost:6379",
-    max_memory="256mb",  # Redis memory limit
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    apq_storage_backend="postgresql",  # Default: "memory"
 )
-
-app = FraiseQL(cache=cache)
 ```
 
 ### Long-Term Solutions (1+ days)
@@ -452,70 +442,52 @@ echo -1000 > /proc/<pid>/oom_score_adj
 
 #### 2. Implement Request Size Limits
 
-```python
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.middleware import Middleware
-from starlette.middleware.base import BaseHTTPMiddleware
+Cap request bodies before they reach the app, at the reverse proxy or ingress:
 
-class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, max_size: int = 10485760):  # 10MB default
-        super().__init__(app)
-        self.max_size = max_size
-
-    async def dispatch(self, request: Request, call_next):
-        content_length = request.headers.get("content-length")
-        if content_length and int(content_length) > self.max_size:
-            raise HTTPException(
-                status_code=413,
-                detail="Request payload too large"
-            )
-        return await call_next(request)
-
-app = FastAPI(
-    middleware=[
-        Middleware(RequestSizeLimitMiddleware, max_size=10485760)
-    ]
-)
+```nginx
+# nginx: answer 413 to bodies over 10MB
+client_max_body_size 10m;
 ```
 
-#### 3. Implement Query Result Streaming
+```yaml
+# ingress-nginx
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+```
+
+#### 3. Cap Result Set Sizes
 
 ```python
-from fraiseql import FraiseQL
+import fraiseql
 
-app = FraiseQL()
 
-@app.query.field("users")
-async def resolve_users(info, limit: int = 100):
+@fraiseql.query
+async def users(info, limit: int = 100) -> list[User]:
     # Limit result set size
     if limit > 1000:
         raise ValueError("Limit cannot exceed 1000")
 
-    query = "SELECT * FROM users LIMIT $1"
-    return await db.fetch(query, limit)
+    db = info.context["db"]
+    return await db.find("v_user", limit=limit)
 ```
 
 **Pagination for Large Results**:
 
 ```python
-@app.query.field("orders")
-async def resolve_orders(
-    info,
-    page: int = 1,
-    page_size: int = 100
-):
-    offset = (page - 1) * page_size
-
+@fraiseql.query
+async def orders(info, page: int = 1, page_size: int = 100) -> list[Order]:
     # Validate page_size
     if page_size > 500:
         raise ValueError("Page size cannot exceed 500")
 
-    query = """
-        SELECT * FROM orders
-        ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
-    """
-    return await db.fetch(query, page_size, offset)
+    db = info.context["db"]
+    return await db.find(
+        "v_order",
+        order_by=[{"created_at": "DESC"}],
+        limit=page_size,
+        offset=(page - 1) * page_size,
+    )
 ```
 
 #### 4. Horizontal Scaling
