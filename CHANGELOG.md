@@ -251,6 +251,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   value (a JSON scalar) is written as stored. A view without a registered type is
   projected as the type its field returns.
 
+- **Without the Rust schema registry, a string with an escape comes back as
+  stored.** The zero-copy path escaped the JSON it copied a second time, so
+  `say "hi"` reached the client as `say \"hi\"`, and a string ending in a
+  backslash (`"x\\"`) failed the field (`Expected byte 44`). Strings and keys
+  are now copied with their escapes as they are.
+
 - **`execute_function` and `execute_function_with_context` return the object a
   `RETURNS jsonb` function returns.** They run `SELECT * FROM fn(...)`, which
   puts such a result in one column named after the function, so the result was

@@ -239,9 +239,9 @@ impl<'a> ZeroCopyTransformer<'a> {
             // Transform key (camelCase if needed; __typename is a GraphQL name)
             if self.config.camel_case && key_bytes != b"__typename" {
                 let camel_key = snake_to_camel(key_bytes, &mut self.key_scratch);
-                writer.write_key(camel_key)?;
+                writer.write_json_key(camel_key)?;
             } else {
-                writer.write_key(key_bytes)?;
+                writer.write_json_key(key_bytes)?;
             }
 
             self.transform_value(reader, writer, None, None)?;
@@ -377,7 +377,7 @@ impl<'a> ZeroCopyTransformer<'a> {
             b'[' => self.transform_array(reader, writer, projection, type_name),
             b'"' => {
                 let string_bytes = reader.read_string()?;
-                writer.write_string(string_bytes)
+                writer.write_json_string(string_bytes)
             },
             b't' | b'f' => {
                 let bool_bytes = reader.read_bool()?;
@@ -576,14 +576,19 @@ impl<'a> ByteReader<'a> {
     }
 
     /// Read escaped string (slow path)
+    ///
+    /// The string is returned with its escapes as they are: `a\"b` for `"a\"b"`.
+    /// A backslash escapes the byte after it, so `"a\\"` ends at its last quote.
     fn read_escaped_string(&mut self, start: usize) -> Result<&'a [u8], TransformError> {
-        // For now, just skip to end - full escaping handled by writer
         while self.pos < self.bytes.len() {
-            let byte = self.bytes[self.pos];
-            self.pos += 1;
-
-            if byte == b'"' && self.bytes.get(self.pos - 2) != Some(&b'\\') {
-                return Ok(&self.bytes[start..self.pos - 1]);
+            match self.bytes[self.pos] {
+                b'\\' => self.pos += 2,
+                b'"' => {
+                    let string_bytes = &self.bytes[start..self.pos];
+                    self.pos += 1;
+                    return Ok(string_bytes);
+                },
+                _ => self.pos += 1,
             }
         }
         Err(TransformError::UnterminatedString)
@@ -767,6 +772,30 @@ impl<'a> JsonWriter<'a> {
         Ok(())
     }
 
+    /// Write a key read from JSON input: its escapes are kept, not escaped again
+    #[inline(always)]
+    pub fn write_json_key(&mut self, key: &[u8]) -> Result<(), TransformError> {
+        if self.needs_comma {
+            self.output.push(b',');
+        }
+        self.output.push(b'"');
+        self.output.extend_from_slice(key);
+        self.output.extend_from_slice(b"\":");
+        self.needs_comma = false;
+        Ok(())
+    }
+
+    /// Write a string read from JSON input (`ByteReader::read_string`): its
+    /// escapes are kept, not escaped again
+    #[inline(always)]
+    pub fn write_json_string(&mut self, value: &[u8]) -> Result<(), TransformError> {
+        self.output.push(b'"');
+        self.output.extend_from_slice(value);
+        self.output.push(b'"');
+        self.needs_comma = true;
+        Ok(())
+    }
+
     #[inline(always)]
     pub fn write_raw(&mut self, value: &[u8]) -> Result<(), TransformError> {
         self.output.extend_from_slice(value);
@@ -945,6 +974,17 @@ mod tests {
     fn without_a_typename_nothing_is_injected() {
         let out = transform(r#"{"id":1,"__typename":"Row","child":{"a_b":1}}"#, None);
         assert_eq!(out, r#"{"id":1,"__typename":"Row","child":{"aB":1}}"#);
+    }
+
+    #[test]
+    fn escaped_strings_are_copied_as_they_are() {
+        // Escaped again, "a\"b" became "a\\\"b": the client read a\"b
+        let input = r#"{"t":"a\"b\\c\né","end":"x\\","k\"ey":1}"#;
+        let out = transform(input, None);
+        assert_eq!(out, input);
+        let parsed: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(parsed["t"], "a\"b\\c\n\u{e9}");
+        assert_eq!(parsed["end"], "x\\");
     }
 
     fn project(input: &str, typename: Option<&str>, projection: &Projection) -> String {

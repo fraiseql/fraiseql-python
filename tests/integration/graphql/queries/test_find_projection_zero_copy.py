@@ -20,9 +20,12 @@ from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 
 pytestmark = [pytest.mark.integration, pytest.mark.database]
 
+# A string JSON escapes ("t \"q\" \\"): it comes back as stored
+_TITLE = 't "q" \\'
 # "secret_note17" and "author" fell on the same bit of the old hash map
 _ROW = (
-    "jsonb_build_object('id', 1, 'title', 't', 'secret_note17', 'LEAK', 'secret_note', 's', "
+    "jsonb_build_object('id', 1, 'title', 't \"q\" \\', 'secret_note17', 'LEAK', "
+    "'secret_note', 's', "
     "'author', jsonb_build_object('first_name', 'f', 'last_name', 'l', 'password', 'pw'), "
     "'tags', jsonb_build_array(jsonb_build_object('tag_name', 'a', 'secret', 'x'), "
     "jsonb_build_object('tag_name', 'b', 'secret', 'y')))"
@@ -87,12 +90,17 @@ class _ZeroCopyProjection:
         async def raw_posts(info) -> list[ZcRawPost]:
             return await info.context["db"].find("v_zc_post_unregistered", info=info)
 
+        @fraiseql.query
+        async def whole_posts(info) -> list[ZcPost]:
+            # Without info, the rows are read whole
+            return await info.context["db"].find("v_zc_post")
+
         set_db_pool(class_db_pool)
         config = FraiseQLConfig(database_url="postgresql://test/test", auto_camel_case=self.camel)
         app = create_fraiseql_app(
             config=config,
             types=[ZcPost, ZcRawPost, ZcAuthor, ZcTag],
-            queries=[posts, raw_posts],
+            queries=[posts, raw_posts, whole_posts],
             production=False,
             enable_schema_registry=self.registry,
         )
@@ -124,7 +132,14 @@ class _ZeroCopyProjection:
         tag_name = self._name("tagName", "tag_name")
         [row] = self._rows(client, f"{{ title tags {{ {tag_name} }} }}")
 
-        assert row == {"title": "t", "tags": [{tag_name: "a"}, {tag_name: "b"}]}
+        assert row == {"title": _TITLE, "tags": [{tag_name: "a"}, {tag_name: "b"}]}
+
+    def test_a_whole_row_keeps_its_strings_as_stored(self, client) -> None:
+        root = self._name("wholePosts", "whole_posts")
+        body = client.post("/graphql", json={"query": f"{{ {root} {{ title }} }}"}).json()
+
+        assert "errors" not in body, body
+        assert [row["title"] for row in body["data"][root]] == [_TITLE]
 
 
 def _without_typename(value):
