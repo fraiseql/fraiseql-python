@@ -927,6 +927,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reverse. **Apply the file again** to fix an existing database: it rewires the five
   system roles when they still have exactly the old seed, and leaves a hierarchy you
   changed alone (check it then).
+- **`RoleHierarchy.get_role_descendants(role_id)` returns the roles that inherit
+  from the role.** It looked for each role among its own ancestors, so it always
+  returned `[]`.
 
 ## [1.30.0] - 2026-10-22
 
