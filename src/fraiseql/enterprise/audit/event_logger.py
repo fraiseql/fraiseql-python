@@ -6,7 +6,7 @@ Philosophy: "In PostgreSQL Everything"
 - PostgreSQL ensures chain integrity at the database level
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Optional
 from uuid import UUID, uuid4
 
@@ -94,7 +94,7 @@ class AuditLogger:
         set here - they are auto-populated by PostgreSQL trigger.
         """
         event_id = uuid4()
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(UTC)
 
         return {
             "id": event_id,

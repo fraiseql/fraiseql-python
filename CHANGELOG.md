@@ -869,6 +869,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `get_error`, `get_unresolved_errors` and every notification failed on
   `.isoformat()`. PostgreSQL now returns `first_seen`, `last_seen` and `resolved_at`
   as ISO 8601 text, whatever the pool's loaders.
+- **`AuditLogger` records an event's time in UTC whatever the session's time zone.**
+  It sent `datetime.utcnow()` as a string without an offset, which PostgreSQL reads
+  in the connection's `TimeZone`, so on a non-UTC session the stored `timestamp` was
+  off by that zone's offset. It now sends an aware UTC time.
 - **Inserts into the enterprise `audit_events` table work.**
   `enterprise/migrations/001_audit_tables.sql` installed a `BEFORE INSERT` trigger
   that created a monthly partition of `audit_events`, which isn't a partitioned
