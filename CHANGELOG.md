@@ -253,6 +253,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `nin` (tuples, `"lat,lng"` strings or `{lat, lng}`) now get it, on a JSONB
   field or a `point` column. The coordinate is a `point`, `(longitude,
   latitude)`.
+- **A `Coordinate` field gets a `CoordinateFilter` in the GraphQL `where`,
+  with `distanceWithin`.** It got a `StringFilter`, so the
+  `distanceWithin: {center: [37.77, -122.42], radius: 5000}` the `Coordinate`
+  scalar's description promised didn't exist. `CoordinateFilter` has `eq`,
+  `neq`, `in`, `nin` (`"lat,lng"` strings), `isnull` and `distanceWithin`
+  (`CoordinateDistanceInput`: `center: [Float!]!` as `[latitude, longitude]`,
+  `radius: Float!` in meters).
 - **`BodySizeLimiterMiddleware` passes the request body on to the app.** It
   read the body to measure it, then gave the app behind it an empty one, so
   every GraphQL `POST` behind it got a 422. It is now a plain ASGI middleware:

@@ -28,7 +28,7 @@ config_postgis = FraiseQLConfig(
 )
 
 # Example 3: Using earthdistance (legacy systems)
-# Requires: CREATE EXTENSION IF NOT EXISTS earthdistance;
+# Requires: CREATE EXTENSION IF NOT EXISTS earthdistance CASCADE;  (and cube)
 config_earthdistance = FraiseQLConfig(
     database_url="postgresql://user:pass@localhost/mydb",
     coordinate_distance_method="earthdistance"
@@ -45,11 +45,12 @@ config_from_env = FraiseQLConfig(
 
 # What the method changes: the SQL of the `distance_within` operator
 #
-# `distance_within` takes ((latitude, longitude), meters) and is rendered by
-# FraiseQL's operator registry with the configured method. It isn't offered in
-# the GraphQL `where` inputs (a Coordinate field gets a StringFilter there), and
-# `db.find(where={"coordinates": {"distance_within": ...}})` doesn't render it
-# yet, so the example below prints the SQL each method produces.
+# `distance_within` takes ((latitude, longitude), meters):
+#     db.find("v_location", where={"coordinates": {"distance_within": ((37.77, -122.42), 5000)}})
+# In GraphQL, a Coordinate field gets a CoordinateFilter:
+#     locations(where: {coordinates: {distanceWithin: {center: [37.77, -122.42], radius: 5000}}})
+# The coordinate is a PostgreSQL point, (longitude, latitude): a point column, or
+# its text in the view's JSONB. The example below prints the SQL each method writes.
 def print_distance_sql() -> None:
     from psycopg.sql import SQL
 
@@ -78,23 +79,25 @@ Haversine       | ±0.5% (<1000km)  | None         | Development, most apps
 PostGIS         | ±0.1% (any dist) | PostGIS ext  | Production, global scale
 earthdistance   | ±1-2%            | earthdist ext| Legacy systems
 
-SQL Generated Examples:
+SQL Generated Examples (p is (data ->> 'coordinates')::point: p[0] is the
+longitude, p[1] the latitude):
 
-Haversine (default):
-WHERE (6371000 * 2 * ASIN(SQRT(
-  POWER(SIN(RADIANS(lat1) - RADIANS(lat2)), 2) / 2 +
-  COS(RADIANS(lat1)) * COS(RADIANS(lat2)) *
-  POWER(SIN(RADIANS(lng1) - RADIANS(lng2)), 2) / 2
-))) <= distance_meters
+Haversine (default, plain SQL):
+WHERE (2 * 6371000 * ASIN(LEAST(1, SQRT(
+  POWER(SIN(RADIANS(p[1] - lat) / 2), 2) +
+  COS(RADIANS(lat)) * COS(RADIANS(p[1])) *
+  POWER(SIN(RADIANS(p[0] - lng) / 2), 2)
+)))) <= distance_meters
 
-PostGIS:
-WHERE ST_DWithin(coordinates::point, POINT(lng, lat), distance_meters)
+PostGIS (on geographies, so the distance is in meters):
+WHERE ST_DWithin(
+  ST_SetSRID(ST_MakePoint(p[0], p[1]), 4326)::geography,
+  ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography,
+  distance_meters
+)
 
 earthdistance:
-WHERE earth_distance(
-  ll_to_earth(lat1, lng1),
-  ll_to_earth(lat2, lng2)
-) <= distance_meters
+WHERE earth_distance(ll_to_earth(lat, lng), ll_to_earth(p[1], p[0])) <= distance_meters
 """
 
 

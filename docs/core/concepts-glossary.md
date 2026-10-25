@@ -695,9 +695,27 @@ query {
 
 **1. Coordinates (Geographic Filtering)**
 
-A `Coordinate` field gets a `StringFilter` in GraphQL: there is no distance filter
-on it over GraphQL yet. For a distance search, compute it in the view or in a SQL
-function and expose the result as a field (or an argument of your own query).
+A `Coordinate` field gets a `CoordinateFilter`: `eq`, `neq`, `in`, `nin` (values
+are `"latitude,longitude"` strings), `isnull`, and `distanceWithin`, the
+coordinates at most `radius` meters from `center` (`[latitude, longitude]`):
+
+```graphql
+query {
+  stores(where: {
+    location: { distanceWithin: { center: [37.7749, -122.4194], radius: 5000 } }
+  }) {
+    name
+    location
+  }
+}
+```
+
+In Python, `db.find("v_store", where={"location": {"distance_within": ((37.7749,
+-122.4194), 5000)}})`. The view holds the coordinate as a PostgreSQL `point`,
+`(longitude, latitude)`: a `point` column, or its text in the JSONB
+(`jsonb_build_object('location', location)`). `FraiseQLConfig.coordinate_distance_method`
+picks the distance SQL: `"haversine"` (the default, plain SQL), `"earthdistance"`
+(needs the `earthdistance` and `cube` extensions) or `"postgis"` (needs PostGIS).
 
 **2. Network Addresses (IP/CIDR Filtering)**
 

@@ -1,20 +1,26 @@
-"""A ``Coordinate`` field filters by distance through db.find.
+"""A ``Coordinate`` field filters by distance, in GraphQL and through db.find.
 
-``db.find(where={"location": {"distance_within": ...}})`` wrote
-``data ->> 'location' distance_within %s``, a syntax error, and ``eq`` / ``in``
-on a ``Coordinate`` field compared the JSONB text with a tuple. A coordinate is
-stored as a ``point``, ``(longitude, latitude)``: a ``point`` column, or its text
-in the view's JSONB.
+The GraphQL ``where`` gave a ``Coordinate`` field a ``StringFilter``, without
+``distanceWithin``; ``db.find(where={"location": {"distance_within": ...}})``
+wrote ``data ->> 'location' distance_within %s``, a syntax error; the Haversine
+SQL called PostGIS's ``ST_Y`` and cast ``'location'::point`` instead of the
+field; and ``eq`` / ``in`` compared points with ``=``, which ``point`` lacks. A
+coordinate is stored as a ``point``, ``(longitude, latitude)``: a ``point``
+column, or its text in the view's JSONB.
 """
+
+import json
 
 import pytest
 import pytest_asyncio
+from fastapi.testclient import TestClient
 from tests.unit.utils.test_response_utils import extract_graphql_data
 
 import fraiseql
 from fraiseql.db import FraiseQLRepository
-from fraiseql.fastapi import FraiseQLConfig
+from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app
 from fraiseql.gql.builders.registry import SchemaRegistry
+from fraiseql.sql import create_graphql_where_input
 from fraiseql.types import Coordinate
 
 pytestmark = [pytest.mark.integration, pytest.mark.database]
@@ -89,11 +95,88 @@ def config_registry():
     registry.config = saved
 
 
+def _client(pool, test_schema, place_types, method: str) -> TestClient:
+    from fraiseql.fastapi.dependencies import set_db_pool
+
+    place_type, flat_type = place_types
+    place_where = create_graphql_where_input(place_type)
+    flat_where = create_graphql_where_input(flat_type)
+
+    @fraiseql.query
+    async def places(info, where: place_where | None = None) -> list[place_type]:
+        return await info.context["db"].find(
+            f"{test_schema}.v_co_place", "places", info, where=where
+        )
+
+    @fraiseql.query
+    async def flat_places(info, where: flat_where | None = None) -> list[flat_type]:
+        return await info.context["db"].find(
+            f"{test_schema}.v_co_flat_place", "flatPlaces", info, where=where
+        )
+
+    set_db_pool(pool)
+
+    async def context_getter(request, user=None):
+        return {"db": FraiseQLRepository(pool), "user": user}
+
+    config = FraiseQLConfig(
+        database_url="postgresql://test/test", coordinate_distance_method=method
+    )
+    app = create_fraiseql_app(
+        config=config,
+        types=[place_type, flat_type],
+        queries=[places, flat_places],
+        production=False,
+        context_getter=context_getter,
+    )
+    return TestClient(app)
+
+
+def _ids(client: TestClient, root: str, location_filter: str) -> list[int]:
+    query = f"{{ {root}(where: {{location: {location_filter}}}) {{ id }} }}"
+    body = json.loads(client.post("/graphql", json={"query": query}).text)
+    assert "errors" not in body, body["errors"]
+    return sorted(row["id"] for row in body["data"][root])
+
+
 async def _find_ids(pool, view: str, where: dict) -> list[int]:
     repo = FraiseQLRepository(pool, context={"mode": "development"})
     return sorted(
         row["id"] for row in extract_graphql_data(await repo.find(view, where=where), view)
     )
+
+
+@pytest.mark.usefixtures("test_schema", "place_tables", "config_registry")
+class TestCoordinateWhereGraphQL:
+    def test_a_coordinate_field_gets_a_coordinate_filter(
+        self, class_db_pool, test_schema, place_types
+    ) -> None:
+        client = _client(class_db_pool, test_schema, place_types, "haversine")
+        query = '{ __type(name: "CoordinateFilter") { inputFields { name } } }'
+        body = json.loads(client.post("/graphql", json={"query": query}).text)
+
+        names = {f["name"] for f in body["data"]["__type"]["inputFields"]}
+        assert {"eq", "neq", "in", "nin", "isnull", "distanceWithin"} <= names
+
+    @pytest.mark.parametrize("method", _METHODS)
+    @pytest.mark.parametrize("root", _ROOTS)
+    @pytest.mark.parametrize(("radius", "expected"), _DISTANCES)
+    def test_distance_within(
+        self, class_db_pool, test_schema, place_types, method, root, radius, expected
+    ) -> None:
+        client = _client(class_db_pool, test_schema, place_types, method)
+        location = f"{{distanceWithin: {{center: [37.7749, -122.4194], radius: {radius}}}}}"
+
+        assert _ids(client, root, location) == expected
+
+    @pytest.mark.parametrize("root", _ROOTS)
+    @pytest.mark.parametrize(("gql", "_py", "expected"), _POINT_FILTERS)
+    def test_point_filters(
+        self, class_db_pool, test_schema, place_types, root, gql, _py, expected
+    ) -> None:
+        client = _client(class_db_pool, test_schema, place_types, "haversine")
+
+        assert _ids(client, root, gql) == expected
 
 
 @pytest.mark.usefixtures("test_schema", "place_tables")

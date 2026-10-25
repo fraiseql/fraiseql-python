@@ -55,6 +55,7 @@ FilterFieldSpec = tuple[type, Any, str | None]  # (field_type, default_value, gr
 from fraiseql import fraise_input
 from fraiseql.fields import fraise_field
 from fraiseql.sql.where_generator import safe_create_where_type
+from fraiseql.types.scalars.coordinates import CoordinateField as Coordinate
 from fraiseql.types.scalars.vector import is_float_vector_type
 
 logger = logging.getLogger(__name__)
@@ -456,6 +457,34 @@ class LTreeFilter:
 
 
 @fraise_input
+class CoordinateDistanceInput:
+    """A center and a radius, for ``distanceWithin``.
+
+    ``distanceWithin: {center: [37.7749, -122.4194], radius: 5000}`` keeps the
+    coordinates at most 5 km from the center, given as ``[latitude, longitude]``.
+    The SQL depends on ``FraiseQLConfig.coordinate_distance_method``.
+    """
+
+    center: list[float]
+    radius: float  # meters
+
+
+@fraise_input
+class CoordinateFilter:
+    """Filter for geographic coordinates (a ``point``: ``(longitude, latitude)``).
+
+    Values are ``"latitude,longitude"`` strings, like the ``Coordinate`` scalar.
+    """
+
+    eq: Coordinate | None = None
+    neq: Coordinate | None = None
+    in_: list[Coordinate] | None = fraise_field(default=None, graphql_name="in")
+    nin: list[Coordinate] | None = None
+    isnull: bool | None = None
+    distance_within: CoordinateDistanceInput | None = None
+
+
+@fraise_input
 class DateRangeFilter:
     """Filter for PostgreSQL date range types with full operator support.
 
@@ -783,6 +812,7 @@ def _get_filter_type_for_field(
         from fraiseql.types.scalars.daterange import DateRangeField
 
         exotic_type_mapping = {
+            Coordinate: CoordinateFilter,
             IpAddress: NetworkAddressFilter,
             CIDR: NetworkAddressFilter,
             MacAddress: MacAddressFilter,
@@ -822,12 +852,14 @@ def _get_filter_type_for_field(
         try:
             from fraiseql.types.scalars import (
                 CIDRScalar,
+                CoordinateScalar,
                 IpAddressScalar,
                 LTreeScalar,
                 MacAddressScalar,
             )
 
             graphql_scalar_mapping = {
+                CoordinateScalar: CoordinateFilter,
                 IpAddressScalar: NetworkAddressFilter,
                 CIDRScalar: NetworkAddressFilter,
                 MacAddressScalar: MacAddressFilter,
