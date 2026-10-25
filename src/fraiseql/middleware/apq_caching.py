@@ -200,6 +200,78 @@ def store_response_in_cache(
         logger.warning(f"Failed to store response in cache: {e}")
 
 
+def _is_query_operation(query_text: str, operation_name: str | None) -> bool:
+    """Whether the operation a request runs is a query (not a mutation or subscription)."""
+    from graphql import GraphQLError, OperationType, get_operation_ast, parse
+
+    try:
+        operation = get_operation_ast(parse(query_text), operation_name)
+    except GraphQLError:
+        return False
+    return operation is not None and operation.operation == OperationType.QUERY
+
+
+def store_executed_response(
+    result: Any,
+    *,
+    hash_value: str,
+    backend: APQStorageBackend,
+    query_text: str,
+    config: FraiseQLConfig,
+    variables: dict[str, Any] | None = None,
+    context: Optional[dict[str, Any]] = None,
+    operation_name: str | None = None,
+) -> None:
+    """Cache the response the ``/graphql`` route built for an APQ request.
+
+    The route answers with a dict or, on its Rust paths, with a ``Response`` holding
+    JSON bytes; both are cached. Only queries are cached: a cached mutation would be
+    answered from the cache instead of running. Responses with errors are not cached
+    (see ``store_response_in_cache``), and neither are ``extensions`` (execution
+    metadata of this one request).
+
+    Args:
+        result: What the route returned (dict or ``Response``)
+        hash_value: SHA256 hash of the persisted query
+        backend: APQ storage backend
+        query_text: The query text that ran
+        config: FraiseQL configuration
+        variables: GraphQL variables from the request (for cache key)
+        context: Request context (tenant isolation)
+        operation_name: Operation name (for multi-operation documents)
+    """
+    if not _is_query_operation(query_text, operation_name):
+        return
+
+    if isinstance(result, dict):
+        response = result
+    else:
+        status_code = getattr(result, "status_code", None)
+        media_type = getattr(result, "media_type", None) or ""
+        body = getattr(result, "body", None)
+        if status_code != 200 or "json" not in media_type or not body:
+            return
+        try:
+            response = json.loads(body)
+        except (TypeError, ValueError):
+            logger.debug("APQ response cache: response body is not JSON, not cached")
+            return
+        if not isinstance(response, dict):
+            return
+
+    response = {key: value for key, value in response.items() if key != "extensions"}
+    store_response_in_cache(
+        hash_value,
+        response,
+        backend,
+        config,
+        variables=variables,
+        context=context,
+        query_text=query_text,
+        operation_name=operation_name,
+    )
+
+
 def get_apq_hash_from_request(request: GraphQLRequest) -> Optional[str]:
     """Extract APQ hash from GraphQL request.
 

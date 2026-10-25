@@ -124,6 +124,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The APQ response cache (`apq_cache_responses=True`) is filled.** The response was
+  stored only at the end of an execution path the `/graphql` route never takes (it
+  answers from the unified executor or with Rust-built bytes first), so the cache
+  stayed empty and every hash-only request ran. Now the response of every APQ query
+  is stored, whichever path built it. Mutations and subscriptions are not cached (a
+  cached mutation would be answered without running), nor are responses with errors
+  or the request's `extensions`. The cache key is the hash, the variables and the
+  tenant, not the user: only cache data that is the same for every user of a tenant.
 - **The `postgresql` APQ storage backend stores persisted queries in PostgreSQL.** It had
   no database connection, so every read missed and every write was dropped: queries
   registered with it were lost on restart and not shared between instances, and its

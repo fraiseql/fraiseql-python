@@ -139,3 +139,20 @@ def test_backend_does_not_connect_until_used() -> None:
     backend = PostgreSQLAPQBackend({}, database_url="postgresql://nobody@127.0.0.1:1/none")
 
     assert backend._pool is None
+
+
+def test_response_cache_is_stored_in_postgresql(make_app, postgres_url, table_prefix) -> None:
+    query = '{ hello(name: "cached") }'
+    _, app = make_app(apq_cache_responses=True)
+    _post(app, _apq_body(query))
+
+    with psycopg.connect(postgres_url) as conn:
+        rows = conn.execute(f"SELECT hash, response FROM {table_prefix}responses").fetchall()
+    assert rows == [
+        (hashlib.sha256(query.encode()).hexdigest(), {"data": {"hello": "Hello, cached!"}})
+    ]
+
+    _, other_instance = make_app(apq_cache_responses=True)
+    assert _post(other_instance, _apq_body(query, with_query=False)) == {
+        "data": {"hello": "Hello, cached!"}
+    }

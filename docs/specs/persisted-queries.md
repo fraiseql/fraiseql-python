@@ -940,8 +940,14 @@ config = FraiseQLConfig(
 <!-- Code example in TEXT -->
 
 `apq_response_cache_ttl` is accepted but nothing reads it: cached responses don't
-expire. In 1.31 the `/graphql` route returns the Rust-built response before the
-step that stores it, so the response cache stays empty for now.
+expire.
+
+A response is cached when an APQ request runs a query (never a mutation or a
+subscription) without errors, whichever execution path built it. The key is the
+query's hash, its variables and the tenant (`tenant_id` in the request context); it
+does not include the user, so a cached response is served to every user of that
+tenant who sends the same hash and variables. Use it only for data that is the same for
+all of them.
 
 **Environment Variables**:
 

@@ -1350,6 +1350,30 @@ def create_graphql_router(
 
         Returns either a dict (normal GraphQL response) or Response (direct Rust bytes).
         """
+        # Filled by the APQ step when the response of this request may be cached
+        # (apq_cache_responses): stored here, whichever execution path built it.
+        apq_cache_target: dict[str, Any] = {}
+        result = await _execute_graphql_request(request, http_request, context, apq_cache_target)
+        if apq_cache_target:
+            from fraiseql.middleware.apq_caching import store_executed_response
+
+            store_executed_response(
+                result,
+                config=config,
+                variables=request.variables,
+                context=context,
+                operation_name=request.operationName,
+                **apq_cache_target,
+            )
+        return result
+
+    async def _execute_graphql_request(
+        request: GraphQLRequest,
+        http_request: Request,
+        context: dict[str, Any],
+        apq_cache_target: dict[str, Any],
+    ) -> dict[str, Any] | Response:
+        """Run one GraphQL request (the body of ``graphql_endpoint``)."""
         # Check authentication first (before APQ processing to ensure security)
         # For APQ requests, we need to check auth regardless of query availability
         # Special case: Allow introspection queries to proceed to GraphQL layer when:
@@ -1438,7 +1462,6 @@ def create_graphql_router(
                     apq_backend.store_persisted_query(sha256_hash, request.query)
 
                 # Continue with normal execution using the provided query
-                # The response will be cached after execution (see lines 361-370)
 
             else:
                 # This is a hash-only request - try to retrieve the query
@@ -1532,6 +1555,12 @@ def create_graphql_router(
                     f"query length {len(persisted_query_text)}"
                 )
                 request.query = persisted_query_text
+
+            # The query runs below; its response is cached by graphql_endpoint.
+            if config.apq_cache_responses and request.query:
+                apq_cache_target.update(
+                    hash_value=sha256_hash, backend=apq_backend, query_text=request.query
+                )
 
         try:
             # Determine execution mode from headers and config
@@ -1769,30 +1798,6 @@ def create_graphql_router(
                             content=bytes(value),
                             media_type="application/json",
                         )
-
-            # Cache response for APQ if it was an APQ request and response is cacheable
-            if is_apq_request and apq_backend:
-                from fraiseql.middleware.apq_caching import (
-                    get_apq_hash_from_request,
-                    store_response_in_cache,
-                )
-
-                apq_hash = get_apq_hash_from_request(request)
-                if apq_hash:
-                    # Get query text for field selection filtering
-                    query_text = apq_backend.get_persisted_query(apq_hash)
-
-                    # Store the filtered response in cache for future requests
-                    store_response_in_cache(
-                        apq_hash,
-                        response,
-                        apq_backend,
-                        config,
-                        variables=request.variables,
-                        context=context,
-                        query_text=query_text,
-                        operation_name=request.operationName,
-                    )
 
             return response
 

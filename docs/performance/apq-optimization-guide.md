@@ -328,10 +328,12 @@ Cached responses have no TTL: one stays in the backend until the backend is
 cleared or the process stops. (`apq_response_cache_ttl` is a `FraiseQLConfig` field,
 but nothing reads it.)
 
-> **Note:** in 1.31 the `/graphql` route returns the Rust-built response before it
-> reaches the step that stores it, so with `apq_cache_responses=True` the response
-> cache stays empty and every hash-only request is executed. The persisted-query
-> (hash → query text) cache is unaffected.
+A response is cached when an APQ request runs a query (never a mutation or a
+subscription) without errors, whichever execution path built it. The key is the
+query's hash, its variables and the tenant (`tenant_id` in the request context); it
+does not include the user, so a cached response is served to every user of that
+tenant who sends the same hash and variables. Use it only for data that is the same for
+all of them.
 
 ### Storage Backend Options
 
