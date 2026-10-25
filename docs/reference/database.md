@@ -344,6 +344,63 @@ List queries also get `limit` and `offset` GraphQL arguments automatically (see
 so `db.find("v_user")` in a resolver that doesn't declare them already pages as
 the client asks.
 
+### paginate()
+
+Cursor pagination, Relay style: `first`/`after` page forward, `last`/`before` page
+back. `@fraiseql.connection` calls it for you; call it yourself to page a view in
+your own resolver.
+
+**Signature**:
+
+```python
+async def paginate(
+    view_name: str,
+    *,
+    first: int | None = None,
+    after: str | None = None,
+    last: int | None = None,
+    before: str | None = None,
+    filters: Any = None,
+    order_by: str = "id",
+    order_direction: str = "ASC",
+    include_total: bool = True,
+    info: Any = None,
+    **kwargs: Any,
+) -> dict[str, Any]
+```
+
+**Parameters**:
+
+| Parameter | Description |
+|-----------|-------------|
+| `first` / `after` | Rows after the `after` cursor (20 when neither `first` nor `last` is given) |
+| `last` / `before` | Rows before the `before` cursor. `first` and `last` can't both be given |
+| `filters` | A `where` filter (a dict or a WhereInput), for the page and the total |
+| `order_by` | The field rows are ordered by and cursors are made from; its values must be unique |
+| `order_direction` | `"ASC"` or `"DESC"` |
+| `include_total` | Count the rows `filters` matches (one `count()` query) |
+| `info` | GraphQL resolve info, passed to `find()` |
+| `**kwargs` | Passed to `find()` and `count()`, e.g. `mandatory_filters` |
+
+**Returns**: `{"edges": [{"node": row, "cursor": str}], "page_info": {...},
+"total_count": int | None}`. `page_info` has `has_next_page`, `has_previous_page`,
+`start_cursor`, `end_cursor` and `total_count`; each row is keyed as GraphQL answers
+it (camelCase). `create_connection(result, NodeType)` (from
+`fraiseql.types.generic`) turns the result into a typed `Connection`.
+
+```python
+page = await db.paginate(
+    "v_user",
+    first=20,
+    after=cursor,  # end_cursor of the previous page, or None
+    filters={"is_active": {"eq": True}},
+    order_by="id",
+)
+next_cursor = page["page_info"]["end_cursor"]
+```
+
+Cursors are opaque: base64 JSON of the row's `order_by` value.
+
 ## Mutation Patterns
 
 FraiseQL follows the CQRS (Command Query Responsibility Segregation) pattern. Mutations are handled by PostgreSQL functions, not direct repository methods.

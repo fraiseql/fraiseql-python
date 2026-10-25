@@ -176,8 +176,8 @@ import fraiseql
 | max_page_size | int | 100 | No | Maximum allowed page size |
 | include_total_count | bool | True | No | Include total count in results |
 | cursor_field | str | "id" | No | Field to use for cursor ordering |
-| jsonb_extraction | bool \| None | None | No | Enable JSONB field extraction (inherits from global config) |
-| jsonb_column | str \| None | None | No | JSONB column name (inherits from global config) |
+| jsonb_extraction | bool \| None | None | No | No effect: recorded in `__fraiseql_connection__` only; rows are read as `db.find` reads them |
+| jsonb_column | str \| None | None | No | No effect: recorded only; the JSONB column is the one registered for the view |
 
 **Must be used with**: @fraiseql.query decorator
 

@@ -538,8 +538,8 @@ async def query_name(
 | max_page_size | int | 100 | Maximum allowed page size |
 | include_total_count | bool | True | Include total count in results |
 | cursor_field | str | "id" | Field to use for cursor ordering |
-| jsonb_extraction | bool \| None | None | Enable JSONB field extraction (inherits from global config if None) |
-| jsonb_column | str \| None | None | JSONB column name (inherits from global config if None) |
+| jsonb_extraction | bool \| None | None | No effect: recorded in `__fraiseql_connection__` only; rows are read as `db.find` reads them |
+| jsonb_column | str \| None | None | No effect: recorded only; the JSONB column is the one registered for the view |
 
 **Returns**: Connection[T] with edges, page_info, and total_count
 
@@ -577,8 +577,6 @@ import fraiseql
     default_page_size=25,
     max_page_size=50,
     cursor_field="created_at",
-    jsonb_extraction=True,
-    jsonb_column="data"
 )
 @fraiseql.query
 async def posts_connection(
@@ -635,7 +633,7 @@ query {
 
 - Functions must be async and take 'info' as first parameter
 - The decorator handles all pagination logic automatically
-- Uses existing repository.paginate() method
+- Pages with the repository's `paginate()` (`find` for the page, `count` for the total; see [Database API](../reference/database.md#paginate))
 - Returns properly typed Connection[T] objects
 - Supports all Relay connection specification features
 - View name is inferred from function name (e.g., users_connection → v_users)
