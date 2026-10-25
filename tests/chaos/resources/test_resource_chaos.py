@@ -172,22 +172,25 @@ class TestResourceChaos(ChaosTestCase):
         io_times = []
         io_contention_events = 0
 
-        for _i in range(io_operations):
+        # DETERMINISTIC SCHEDULE: 25% of the operations contended, in an order
+        # shuffled with a fixed seed (an unseeded random.random() drew none about
+        # 1 run in 300)
+        contended = [True] * (io_operations // 4) + [False] * (io_operations - io_operations // 4)
+        random.Random("disk_io_contention").shuffle(contended)
+
+        for i, is_contended in enumerate(contended):
             # Simulate I/O operation with potential contention
-            base_io_time = 0.015  # 15ms base I/O time
+            base_io_ms = 15.0  # 15ms base I/O time
 
-            # Simulate contention (random I/O delays)
-            if random.random() < 0.25:  # 25% chance of I/O contention
+            # Simulate contention (I/O delays)
+            if is_contended:  # 25% of operations see I/O contention
                 io_contention_events += 1
-                contention_delay = random.uniform(0.050, 0.150)  # 50-150ms additional delay
-                base_io_time += contention_delay
+                base_io_ms += 50.0 + (i * 37) % 100  # 50-150ms additional delay
 
-            time.time()
-            time.sleep(base_io_time)
-
-            # Execute write operation
+            # Execute write operation: the simulated I/O time plus the client's
+            # (was slept, and the client's time alone recorded)
             result = client.execute_query(operation)
-            execution_time = result.get("_execution_time_ms", base_io_time * 1000)
+            execution_time = base_io_ms + result["_execution_time_ms"]
             io_times.append(execution_time)
             self.metrics.record_query_time(execution_time)
 
