@@ -1,6 +1,6 @@
 # FraiseQL Operational Runbooks
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Status**: Production-Ready
 
 ---
@@ -35,10 +35,10 @@ This directory contains operational runbooks for diagnosing and resolving common
 **Key Metrics**:
 
 ```promql
-# Query duration
-fraiseql_db_query_duration_seconds
+# Request latency, p95
+histogram_quantile(0.95, sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket[5m])))
 
-# Connection pool utilization
+# Pool use (only if the app feeds the pool gauges, see Metrics below)
 fraiseql_db_connections_active / fraiseql_db_connections_total
 ```
 
@@ -65,11 +65,11 @@ fraiseql_db_connections_active / fraiseql_db_connections_total
 **Key Metrics**:
 
 ```promql
-# Memory usage percentage
-(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100
+# Resident memory (only if the app registers a ProcessCollector, see Metrics below)
+process_resident_memory_bytes
 
 # Memory growth rate
-rate(process_resident_memory_bytes[10m])
+deriv(process_resident_memory_bytes[10m])
 ```
 
 **Quick Actions**:
@@ -126,11 +126,10 @@ sum by (endpoint) (rate(fraiseql_http_requests_total{status="429"}[5m]))
 **Key Metrics**:
 
 ```promql
-# Auth failure rate
-rate(fraiseql_auth_failures_total[5m])
+# Rejected requests (FraiseQL has no auth metric; count the 401s)
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 
-# Failures by reason
-sum by (failure_reason) (rate(fraiseql_auth_failures_total[5m]))
+# Failure reasons: from the "auth.*" security log entries
 ```
 
 **Quick Actions**:
@@ -158,11 +157,12 @@ sum by (failure_reason) (rate(fraiseql_auth_failures_total[5m]))
 **Key Metrics**:
 
 ```promql
-# Query duration spike
-avg(rate(fraiseql_graphql_query_duration_seconds_sum[5m]))
+# Average request duration on /graphql
+sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+  / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m]))
 
-# Query complexity violations
-rate(fraiseql_graphql_query_complexity_exceeded_total[5m])
+# Rejected queries: from the "query.depth_exceeded" / "query.complexity_exceeded"
+# security log entries (there is no metric for them)
 ```
 
 **Quick Actions**:
@@ -189,60 +189,89 @@ rate(fraiseql_graphql_query_complexity_exceeded_total[5m])
 
 | Symptom | Likely Runbook | Quick Check |
 |---------|---------------|-------------|
-| Queries timing out | [Database Performance](./database-performance-degradation.md) | Check `fraiseql_db_query_duration_seconds` |
+| Queries timing out | [Database Performance](./database-performance-degradation.md) | Check `fraiseql_http_request_duration_seconds`, `pg_stat_activity` |
 | 429 errors | [Rate Limiting](./rate-limiting-triggered.md) | Check `fraiseql_http_requests_total{status="429"}` |
-| 401/403 errors | [Authentication](./authentication-failures.md) | Check `fraiseql_auth_failures_total` |
-| OOMKilled | [Memory Usage](./high-memory-usage.md) | Check `process_resident_memory_bytes` |
-| CPU spike | [GraphQL DoS](./graphql-query-dos.md) | Check `fraiseql_graphql_query_duration_seconds` |
+| 401/403 errors | [Authentication](./authentication-failures.md) | Check `fraiseql_http_requests_total{status="401"}` |
+| OOMKilled | [Memory Usage](./high-memory-usage.md) | Check the container's memory metrics |
+| CPU spike | [GraphQL DoS](./graphql-query-dos.md) | Check `fraiseql_http_request_duration_seconds{endpoint="/graphql"}` |
 
 ### Metrics Quick Reference
 
-**Core Health Metrics**:
+These are the Prometheus metrics FraiseQL has; the queries in every runbook use
+only them. `create_fraiseql_app` doesn't turn them on: call `setup_metrics(app)`
+(it needs `prometheus_client`), which adds `MetricsMiddleware` and a `GET /metrics`
+endpoint.
+
+```python
+from fraiseql.fastapi import create_fraiseql_app
+from fraiseql.monitoring import setup_metrics
+
+app = create_fraiseql_app(database_url="postgresql://localhost/mydb", types=[User], queries=[users])
+metrics = setup_metrics(app)
+```
+
+**Recorded on every request** (except `/metrics`, `/health`, `/ready`, `/startup`):
+
+| Metric | Type | Labels |
+|--------|------|--------|
+| `fraiseql_http_requests_total` | counter | `method`, `endpoint` (the path), `status` |
+| `fraiseql_http_request_duration_seconds` | histogram | `method`, `endpoint` |
+| `fraiseql_response_time_seconds` | histogram | none |
+| `fraiseql_errors_total` | counter | `error_type`, `error_code`, `operation`: an exception that escaped the app (`error_code="HTTP_ERROR"`, counted as status `500`) |
+
+A GraphQL error in the response body (a failed resolver, a query over the depth
+or complexity limit) doesn't change the HTTP status, so it shows up in none of
+these.
+
+**Recorded only when your code records them** (nothing in FraiseQL does):
+
+| Metric | How it gets values |
+|--------|--------------------|
+| `fraiseql_graphql_queries_total`, `fraiseql_graphql_queries_success_total`, `fraiseql_graphql_queries_errors_total`, `fraiseql_graphql_query_duration_seconds` | functions decorated with `@with_metrics("query")` or `@with_metrics("mutation")` (labels `operation_type`, `operation_name` = the function name), or `metrics.record_query(...)` |
+| `fraiseql_db_connections_active`, `_idle`, `_total` | `metrics.update_db_connections(active, idle, total)`; they read 0 otherwise |
+| `fraiseql_db_queries_total`, `fraiseql_db_query_duration_seconds` | `metrics.record_db_query(...)` |
+| `fraiseql_graphql_mutations_total`, `fraiseql_graphql_mutations_success_total`, `fraiseql_graphql_mutations_errors_total`, `fraiseql_graphql_mutation_duration_seconds` | `metrics.record_mutation(...)` |
+| `fraiseql_cache_hits_total`, `fraiseql_cache_misses_total` | `metrics.record_cache_hit(...)` / `record_cache_miss(...)` |
+
+To feed the pool gauges, sample the app's psycopg pool (`get_db_pool()` from
+`fraiseql.fastapi.dependencies`, once the app has started) from a background task:
+
+```python
+import asyncio
+
+
+async def report_pool(pool, metrics) -> None:
+    while True:
+        stats = pool.get_stats()
+        size, idle = stats.get("pool_size", 0), stats.get("pool_available", 0)
+        metrics.update_db_connections(active=size - idle, idle=idle, total=size)
+        await asyncio.sleep(15)
+```
+
+**Not exported**: there are no metrics for authentication, rate limiting, query
+complexity or memory. `/metrics` serves FraiseQL's own registry, without the
+`process_*` metrics of `prometheus_client`'s default registry; add them with
+`ProcessCollector(registry=metrics.registry)` (from `prometheus_client`), or use
+your platform's container metrics. Database metrics come from PostgreSQL itself
+(`pg_stat_activity`, `pg_stat_statements`) or an exporter of your own.
+
+**Core health queries**:
 
 ```promql
-# Overall request rate
-rate(fraiseql_http_requests_total[5m])
+# Request rate
+sum(rate(fraiseql_http_requests_total[5m]))
 
-# Error rate
-rate(fraiseql_errors_total[5m])
+# 5xx rate
+sum(rate(fraiseql_http_requests_total{status=~"5.."}[5m]))
+
+# Unhandled exceptions, by type
+sum by (error_type) (rate(fraiseql_errors_total[5m]))
 
 # Response time p95
-histogram_quantile(0.95, rate(fraiseql_response_time_seconds_bucket[5m]))
-```
+histogram_quantile(0.95, sum by (le) (rate(fraiseql_response_time_seconds_bucket[5m])))
 
-**Database Metrics**:
-
-```promql
-# Query duration
-fraiseql_db_query_duration_seconds
-
-# Connection pool
-fraiseql_db_connections_active
-fraiseql_db_connections_idle
-fraiseql_db_connections_total
-```
-
-**Security Metrics**:
-
-```promql
-# Auth failures
-rate(fraiseql_auth_failures_total[5m])
-
-# Rate-limited requests
-sum(rate(fraiseql_http_requests_total{status="429"}[5m]))
-```
-
-**Performance Metrics**:
-
-```promql
-# Memory usage
-process_resident_memory_bytes
-
-# CPU usage
-rate(process_cpu_seconds_total[5m])
-
-# GraphQL query duration
-fraiseql_graphql_query_duration_seconds
+# Rejected requests: 401 (authentication), 429 (rate limiting)
+sum by (status) (rate(fraiseql_http_requests_total{status=~"401|429"}[5m]))
 ```
 
 ---
@@ -252,8 +281,7 @@ fraiseql_graphql_query_duration_seconds
 ### Step 1: Identify the Incident (2 minutes)
 
 1. **Check Monitoring Dashboards**:
-   - Grafana: http://grafana.example.com/d/fraiseql
-   - Prometheus: http://prometheus.example.com
+   - Your Prometheus (and the Grafana panels you built on the metrics above)
 
 2. **Check Alert Notifications**:
    - PagerDuty/Slack alerts
@@ -335,26 +363,19 @@ After incident resolution:
 
 ### Prometheus Alerts
 
-All runbooks include Prometheus alert rules. To import:
+Each runbook lists alert rules in a `groups:` block. FraiseQL ships no alert files:
+copy the rules you want into a rules file of your own, list it under `rule_files`
+in `prometheus.yml`, and reload Prometheus:
 
 ```bash
-# Copy alert files to Prometheus
-cp docs/production/runbooks/alerts/*.yml /etc/prometheus/alerts/
-
-# Reload Prometheus
-curl -X POST http://prometheus:9090/-/reload
+curl -X POST http://prometheus:9090/-/reload  # needs --web.enable-lifecycle
 ```
 
 ### Grafana Dashboards
 
-Import the FraiseQL operational dashboard:
-
-```bash
-# Import dashboard JSON
-curl -X POST http://grafana:3000/api/dashboards/db \
-  -H "Content-Type: application/json" \
-  -d @docs/production/runbooks/grafana/fraiseql-ops.json
-```
+There is no FraiseQL operational dashboard to import. Build panels from the
+queries in each runbook's "Grafana Dashboard Panels" section, with your Prometheus
+as the data source.
 
 ### Structured Logging
 
@@ -393,12 +414,17 @@ Query logs with `jq`:
 # Find errors
 jq -r 'select(.level == "ERROR")' /var/log/fraiseql/app.log
 
-# Find specific events
-jq -r 'select(.event == "database.slow_query")' /var/log/fraiseql/app.log
-
-# Count events by type
-jq -r '.event' /var/log/fraiseql/app.log | sort | uniq -c | sort -rn
+# Security events: the message is the event as JSON
+jq -r 'select(.logger == "fraiseql.security") | .event | fromjson | .event_type' \
+  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn
 ```
+
+The security events FraiseQL logs are `auth.success`, `auth.failure`,
+`auth.token_expired`, `auth.token_invalid` (from `Auth0Provider`),
+`rate_limit.exceeded`, `query.depth_exceeded`, `query.complexity_exceeded` and
+`query.timeout`. The `fraiseql.security` logger also writes them to
+`security_events.log` in the working directory (`FRAISEQL_SECURITY_LOG_PATH`) and
+to stderr, as `<time> - fraiseql.security - <LEVEL> - <event JSON>` lines.
 
 ---
 
@@ -496,6 +522,6 @@ Have suggestions for improving these runbooks?
 
 **Runbooks Status**: ✅ Production-Ready
 **Coverage**: 5 critical scenarios
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Total Documentation**: ~4,000 lines
 **MTTR Targets**: 10-20 minutes

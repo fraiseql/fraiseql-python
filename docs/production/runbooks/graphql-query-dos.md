@@ -1,6 +1,6 @@
 # GraphQL Query DoS Runbook
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Severity**: CRITICAL
 **MTTR Target**: 10 minutes
 
@@ -25,76 +25,54 @@ This runbook guides you through detecting, mitigating, and preventing GraphQL qu
 
 ### Prometheus Metrics to Monitor
 
+FraiseQL has no query complexity or timeout metric. With the metrics middleware
+installed (`setup_metrics(app)`, see [Metrics](./README.md#metrics-quick-reference)),
+watch the latency and the error statuses of the GraphQL endpoint:
+
 ```promql
-# Query execution time spike
-avg(rate(fraiseql_graphql_query_duration_seconds_sum[5m])
-    / rate(fraiseql_graphql_query_duration_seconds_count[5m])) > 10
+# Average request duration on /graphql, in seconds
+sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+  / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m])) > 10
 
-# High query timeout rate
-rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m]) > 1
+# p99 request duration on /graphql
+histogram_quantile(0.99,
+  sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{endpoint="/graphql"}[5m]))
+)
 
-# Database CPU usage
-rate(pg_stat_database_blks_read[5m]) > 1000
-
-# Expensive query patterns (deep nesting, large limits)
-fraiseql_graphql_query_complexity_total > 1000
+# 5xx on /graphql
+sum(rate(fraiseql_http_requests_total{endpoint="/graphql", status=~"5.."}[5m]))
 ```
 
-### Structured Logs Examples
+A query rejected for its depth or complexity, or one PostgreSQL cancels, comes back
+as a GraphQL error in an HTTP 200 response, so it doesn't show in these: use the logs.
+
+### Log Entries
+
+With `max_query_depth` or `complexity_max_score` set, each rejected query is logged
+on the `fraiseql.security` logger at `WARNING`, as a JSON security event (`metadata`
+holds the measured depth or score, the limit, and the start of the query):
 
 ```json
 {
-  "timestamp": "2025-12-29T13:45:10.123Z",
-  "level": "WARNING",
-  "event": "graphql.expensive_query",
-  "message": "Query complexity exceeds threshold",
-  "context": {
-    "user_id": "user_attack",
-    "ip_address": "192.0.2.50",
-    "query_complexity": 1500,
-    "max_complexity": 1000,
-    "query_depth": 8,
-    "max_depth": 5,
-    "query_hash": "abc123def456"
-  },
-  "trace_id": "trace_dos123"
+  "event_type": "query.complexity_exceeded",
+  "severity": "warning",
+  "timestamp": "2026-10-25T13:45:10.123456+00:00",
+  "user_id": null,
+  "user_email": null,
+  "ip_address": null,
+  "user_agent": null,
+  "request_id": null,
+  "resource": null,
+  "action": null,
+  "result": null,
+  "reason": null,
+  "metadata": {"complexity": 1500, "limit": 1000, "query": "{ users { posts { comments { id } } } }"}
 }
 ```
 
-```json
-{
-  "timestamp": "2025-12-29T13:45:15.456Z",
-  "level": "ERROR",
-  "event": "database.query_timeout",
-  "message": "Query exceeded timeout limit",
-  "context": {
-    "user_id": "user_attack",
-    "query_duration_ms": 30000,
-    "timeout_ms": 30000,
-    "query_type": "SELECT",
-    "table_name": "users",
-    "rows_examined": 1000000
-  },
-  "trace_id": "trace_dos456"
-}
-```
-
-```json
-{
-  "timestamp": "2025-12-29T13:45:20.789Z",
-  "level": "CRITICAL",
-  "event": "security.dos_detected",
-  "message": "Potential DoS attack detected",
-  "context": {
-    "user_id": "user_attack",
-    "ip_address": "192.0.2.50",
-    "expensive_queries_count": 10,
-    "time_window_seconds": 60,
-    "action": "automatic_block"
-  },
-  "trace_id": "trace_dos789"
-}
-```
+`query.depth_exceeded` has `"depth"` in place of `"complexity"`. A statement that
+`query_timeout` cancels in `db.run()` is logged at `ERROR` as `query.timeout`, with
+the request's `user_id` and `metadata.error`.
 
 ---
 
@@ -102,39 +80,39 @@ fraiseql_graphql_query_complexity_total > 1000
 
 ### Step 1: Identify Attack Pattern
 
-**Via Prometheus - Query Complexity**:
+**Via Prometheus**:
 
 ```promql
-# Top users by query complexity
-topk(10,
-  sum by (user_id) (fraiseql_graphql_query_complexity_total)
+# Which paths are slow
+topk(5,
+  sum by (endpoint) (rate(fraiseql_http_request_duration_seconds_sum[5m]))
 )
 
-# Queries with deep nesting
-count(fraiseql_graphql_query_depth > 5)
-
-# Large result set requests
-count(fraiseql_graphql_query_limit > 1000)
+# Request rate on /graphql
+sum(rate(fraiseql_http_requests_total{endpoint="/graphql"}[5m]))
 ```
 
-**Via Structured Logs**:
+The metrics have no user or query label. If your resolvers are decorated with
+`@with_metrics("query")`, `fraiseql_graphql_query_duration_seconds` has one series
+per resolver (`operation_name`), which names the slow one.
+
+**Via the security log** (`security_events.log`, or wherever your handler writes
+the `fraiseql.security` logger):
 
 ```bash
-# Find expensive queries in last 10 minutes
-jq -r 'select(.event == "graphql.expensive_query") |
-  "\(.timestamp) \(.context.user_id) complexity=\(.context.query_complexity) depth=\(.context.query_depth)"' \
-  /var/log/fraiseql/app.log | tail -50
+# Rejected queries, by kind
+grep -oE '"event_type": "query\.(depth|complexity)_exceeded"' security_events.log \
+  | sort | uniq -c
 
-# Find query timeouts
-jq -r 'select(.event == "database.query_timeout") |
-  "\(.timestamp) \(.context.user_id) \(.context.query_duration_ms)ms"' \
-  /var/log/fraiseql/app.log | tail -50
+# The rejected queries themselves (first 200 characters), most frequent first
+grep -E '"query\.(depth|complexity)_exceeded"' security_events.log \
+  | grep -o '"query": "[^"]*"' | sort | uniq -c | sort -rn | head -10
 
-# Identify attack source
-jq -r 'select(.event == "graphql.expensive_query") |
-  .context.user_id + " " + .context.ip_address' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn | head -10
+# Statements cancelled by the timeout
+grep '"query.timeout"' security_events.log | tail -20
 ```
+
+For the source address, use your access logs (proxy, load balancer, uvicorn).
 
 ### Step 2: Analyze Query Patterns
 
@@ -198,14 +176,10 @@ query {
 }
 ```
 
-**Extract Query from Logs**:
-
-```bash
-# Get actual query that caused issue
-jq -r 'select(.event == "graphql.expensive_query" and .context.user_id == "user_attack") |
-  .context.query // .context.query_hash' \
-  /var/log/fraiseql/app.log | head -1
-```
+**Extract Query from Logs**: a rejected query's first 200 characters are in its
+security event (`metadata.query`, see Step 1). FraiseQL doesn't log the text of the
+queries it runs; PostgreSQL has the SQL they became (`pg_stat_activity` below,
+`log_min_duration_statement`).
 
 ### Step 3: Check System Resources
 
@@ -234,16 +208,16 @@ FROM pg_stat_database
 WHERE datname = current_database();
 ```
 
-**Application Resources**:
+**Application Resources**: CPU and memory come from your platform's container
+metrics, or from `process_*` metrics if the app registers a `ProcessCollector`; the
+pool gauges only if the app feeds them (see [Metrics](./README.md#metrics-quick-reference)):
 
 ```promql
-# CPU usage
+# CPU and memory (ProcessCollector registered)
 rate(process_cpu_seconds_total[5m])
-
-# Memory usage
 process_resident_memory_bytes
 
-# Active connections
+# Pool in use (update_db_connections fed)
 fraiseql_db_connections_active
 ```
 
@@ -267,12 +241,12 @@ fraiseql_db_connections_active
 # Check if recent deployment
 git log --since="1 hour ago" --oneline
 
-# Check if queries match known frontend patterns
-jq -r 'select(.event == "graphql.expensive_query") | .context.query_hash' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn
+# Do the rejected queries match known frontend queries?
+grep -E '"query\.(depth|complexity)_exceeded"' security_events.log \
+  | grep -o '"query": "[^"]*"' | sort | uniq -c | sort -rn
 
-# High count of same query_hash = likely misconfiguration
-# Many different query_hashes = likely attack
+# High count of one query = likely misconfiguration
+# Many different queries = likely attack
 ```
 
 ---
@@ -560,83 +534,59 @@ groups:
   - name: graphql_dos
     interval: 30s
     rules:
-      - alert: GraphQLQueryDurationSpike
+      - alert: GraphQLRequestDurationSpike
         expr: |
-          avg(rate(fraiseql_graphql_query_duration_seconds_sum[5m])
-              / rate(fraiseql_graphql_query_duration_seconds_count[5m])) > 10
+          sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+          / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m])) > 10
         for: 3m
         labels:
           severity: critical
         annotations:
-          summary: "GraphQL query duration spike (avg > 10s)"
-          description: "Average query time: {{ $value }}s"
+          summary: "GraphQL request duration spike (avg > 10s)"
+          description: "Average request time: {{ $value }}s"
 
-      - alert: GraphQLQueryTimeouts
+      - alert: GraphQLServerErrors
         expr: |
-          rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m]) > 1
+          sum(rate(fraiseql_http_requests_total{endpoint="/graphql", status=~"5.."}[5m])) > 1
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "High GraphQL query timeout rate"
-          description: "{{ $value }} timeouts/sec"
-
-      - alert: GraphQLComplexityViolations
-        expr: |
-          rate(fraiseql_graphql_query_complexity_exceeded_total[5m]) > 1
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Queries exceeding complexity limits"
-          description: "{{ $value }} complex queries/sec"
-
-      - alert: GraphQLDoSDetected
-        expr: |
-          sum by (user_id) (
-            rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m])
-          ) > 5
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Potential GraphQL DoS from user {{ $labels.user_id }}"
-          description: "{{ $value }} timeouts/sec from single user"
+          summary: "GraphQL endpoint answering with 5xx"
+          description: "{{ $value }} errors/sec"
 ```
+
+Rejected and cancelled queries have no metric: alert on the `query.depth_exceeded`,
+`query.complexity_exceeded` and `query.timeout` security events in your log stack
+(Loki, ELK).
 
 ### Grafana Dashboard Panels
 
-**1. Query Duration Histogram**:
+**1. GraphQL Request Duration (p95)**:
 
 ```promql
 histogram_quantile(0.95,
-  rate(fraiseql_graphql_query_duration_seconds_bucket[5m])
+  sum by (le) (rate(fraiseql_http_request_duration_seconds_bucket{endpoint="/graphql"}[5m]))
 )
 ```
 
-**2. Query Complexity Distribution**:
+**2. GraphQL Request Rate**:
 
 ```promql
-histogram_quantile(0.95,
-  rate(fraiseql_graphql_query_complexity_bucket[5m])
-)
+sum(rate(fraiseql_http_requests_total{endpoint="/graphql"}[5m]))
 ```
 
-**3. Top Expensive Queries (by user)**:
+**3. Slowest Resolvers** (resolvers decorated with `@with_metrics("query")`):
 
 ```promql
 topk(10,
-  sum by (user_id) (
-    rate(fraiseql_graphql_query_duration_seconds_sum[5m])
-  )
+  sum by (operation_name) (rate(fraiseql_graphql_query_duration_seconds_sum[5m]))
+  / sum by (operation_name) (rate(fraiseql_graphql_query_duration_seconds_count[5m]))
 )
 ```
 
-**4. Timeout Rate**:
-
-```promql
-rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m])
-```
+**4. Rejected Queries** (log panel): the `query.depth_exceeded` and
+`query.complexity_exceeded` security events over time.
 
 ---
 
@@ -644,19 +594,19 @@ rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m])
 
 After applying mitigations, verify the attack is stopped:
 
-### 1. Check Query Duration
+### 1. Check Request Duration
 
 ```promql
 # Should return to normal (< 1s)
-avg(rate(fraiseql_graphql_query_duration_seconds_sum[5m])
-    / rate(fraiseql_graphql_query_duration_seconds_count[5m]))
+sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+  / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m]))
 ```
 
-### 2. Check Timeout Rate
+### 2. Check Cancelled Statements
 
-```promql
-# Should drop to near zero
-rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m])
+```bash
+# Should stop growing
+grep -c '"query.timeout"' security_events.log
 ```
 
 ### 3. Verify Blocked User
@@ -674,11 +624,10 @@ curl -X POST http://localhost:8000/graphql \
 ### 4. Check Logs
 
 ```bash
-# Verify no recent expensive queries
-jq -r 'select(.event == "graphql.expensive_query")' \
-  /var/log/fraiseql/app.log | tail -10
+# Rejected queries in the last entries
+grep -E '"query\.(depth|complexity)_exceeded"' security_events.log | tail -10
 
-# Should see no recent events
+# Should see no recent events from the attack's queries
 ```
 
 ---
@@ -700,9 +649,9 @@ After resolving the incident:
    - Operation allowlisting with an authorizer (if feasible)
 
 3. **Update Monitoring**:
-   - Add alerts for complexity violations
+   - Alert on the `query.complexity_exceeded` / `query.depth_exceeded` log events
    - Monitor query patterns
-   - Track query costs by user
+   - Decorate expensive resolvers with `@with_metrics("query")` to time them
 
 4. **Security Improvements**:
    - Review authentication

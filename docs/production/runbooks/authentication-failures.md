@@ -1,6 +1,6 @@
 # Authentication Failures Runbook
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Severity**: HIGH
 **MTTR Target**: 15 minutes
 
@@ -24,78 +24,55 @@ This runbook guides you through diagnosing and resolving authentication failures
 
 ### Prometheus Metrics to Monitor
 
+FraiseQL has no authentication metric. With the metrics middleware installed
+(`setup_metrics(app)`, see [Metrics](./README.md#metrics-quick-reference)), a
+request rejected for a missing or invalid token is counted with status `401`:
+
 ```promql
-# Authentication failure rate
-rate(fraiseql_auth_failures_total[5m])
+# Rejected requests per second
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 
-# Failed logins by reason
-sum by (failure_reason) (
-  rate(fraiseql_auth_failures_total[5m])
-)
+# Percentage of requests rejected
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
+  / sum(rate(fraiseql_http_requests_total[5m])) * 100
 
-# Percentage of failed auth requests
-(rate(fraiseql_auth_failures_total[5m])
-/ rate(fraiseql_http_requests_total[5m])) * 100
-
-# Failed attempts by user (brute force indicator)
-topk(10,
-  sum by (user_id) (fraiseql_auth_failures_total)
-)
+# 403s (permission checks that answer with HTTP 403)
+sum(rate(fraiseql_http_requests_total{status="403"}[5m]))
 ```
 
-### Structured Logs Examples
+The metric has no user, IP or reason label; use the logs for those.
+
+### Log Entries
+
+`Auth0Provider` logs each token it rejects on the `fraiseql.security` logger at
+`WARNING`, as a JSON security event:
 
 ```json
 {
-  "timestamp": "2025-12-29T14:20:35.123Z",
-  "level": "WARNING",
-  "event": "security.auth_failure",
-  "message": "Authentication failed - invalid token",
-  "context": {
-    "user_id": null,
-    "ip_address": "198.51.100.75",
-    "failure_reason": "invalid_token",
-    "token_prefix": "eyJhbG...",
-    "endpoint": "/graphql",
-    "user_agent": "Mozilla/5.0"
-  },
-  "trace_id": "trace_auth123"
+  "event_type": "auth.token_expired",
+  "severity": "warning",
+  "timestamp": "2026-10-25T14:22:05.789012+00:00",
+  "user_id": null,
+  "user_email": null,
+  "ip_address": null,
+  "user_agent": null,
+  "request_id": null,
+  "resource": null,
+  "action": null,
+  "result": null,
+  "reason": "Token has expired",
+  "metadata": {}
 }
 ```
 
-```json
-{
-  "timestamp": "2025-12-29T14:21:10.456Z",
-  "level": "ERROR",
-  "event": "security.brute_force_detected",
-  "message": "Possible brute force attack detected",
-  "context": {
-    "user_id": "user_target",
-    "ip_address": "203.0.113.88",
-    "failed_attempts": 15,
-    "time_window_seconds": 300,
-    "action": "account_locked"
-  },
-  "trace_id": "trace_brute456"
-}
-```
+The other event types are `auth.token_invalid` (`reason` is `"Invalid token: ..."`,
+e.g. a bad signature, audience or issuer), `auth.failure` (any other validation
+error; `metadata.error_type` names it) and `auth.success` (`user_id` is the token's
+`sub`). The events have no IP address. A provider of your own logs only what it
+logs itself.
 
-```json
-{
-  "timestamp": "2025-12-29T14:22:05.789Z",
-  "level": "WARNING",
-  "event": "security.token_expired",
-  "message": "Token expired",
-  "context": {
-    "user_id": "user_123",
-    "ip_address": "192.0.2.100",
-    "token_issued_at": "2025-12-29T12:22:05Z",
-    "token_expires_at": "2025-12-29T14:22:05Z",
-    "current_time": "2025-12-29T14:22:05Z"
-  },
-  "trace_id": "trace_expired789"
-}
-```
+With an auth provider, a GraphQL request without a valid token gets a 401
+`{"detail": "Authentication required"}`.
 
 ---
 
@@ -103,74 +80,45 @@ topk(10,
 
 ### Step 1: Classify Authentication Failures
 
-**Via Prometheus - Failure Reasons**:
-
-```promql
-# Group failures by reason
-sum by (failure_reason) (
-  rate(fraiseql_auth_failures_total[5m])
-)
-```
-
-**Via Structured Logs**:
-
-```bash
-# Count failures by reason
-jq -r 'select(.event == "security.auth_failure") |
-  .context.failure_reason' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn
-
-# Example output:
-#  450 invalid_token
-#  120 token_expired
-#   45 missing_token
-#   30 invalid_signature
-#   15 user_not_found
-```
-
-**Common Failure Reasons**:
-
-- `invalid_token`: Malformed or tampered token
-- `token_expired`: Valid token but expired
-- `invalid_signature`: Token signature mismatch
-- `missing_token`: No auth header provided
-- `user_not_found`: Valid token but user doesn't exist
-- `user_disabled`: User account disabled
-- `insufficient_permissions`: Valid auth but lacks permissions (403)
-
-### Step 2: Identify Affected Users
-
 **Via Prometheus**:
 
 ```promql
-# Top users with auth failures
-topk(10,
-  sum by (user_id) (fraiseql_auth_failures_total)
-)
-
-# Failures by IP address
-topk(10,
-  sum by (ip_address) (fraiseql_auth_failures_total)
-)
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 ```
 
-**Via Structured Logs**:
+**Via the security log** (`security_events.log`, or wherever your handler writes
+the `fraiseql.security` logger):
 
 ```bash
-# Failures by user
-jq -r 'select(.event == "security.auth_failure") |
-  .context.user_id // "anonymous"' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn | head -20
+# Count rejections by event type
+grep -o '"event_type": "auth\.[a-z_]*"' security_events.log | sort | uniq -c | sort -rn
 
-# Failures by IP
-jq -r 'select(.event == "security.auth_failure") |
-  .context.ip_address' \
-  /var/log/fraiseql/app.log | sort | uniq -c | sort -rn | head -20
+# Example output:
+#  450 "event_type": "auth.token_invalid"
+#  120 "event_type": "auth.token_expired"
+#   12 "event_type": "auth.failure"
 
-# Failures timeline
-jq -r 'select(.event == "security.auth_failure") |
-  "\(.timestamp) \(.context.failure_reason) \(.context.user_id // "anon")"' \
-  /var/log/fraiseql/app.log | tail -50
+# Reasons of the invalid tokens
+grep '"auth.token_invalid"' security_events.log | grep -o '"reason": "[^"]*"' \
+  | sort | uniq -c | sort -rn
+```
+
+**Common causes, by event**:
+
+- `auth.token_expired`: a valid token past its `exp`
+- `auth.token_invalid`: bad signature, wrong audience or issuer, malformed token
+- `auth.failure`: the JWKS couldn't be fetched, or another validation error
+- no event, but a 401: the request had no `Authorization: Bearer` header
+- 403: authenticated, but a permission or role check refused it
+
+### Step 2: Identify Affected Clients
+
+The security events have no client address. Find the clients in your access logs
+(reverse proxy, load balancer, or uvicorn's access log), which have the status:
+
+```bash
+# uvicorn access log: client addresses of the 401s
+grep '" 401' access.log | awk '{print $1}' | sort | uniq -c | sort -rn | head -20
 ```
 
 ### Step 3: Determine Root Cause Category
@@ -179,7 +127,7 @@ jq -r 'select(.event == "security.auth_failure") |
 
 **Symptoms**:
 
-- Many `token_expired` failures
+- Many `auth.token_expired` events
 - Concentrated around specific time period
 - Affects multiple users simultaneously
 
@@ -187,8 +135,7 @@ jq -r 'select(.event == "security.auth_failure") |
 
 ```bash
 # Count expired tokens
-jq -r 'select(.event == "security.token_expired")' \
-  /var/log/fraiseql/app.log | wc -l
+grep -c '"auth.token_expired"' security_events.log
 
 # Lifetime of a failing token, in seconds (exp - iat); the issuer sets it,
 # fraiseql only checks exp
@@ -205,7 +152,7 @@ echo "$TOKEN" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq '.exp - 
 
 **Symptoms**:
 
-- Many `invalid_signature` failures
+- Many `auth.token_invalid` events with `"reason": "Invalid token: Signature verification failed"`
 - Started after deployment or config change
 - All tokens failing validation
 
@@ -239,15 +186,13 @@ git log --since="24 hours ago" --grep="JWT_SECRET" --oneline
 
 **Check**:
 
-```bash
-# Detect brute force patterns
-jq -r 'select(.event == "security.auth_failure") |
-  .context.ip_address + " " + (.context.user_id // "anon") + " " + .timestamp' \
-  /var/log/fraiseql/app.log | \
-  sort | uniq | \
-  cut -d' ' -f1 | uniq -c | sort -rn | head -10
+fraiseql never sees passwords (your identity provider checks them), so a
+credential attack shows at the provider (Auth0 logs, anomaly detection). Against
+the API, it shows as many 401s from few clients:
 
-# High count from single IP = brute force
+```bash
+# 401s per client address in the access log; a high count from one address
+grep '" 401' access.log | awk '{print $1}' | sort | uniq -c | sort -rn | head -10
 ```
 
 **Likely Causes**:
@@ -506,88 +451,48 @@ groups:
   - name: authentication
     interval: 30s
     rules:
-      - alert: HighAuthFailureRate
+      - alert: HighAuthRejectionRate
         expr: |
-          rate(fraiseql_auth_failures_total[5m]) > 5
+          sum(rate(fraiseql_http_requests_total{status="401"}[5m])) > 5
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "High authentication failure rate"
-          description: "{{ $value }} auth failures/sec"
+          summary: "High rate of rejected (401) requests"
+          description: "{{ $value }} rejections/sec"
 
-      - alert: AuthenticationServiceDown
+      - alert: MostRequestsRejected
         expr: |
-          (rate(fraiseql_auth_failures_total[5m])
-          / rate(fraiseql_http_requests_total[5m])) > 0.5
+          sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
+          / sum(rate(fraiseql_http_requests_total[5m])) > 0.5
         for: 2m
         labels:
           severity: critical
         annotations:
-          summary: "50%+ of auth requests failing"
-          description: "Possible auth service outage"
-
-      - alert: BruteForceDetected
-        expr: |
-          sum by (ip_address) (
-            rate(fraiseql_auth_failures_total[5m])
-          ) > 10
-        for: 2m
-        labels:
-          severity: critical
-        annotations:
-          summary: "Brute force attack from {{ $labels.ip_address }}"
-          description: "{{ $value }} failed attempts/sec"
-
-      - alert: MassAccountLockout
-        expr: |
-          rate(fraiseql_account_lockouts_total[5m]) > 5
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Multiple accounts being locked"
-          description: "{{ $value }} accounts locked/sec - possible attack"
+          summary: "50%+ of requests rejected with 401"
+          description: "Possible identity provider outage or signing key mismatch"
 ```
+
+Alerts per client address or per reason need your log stack (Loki, ELK): count the
+`auth.*` security events, and the 401s of the access log by client.
 
 ### Grafana Dashboard Panels
 
-**1. Authentication Failure Rate**:
+**1. Rejected Requests**:
 
 ```promql
-rate(fraiseql_auth_failures_total[5m])
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 ```
 
-**2. Failures by Reason**:
+**2. Percentage of Requests Rejected**:
 
 ```promql
-sum by (failure_reason) (
-  rate(fraiseql_auth_failures_total[5m])
-)
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
+  / sum(rate(fraiseql_http_requests_total[5m])) * 100
 ```
 
-**3. Top Failing Users**:
-
-```promql
-topk(10,
-  sum by (user_id) (fraiseql_auth_failures_total)
-)
-```
-
-**4. Top Failing IPs**:
-
-```promql
-topk(10,
-  sum by (ip_address) (fraiseql_auth_failures_total)
-)
-```
-
-**5. Auth Success Rate**:
-
-```promql
-(rate(fraiseql_auth_success_total[5m])
-/ (rate(fraiseql_auth_success_total[5m]) + rate(fraiseql_auth_failures_total[5m]))) * 100
-```
+**3. Rejections by Event Type** (log panel): the `fraiseql.security` events whose
+`event_type` starts with `auth.`, grouped by `event_type`.
 
 ---
 
@@ -598,42 +503,30 @@ After applying fixes, verify authentication is working:
 ### 1. Check Metrics
 
 ```promql
-# Failure rate should decrease
-rate(fraiseql_auth_failures_total[5m])
-
-# Success rate should increase
-rate(fraiseql_auth_success_total[5m])
+# Should decrease
+sum(rate(fraiseql_http_requests_total{status="401"}[5m]))
 ```
 
 ### 2. Test Authentication
 
 ```bash
-# Test login
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username": "test", "password": "test123"}'
-
-# Should return token
-# {"access_token": "eyJ...", "token_type": "bearer"}
-
-# Test authenticated request
-curl http://localhost:8000/graphql \
+# A token from your identity provider
+curl -i http://localhost:8000/graphql \
   -H "Authorization: Bearer $TOKEN" \
-  -d '{"query": "{ users { id } }"}'
+  -H "Content-Type: application/json" \
+  -d '{"query": "{ __typename }"}'
 
-# Should return 200 OK
+# Should return 200, not 401
 ```
 
 ### 3. Check Logs
 
 ```bash
-# Verify successful authentications
-jq -r 'select(.event == "security.auth_success")' \
-  /var/log/fraiseql/app.log | tail -10
+# Successful validations (Auth0Provider)
+grep '"auth.success"' security_events.log | tail -10
 
-# Verify no ongoing failures
-jq -r 'select(.event == "security.auth_failure")' \
-  /var/log/fraiseql/app.log | tail -10
+# No ongoing rejections
+grep -E '"auth\.(failure|token_expired|token_invalid)"' security_events.log | tail -10
 ```
 
 ---

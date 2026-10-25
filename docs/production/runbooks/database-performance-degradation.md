@@ -1,6 +1,6 @@
 # Database Performance Degradation Runbook
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2026-10-25
 **Severity**: HIGH
 **MTTR Target**: 15 minutes
 
@@ -24,53 +24,51 @@ This runbook guides you through diagnosing and resolving database performance is
 
 ### Prometheus Metrics to Monitor
 
+FraiseQL doesn't time its SQL statements: `fraiseql_db_query_duration_seconds` and
+the pool gauges exist but only hold values the app records itself (see
+[Metrics](./README.md#metrics-quick-reference)). The request latency is always
+recorded once `setup_metrics(app)` is installed:
+
 ```promql
-# Query duration exceeding 5 seconds
-rate(fraiseql_db_query_duration_seconds_sum[5m])
-/ rate(fraiseql_db_query_duration_seconds_count[5m]) > 5
+# Average /graphql request over 5 seconds
+sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+  / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m])) > 5
 
-# Connection pool near capacity
+# Connection pool near capacity (the app feeds the gauges with update_db_connections)
 fraiseql_db_connections_active / fraiseql_db_connections_total > 0.8
-
-# Query timeout rate increasing
-rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m]) > 0.1
 ```
 
-### Structured Logs Examples
+### Log Entries
+
+A statement that `query_timeout` cancels in `db.run()` is logged on the
+`fraiseql.security` logger at `ERROR`, as a JSON security event:
 
 ```json
 {
-  "timestamp": "2025-12-29T10:45:23.456Z",
-  "level": "WARNING",
-  "event": "database.slow_query",
-  "message": "Query exceeded performance threshold",
-  "context": {
-    "query_duration_ms": 8500,
-    "query_type": "SELECT",
-    "table_name": "users",
-    "threshold_ms": 5000,
-    "user_id": "user_123"
-  },
-  "trace_id": "trace_abc123"
+  "event_type": "query.timeout",
+  "severity": "error",
+  "timestamp": "2026-10-25T10:45:30.123456+00:00",
+  "user_id": "user_456",
+  "user_email": null,
+  "ip_address": null,
+  "user_agent": null,
+  "request_id": null,
+  "resource": null,
+  "action": null,
+  "result": "timeout",
+  "reason": "Query execution timeout",
+  "metadata": {
+    "query_hash": null,
+    "execution_time": 30,
+    "error": "canceling statement due to statement timeout",
+    "query_type": "database_query"
+  }
 }
 ```
 
-```json
-{
-  "timestamp": "2025-12-29T10:45:30.123Z",
-  "level": "ERROR",
-  "event": "database.query_timeout",
-  "message": "Query exceeded timeout limit",
-  "context": {
-    "query_duration_ms": 30000,
-    "timeout_ms": 30000,
-    "query_type": "SELECT",
-    "table_name": "orders",
-    "user_id": "user_456"
-  },
-  "trace_id": "trace_def456"
-}
-```
+The `fraiseql.db` logger also logs the database error (`❌ Database error executing
+query`, with the traceback). FraiseQL logs nothing about slow queries that finish:
+PostgreSQL does, with `log_min_duration_statement` (below).
 
 ---
 
@@ -81,35 +79,44 @@ rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m]) > 0.1
 **Via Prometheus**:
 
 ```promql
-# Average query duration by query type
-avg by (query_type) (
-  rate(fraiseql_db_query_duration_seconds_sum[5m])
-  / rate(fraiseql_db_query_duration_seconds_count[5m])
+# p95 request duration, by path
+histogram_quantile(0.95,
+  sum by (le, endpoint) (rate(fraiseql_http_request_duration_seconds_bucket[5m]))
 )
 
-# Top 5 slowest tables
+# Slowest resolvers (those decorated with @with_metrics("query"))
 topk(5,
-  sum by (table_name) (fraiseql_db_query_duration_seconds_sum)
+  sum by (operation_name) (rate(fraiseql_graphql_query_duration_seconds_sum[5m]))
+  / sum by (operation_name) (rate(fraiseql_graphql_query_duration_seconds_count[5m]))
 )
 ```
 
-**Via Structured Logs**:
+**Via Logs**:
 
 ```bash
-# Find slow queries in last 5 minutes
-jq -r 'select(.event == "database.slow_query") |
-  "\(.timestamp) \(.context.table_name) \(.context.query_duration_ms)ms"' \
-  /var/log/fraiseql/app.log | tail -50
+# Statements cancelled by the timeout (security log)
+grep '"query.timeout"' security_events.log | tail -50
 
-# Find query timeouts
-jq -r 'select(.event == "database.query_timeout") |
-  "\(.timestamp) \(.context.table_name) \(.context.user_id)"' \
-  /var/log/fraiseql/app.log | tail -50
+# Slow statements (PostgreSQL log, with log_min_duration_statement set)
+grep 'duration:' /var/log/postgresql/postgresql.log | tail -50
+```
+
+**Via pg_stat_statements** (if the extension is installed):
+
+```sql
+SELECT
+  calls,
+  round(mean_exec_time::numeric, 1) AS mean_ms,
+  round(total_exec_time::numeric, 1) AS total_ms,
+  left(query, 100) AS query
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;
 ```
 
 ### Step 2: Check Connection Pool Status
 
-**Via Prometheus**:
+**Via Prometheus** (when the app feeds the pool gauges):
 
 ```promql
 # Active connections
@@ -177,7 +184,7 @@ LIMIT 10;
 ```sql
 SELECT
   schemaname,
-  tablename,
+  relname AS table_name,
   seq_scan,
   seq_tup_read,
   idx_scan,
@@ -450,17 +457,18 @@ groups:
   - name: database_performance
     interval: 30s
     rules:
-      - alert: DatabaseSlowQueries
+      - alert: GraphQLSlowRequests
         expr: |
-          rate(fraiseql_db_query_duration_seconds_sum[5m])
-          / rate(fraiseql_db_query_duration_seconds_count[5m]) > 5
+          sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+          / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m])) > 5
         for: 5m
         labels:
           severity: warning
         annotations:
-          summary: "Database queries are slow (> 5s average)"
-          description: "Average query duration is {{ $value }}s"
+          summary: "GraphQL requests are slow (> 5s average)"
+          description: "Average request duration is {{ $value }}s"
 
+      # Needs the pool gauges fed with update_db_connections
       - alert: DatabaseConnectionPoolExhausted
         expr: |
           fraiseql_db_connections_active / fraiseql_db_connections_total > 0.9
@@ -470,40 +478,23 @@ groups:
         annotations:
           summary: "Database connection pool is exhausted"
           description: "{{ $value | humanizePercentage }} of connections in use"
-
-      - alert: DatabaseQueryTimeouts
-        expr: |
-          rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m]) > 0.1
-        for: 3m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Database query timeouts increasing"
-          description: "{{ $value }} timeouts/sec in last 5 minutes"
-
-      - alert: DatabaseCacheHitRateLow
-        expr: |
-          (sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read))) < 0.95
-        for: 10m
-        labels:
-          severity: warning
-        annotations:
-          summary: "Database cache hit ratio is low (< 95%)"
-          description: "Cache hit ratio: {{ $value | humanizePercentage }}"
 ```
+
+Cancelled statements (`query.timeout`) have no metric: alert on the security event
+in your log stack. The buffer cache hit ratio comes from PostgreSQL
+(`pg_statio_user_tables`, query in Step 4), or from an exporter you run for it.
 
 ### Grafana Dashboard Panels
 
-**1. Query Duration by Type**:
+**1. Request Duration by Path (p95)**:
 
 ```promql
-avg by (query_type) (
-  rate(fraiseql_db_query_duration_seconds_sum[5m])
-  / rate(fraiseql_db_query_duration_seconds_count[5m])
+histogram_quantile(0.95,
+  sum by (le, endpoint) (rate(fraiseql_http_request_duration_seconds_bucket[5m]))
 )
 ```
 
-**2. Connection Pool Utilization**:
+**2. Connection Pool Utilization** (pool gauges fed):
 
 ```promql
 fraiseql_db_connections_active
@@ -511,17 +502,14 @@ fraiseql_db_connections_idle
 fraiseql_db_connections_total
 ```
 
-**3. Slow Query Rate**:
+**3. Slowest Resolvers** (resolvers decorated with `@with_metrics("query")`):
 
 ```promql
-rate(fraiseql_db_queries_total{query_duration_bucket="+Inf"}[5m])
+sum by (operation_name) (rate(fraiseql_graphql_query_duration_seconds_sum[5m]))
+  / sum by (operation_name) (rate(fraiseql_graphql_query_duration_seconds_count[5m]))
 ```
 
-**4. Query Timeout Rate**:
-
-```promql
-rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m])
-```
+**4. Cancelled Statements** (log panel): the `query.timeout` security events over time.
 
 ---
 
@@ -532,22 +520,22 @@ After applying fixes, verify performance has improved:
 ### 1. Check Metrics
 
 ```promql
-# Query duration should decrease
-avg(rate(fraiseql_db_query_duration_seconds_sum[5m])
-    / rate(fraiseql_db_query_duration_seconds_count[5m]))
+# Request duration should decrease
+sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))
+  / sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m]))
 
-# Connection pool utilization should decrease
+# Connection pool utilization should decrease (pool gauges fed)
 fraiseql_db_connections_active / fraiseql_db_connections_total
 ```
 
 ### 2. Check Logs
 
 ```bash
-# Verify no recent slow queries
-jq -r 'select(.event == "database.slow_query")' /var/log/fraiseql/app.log | tail -10
+# No recent cancelled statements
+grep '"query.timeout"' security_events.log | tail -10
 
-# Verify no timeouts
-jq -r 'select(.event == "database.query_timeout")' /var/log/fraiseql/app.log | tail -10
+# No recent slow statements (PostgreSQL log)
+grep 'duration:' /var/log/postgresql/postgresql.log | tail -10
 ```
 
 ### 3. Synthetic Test
