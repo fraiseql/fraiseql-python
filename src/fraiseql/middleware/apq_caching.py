@@ -30,19 +30,29 @@ _backend_cache: dict[str, APQStorageBackend] = {}
 def compute_response_cache_key(
     query_hash: str,
     variables: dict[str, Any] | None = None,
+    user_id: str | None = None,
 ) -> str:
-    """Compute cache key that includes query hash and variables.
+    """Compute cache key that includes query hash, variables and the user.
 
-    This ensures different variable values produce different cache entries,
-    preventing data leakage between requests.
+    This ensures different variable values, and different users, produce different
+    cache entries, preventing data leakage between requests. (The tenant is added by
+    the backend, from the request context.)
 
     Args:
         query_hash: SHA256 hash of the persisted query
         variables: GraphQL variables from the request
+        user_id: Authenticated user's id (see ``response_cache_user_id``); ``None``
+            for an anonymous request
 
     Returns:
-        Cache key combining query hash and normalized variables
+        Cache key combining query hash, normalized variables and user id
     """
+    if user_id is not None:
+        combined = json.dumps(
+            [query_hash, variables or {}, user_id], sort_keys=True, separators=(",", ":")
+        )
+        return hashlib.sha256(f"user:{combined}".encode()).hexdigest()
+
     if not variables:
         return query_hash
 
@@ -50,6 +60,34 @@ def compute_response_cache_key(
     var_str = json.dumps(variables, sort_keys=True, separators=(",", ":"))
     combined = f"{query_hash}:{var_str}"
     return hashlib.sha256(combined.encode()).hexdigest()
+
+
+_USER_ID_KEYS = ("user_id", "id", "sub")
+
+
+def response_cache_user_id(context: Optional[dict[str, Any]]) -> tuple[bool, str | None]:
+    """Who a cached response belongs to: ``(cacheable, user_id)``.
+
+    An anonymous request (no ``context["user"]``, not ``authenticated``) is cacheable
+    with no user id, so anonymous requests share entries. An authenticated request is
+    cacheable only with a stable user id: ``user_id``, ``id`` or ``sub`` of the user
+    (a ``UserContext`` or a dict). Without one it is not cached, since its response
+    could otherwise be served to another user.
+    """
+    if not context:
+        return True, None
+    user = context.get("user")
+    if user is None:
+        return (not context.get("authenticated", False)), None
+
+    for key in _USER_ID_KEYS:
+        value = user.get(key) if isinstance(user, dict) else getattr(user, key, None)
+        # A str, an int or a UUID; not a missing, boolean or structured value
+        if value is None or isinstance(value, (bool, dict, list, tuple, set)):
+            continue
+        if text := str(value):
+            return True, text
+    return False, None
 
 
 def get_apq_backend(config: FraiseQLConfig) -> APQStorageBackend:
@@ -146,10 +184,14 @@ def handle_apq_request_with_cache(
 
     # Try to get cached response
     try:
+        cacheable, user_id = response_cache_user_id(context)
+        if not cacheable:
+            logger.debug("APQ response cache skipped: authenticated request without user id")
+            return None
         metrics = get_global_metrics()
-        # Compute cache key including variables to prevent data leakage
+        # Compute cache key including variables and user to prevent data leakage
         variables = getattr(request, "variables", None)
-        response_cache_key = compute_response_cache_key(sha256_hash, variables)
+        response_cache_key = compute_response_cache_key(sha256_hash, variables, user_id)
         cached_response = backend.get_cached_response(response_cache_key, context=context)
         if cached_response:
             logger.debug(f"APQ cache hit: {response_cache_key[:8]}...")
@@ -216,6 +258,11 @@ def store_response_in_cache(
         logger.debug(f"Skipping cache for response without data: {hash_value[:8]}...")
         return
 
+    cacheable, user_id = response_cache_user_id(context)
+    if not cacheable:
+        logger.debug("Skipping cache for authenticated request without user id")
+        return
+
     try:
         # Filter response by field selection before storing
         filtered_response = response
@@ -225,8 +272,8 @@ def store_response_in_cache(
                 fragments = extract_fragments(query_text)
                 filtered_response = filter_response_by_selection(response, selection_set, fragments)
 
-        # Compute cache key including variables to prevent data leakage
-        cache_key = compute_response_cache_key(hash_value, variables)
+        # Compute cache key including variables and user to prevent data leakage
+        cache_key = compute_response_cache_key(hash_value, variables, user_id)
         backend.store_cached_response(cache_key, filtered_response, context=context)
         metrics = get_global_metrics()
         metrics.record_response_cache_store(cache_key)

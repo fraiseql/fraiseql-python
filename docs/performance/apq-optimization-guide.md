@@ -332,10 +332,11 @@ response is stored.
 
 A response is cached when an APQ request runs a query (never a mutation or a
 subscription) without errors, whichever execution path built it. The key is the
-query's hash, its variables and the tenant (`tenant_id` in the request context); it
-does not include the user, so a cached response is served to every user of that
-tenant who sends the same hash and variables. Use it only for data that is the same for
-all of them.
+query's hash, its variables, the tenant (`tenant_id` in the request context) and, for
+an authenticated request, the user's id (`user_id`, `id` or `sub` of
+`context["user"]`): a user is only served their own cached responses. An authenticated
+request whose user has no such id is not cached. Anonymous requests share entries
+(hash, variables and tenant).
 
 ### Storage Backend Options
 

@@ -140,8 +140,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stayed empty and every hash-only request ran. Now the response of every APQ query
   is stored, whichever path built it. Mutations and subscriptions are not cached (a
   cached mutation would be answered without running), nor are responses with errors
-  or the request's `extensions`. The cache key is the hash, the variables and the
-  tenant, not the user: only cache data that is the same for every user of a tenant.
+  or the request's `extensions`. The cache key is the hash, the variables, the tenant
+  and, for an authenticated request, the user's id (`user_id`, `id` or `sub` of
+  `context["user"]`), so one user's cached response is never served to another; an
+  authenticated request without such an id is not cached.
 - **The `postgresql` APQ storage backend stores persisted queries in PostgreSQL.** It had
   no database connection, so every read missed and every write was dropped: queries
   registered with it were lost on restart and not shared between instances, and its
