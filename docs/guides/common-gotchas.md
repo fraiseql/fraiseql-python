@@ -254,49 +254,49 @@ query {
 }
 ```
 
-**Why:** The cached query result was not invalidated by the write. FraiseQL's PostgreSQL-backed cache (`ResultCache`/`CachedRepository`) needs a cascade rule that links the mutation's table to the cached query.
+**Why:** The cached query result was not invalidated by the write. FraiseQL's
+result cache (`ResultCache`, see the [Caching Specification](../specs/caching.md))
+invalidates nothing on its own when a mutation runs: an entry stays until its TTL
+expires or your code deletes it. (The CASCADE rules of `setup_auto_cascade_rules`
+don't delete `ResultCache` entries.)
 
 ### Solutions
 
-**Solution 1: Configure cascade invalidation rules**
+**Solution 1: Invalidate in the mutation**
 
-Use `setup_auto_cascade_rules` (with the `SchemaAnalyzer`) so writes to a table automatically invalidate the query results that depend on it:
-
-```python
-from fraiseql.caching import setup_auto_cascade_rules
-
-await setup_auto_cascade_rules(cache, schema_analyzer)
-```
-
-**Solution 2: TTL-based invalidation**
-
-Set a short cache TTL so stale entries expire on their own:
-
-```python
-from fraiseql.fastapi import create_fraiseql_app
-
-app = create_fraiseql_app(
-    database_url="postgresql://localhost/mydb",
-    types=[User],
-    cache_ttl=60,  # All cached query results expire after 60 seconds
-)
-```
-
-`cache_ttl` is also settable via the `FRAISEQL_CACHE_TTL` environment variable.
-
-**Solution 3: Manual invalidation in the mutation**
+Key the cached reads so one pattern covers what the write changes, and invalidate
+it after the write (`cache` is your `ResultCache`; see
+[Server-Side Cache Invalidation](../performance/server-cache-invalidation.md) for the
+whole app):
 
 ```python
 import fraiseql
 
+
 @fraiseql.mutation
-async def update_user(info, input: UpdateUserInput) -> UpdateUserSuccess | UpdateUserError:
+async def rename_user(info, id: int, name: str) -> bool:
     db = info.context["db"]
-    cache = info.context["cache"]
-    result = await db.execute_function("fn_update_user", {"id": input.id, "name": input.name})
-    await cache.invalidate(User, id=input.id)  # Drop stale query results for this user
-    return UpdateUserSuccess(user=User(**result["user"]))
+    await db.execute_function("fn_rename_user", {"id": id, "name": name})
+    tenant_id = str(info.context.get("tenant_id", "public"))
+    await cache.invalidate_pattern(f"fraiseql:{tenant_id}:user:*")  # drop this tenant's cached user reads
+    return True
 ```
+
+**Solution 2: TTL-based invalidation**
+
+Set a short TTL so stale entries expire on their own:
+
+```python
+from fraiseql.caching import CacheConfig, PostgresCache, ResultCache
+
+cache = ResultCache(
+    backend=PostgresCache(connection_pool=pool),
+    config=CacheConfig(default_ttl=60),  # entries expire after 60 seconds
+)
+```
+
+`FraiseQLConfig.cache_ttl` (and `FRAISEQL_CACHE_TTL`) is deprecated and has no
+effect: no cache reads it.
 
 ### Gotcha: Cache Hit When You Need Fresh Data
 
@@ -316,7 +316,7 @@ query {
 
 **Solution 1: Skip caching for volatile reads**
 
-Don't wrap volatile queries in `CachedRepository`; read straight from the view via `db.find` so every request hits PostgreSQL.
+Don't put volatile reads through `ResultCache`; read straight from the view via `db.find` so every request hits PostgreSQL.
 
 **Solution 2: Use subscriptions for real-time data**
 

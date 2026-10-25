@@ -784,15 +784,15 @@ FRAISEQL_APQ_QUERIES_DIR=/app/graphql/queries
 ```python
 # Multi-level caching
 config = FraiseQLConfig(
-    cache_ttl=300,                           # Query cache TTL: 5 minutes
+    apq_cache_responses=True,                # Cache responses of persisted queries
     apq_response_cache_ttl=600,              # APQ response cache: 10 minutes
     turbo_router_cache_size=1000             # TurboRouter cache size
 )
 ```
 
-FraiseQL also ships a PostgreSQL-backed result cache with cascade invalidation
-(`PostgresCache`, `ResultCache`, `CachedRepository`) for caching query results
-directly in your database — see the caching reference for details.
+FraiseQL also ships a PostgreSQL-backed result cache (`PostgresCache`,
+`ResultCache`, `cached_query`) for data your resolvers compute, with TTL expiry and
+explicit invalidation; see the [Caching Specification](../specs/caching.md).
 
 **Expected hit rates**:
 

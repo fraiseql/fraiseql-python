@@ -296,7 +296,9 @@ config = FraiseQLConfig(
 
 - **Type**: `int`
 - **Default**: `300`
-- **Description**: Cache time-to-live in seconds
+- **Description**: Deprecated, and has no effect: nothing reads it. A value other than
+  the default emits a `DeprecationWarning`. APQ responses have `apq_response_cache_ttl`;
+  `CachedRepository.find` takes `cache_ttl=` per call.
 
 ### turbo_router_cache_size
 
@@ -910,9 +912,6 @@ config = FraiseQLConfig(
     enable_playground=False,
     max_query_depth=10,
     query_timeout=15,
-
-    # Performance
-    cache_ttl=600,
 
     # Auth
     auth_enabled=True,

@@ -443,8 +443,9 @@ FRAISEQL_CORS_ORIGINS='["https://app.yourapp.com","https://www.yourapp.com"]'
 ```
 
 List values such as `FRAISEQL_CORS_ORIGINS` are JSON. `FraiseQLConfig` also declares
-`cache_ttl` and `rate_limit_*` fields, but nothing reads them, so they are left out
-here. To limit query depth and size, add `FRAISEQL_MAX_QUERY_DEPTH=10` and
+`cache_ttl`, which nothing reads (deprecated), so it is left out here. To limit
+requests per client IP, add `FRAISEQL_RATE_LIMIT_ENABLED=true` (see
+[Rate Limiting](../configuration/rate-limiting.md)). To limit query depth and size, add `FRAISEQL_MAX_QUERY_DEPTH=10` and
 `FRAISEQL_COMPLEXITY_MAX_SCORE=1000` (no limit by default).
 
 ### Kubernetes Secrets

@@ -164,7 +164,7 @@ config = FraiseQLConfig(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| cache_ttl | int | 300 | Cache time-to-live in seconds |
+| cache_ttl | int | 300 | Deprecated, and has no effect: nothing reads it (a non-default value warns). Per-call TTLs are `CachedRepository.find(..., cache_ttl=)` |
 
 ### TurboRouter
 
@@ -184,7 +184,6 @@ aren't `FraiseQLConfig` fields, and `FraiseQLConfig` ignores them.
 # High-performance configuration
 config = FraiseQLConfig(
     database_url="postgresql://localhost/mydb",
-    cache_ttl=600,  # 10 minutes
     turbo_router_cache_size=5000,
 )
 ```
@@ -534,7 +533,6 @@ config = FraiseQLConfig(
     auto_camel_case=True,
 
     # Performance
-    cache_ttl=600,
     turbo_router_cache_size=5000,
 
     # Auth

@@ -511,6 +511,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   deployment checklist no longer passes `security_profile=` to
   `create_fraiseql_app`; and `examples/security_features_example.py` adds its rate
   limiter before the app starts, not in the lifespan, where Starlette refuses it.
+  The caching spec and the server-side cache invalidation page describe the cache
+  as it is: no `FRAISEQL_CACHE_*` settings, `create_fraiseql_app` (not `create_app`),
+  no `CacheInvalidationRule` / `invalidate_lazy` / `get_cascade_stats`, CASCADE
+  rules that need the `pg_fraiseql_cache` extension and invalidate no `ResultCache`
+  entry, and known issues of `CachedRepository`. The observability page uses the
+  error tracker's real tables (`tb_error_log`, `tb_error_occurrence`; there is no
+  `monitoring.errors` / `traces` / `metrics` and no `PostgreSQLSpanExporter`), and
+  notes that notifications aren't delivered and `fraiseql.tracing` stays off in
+  this release. The production runbooks query only the Prometheus metrics
+  `setup_metrics` exports (no `fraiseql_auth_failures_total`,
+  `fraiseql_graphql_query_complexity_*`, `fraiseql_cache_size_bytes`; `process_*`
+  needs a `ProcessCollector`) and the security events fraiseql logs, and no longer
+  point to a Grafana dashboard JSON that doesn't exist. `db.paginate()` is
+  documented with its real signature, `@fraiseql.connection`'s `jsonb_extraction`
+  / `jsonb_column` are marked as having no effect, pages no longer set the unread
+  `cache_ttl`, and the glossary imports `authorize_field` and the rate limit
+  settings from where they live.
 
 - **With `auto_camel_case=False`, a nested object answers under its own key.**
   `{ notes { author_info { first_name } } }` came back as

@@ -689,7 +689,6 @@ config = FraiseQLConfig(
     environment="production",
     database_pool_size=5,
     database_max_overflow=5,
-    cache_ttl=300,
     rate_limit_enabled=True,
     rate_limit_requests_per_minute=120,
 )
