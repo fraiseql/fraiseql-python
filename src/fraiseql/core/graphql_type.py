@@ -675,6 +675,9 @@ def convert_type_to_graphql_output(
                                         wrap_resolver_with_enum_serialization(smart_resolver),
                                         name,
                                     ),
+                                    # it may read its own view: db.find answers
+                                    # with typed objects (core.field_resolvers)
+                                    extensions={FIELD_RESOLVER: True},
                                 )
                                 continue  # Skip the regular resolver creation
 

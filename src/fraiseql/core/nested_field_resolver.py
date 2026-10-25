@@ -133,9 +133,11 @@ def create_smart_nested_field_resolver(field_name: str, field_type: Any) -> Call
                         f"with params: {query_params}"
                     )
 
-                    # Use find_one if available
-                    if hasattr(db, "find_one"):
-                        result = await db.find_one(table, **query_params)
+                    if hasattr(db, "run"):
+                        definition = getattr(actual_field_type, "__fraiseql_definition__", None)
+                        result = await _fetch_nested_row(
+                            db, table, getattr(definition, "jsonb_column", "data"), query_params
+                        )
                         if result:
                             if hasattr(actual_field_type, "from_dict"):
                                 return actual_field_type.from_dict(result)
@@ -151,6 +153,34 @@ def create_smart_nested_field_resolver(field_name: str, field_type: Any) -> Call
         return None
 
     return resolve_nested_field
+
+
+async def _fetch_nested_row(
+    db: Any, view: str, jsonb_column: str | None, filters: dict[str, Any]
+) -> dict[str, Any] | None:
+    """The JSON of the row of ``view`` the column equalities ``filters`` pick, or None.
+
+    ``db.find_one`` answers with the bytes Rust writes for the root field; a nested
+    field needs the row itself, built by its type's ``from_dict``.
+    """
+    from psycopg.sql import SQL, Composed, Identifier
+
+    from fraiseql.db import DatabaseQuery
+
+    column = Identifier(jsonb_column) if jsonb_column else SQL("row_to_json(t)")
+    conditions = SQL(" AND ").join(Composed([Identifier(name), SQL(" = %s")]) for name in filters)
+    statement = SQL("SELECT {} AS row FROM {} AS t WHERE {} LIMIT 1").format(
+        column, Identifier(*view.split(".")), conditions
+    )
+    rows = await db.run(DatabaseQuery(statement, list(filters.values())))
+    if not rows:
+        return None
+    row = rows[0]["row"]
+    if isinstance(row, str | bytes):
+        import json
+
+        row = json.loads(row)
+    return row if isinstance(row, dict) else None
 
 
 def should_use_nested_resolver(field_type: type) -> bool:

@@ -703,6 +703,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the rows Rust builds skip it: a query that passes such a field a `where` now
   gets typed rows, as for a field resolver; without a `where` the rows still go
   out as Rust bytes.
+- **A `resolve_nested=True` field is read from its type's view.** The docs'
+  `department: Department | None` with `department_id` on the row was left out
+  of a `db.find` response: Rust skipped its resolver, and the resolver called
+  `db.find_one(view, id=...)`, which raises for a bare filter (the error was
+  logged as a warning). `find` now returns typed rows when the query selects
+  such a field, and the resolver reads the row whose `id` is the parent's
+  `<field>_id` (and whose `tenant_id` is the context's, when it has one).
 
 - **`db.aggregate()` with more than one expression runs.** It wrote the
   expressions one after the other without commas

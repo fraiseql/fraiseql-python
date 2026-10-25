@@ -117,6 +117,8 @@ def nested_schema(clear_registry):
         ('{ networks { devices(where: {hostname: {eq: "a"}}) { hostname } } }', True),
         ("query($w: DeviceWhereInput) { networks { devices(where: $w) { hostname } } }", True),
         ("{ networks { devices { hostname } } }", False),
+        # a resolve_nested type is read from its own view
+        ("{ networks { department { id } } }", True),
         ("{ networks { id } }", False),
     ],
 )

@@ -537,7 +537,7 @@ class TestCreateSmartNestedFieldResolver:
 
         # Mock db in context
         mock_db = AsyncMock()
-        mock_db.find_one = AsyncMock(return_value={"id": "dept-123", "name": "Engineering"})
+        mock_db.run = AsyncMock(return_value=[{"row": {"id": "dept-123", "name": "Engineering"}}])
         info = MockGraphQLInfo(context={"db": mock_db, "tenant_id": "tenant-1"})
 
         resolver = create_smart_nested_field_resolver("department", TypeWithTable)
@@ -545,7 +545,10 @@ class TestCreateSmartNestedFieldResolver:
 
         assert isinstance(result, TypeWithTable)
         assert result.id == "dept-123"
-        mock_db.find_one.assert_called_once()
+        # The row's own query (find_one answers with Rust bytes), scoped to the tenant
+        query = mock_db.run.call_args.args[0]
+        assert query.params == ["dept-123", "tenant-1"]
+        assert 'WHERE "id" = %s AND "tenant_id" = %s' in query.statement.as_string(None)
 
 
 # Tests for create_nested_array_field_resolver_with_where

@@ -3,8 +3,9 @@
 ``db.find`` and ``db.find_one`` answer with the rows Rust builds from the view's
 JSONB, which graphql-core never resolves field by field. A ``@fraiseql.field``
 (or ``@fraiseql.dataloader_field``) method of the type is a resolver of its own:
-it needs the row as ``self``. So does a nested-array field given a ``where``
-(``fraise_field(supports_where_filtering=True)``), which filters the elements.
+it needs the row as ``self``. So do a nested-array field given a ``where``
+(``fraise_field(supports_where_filtering=True)``), which filters the elements,
+and a field of a ``resolve_nested=True`` type, read from that type's view.
 When the selection holds one, at any depth, find returns typed objects instead,
 and graphql-core completes them. Without one the rows still go out as Rust
 wrote them, so this check has to be cheap: a schema with no field resolver

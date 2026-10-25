@@ -82,7 +82,7 @@ async def test_nested_object_with_sql_source_no_tenant_id_error() -> None:
 
     # Mock database connection
     mock_db = AsyncMock()
-    mock_db.find_one = AsyncMock(return_value=None)  # Should not be called for embedded data
+    mock_db.run = AsyncMock(return_value=[])  # Should not be called for embedded data
 
     context = {
         "db": mock_db,
@@ -107,8 +107,8 @@ async def test_nested_object_with_sql_source_no_tenant_id_error() -> None:
     assert result.data["user1"]["organization"]["name"] == "Test Org"
     assert result.data["user1"]["organization"]["identifier"] == "TEST-ORG"
 
-    # Verify that find_one was NOT called (data was embedded, not queried)
-    mock_db.find_one.assert_not_called()
+    # Verify that the database was NOT queried (data was embedded)
+    mock_db.run.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -156,7 +156,7 @@ async def test_smart_resolver_prefers_embedded_data() -> None:
 
     # Mock database - should not be called
     mock_db = AsyncMock()
-    mock_db.find_one = AsyncMock(return_value=None)
+    mock_db.run = AsyncMock(return_value=[])
 
     context = {"db": mock_db}
 
@@ -167,7 +167,7 @@ async def test_smart_resolver_prefers_embedded_data() -> None:
     assert result.data["employee2"]["department"]["name"] == "Engineering"
 
     # Database should not be queried for embedded data
-    mock_db.find_one.assert_not_called()
+    mock_db.run.assert_not_called()
 
 
 @pytest.mark.asyncio
@@ -215,12 +215,16 @@ async def test_smart_resolver_queries_when_no_embedded_data() -> None:
 
     # Mock database - should be called this time
     mock_db = AsyncMock()
-    mock_db.find_one = AsyncMock(
-        return_value={
-            "id": UUID("22222222-2222-2222-2222-222222222222"),
-            "name": "Engineering",
-            "code": "ENG",
-        }
+    mock_db.run = AsyncMock(
+        return_value=[
+            {
+                "row": {
+                    "id": "22222222-2222-2222-2222-222222222222",
+                    "name": "Engineering",
+                    "code": "ENG",
+                }
+            }
+        ]
     )
 
     context = {
@@ -240,10 +244,15 @@ async def test_smart_resolver_queries_when_no_embedded_data() -> None:
     assert result.data["employee3"]["department"]["name"] == "Engineering"
 
     # Verify database was queried
-    mock_db.find_one.assert_called_once()
-    call_args = mock_db.find_one.call_args
-    assert call_args[0][0] == "departments"  # Table name
-    assert "id" in call_args[1]  # Query parameters
+    mock_db.run.assert_called_once()
+    db_query = mock_db.run.call_args.args[0]
+    statement = db_query.statement.as_string(None)
+    assert 'FROM "departments"' in statement  # Table name
+    assert 'WHERE "id" = %s AND "tenant_id" = %s' in statement  # Query parameters
+    assert db_query.params == [
+        UUID("22222222-2222-2222-2222-222222222222"),
+        UUID("33333333-3333-3333-3333-333333333333"),
+    ]
 
 
 if __name__ == "__main__":

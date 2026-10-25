@@ -5,7 +5,8 @@ field whose type has ``resolve_nested=True`` are resolved by a resolver of their
 own (``core.nested_field_resolver``). db.find answered with the rows Rust builds,
 which never pass through those resolvers: over HTTP, ``devices(where: ...)``
 returned every element, and a ``resolve_nested`` field not embedded in the row
-was null. They count as field resolvers now, so find returns typed rows when a
+was left out (its resolver also called ``find_one`` with a bare ``id=``, which
+raises). They count as field resolvers now, so find returns typed rows when a
 query selects them.
 """
 
@@ -166,3 +167,11 @@ class TestNestedResolversOnFind:
         calls.clear()
         _data(client, "{ nrNetworks { devices(where: {priority: {eq: 1}}) { hostname } } }")
         assert calls == []
+
+    def test_resolve_nested_field_is_read_from_its_view(self, client) -> None:
+        employees = _data(client, "{ nrEmployees { name department { id name } } }")["nrEmployees"]
+
+        assert employees == [
+            {"name": "ann", "department": {"id": str(_D1), "name": "research"}},
+            {"name": "bob", "department": None},
+        ]
