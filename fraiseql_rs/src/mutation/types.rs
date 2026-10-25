@@ -9,7 +9,7 @@ pub enum MutationResponse {
     /// Simple format: entity-only response (no status field)
     Simple(SimpleResponse),
     /// Full format: mutation_response with status/message/entity
-    Full(FullResponse),
+    Full(Box<FullResponse>),
 }
 
 /// Simple format: Just entity JSONB

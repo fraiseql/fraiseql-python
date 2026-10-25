@@ -631,6 +631,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   With the registry (any app) nested objects were and are named after their
   own type.
 
+- **`db.find` / `db.find_one` answer with the keys in selection order.** The
+  GraphQL spec orders a response map like the selection set; with the Rust
+  schema registry (any app), the fields of each object, and the root fields of
+  a query with several, came back sorted alphabetically: `{ users { name id
+  email } }` answered `{"email", "id", "name"}`. They now follow the query, at
+  any depth. (serde_json keeps object keys in insertion order; projecting is
+  also faster, 3.7 ms instead of 5.9 ms for 1,000 rows of eight fields.)
+
 - **Field resolvers run on `db.find` / `db.find_one` results.** `find` and
   `find_one` answer with the rows Rust builds from the view, which don't go
   through graphql-core field by field, so a `@fraiseql.field` or

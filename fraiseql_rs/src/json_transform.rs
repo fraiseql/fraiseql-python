@@ -678,6 +678,31 @@ mod tests {
     }
 
     #[test]
+    fn test_fields_follow_the_selection_order() {
+        // A GraphQL response map is ordered like its selection set, not like
+        // the row (nor alphabetically)
+        let registry = create_field_projection_test_schema();
+        let input = json!({"id": 1, "email": "e", "name": "n",
+                           "profile": {"bio": "b", "avatar_url": "u"}});
+        let selections = vec![
+            aliased("name", "name", false),
+            aliased("profile", "profile", true),
+            aliased("profile.avatar_url", "profile.avatarUrl", false),
+            aliased("profile.bio", "profile.bio", false),
+            aliased("id", "id", false),
+            aliased("email", "email", false),
+        ];
+
+        let projection = Projection::from_selections(&selections);
+        let result = project_with_schema(&input, Some("User"), &projection, &registry, false);
+
+        assert_eq!(
+            serde_json::to_string(&result).unwrap(),
+            r#"{"name":"n","profile":{"avatarUrl":"u","bio":"b"},"id":1,"email":"e"}"#
+        );
+    }
+
+    #[test]
     fn test_snake_case_keys_are_found_by_their_field_name() {
         let registry = SchemaRegistry::empty();
         let input = json!({"dns_1": {"ip_address": "1.1.1.1"}});
