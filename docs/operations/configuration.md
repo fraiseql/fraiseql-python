@@ -497,8 +497,9 @@ revocation store is also available programmatically via
 
 In `apq_mode="required"`, only persisted query hashes are accepted; arbitrary
 queries are rejected. Set `apq_queries_dir` to a directory of `.graphql`/`.gql`
-files to auto-register them at startup — useful for security-hardened
-deployments.
+files to register their operations as persisted queries (the directory must exist at
+startup; it is read when the first APQ request creates the APQ backend) — the way to
+approve queries in `required` mode, where clients cannot register them.
 
 ---
 

@@ -663,36 +663,26 @@ config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     apq_mode="required",
     apq_storage_backend="postgresql",
-    apq_queries_dir="./src/graphql",  # Meant to auto-load at startup (see the note)
+    apq_queries_dir="./src/graphql",  # Operations registered as persisted queries
 )
 ```
 <!-- Code example in TEXT -->
 
-> **Note:** nothing reads `apq_queries_dir` in 1.31: the directory isn't scanned and
-> hash-only requests for its operations get `PERSISTED_QUERY_NOT_FOUND`. Until it is,
-> register the operations yourself at startup:
->
-> ```python
-> from pathlib import Path
->
-> from fraiseql.storage.apq_store import compute_query_hash, store_persisted_query
->
-> for path in Path("./src/graphql").rglob("*.graphql"):
->     text = path.read_text()
->     store_persisted_query(compute_query_hash(text), text)
-> ```
->
-> The hash is the SHA-256 of the exact text the client sends, so register each
-> operation the way your client's build emits it.
-
 **Behavior**:
 
-1. On startup, FraiseQL scans `apq_queries_dir` recursively
-2. Finds all `.graphql` and `.gql` files
-3. Extracts individual queries/mutations/subscriptions from each file
-4. Computes SHA-256 hash for each operation
-5. Stores in selected backend (memory or database)
-6. Ready to serve hash-only APQ requests
+1. At startup, the app fails (`FileNotFoundError`) if `apq_queries_dir` doesn't exist
+2. When the first APQ request creates the APQ backend, FraiseQL scans
+   `apq_queries_dir` recursively for `.graphql` and `.gql` files
+3. Splits each file into its operations (`query`, `mutation`, `subscription`)
+4. Stores each operation under the SHA-256 of its text as written in the file, without
+   surrounding whitespace (for a file with one operation: the whole file, stripped)
+5. Ready to serve hash-only APQ requests (in `required` mode: only these, plus what
+   the backend already holds)
+
+The hash is the SHA-256 of the exact text the client sends, so the files must hold
+each operation the way your client's build emits it. A fragment is kept with the
+operation written before it in the same file; put each operation in its own file,
+followed by the fragments it uses. In `disabled` mode the directory isn't read.
 
 **Benefits**:
 
@@ -985,7 +975,7 @@ config = FraiseQLConfig(
     apq_mode="required",                    # Only persisted queries
     apq_storage_backend="postgresql",       # Persistent, shared
     apq_cache_responses=True,
-    apq_queries_dir="./dist/graphql",       # Pre-built queries (not read yet, see above)
+    apq_queries_dir="./dist/graphql",       # Pre-built queries
     apq_backend_config={
         "table_prefix": "apq_",
         "auto_create_tables": False,        # Pre-created for safety
@@ -1191,8 +1181,7 @@ clients register queries.
 
 **Solutions**:
 
-1. Pre-register queries at startup with `store_persisted_query` (see Build-Time
-   Registration; `apq_queries_dir` isn't read yet)
+1. Pre-register queries with `apq_queries_dir` (see Build-Time Registration)
 2. Use a persistent backend: `apq_storage_backend="postgresql"
 
 ---

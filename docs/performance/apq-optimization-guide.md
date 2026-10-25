@@ -167,13 +167,15 @@ Load all `.graphql` and `.gql` files at startup:
 config = FraiseQLConfig(
     database_url="postgresql://localhost/db",
     apq_mode="required",
-    apq_queries_dir="./graphql/queries/",  # Meant to load all .graphql files (see the note)
+    apq_queries_dir="./graphql/queries/",  # Registers the operations of every .graphql file
 )
 ```
 
-> **Note:** nothing reads `apq_queries_dir` in 1.31, so the directory isn't loaded and
-> hash-only requests for its queries get `PERSISTED_QUERY_NOT_FOUND`. Use Method 3
-> until it is.
+The operations are registered when the first APQ request creates the APQ backend;
+a missing directory makes the app fail at startup. Each operation is stored under the
+SHA-256 of its text as written in the file (stripped), which must be the text the
+client hashes. A fragment is kept with the operation written before it in the same
+file, so put each operation in its own file, followed by its fragments.
 
 **Directory structure example:**
 

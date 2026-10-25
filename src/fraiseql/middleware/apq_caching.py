@@ -55,7 +55,8 @@ def compute_response_cache_key(
 def get_apq_backend(config: FraiseQLConfig) -> APQStorageBackend:
     """Get APQ backend instance for the given configuration.
 
-    Uses singleton pattern to avoid recreating backends for the same config.
+    Uses singleton pattern to avoid recreating backends for the same config. A new
+    backend gets the queries of ``config.apq_queries_dir`` registered in it.
 
     Args:
         config: FraiseQL configuration
@@ -64,13 +65,47 @@ def get_apq_backend(config: FraiseQLConfig) -> APQStorageBackend:
         APQ storage backend instance
     """
     # Create a cache key based on backend type and config
-    cache_key = f"{config.apq_storage_backend}:{hash(str(config.apq_backend_config))}"
+    cache_key = ":".join(
+        (
+            config.apq_storage_backend,
+            str(hash(str(config.apq_backend_config))),
+            str(hash(str(config.database_url))),
+            str(config.apq_queries_dir),
+        )
+    )
 
     if cache_key not in _backend_cache:
-        _backend_cache[cache_key] = create_apq_backend(config)
+        backend = create_apq_backend(config)
         logger.debug(f"Created APQ backend: {config.apq_storage_backend}")
+        if config.apq_queries_dir:
+            register_queries_from_directory(backend, config.apq_queries_dir)
+        _backend_cache[cache_key] = backend
 
     return _backend_cache[cache_key]
+
+
+def register_queries_from_directory(backend: APQStorageBackend, directory: str) -> dict[str, str]:
+    """Register every operation of the ``.graphql``/``.gql`` files under ``directory``.
+
+    Each operation is stored under the SHA-256 of its text as it appears in the file
+    (one operation per file: the file's content without surrounding whitespace), so a
+    client must hash and send exactly that text.
+
+    Args:
+        backend: APQ storage backend to register the queries in
+        directory: Directory scanned recursively (``apq_queries_dir``)
+
+    Returns:
+        Dict mapping hash -> query for the registered queries
+
+    Raises:
+        FileNotFoundError: If the directory does not exist
+    """
+    from fraiseql.storage.query_loader import load_queries_from_directory
+
+    registered = backend.register_queries(load_queries_from_directory(directory))
+    logger.info(f"Registered {len(registered)} persisted queries from {directory}")
+    return registered
 
 
 def handle_apq_request_with_cache(

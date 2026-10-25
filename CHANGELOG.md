@@ -124,6 +124,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`apq_queries_dir` registers the operations of its `.graphql`/`.gql` files.**
+  Nothing read it, so `apq_mode="required"` had no configured way to approve queries.
+  The APQ backend now registers each operation under the SHA-256 of its text when the
+  first APQ request creates the backend, and a missing directory makes the app fail at
+  startup. It isn't read in `apq_mode="disabled"`.
 - **The APQ response cache (`apq_cache_responses=True`) is filled.** The response was
   stored only at the end of an execution path the `/graphql` route never takes (it
   answers from the unified executor or with Rust-built bytes first), so the cache

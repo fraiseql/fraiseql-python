@@ -1293,6 +1293,14 @@ def create_graphql_router(
         f"TurboRouter creation final state: turbo_registry={turbo_registry is not None}, "
         f"turbo_router={turbo_router is not None}, turbo_router_value={turbo_router}"
     )
+    # apq_queries_dir is loaded into the APQ backend when the first APQ request creates
+    # it; a missing directory fails here, at startup, not on that request.
+    if config.apq_queries_dir and config.apq_mode.processes_apq():
+        from pathlib import Path
+
+        if not Path(config.apq_queries_dir).is_dir():
+            raise FileNotFoundError(f"apq_queries_dir not found: {config.apq_queries_dir}")
+
     query_analyzer = QueryAnalyzer(schema)
     mode_selector = ModeSelector(config)
 
