@@ -936,6 +936,8 @@ def is_admin(info, *_) -> bool:  # any_permission also passes the object
 class User:
     id: ID
     name: str
+    _email: str | None = None  # private: not in the schema
+    _notes: str | None = None
 
     # Only admins or the user themselves can see the email
     @fraiseql.field
@@ -955,15 +957,15 @@ class User:
 @fraiseql.query
 async def user(info, id: ID) -> User:
     row = ...  # load the user, including the protected values
-    u = User(id=row["id"], name=row["name"])
-    u._email, u._notes = row["email"], row["notes"]  # attributes, not schema fields
-    return u
+    return User(id=row["id"], name=row["name"], _email=row["email"], _notes=row["notes"])
 ```
 
 A denied field answers `null`, with an error `Not authorized to access field 'email'`
 (code `FIELD_AUTHORIZATION_ERROR`); make such a field nullable, or the error nulls its
-parent. Keep the protected values out of the type's annotated fields: every annotated
-field (an `_email: str` too, as `Email`) is in the schema, readable without the check.
+parent. Keep the protected values in private fields, whose name starts with `_`: they
+are constructor arguments and attributes, but not in the schema, nor in the `where`
+and `orderBy` inputs (a public annotated field would be readable without the check).
+`fraise_field(graphql_name=...)` exposes a private field under that name.
 The checks run when graphql-core resolves the object, as for a resolver that returns
 `User(...)` instances like the one above.
 

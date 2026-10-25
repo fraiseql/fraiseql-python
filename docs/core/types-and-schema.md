@@ -61,6 +61,13 @@ class TypeName:
 | list[T \| None] | [T]! | Non-null list of nullable items |
 | Decimal | Decimal! | High precision numbers, serialized as a string |
 
+**Private fields**: an annotated field whose name starts with `_` (`_email: str | None =
+None`) is a constructor argument and an attribute, but not a GraphQL field, and not in
+the `where` / `orderBy` inputs; this holds for `@fraiseql.input` and
+`@fraiseql.interface` too. Use one for a value a field resolver exposes after a check
+(see [Field-Level Authorization](../advanced/authentication.md#field-level-authorization)).
+`fraise_field(graphql_name="_id")` exposes it under that name.
+
 ## Type Mapping Flow
 
 ### Python Class to GraphQL Schema

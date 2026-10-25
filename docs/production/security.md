@@ -437,8 +437,9 @@ class PasswordHasher:
 
 ### PII Protection
 
-Keep the sensitive values out of the type's annotated fields (every annotated field is
-in the schema), and expose them through field resolvers that check who asks:
+Keep the sensitive values in private fields (a name starting with `_`: not in the
+schema, nor in the `where` and `orderBy` inputs), and expose them through field
+resolvers that check who asks:
 
 ```python
 import fraiseql
@@ -451,6 +452,7 @@ class UserGQL:
     id: ID
     email: str
     name: str
+    _ssn: str | None = None  # private: not in the schema
 
     # Only admins can see the full SSN
     @fraiseql.field
@@ -465,9 +467,7 @@ class UserGQL:
 
 
 def to_graphql(row: dict) -> UserGQL:
-    user = UserGQL(id=row["id"], email=row["email"], name=row["name"])
-    user._ssn = row.get("ssn")  # an attribute, not a schema field
-    return user
+    return UserGQL(id=row["id"], email=row["email"], name=row["name"], _ssn=row.get("ssn"))
 ```
 
 A denied `ssn` is `null`, with the error `Not authorized to access field 'ssn'`

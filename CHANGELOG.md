@@ -958,6 +958,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   now creates `user_has_role()` and `user_has_permission()` first, and applies each
   table's example policies only if that table exists (a `NOTICE` names the ones
   skipped); run it again after creating a table.
+- **A type's fields whose name starts with `_` are not in the GraphQL schema.** An
+  annotated `_email: str | None` became a field `Email` of the object type (and of
+  input and interface types), so a value kept there for a resolver guarded by
+  `@authorize_field` could be read by selecting `Email`, without the check. The
+  `where` and `orderBy` inputs already left such fields out; the object, input and
+  interface types now do too. They stay constructor arguments and attributes, and
+  `fraise_field(graphql_name=...)` still exposes one under that name. **A client
+  selecting such a field (`Email`) now gets a validation error.**
 
 ## [1.30.0] - 2026-10-22
 

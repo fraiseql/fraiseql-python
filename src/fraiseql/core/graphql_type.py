@@ -71,6 +71,23 @@ T = TypeVar("T", bound=type)
 logger = logging.getLogger(__name__)
 
 
+def _schema_fields(typ: type) -> dict[str, Any]:
+    """The collected fields of a FraiseQL type that belong in the GraphQL schema.
+
+    A field whose Python name starts with ``_`` is private, as the where and orderBy
+    input generators already treat it: it stays a constructor argument and an
+    attribute, but isn't exposed (it would have been a field like ``Email`` for
+    ``_email``, readable without the checks of a resolver guarding ``email``). An
+    explicit ``fraise_field(graphql_name=...)`` exposes it under that name.
+    """
+    fields = getattr(typ, "__gql_fields__", {})
+    return {
+        name: field
+        for name, field in fields.items()
+        if not name.startswith("_") or getattr(field, "graphql_name", None)
+    }
+
+
 def _clean_docstring(docstring: str | None) -> str | None:
     """Clean and format a docstring for use in GraphQL schema descriptions.
 
@@ -218,7 +235,7 @@ def convert_type_to_graphql_input(
                 return cached_type
 
         # Use the already collected fields from the decorator
-        fields = getattr(typ, "__gql_fields__", {})
+        fields = _schema_fields(typ)
         type_hints = getattr(typ, "__gql_type_hints__", {})
 
         # Create a thunk (lazy function) for fields to handle circular references
@@ -493,7 +510,7 @@ def convert_type_to_graphql_output(
             definition = typ.__fraiseql_definition__
             if definition.kind in {"type", "success", "failure", "output"}:
                 # Use the already collected fields from the decorator
-                fields = getattr(typ, "__gql_fields__", {})
+                fields = _schema_fields(typ)
                 type_hints = getattr(typ, "__gql_type_hints__", {})
 
                 # Get interfaces this type implements
@@ -922,7 +939,7 @@ def convert_type_to_graphql_output(
                 return gql_type
             if definition.kind == "interface":
                 # Handle interface types
-                fields = getattr(typ, "__gql_fields__", {})
+                fields = _schema_fields(typ)
                 type_hints = getattr(typ, "__gql_type_hints__", {})
 
                 # Create a thunk (lazy function) for fields to handle recursive references
