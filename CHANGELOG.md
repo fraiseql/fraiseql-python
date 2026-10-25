@@ -290,7 +290,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   points (host, port, user, password) instead of `fraiseql:fraiseql@localhost:5432`,
   so the 16 blog_simple tests run instead of skipping against any other server.
 
-- **A `where` on a datetime or date field compares dates, not text.** A JSONB
+- **`where` and `orderBy` on a datetime or date field compare dates, not text.** A JSONB
   field holds an ISO string, and `"2025-01-01T00:00:00+00:00"` is smaller than
   `"2025-01-01T00:00:00Z"` as text, so `where: {createdAt: {gte:
   "2025-01-01T00:00:00Z"}}` left that row out, `"2025-01-01T01:00:00+01:00"`
@@ -301,7 +301,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `datetime` / `date` value, `eq`, `neq`, `gt`, `gte`, `lt`, `lte`, `in` and
   `nin` now cast both sides: `(data ->> 'created_at')::timestamptz >= %s::timestamptz`.
   This covers GraphQL and `db.find(where={...})`; a real `timestamptz` column
-  already compared correctly.
+  already compared correctly. `orderBy` on such a field sorted the strings too
+  (`data -> 'created_at'`), so `"2025-01-01T00:30:00+01:00"` (23:30Z the day
+  before) came after `"2025-01-01T00:00:00+00:00"`; it now sorts on
+  `(data ->> 'created_at')::timestamptz` (or `::date`), for GraphQL `orderBy`
+  and every `db.find(order_by=...)` shape (dict, list, `OrderBySet`). A JSON
+  `null` now sorts with the missing values, as on a `timestamptz` column (last
+  ascending, first descending); a key with an explicit collation, a vector
+  distance and a flat column keep their SQL.
 
 - Docs: examples no longer call repository methods fraiseql doesn't have
   (`update_one`, `create_one`, `delete_one`, `transaction()`, `fetchrow`,

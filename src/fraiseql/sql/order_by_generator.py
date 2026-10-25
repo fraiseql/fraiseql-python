@@ -21,9 +21,9 @@ with dynamic query generators.
 """
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from psycopg import sql
 
@@ -120,6 +120,10 @@ class OrderBy:
         value: Optional value for vector distance operations (list[float], or
                a ``VectorDistanceInput`` with a ``dense`` vector)
         collation: Optional PostgreSQL collation for text sorting (str)
+        temporal_cast: ``"timestamptz"`` or ``"date"`` for a JSONB field the
+               type declares as ``datetime`` / ``date``. The field holds an ISO
+               string, which ``->`` sorts as text; the cast sorts the instant.
+               Set by :meth:`OrderBySet.with_temporal_casts`.
 
     Examples:
         OrderBy('amount') -> "data -> 'amount' ASC"
@@ -133,6 +137,7 @@ class OrderBy:
     direction: OrderDirection = OrderDirection.ASC
     value: Any = None
     collation: str | None = None
+    temporal_cast: Literal["timestamptz", "date"] | None = None
 
     def _collated(self, expr: sql.Composed | sql.SQL) -> sql.Composed | sql.SQL:
         """Append ``COLLATE "name"`` to *expr*, or return it untouched.
@@ -239,16 +244,26 @@ class OrderBy:
         # Asking for a collation is asking for a text ordering, so -> is only
         # traded for ->> on the branch that requested one; an uncollated sort
         # keeps its previous SQL byte for byte.
+        #
+        # A datetime / date field is extracted as text and cast, the way the
+        # where side compares it: (data ->> 'created_at')::timestamptz.
         path = self.field.split(".")
         json_path = sql.SQL(" -> ").join(sql.Literal(p) for p in path[:-1])
         last_key = sql.Literal(path[-1])
-        leaf_op = sql.SQL(" ->> ") if self.collation is not None else sql.SQL(" -> ")
+        as_text = self.collation is not None or self.temporal_cast is not None
+        leaf_op = sql.SQL(" ->> ") if as_text else sql.SQL(" -> ")
         if path[:-1]:
             # For nested fields: {table_ref} -> 'profile' -> 'age'
             data_expr = sql.SQL(table_ref + " -> ") + json_path + leaf_op + last_key
         else:
             # For simple fields: {table_ref} -> 'field'
             data_expr = sql.SQL(table_ref) + leaf_op + last_key
+
+        if self.temporal_cast is not None:
+            return (
+                sql.SQL("({})::{} ").format(data_expr, sql.SQL(self.temporal_cast))
+                + self._direction_sql()
+            )
 
         if self.collation is not None:
             data_expr = sql.SQL("({})").format(data_expr)
@@ -402,6 +417,34 @@ class OrderBySet:
             for instr in self.instructions
         )
         return sql.SQL("ORDER BY ") + clauses
+
+    def with_temporal_casts(self, source_type: type | None) -> "OrderBySet":
+        """Return this set with ``temporal_cast`` set on its datetime / date keys.
+
+        A key gets the cast when *source_type* declares its path ``datetime`` or
+        ``date`` (unwrapping ``X | None``, following nested types), resolved as
+        the where side resolves it. A vector distance key (it carries a value),
+        a key with a collation (a text ordering was asked for) and a key that
+        does not resolve keep their SQL. A key that renders as a flat column
+        ignores the cast, so a real timestamptz column is unchanged.
+        """
+        if source_type is None:
+            return self
+
+        from fraiseql.where_normalization import _declared_temporal_cast
+
+        instructions = [
+            replace(instr, temporal_cast=cast)
+            if instr.value is None
+            and instr.collation is None
+            and instr.temporal_cast is None
+            and (cast := _declared_temporal_cast(source_type, instr.field.split(".")))
+            else instr
+            for instr in self.instructions
+        ]
+        if all(new is old for new, old in zip(instructions, self.instructions, strict=True)):
+            return self
+        return replace(self, instructions=instructions)
 
     def uses_flat_columns(
         self,

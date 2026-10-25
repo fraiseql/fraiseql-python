@@ -3248,6 +3248,14 @@ class FraiseQLRepository:
 
         if not order_set or not hasattr(order_set, "to_sql"):
             return None
+        # A datetime / date JSONB key sorts as its instant, not its ISO text,
+        # whichever shape it arrived in (the where side does the same).
+        if hasattr(order_set, "with_temporal_casts"):
+            from fraiseql.sql.graphql_order_by_generator import _source_type_of
+
+            order_set = order_set.with_temporal_casts(
+                (_type_registry.get(view_name) if view_name else None) or _source_type_of(order_by)
+            )
         return order_set
 
     def _build_order_by_sql(
