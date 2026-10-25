@@ -122,8 +122,9 @@ config = FraiseQLConfig(
 | enable_playground | bool | True | Enable GraphQL playground IDE |
 | playground_tool | Literal | "graphiql" | GraphQL IDE to use (graphiql/apollo-sandbox) |
 | max_query_depth | int \| None | None | Reject queries nested deeper than this, with a `QUERY_TOO_DEEP` error (None = unlimited; introspection not counted) |
-| query_timeout | int | 30 | Maximum query execution time in seconds |
+| query_timeout | int | 30 | Statement timeout, in seconds, of every database read (`find`, `find_one`, `count`, ...), `db.run()` and `execute_function`: set as a transaction-local `statement_timeout`; 0 sets none |
 | auto_camel_case | bool | True | Auto-convert snake_case fields to camelCase |
+| include_execution_metadata | bool | False | Add `extensions.execution` (`mode`, `time_ms`) to responses in production too (outside production it is always added); a response served as raw Rust bytes carries no extensions either way |
 
 **Introspection Policies**:
 
@@ -223,7 +224,7 @@ class Machine:
 - ✅ **7-10x faster JSON transformation** - Zero Python overhead
 - ✅ **Always active** - No configuration needed
 - ✅ **Automatic camelCase** - snake_case → camelCase conversion
-- ✅ **Built-in __typename** - Automatic GraphQL type injection
+- ✅ **Built-in `__typename`** - Written wherever the query selects it (and only there)
 
 All queries execute through the Rust pipeline automatically. The old multi-mode execution system (NORMAL, PASSTHROUGH, TURBO) has been removed.
 
@@ -309,13 +310,17 @@ config = FraiseQLConfig(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| rate_limit_enabled | bool | True | Enable rate limiting |
-| rate_limit_requests_per_minute | int | 60 | Max requests per minute |
-| rate_limit_requests_per_hour | int | 1000 | Max requests per hour |
-| rate_limit_burst_size | int | 10 | Burst size for rate limiting |
-| rate_limit_window_type | str | "sliding" | Window type (sliding/fixed) |
-| rate_limit_whitelist | list[str] | [] | IP addresses to whitelist |
-| rate_limit_blacklist | list[str] | [] | IP addresses to blacklist |
+| rate_limit_enabled | bool | False | `create_fraiseql_app` installs `RateLimiterMiddleware`, counting requests per client IP in each process's memory |
+| rate_limit_requests_per_minute | int | 60 | Requests a client may make in any 60 seconds |
+| rate_limit_requests_per_hour | int | 1000 | Requests a client may make in any hour |
+| rate_limit_burst_size | int | 10 | Requests a minute always allowed, even above the per-minute limit (the hour limit still applies) |
+| rate_limit_window_type | str | "sliding" | Only `"sliding"` is implemented; another value logs a warning |
+| rate_limit_whitelist | list[str] | [] | Client IPs never limited |
+| rate_limit_blacklist | list[str] | [] | Client IPs always rejected with 403 |
+
+A request over the limit gets `429` with `Retry-After` and `X-RateLimit-*` headers.
+`/health`, `/ready`, `/metrics` and `/` are not counted. See
+[Rate Limiting](../configuration/rate-limiting.md), also for running behind a proxy.
 
 **Examples**:
 
@@ -371,11 +376,11 @@ config = FraiseQLConfig(
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| apq_mode | APQMode | OPTIONAL | Query acceptance mode (OPTIONAL/REQUIRED/DISABLED) |
-| apq_queries_dir | str \| None | None | Directory for auto-registering .graphql files |
-| apq_storage_backend | Literal | "memory" | Storage backend (memory/postgresql/custom) |
-| apq_cache_responses | bool | False | Enable JSON response caching for APQ queries |
-| apq_response_cache_ttl | int | 600 | Cache TTL for APQ responses in seconds |
+| apq_mode | APQMode | OPTIONAL | `optional`: hashes and full queries; `required`: only hashes the server already knows (a client can't register one); `disabled`: APQ extensions ignored |
+| apq_queries_dir | str \| None | None | Directory whose `.graphql` / `.gql` operations are registered as persisted queries (must exist at startup; not read in `disabled` mode) |
+| apq_storage_backend | Literal | "memory" | Storage backend (memory/postgresql/custom); `postgresql` stores in `apq_queries` / `apq_responses`, created on first use |
+| apq_cache_responses | bool | False | Cache the response of APQ queries (not mutations, nor responses with errors), per variables, tenant and user |
+| apq_response_cache_ttl | int | 600 | Seconds a cached APQ response is served; 0 keeps it |
 | apq_backend_config | dict[str, Any] | {} | Backend-specific configuration options |
 
 **Examples**:
@@ -389,8 +394,19 @@ config = FraiseQLConfig(
     apq_response_cache_ttl=900  # 15 minutes
 )
 
-
+# Only operations shipped with the app run
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    apq_mode="required",
+    apq_queries_dir="./graphql",
+)
 ```
+
+In `required` mode a request with a query text and no known hash is refused
+(`PERSISTED_QUERY_NOT_IN_LIST`, or `ARBITRARY_QUERY_NOT_ALLOWED` without APQ
+extensions), so `apq_queries_dir` is how queries get approved. A query whose text
+doesn't hash to its `sha256Hash` gets 400 in `optional` and `required` mode. See
+[Persisted Queries](../specs/persisted-queries.md).
 
 ## Token Revocation Settings
 

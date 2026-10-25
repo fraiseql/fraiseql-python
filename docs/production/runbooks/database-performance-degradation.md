@@ -236,9 +236,10 @@ FROM pg_statio_user_tables;
 
 #### 1. Verify Query Timeout Configuration
 
-`query_timeout` (seconds, default 30) becomes a `SET LOCAL statement_timeout` on the
-statements the repository runs through `db.run()` and on mutation functions
-(`execute_function`); PostgreSQL cancels one that runs longer:
+`query_timeout` (seconds, default 30) becomes a transaction-local `statement_timeout`
+on every statement the repository runs: reads (`find`, `find_one`, `count` and the
+other read helpers), `db.run()` and mutation functions (`execute_function`), so
+PostgreSQL cancels one that runs longer:
 
 ```python
 from fraiseql.fastapi import FraiseQLConfig, create_fraiseql_app

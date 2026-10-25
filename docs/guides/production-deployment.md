@@ -104,8 +104,8 @@ This guide covers deploying FraiseQL to production environments with:
 ### Environment Variables
 
 `FraiseQLConfig` is a Pydantic settings object: every field can be set with a
-matching `FRAISEQL_`-prefixed environment variable, or passed directly as a keyword
-argument to `create_fraiseql_app(...)`.
+matching `FRAISEQL_`-prefixed environment variable, read when the config is created
+(pass it as `create_fraiseql_app(config=...)`).
 
 ```bash
 # Application
@@ -125,15 +125,21 @@ FRAISEQL_RATE_LIMIT_ENABLED=true
 FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE=100
 FRAISEQL_COMPLEXITY_MAX_SCORE=1000
 
-# APQ
+# APQ: in required mode only the operations of APQ_QUERIES_DIR run
 FRAISEQL_APQ_MODE=required
+FRAISEQL_APQ_QUERIES_DIR=/app/graphql
 FRAISEQL_APQ_STORAGE_BACKEND=postgresql
+FRAISEQL_APQ_CACHE_RESPONSES=true
 FRAISEQL_APQ_RESPONSE_CACHE_TTL=600
 
-# Caching
-FRAISEQL_CACHE_TTL=300
+# TurboRouter
 FRAISEQL_TURBO_ROUTER_CACHE_SIZE=1000
 ```
+
+`FRAISEQL_COMPLEXITY_MAX_SCORE` turns the complexity limit on by itself, and
+`FRAISEQL_RATE_LIMIT_ENABLED=true` installs the per-IP rate limiter (both are off by
+default). There is no cache TTL variable: `FRAISEQL_CACHE_TTL` is deprecated and has
+no effect.
 
 ### Kubernetes ConfigMap
 
@@ -149,6 +155,7 @@ data:
   FRAISEQL_RATE_LIMIT_ENABLED: "true"
   FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE: "100"
   FRAISEQL_APQ_MODE: "required"
+  FRAISEQL_APQ_QUERIES_DIR: "/app/graphql"
   FRAISEQL_APQ_STORAGE_BACKEND: "postgresql"
 ```
 

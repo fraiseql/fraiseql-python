@@ -269,7 +269,16 @@ config = FraiseQLConfig(
 
 - **Type**: `int`
 - **Default**: `30`
-- **Description**: Maximum query execution time in seconds
+- **Description**: Statement timeout, in seconds, of every database read (`find`, `find_one`, `count`, ...), `db.run()` and `execute_function`: set as a transaction-local `statement_timeout`; 0 sets none.
+
+### include_execution_metadata
+
+- **Type**: `bool`
+- **Default**: `False`
+- **Description**: Add `extensions.execution` (`mode`, `time_ms`) to GraphQL responses in
+  production too. Outside production it is always added. A response served as raw Rust
+  bytes (a lone `db.find` / `db.find_one` root field, for instance) carries no extensions
+  either way.
 
 ### auto_camel_case
 
@@ -355,7 +364,7 @@ Rust. The Rust schema registry is initialized by `create_fraiseql_app`, which ta
 - ✅ **7-10x faster JSON transformation** - Zero Python overhead
 - ✅ **Always active** - No configuration needed
 - ✅ **Automatic camelCase** - snake_case → camelCase conversion
-- ✅ **Built-in __typename** - Automatic GraphQL type injection
+- ✅ **Built-in `__typename`** - Written wherever the query selects it (and only there)
 
 **Migration from v0.11.4 and earlier**: Remove all execution mode configuration.
 
@@ -495,44 +504,50 @@ config = FraiseQLConfig(
 ### rate_limit_enabled
 
 - **Type**: `bool`
-- **Default**: `True`
-- **Description**: Enable rate limiting
+- **Default**: `False`
+- **Description**: `create_fraiseql_app` installs `RateLimiterMiddleware`, which counts
+  requests per client IP (`request.client.host`) in a sliding window, in each process's
+  memory. A request over the limit gets `429` with `Retry-After` and `X-RateLimit-*`
+  headers; `/health`, `/ready`, `/metrics` and `/` are not counted. See
+  [Rate Limiting](../configuration/rate-limiting.md).
 
 ### rate_limit_requests_per_minute
 
 - **Type**: `int`
 - **Default**: `60`
-- **Description**: Maximum requests per minute
+- **Description**: Requests a client may make in any 60 seconds
 
 ### rate_limit_requests_per_hour
 
 - **Type**: `int`
 - **Default**: `1000`
-- **Description**: Maximum requests per hour
+- **Description**: Requests a client may make in any hour
 
 ### rate_limit_burst_size
 
 - **Type**: `int`
 - **Default**: `10`
-- **Description**: Burst size for rate limiting
+- **Description**: Requests a minute always allowed, even above
+  `rate_limit_requests_per_minute` (the hour limit still applies)
 
 ### rate_limit_window_type
 
 - **Type**: `str`
 - **Default**: `"sliding"`
-- **Description**: Window type ("sliding" or "fixed")
+- **Description**: Only `"sliding"` is implemented; another value logs a warning and
+  counts in a sliding window
 
 ### rate_limit_whitelist
 
 - **Type**: `list[str]`
 - **Default**: `[]`
-- **Description**: IP addresses to whitelist
+- **Description**: Client IPs that are never limited
 
 ### rate_limit_blacklist
 
 - **Type**: `list[str]`
 - **Default**: `[]`
-- **Description**: IP addresses to blacklist
+- **Description**: Client IPs that always get `403`
 
 **Examples**:
 
@@ -622,8 +637,11 @@ config = FraiseQLConfig(
 | Mode | Behavior |
 |------|----------|
 | `"optional"` | Accept both persisted query hashes and full queries (default) |
-| `"required"` | **Only** accept persisted query hashes, reject arbitrary queries |
+| `"required"` | **Only** run hashes the server already knows (from `apq_queries_dir` or a backend's `register_queries`); a query text is refused, with or without a hash, and nothing is stored |
 | `"disabled"` | Ignore APQ extensions entirely, always require full query |
+
+In `optional` and `required` mode, a query whose text doesn't hash to its `sha256Hash`
+gets HTTP 400 (`provided sha does not match query`).
 
 *New in FraiseQL v1.6.1*
 
@@ -639,7 +657,7 @@ config = FraiseQLConfig(
 - **Default**: `None`
 - **Description**: Directory containing `.graphql` files to auto-register at startup
 
-When set, all `.graphql` and `.gql` files in this directory (recursively) will be loaded and registered as persisted queries at application startup. Useful with `apq_mode="required"` for security-hardened deployments.
+When set, the operations of every `.graphql` and `.gql` file in this directory (recursively) are registered as persisted queries, each under the SHA-256 of its text, when the first APQ request creates the backend. A missing directory makes the app fail at startup; the directory isn't read in `apq_mode="disabled"`. It is how queries get approved in `apq_mode="required"`.
 
 *New in FraiseQL v1.6.1*
 
@@ -647,13 +665,16 @@ When set, all `.graphql` and `.gql` files in this directory (recursively) will b
 
 - **Type**: `bool`
 - **Default**: `False`
-- **Description**: Enable JSON response caching for APQ queries
+- **Description**: Cache the response of APQ queries. Mutations, subscriptions and
+  responses with errors are not cached; the key is the hash, the variables, the tenant and
+  the authenticated user's id (an authenticated request without one is not cached)
 
 ### apq_response_cache_ttl
 
 - **Type**: `int`
 - **Default**: `600`
-- **Description**: Cache TTL for APQ responses in seconds
+- **Description**: Seconds a cached APQ response is served (`memory` and `postgresql`
+  backends); 0 keeps it
 
 ### apq_backend_config
 

@@ -316,6 +316,10 @@ Auto-convert `snake_case` Python field names to `camelCase` in the GraphQL schem
 **Default**: `30`
 **Environment**: `FRAISEQL_QUERY_TIMEOUT`
 
+The statement timeout of every database read (`find`, `find_one`, `count`, `sum`, ...),
+`db.run()` and `execute_function`, set as a transaction-local `statement_timeout`
+before the query. `0` sets none.
+
 ```python
 config = FraiseQLConfig(
     database_url="postgresql://app:pass@localhost/myapp",
