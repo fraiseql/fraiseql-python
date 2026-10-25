@@ -1126,14 +1126,14 @@ const { data } = await client.query({
 **Monitoring:**
 
 ```python
-from fraiseql.monitoring import apq_metrics
+from fraiseql.monitoring import get_global_metrics
 
-# Check APQ cache statistics
-stats = await apq_metrics.get_stats()
-print(f"Cache hits: {stats.hits}")
-print(f"Cache misses: {stats.misses}")
-print(f"Hit rate: {stats.hit_rate:.2%}")
-print(f"Cached queries: {stats.total_queries}")
+# APQ statistics of this process
+stats = get_global_metrics().get_snapshot()
+print(f"Cache hits: {stats.query_cache_hits}")
+print(f"Cache misses: {stats.query_cache_misses}")
+print(f"Hit rate: {stats.query_cache_hit_rate:.2%}")
+print(f"Requests: {stats.total_requests}")
 ```
 
 **See also:**
@@ -1255,26 +1255,40 @@ Control access at the field level:
 
 ```python
 import fraiseql
-from fraiseql import field, authorized
+from fraiseql.security import authorize_field
 
-@field
-@authorized(roles=["admin"])
-def sensitive_field(user: User, info) -> str:
-    """Only admins can access this field."""
-    return user.sensitive_data
+@fraiseql.type
+class User:
+    id: int
+    name: str
+
+    @fraiseql.field
+    @authorize_field(lambda info: "admin" in info.context.get("roles", []))
+    async def sensitive_data(self, info) -> str | None:
+        """Only admins can read this field."""
+        return "..."
 ```
+
+A denied check returns a GraphQL error for that field, and `null` in its place; the
+rest of the response is still returned (a non-null field's `null` would null its
+parent instead).
 
 ### Rate Limiting
 
 Prevent abuse:
 
 ```python
-from fraiseql.auth import RateLimitConfig
+from fraiseql.fastapi import FraiseQLConfig
 
-rate_limit = RateLimitConfig(
-    requests_per_minute=100
+config = FraiseQLConfig(
+    database_url="postgresql://localhost/mydb",
+    rate_limit_enabled=True,             # off by default
+    rate_limit_requests_per_minute=100,  # per client IP
 )
 ```
+
+See [Rate Limiting](../configuration/rate-limiting.md) for the per-path and
+per-operation limiter (`setup_rate_limiting`).
 
 ### Introspection Control
 
