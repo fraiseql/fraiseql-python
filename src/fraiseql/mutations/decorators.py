@@ -87,7 +87,7 @@ def _derived_union(success_cls: type, error_cls: type) -> object:
 # ------------------------
 
 
-@dataclass_transform(field_specifiers=(fraise_field,))
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 @overload
 def success(_cls: None = None) -> Callable[[T], T]: ...
 @overload
@@ -174,7 +174,7 @@ def success(_cls: T | None = None) -> T | Callable[[T], T]:
     return wrap if _cls is None else wrap(_cls)
 
 
-@dataclass_transform(field_specifiers=(fraise_field,))
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 @overload
 def error(_cls: None = None) -> Callable[[T], T]: ...
 @overload
@@ -275,6 +275,10 @@ def _maybe_register_union(_: str) -> None:
             register_result(success_cls, _error_registry[error_name])
 
 
+@warnings.deprecated(
+    "fraiseql.result() is deprecated; "
+    "annotate the mutation's return type as Success | Error instead."
+)
 def result(success_cls: type, error_cls: type) -> type:
     """Build a success+error result union type.
 
@@ -283,12 +287,6 @@ def result(success_cls: type, error_cls: type) -> type:
         the union after the mutation (``result_name=`` overrides it). fraiseql 1.x
         keeps it working.
     """
-    warnings.warn(
-        "fraiseql.result() is deprecated; "
-        "annotate the mutation's return type as Success | Error instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     register_result(success_cls, error_cls)
     return cast("type", _derived_union(success_cls, error_cls))
 

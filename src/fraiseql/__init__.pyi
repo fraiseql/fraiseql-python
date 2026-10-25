@@ -1,277 +1,75 @@
-from typing import Any, Callable, Type, TypeVar, dataclass_transform, overload
-from warnings import deprecated
+# Type stub for the ``fraiseql`` package.
+#
+# It re-exports the runtime names from the modules that define them, so type checkers
+# read each signature from the code itself. What it adds over ``__init__.py``:
+# ``fraiseql.type`` and ``fraiseql.input`` (served by the module ``__getattr__`` so that
+# ``from fraiseql import *`` doesn't shadow the builtins), the lazily loaded
+# ``fraiseql_rs`` extension, and the FastAPI and auth names typed as their classes
+# rather than ``... | None`` (the runtime falls back to ``None`` if the import fails).
+# tests/unit/test_stub_public_names.py keeps its names in step with the runtime module.
 
-from .mutations.error_config import MutationErrorConfig as MutationErrorConfig
+from types import ModuleType
 
-_T = TypeVar("_T")
-_F = TypeVar("_F", bound=Callable[..., Any])
-
-# Helper function for fields (declared first: referenced by the
-# ``@dataclass_transform`` field specifiers on the type decorators below).
-def fraise_field(
-    *,
-    description: str | None = None,
-    alias: str | None = None,
-    deprecation_reason: str | None = None,
-    default: Any = ...,
-) -> Any: ...
-
-# Core type decorators
-@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
-@overload
-def fraise_type_decorator(cls: Type[_T]) -> Type[_T]: ...
-@overload
-def fraise_type_decorator(
-    *,
-    sql_source: str | None = None,
-    jsonb_column: str | None = None,
-    implements: list[Type[Any]] | None = None,
-    resolve_nested: bool = False,
-    authorize_fields: list[str] | None = None,
-) -> Callable[[Type[_T]], Type[_T]]: ...
-def fraise_type_decorator(
-    cls: Type[_T] | None = None,
-    *,
-    sql_source: str | None = None,
-    jsonb_column: str | None = None,
-    implements: list[Type[Any]] | None = None,
-    resolve_nested: bool = False,
-    authorize_fields: list[str] | None = None,
-) -> Type[_T] | Callable[[Type[_T]], Type[_T]]: ...
-@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
-@overload
-def fraise_input_decorator(cls: Type[_T]) -> Type[_T]: ...
-@overload
-def fraise_input_decorator(
-    *,
-    description: str | None = None,
-) -> Callable[[Type[_T]], Type[_T]]: ...
-def fraise_input_decorator(
-    cls: Type[_T] | None = None,
-    *,
-    description: str | None = None,
-) -> Type[_T] | Callable[[Type[_T]], Type[_T]]: ...
-@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
-def success(cls: Type[_T]) -> Type[_T]: ...
-@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
-def error(cls: Type[_T]) -> Type[_T]: ...
-@deprecated(
-    "fraiseql.result() is deprecated; "
-    "annotate the mutation's return type as Success | Error instead."
-)
-def result(success_cls: Type[Any], error_cls: Type[Any]) -> Type[Any]: ...
-def enum(cls: Type[_T]) -> Type[_T]: ...
-@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
-def interface(cls: Type[_T]) -> Type[_T]: ...
-
-# Query decorator
-@overload
-def query(func: _F) -> _F: ...
-@overload
-def query() -> Callable[[_F], _F]: ...
-def query(func: _F | None = None) -> _F | Callable[[_F], _F]: ...
-
-# Field decorator
-@overload
-def field(func: _F) -> _F: ...
-@overload
-def field(
-    *,
-    description: str | None = None,
-    deprecation_reason: str | None = None,
-) -> Callable[[_F], _F]: ...
-def field(
-    func: _F | None = None,
-    *,
-    description: str | None = None,
-    deprecation_reason: str | None = None,
-) -> _F | Callable[[_F], _F]: ...
-
-# Dataloader field decorator
-@overload
-def dataloader_field(func: _F) -> _F: ...
-@overload
-def dataloader_field(
-    *,
-    loader_key: str | None = None,
-    description: str | None = None,
-) -> Callable[[_F], _F]: ...
-def dataloader_field(
-    func: _F | None = None,
-    *,
-    loader_key: str | None = None,
-    description: str | None = None,
-) -> _F | Callable[[_F], _F]: ...
-
-# Mutation decorator
-@overload
-def mutation(_cls: _T) -> _T: ...
-@overload
-def mutation(
-    *,
-    function: str | None = None,
-    schema: str | None = None,
-    context_params: dict[str, str] | None = None,
-    error_config: MutationErrorConfig | None = None,
-    enable_cascade: bool = False,
-    authorizer: Any | None = None,
-    name: str | None = None,
-    result_name: str | None = None,
-) -> Callable[[_T], _T]: ...
-def mutation(
-    _cls: _T | None = None,
-    *,
-    function: str | None = None,
-    schema: str | None = None,
-    context_params: dict[str, str] | None = None,
-    error_config: MutationErrorConfig | None = None,
-    enable_cascade: bool = False,
-    authorizer: Any | None = None,
-    name: str | None = None,
-    result_name: str | None = None,
-) -> _T | Callable[[_T], _T]: ...
-
-# Subscription decorator
-@overload
-def subscription(func: _F) -> _F: ...
-@overload
-def subscription() -> Callable[[_F], _F]: ...
-def subscription(func: _F | None = None) -> _F | Callable[[_F], _F]: ...
-
-# Scalar field types
-class Date:
-    def __init__(self, value: str | None = None) -> None: ...
-
-class DateTime:
-    def __init__(self, value: str | None = None) -> None: ...
-
-class JSON:
-    def __init__(self, value: Any = None) -> None: ...
-
-class EmailAddress:
-    def __init__(self, value: str | None = None) -> None: ...
-
-class IpAddress:
-    def __init__(self, value: str | None = None) -> None: ...
-
-class MacAddress:
-    def __init__(self, value: str | None = None) -> None: ...
-
-class Port:
-    def __init__(self, value: int | None = None) -> None: ...
-
-class Hostname:
-    def __init__(self, value: str | None = None) -> None: ...
-
-# Generic types
-class Connection:
-    edges: list[Any]
-    page_info: Any
-    total_count: int | None
-
-class Edge:
-    node: Any
-    cursor: str
-
-class PageInfo:
-    has_next_page: bool
-    has_previous_page: bool
-    start_cursor: str | None
-    end_cursor: str | None
-
-def create_connection(
-    items: list[Any],
-    *,
-    first: int | None = None,
-    after: str | None = None,
-    last: int | None = None,
-    before: str | None = None,
-) -> Connection: ...
-
-# CQRS classes
-class CQRSRepository:
-    def __init__(self, connection_or_pool: Any) -> None: ...
-    async def find(
-        self,
-        view: str,
-        filters: dict[str, Any] | None = None,
-        *,
-        limit: int | None = None,
-        offset: int | None = None,
-        order_by: str | list[str] | None = None,
-    ) -> list[dict[str, Any]]: ...
-    async def find_one(
-        self,
-        view: str,
-        filters: dict[str, Any] | None = None,
-    ) -> dict[str, Any] | None: ...
-    async def execute_function(
-        self,
-        function_name: str,
-        params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]: ...
-
-class CQRSExecutor:
-    def __init__(self, repository: CQRSRepository) -> None: ...
-
-# Schema builder
-def build_fraiseql_schema(
-    types: list[Type[Any]] | None = None,
-    mutations: list[Type[Any]] | None = None,
-    queries: list[Type[Any]] | None = None,
-    subscriptions: list[Type[Any]] | None = None,
-) -> Any: ...
-
-# Error configurations
-ALWAYS_DATA_CONFIG: MutationErrorConfig
-DEFAULT_ERROR_CONFIG: MutationErrorConfig
-STRICT_STATUS_CONFIG: MutationErrorConfig
-
-# Constants
-UNSET: Any
-
-# Auth types (when available)
-class AuthProvider: ...
-
-class UserContext:
-    user_id: str
-    roles: list[str]
-    permissions: list[str]
-
-def requires_auth(func: _F) -> _F: ...
-def requires_role(role: str) -> Callable[[_F], _F]: ...
-def requires_permission(permission: str) -> Callable[[_F], _F]: ...
-def requires_any_role(*roles: str) -> Callable[[_F], _F]: ...
-def requires_any_permission(*permissions: str) -> Callable[[_F], _F]: ...
-
-class Auth0Config:
-    domain: str
-    audience: str
-    algorithms: list[str]
-
-class Auth0Provider(AuthProvider):
-    def __init__(self, config: Auth0Config) -> None: ...
-
-# FastAPI integration (FastAPI is a core dependency; typed here as the
-# available API. At runtime these fall back to ``None`` if the import ever
-# fails, but the stub describes the usable, installed surface.)
+from .auth import AuthProvider as AuthProvider
+from .auth import UserContext as UserContext
+from .auth import requires_any_permission as requires_any_permission
+from .auth import requires_any_role as requires_any_role
+from .auth import requires_auth as requires_auth
+from .auth import requires_permission as requires_permission
+from .auth import requires_role as requires_role
+from .auth.auth0 import Auth0Config as Auth0Config
+from .auth.auth0 import Auth0Provider as Auth0Provider
+from .cqrs import CQRSExecutor as CQRSExecutor
+from .cqrs import CQRSRepository as CQRSRepository
+from .decorators import connection as connection
+from .decorators import field as field
+from .decorators import query as query
 from .fastapi import FraiseQLConfig as FraiseQLConfig
 from .fastapi import create_fraiseql_app as create_fraiseql_app
-
-# Operation-level authorization (issue #362)
+from .fields import fraise_field as fraise_field
+from .gql.schema_builder import build_fraiseql_schema as build_fraiseql_schema
+from .mutations.decorators import error as error
+from .mutations.decorators import result as result
+from .mutations.decorators import success as success
+from .mutations.error_config import ALWAYS_DATA_CONFIG as ALWAYS_DATA_CONFIG
+from .mutations.error_config import DEFAULT_ERROR_CONFIG as DEFAULT_ERROR_CONFIG
+from .mutations.error_config import STRICT_STATUS_CONFIG as STRICT_STATUS_CONFIG
+from .mutations.error_config import MutationErrorConfig as MutationErrorConfig
+from .mutations.mutation_decorator import mutation as mutation
+from .mutations.validation import validate_mutation_return as validate_mutation_return
+from .optimization.decorators import dataloader_field as dataloader_field
 from .security.authorization import AuthorizationDecision as AuthorizationDecision
 from .security.authorization import Authorizer as Authorizer
 from .security.authorization import normalize_decision as normalize_decision
+from .security.decision_cache import AuthorizationCacheConfig as AuthorizationCacheConfig
+from .security.decision_cache import DecisionCache as DecisionCache
+from .subscriptions import subscription as subscription
+from .types import fraise_input as fraise_input
+from .types import fraise_type as fraise_type
+from .types.common import MutationResultBase as MutationResultBase
+from .types.definitions import UNSET as UNSET
+from .types.enum import fraise_enum as fraise_enum
+from .types.errors import Error as Error
+from .types.generic import Connection as Connection
+from .types.generic import Edge as Edge
+from .types.generic import PageInfo as PageInfo
+from .types.generic import PaginatedResponse as PaginatedResponse
+from .types.generic import create_connection as create_connection
+from .types.interface import fraise_interface as fraise_interface
+from .types.scalars.date import DateField as Date
+from .types.scalars.email_address import EmailAddressField as EmailAddress
+from .types.scalars.json import JSONField as JSON  # noqa: N814
+from .types.scalars.ltree import LTreeField as LTree
 
-# Aliases for backwards compatibility
-fraise_type = fraise_type_decorator
-fraise_input = fraise_input_decorator
-fraise_enum = enum
-fraise_interface = interface
+enum = fraise_enum
+interface = fraise_interface
 
-# Core aliases
+# Served by the module __getattr__ (not in __all__: they shadow builtins)
 type = fraise_type  # noqa: A001
 input = fraise_input  # noqa: A001
+
+# The Rust extension, loaded on first access; None when it isn't built
+fraiseql_rs: ModuleType | None
 
 __version__: str
 
@@ -280,39 +78,31 @@ __all__ = [
     "DEFAULT_ERROR_CONFIG",
     "JSON",
     "STRICT_STATUS_CONFIG",
-    # Constants
     "UNSET",
     "Auth0Config",
     "Auth0Provider",
-    # Auth (optional)
     "AuthProvider",
-    # Operation authorization (issue #362)
+    "AuthorizationCacheConfig",
     "AuthorizationDecision",
     "Authorizer",
     "CQRSExecutor",
-    # CQRS
     "CQRSRepository",
-    # Generic types
     "Connection",
-    # Scalar types
     "Date",
-    "DateTime",
+    "DecisionCache",
     "Edge",
     "EmailAddress",
-    # FastAPI integration (optional)
+    "Error",
     "FraiseQLConfig",
-    "Hostname",
-    "IpAddress",
-    "MacAddress",
-    # Error configs
+    "LTree",
     "MutationErrorConfig",
+    "MutationResultBase",
     "PageInfo",
-    "Port",
+    "PaginatedResponse",
     "UserContext",
-    # Schema
     "build_fraiseql_schema",
+    "connection",
     "create_connection",
-    # FastAPI integration (optional)
     "create_fraiseql_app",
     "dataloader_field",
     "enum",
@@ -321,13 +111,9 @@ __all__ = [
     "fraise_enum",
     "fraise_field",
     "fraise_input",
-    "fraise_input_decorator",
     "fraise_interface",
-    # Aliases
     "fraise_type",
-    # Core decorators
-    "fraise_type_decorator",
-    "input",
+    "fraiseql_rs",
     "interface",
     "mutation",
     "normalize_decision",
@@ -340,5 +126,5 @@ __all__ = [
     "result",
     "subscription",
     "success",
-    "type",
+    "validate_mutation_return",
 ]

@@ -666,6 +666,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instead of building the input; and `where_generator.unwrap_type` returned
   `T | None` unchanged.
 
+- **Type checkers see fraiseql's actual API.** The hand-written stubs they read
+  instead of the code had drifted: `fraiseql/__init__.pyi` lacked `connection`,
+  `Error`, `LTree`, `PaginatedResponse`, `MutationResultBase`,
+  `validate_mutation_return`, `DecisionCache`, `AuthorizationCacheConfig`,
+  `fraiseql_rs`, and declared `DateTime`, `IpAddress`, `MacAddress`, `Port` and
+  `Hostname`, which `fraiseql` doesn't export, and wrong signatures for
+  `build_fraiseql_schema`, `dataloader_field`, `create_connection`,
+  `CQRSRepository` and others. `cqrs/repository.pyi` described methods
+  `CQRSRepository` doesn't have (`find`, `stream`, `execute_function`, ...) and
+  hid twenty that it has (`create`, `update`, `paginate`, `query`, ...). The
+  `__init__.pyi` stub now re-exports every name from the module that defines it
+  (it still types `fraiseql.type`, `fraiseql.input` and `fraiseql_rs`, which the
+  package serves through `__getattr__`); `cqrs/repository.pyi` and
+  `mutations/error_config.pyi` are removed, so checkers read the annotated
+  modules. `@fraiseql.type`, `input`, `interface`, `success` and `error` declare
+  keyword-only construction (`kw_only_default=True`, as at runtime) and
+  `fraiseql.result` is marked `@deprecated` in the code itself. A test compares
+  each remaining stub's names with its module.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't

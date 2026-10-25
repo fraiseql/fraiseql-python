@@ -14,7 +14,7 @@ from fraiseql.utils.fields import patch_missing_field_types
 T = TypeVar("T", bound=type)
 
 
-@dataclass_transform(field_specifiers=(fraise_field,))
+@dataclass_transform(kw_only_default=True, field_specifiers=(fraise_field,))
 @overload
 def fraise_interface(_cls: None = None) -> Callable[[T], T]: ...
 @overload
