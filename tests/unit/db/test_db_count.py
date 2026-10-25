@@ -77,7 +77,9 @@ class TestFraiseQLRepositoryCount:
         result = await db.count("v_users", where={"status": {"eq": "active"}})
 
         assert result == 25
-        cursor.execute.assert_called_once()
+        # An unregistered view: its columns are read first, then it is counted
+        assert cursor.execute.call_count == 2
+        assert cursor.execute.call_args.args[1] == ["active"]
 
     @pytest.mark.asyncio
     async def test_count_with_tenant_id(self, mock_pool) -> None:

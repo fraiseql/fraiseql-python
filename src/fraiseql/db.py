@@ -2344,6 +2344,70 @@ class FraiseQLRepository:
             # Field-only mode: dict = found record; [] = not found (Rust's null sentinel).
             return None if result == [] else result
 
+    async def _view_shape(self, view_name: str) -> tuple[set[str] | None, str | None]:
+        """``(columns, JSONB column)`` of a view, for the read helpers below.
+
+        A registered view answers from its registration, as ``find`` reads it
+        (columns ``None`` when it registered none). An unregistered one is read
+        from the catalog, once per repository: its columns, and ``data`` as its
+        JSONB column when it has a ``jsonb`` column of that name. ``(None, None)``
+        when the catalog doesn't know the view.
+        """
+        metadata = _table_metadata.get(view_name)
+        if metadata is not None:
+            if metadata.get("has_jsonb_data", False):
+                jsonb_column = metadata.get("jsonb_column") or "data"
+            else:
+                jsonb_column = metadata.get("jsonb_column")
+            columns = metadata.get("columns")
+            return (set(columns) if columns else None), jsonb_column
+
+        shapes: dict[str, tuple[set[str] | None, str | None]] = self.__dict__.setdefault(
+            "_view_shapes", {}
+        )
+        if view_name not in shapes:
+            from psycopg.rows import tuple_row
+
+            names: set[str] = set()
+            jsonb_column = None
+            try:
+                async with (
+                    self._pool.connection() as conn,
+                    conn.cursor(row_factory=tuple_row) as cursor,
+                ):
+                    await cursor.execute(
+                        "SELECT attname, atttypid = 'jsonb'::regtype FROM pg_attribute "
+                        "WHERE attrelid = to_regclass(%s) AND attnum > 0 AND NOT attisdropped",
+                        (view_name,),
+                    )
+                    for name, is_jsonb in await cursor.fetchall():
+                        names.add(name)
+                        if name == "data" and is_jsonb:
+                            jsonb_column = "data"
+            except Exception:
+                logger.debug("Could not read the columns of %s", view_name, exc_info=True)
+                names = set()
+            shapes[view_name] = (names or None, jsonb_column)
+        return shapes[view_name]
+
+    async def _helper_where(self, view_name: str, kwargs: dict[str, Any]) -> tuple[list, list]:
+        """WHERE parts and parameters of a read helper (count, sum, aggregate...).
+
+        Merges ``mandatory_filters``, then builds ``where`` as ``find`` does. On an
+        unregistered view with a JSONB ``data`` column, ``where`` looks up the
+        fields that aren't columns of the view in ``data``.
+        """
+        mandatory_filters = self._consume_mandatory_filters(kwargs)
+        if mandatory_filters:
+            parts, params = _make_mandatory_conditions(mandatory_filters)
+            kwargs["_mandatory_parts"] = parts
+            kwargs["_mandatory_params"] = params
+        if kwargs.get("where") and view_name not in _table_metadata:
+            columns, jsonb_column = await self._view_shape(view_name)
+            if jsonb_column is not None and columns is not None:
+                kwargs["_table_columns"] = columns
+        return self._build_where_clause(view_name, **kwargs)
+
     async def count(
         self,
         view_name: str,
@@ -2369,15 +2433,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed
 
-        # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = mandatory_parts
-            kwargs["_mandatory_params"] = mandatory_params
-
-        # Build WHERE clause (extracted to helper method for reuse)
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2566,15 +2622,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed
 
-        # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = mandatory_parts
-            kwargs["_mandatory_params"] = mandatory_params
-
-        # Build WHERE clause using existing helper
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2631,14 +2679,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        # Extract mandatory_filters before _build_where_clause (#344)
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            mandatory_parts, mandatory_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = mandatory_parts
-            kwargs["_mandatory_params"] = mandatory_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2691,13 +2732,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2746,13 +2781,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2796,13 +2825,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2850,13 +2873,7 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2913,16 +2930,10 @@ class FraiseQLRepository:
         """
         from psycopg.sql import SQL, Composed, Identifier
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
 
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -2988,13 +2999,7 @@ class FraiseQLRepository:
         if not aggregations:
             return {}
 
-        mandatory_filters = self._consume_mandatory_filters(kwargs)
-        if mandatory_filters:
-            m_parts, m_params = _make_mandatory_conditions(mandatory_filters)
-            kwargs["_mandatory_parts"] = m_parts
-            kwargs["_mandatory_params"] = m_params
-
-        where_parts, params = self._build_where_clause(view_name, **kwargs)
+        where_parts, params = await self._helper_where(view_name, kwargs)
 
         table_identifier = qualified_identifier(view_name)
 
@@ -3209,6 +3214,8 @@ class FraiseQLRepository:
         # Extract mandatory conditions (injected by find/find_one/count/exists)
         mandatory_parts = kwargs.pop("_mandatory_parts", [])
         mandatory_params = kwargs.pop("_mandatory_params", [])
+        # The view's columns, when the caller read them (_helper_where)
+        known_columns = kwargs.pop("_table_columns", None)
 
         where_parts = list(mandatory_parts)
         all_params = list(mandatory_params)
@@ -3221,8 +3228,10 @@ class FraiseQLRepository:
             # CRITICAL: table_columns must be provided for hybrid table FK detection
             table_columns = None
 
+            if known_columns is not None:
+                table_columns = known_columns
             # Try introspection cache first
-            if hasattr(self, "_introspected_columns") and view_name in self._introspected_columns:
+            elif hasattr(self, "_introspected_columns") and view_name in self._introspected_columns:
                 table_columns = self._introspected_columns[view_name]
             # Then try registered metadata
             elif view_name in _table_metadata:

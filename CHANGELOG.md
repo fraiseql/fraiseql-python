@@ -598,6 +598,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `mandatory_filters`.** They built the condition but ran the query without its
   values, so any filter failed with a syntax error at the `%s` placeholder.
 
+- **`db.count(where=...)`, and the other read helpers' `where`, work on a view
+  no type is registered for.** On an `id` + `data` view they filtered
+  `"status" = ...` as if every field were a column, so they failed unless a
+  `@fraiseql.type` named the view. `count`, `exists`, `sum`, `avg`, `min`,
+  `max`, `distinct`, `pluck` and `aggregate` now read the columns of an
+  unregistered view from the catalog (once per repository, only when a `where`
+  needs them); when it has a `jsonb` `data` column, a field that isn't a column
+  is looked up in `data`, as on a registered view.
+
 - Tests: order-dependent and flaky tests are deterministic. Test modules left
   queries in the schema registry (`meta_test_schema` and the nested-array `where`
   tests didn't clear it), and the health, lifespan and CORS app tests didn't

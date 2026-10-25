@@ -92,3 +92,37 @@ class TestFieldHelpersWithWhere:
         assert await repo.sum(table, "amount", mandatory_filters=done) == 30.0
         assert await repo.max(table, "amount", mandatory_filters=done) == 20
         assert await repo.distinct(table, "status", mandatory_filters=done) == ["done"]
+
+
+class TestWhereOnAnUnregisteredJsonbView:
+    """A field that isn't a column of the view is read from its ``data`` column."""
+
+    async def test_count_and_exists(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+        view = f"{views}.v_order"
+
+        assert await repo.count(view, where={"status": {"eq": "done"}}) == 2
+        assert await repo.count(view, where={"amount": {"gte": 10}}) == 2
+        assert await repo.exists(view, where={"status": {"eq": "open"}}) is True
+        assert await repo.exists(view, where={"status": {"eq": "lost"}}) is False
+
+    async def test_a_column_stays_a_column(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+
+        assert await repo.count(f"{views}.v_order", where={"id": {"in": [1, 3]}}) == 2
+
+    async def test_aggregate(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+
+        stats = await repo.aggregate(
+            f"{views}.v_order",
+            {"orders": "COUNT(*)", "total": "SUM((data ->> 'amount')::numeric)"},
+            where={"status": {"eq": "done"}},
+        )
+
+        assert stats == {"orders": 2, "total": 30}
+
+    async def test_a_flat_table_still_filters_on_its_columns(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+
+        assert await repo.count(f"{views}.tb_order", where={"status": {"eq": "done"}}) == 2
