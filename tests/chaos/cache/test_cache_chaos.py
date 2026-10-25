@@ -39,13 +39,25 @@ class TestCacheChaos(ChaosTestCase):
         cache_hits = 0
         cache_misses = 0
 
+        # DETERMINISTIC SCHEDULE: each half hits the cache at its rate, in an order
+        # shuffled with a fixed seed (an unseeded random.random() per operation fell
+        # under the 40% overall hit rate about 1 run in 100)
+        rng = random.Random("cache_invalidation_storm")
+        storm_ops = total_operations // 2
+        normal_ops = total_operations - storm_ops
+        storm_hits = round(storm_ops * storm_cache_hit_rate)
+        normal_hits = round(normal_ops * cache_hit_rate)
+        storm = [True] * storm_hits + [False] * (storm_ops - storm_hits)
+        normal = [True] * normal_hits + [False] * (normal_ops - normal_hits)
+        rng.shuffle(storm)
+        rng.shuffle(normal)
+        hits = storm + normal
+
         for i in range(total_operations):
             # Simulate cache invalidation storm (first half of operations)
-            current_hit_rate = storm_cache_hit_rate if i < total_operations // 2 else cache_hit_rate
-
-            if random.random() < current_hit_rate:
+            if hits[i]:
                 # Cache hit - fast response
-                execution_time = 5.0 + random.uniform(-1, 1)  # ~5ms cache hit
+                execution_time = 5.0 + (i % 3 - 1)  # ~5ms cache hit
                 cache_hits += 1
             else:
                 # Cache miss - database query
@@ -54,11 +66,6 @@ class TestCacheChaos(ChaosTestCase):
                 cache_misses += 1
 
             self.metrics.record_query_time(execution_time)
-
-            # Simulate storm: invalidate cache entries randomly
-            if i < total_operations // 2 and random.random() < 0.3:  # 30% invalidation rate
-                # Cache invalidation causes next request to miss
-                pass
 
         self.metrics.end_test()
 
@@ -363,13 +370,16 @@ class TestCacheChaos(ChaosTestCase):
 
         cache_entries = {}
         evictions = 0
+        # Seeded: the hits and the evicted entries were unseeded random draws, which
+        # evicted more than 70% of the operations about 1 run in 300
+        rng = random.Random("cache_memory_pressure")
 
         for i in range(total_operations):
             cache_key = f"query_{i % key_space}"  # More keys than capacity → evictions
 
-            if cache_key in cache_entries and random.random() < 0.7:  # 70% hit rate
+            if cache_key in cache_entries and rng.random() < 0.7:  # 70% hit rate
                 # Cache hit
-                execution_time = 4.0 + random.uniform(-0.5, 0.5)
+                execution_time = 4.0 + rng.uniform(-0.5, 0.5)
                 self.metrics.record_query_time(execution_time)
             else:
                 # Cache miss - database query
@@ -380,7 +390,7 @@ class TestCacheChaos(ChaosTestCase):
                 # Cache the result (with eviction pressure)
                 if len(cache_entries) >= cache_capacity:
                     # Evict random entry
-                    evicted_key = random.choice(list(cache_entries.keys()))
+                    evicted_key = rng.choice(list(cache_entries.keys()))
                     del cache_entries[evicted_key]
                     evictions += 1
 
