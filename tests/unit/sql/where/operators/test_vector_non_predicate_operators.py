@@ -1,22 +1,18 @@
 """Vector operators that cannot be WHERE predicates must be rejected loudly (#510).
 
-Four entries in the vector operator registry render an *expression*, not a
+Two entries in the vector operator registry render an *expression*, not a
 boolean, so they can never serve as a WHERE predicate:
 
 ``custom_distance``     a bare call to a user-supplied function
 ``vector_norm``         ``vector_norm(col, 'l2')`` -- pgvector's is
                         ``vector_norm(vector)``, one argument, so this does not
                         exist at any arity and errors on every execution
-``quantized_distance``  a call to ``quantized_<type>_distance``, which FraiseQL
-                        does not define
-``reconstruct``         a call to ``reconstruct_quantized_vector``, which
-                        FraiseQL does not define, returning a vector
 
-``custom_distance`` and ``quantized_distance`` additionally concatenated
-caller-supplied strings into the statement through ``psycopg.sql.SQL()``, the
-raw-fragment constructor, which performs no escaping.
+``custom_distance`` additionally concatenated caller-supplied strings into the
+statement through ``psycopg.sql.SQL()``, the raw-fragment constructor, which
+performs no escaping.
 
-The rejection must raise :class:`WhereClauseError`. Dropping the four from
+The rejection must raise :class:`WhereClauseError`. Dropping the two from
 ``OPERATOR_MAP`` instead is the tempting fix and is *worse*: an unregistered
 operator makes ``get_operator_function`` raise ``ValueError``, which
 ``_make_filter_field_composed`` swallows with ``except ValueError: continue``.
@@ -32,8 +28,6 @@ from fraiseql.errors.exceptions import WhereClauseError
 from fraiseql.sql.where.operators.vectors import (
     NON_PREDICATE_OPERATORS,
     build_custom_distance_sql,
-    build_quantization_reconstruct_sql,
-    build_quantized_distance_sql,
     build_vector_norm_sql,
 )
 from fraiseql.sql.where_generator import safe_create_where_type
@@ -99,7 +93,7 @@ class TestRejectionIsLoudNotSilent:
     def test_sibling_filter_does_not_survive_alone(self) -> None:
         """A surviving scope filter with the vector filter gone is the danger (#505).
 
-        Under the tempting fix -- deleting the four ``OPERATOR_MAP`` entries --
+        Under the tempting fix -- deleting the two ``OPERATOR_MAP`` entries --
         this renders ``(data ->> 'tenant') = 'acme'`` on its own and executes,
         silently ignoring the vector filter.
         """
@@ -123,19 +117,10 @@ class TestRejectionIsLoudNotSilent:
 
         assert (FieldType.VECTOR, "custom_distance") in OPERATOR_MAP
         assert (FieldType.VECTOR, "vector_norm") in OPERATOR_MAP
-        assert (FieldType.SPARSE_VECTOR, "custom_distance") in OPERATOR_MAP
-        assert (FieldType.SPARSE_VECTOR, "vector_norm") in OPERATOR_MAP
-        assert (FieldType.QUANTIZED_VECTOR, "quantized_distance") in OPERATOR_MAP
-        assert (FieldType.QUANTIZED_VECTOR, "reconstruct") in OPERATOR_MAP
 
     def test_registry_names_every_rejected_operator(self) -> None:
         """The rejection table and the registry must not drift apart."""
-        assert set(NON_PREDICATE_OPERATORS) == {
-            "custom_distance",
-            "vector_norm",
-            "quantized_distance",
-            "reconstruct",
-        }
+        assert set(NON_PREDICATE_OPERATORS) == {"custom_distance", "vector_norm"}
 
     def test_every_rejected_operator_has_a_remedy(self) -> None:
         """Each entry carries the two message halves ``_reject_non_predicate`` reads."""
@@ -163,20 +148,6 @@ class TestNoCallerStringReachesTheStatement:
         with pytest.raises(WhereClauseError):
             render_dense("custom_distance", payload)
 
-    @pytest.mark.parametrize(
-        "payload",
-        [
-            # 'distance_type' was interpolated into the function name.
-            {"target_vector": [0.1], "distance_type": "x(1) OR true --"},
-            # Each target_vector element was rendered with SQL(str(v)).
-            {"target_vector": ["0.1]'::vector) OR true --"]},
-        ],
-    )
-    def test_quantized_distance_payload_never_renders(self, payload) -> None:
-        """``quantized_distance`` carried the same two channels, unreported."""
-        with pytest.raises(WhereClauseError):
-            build_quantized_distance_sql(SQL("(data ->> 'quantized_emb')"), payload)
-
 
 class TestBuildersRejectDirectly:
     """The builders are public; calling one directly must not yield SQL either."""
@@ -186,8 +157,6 @@ class TestBuildersRejectDirectly:
         [
             (build_custom_distance_sql, {"function": "my_dist"}),
             (build_vector_norm_sql, "l2"),
-            (build_quantized_distance_sql, {"target_vector": [0.1]}),
-            (build_quantization_reconstruct_sql, None),
         ],
     )
     def test_builder_raises_where_clause_error(self, builder, value) -> None:

@@ -206,18 +206,9 @@ OPERATOR_MAP: dict[tuple[FieldType, str], Callable[[SQL, any], Composed]] = {
     (FieldType.VECTOR, "inner_product"): vectors.build_inner_product_sql,
     (FieldType.VECTOR, "hamming_distance"): vectors.build_hamming_distance_sql,
     (FieldType.VECTOR, "jaccard_distance"): vectors.build_jaccard_distance_sql,
-    # Sparse vector operators
-    (FieldType.SPARSE_VECTOR, "cosine_distance"): vectors.build_sparse_cosine_distance_sql,
-    (FieldType.SPARSE_VECTOR, "l2_distance"): vectors.build_sparse_l2_distance_sql,
-    (FieldType.SPARSE_VECTOR, "inner_product"): vectors.build_sparse_inner_product_sql,
-    # Custom distance operators
+    # Non-predicate operators, registered so that they are refused loudly
     (FieldType.VECTOR, "custom_distance"): vectors.build_custom_distance_sql,
-    (FieldType.SPARSE_VECTOR, "custom_distance"): vectors.build_custom_distance_sql,
     (FieldType.VECTOR, "vector_norm"): vectors.build_vector_norm_sql,
-    (FieldType.SPARSE_VECTOR, "vector_norm"): vectors.build_vector_norm_sql,
-    # Quantization operators
-    (FieldType.QUANTIZED_VECTOR, "quantized_distance"): vectors.build_quantized_distance_sql,
-    (FieldType.QUANTIZED_VECTOR, "reconstruct"): vectors.build_quantization_reconstruct_sql,
 }
 
 

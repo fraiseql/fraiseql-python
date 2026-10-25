@@ -31,8 +31,6 @@ class FieldType(Enum):
     PORT = "port"
     FULLTEXT = "fulltext"
     VECTOR = "vector"
-    SPARSE_VECTOR = "sparse_vector"
-    QUANTIZED_VECTOR = "quantized_vector"
 
     def is_ip_address(self) -> bool:
         """Check if this field type is IP address."""

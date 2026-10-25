@@ -584,10 +584,8 @@ class VectorFilter:
     - l1_distance: L1/Manhattan distance (sum of absolute differences)
     - inner_product: Negative inner product (more negative = more similar)
 
-    Sparse Vector Operators (sparsevec):
-    - cosine_distance: Sparse cosine distance (accepts sparse vector input)
-    - l2_distance: Sparse L2 distance (accepts sparse vector input)
-    - inner_product: Sparse inner product (accepts sparse vector input)
+    A sparse operand (``{ sparse: ... }``) is refused: its literal needs the
+    column's dimension.
 
     Binary Vector Operators (bit):
     - hamming_distance: Hamming distance for bit vectors (count differing bits)
@@ -599,20 +597,12 @@ class VectorFilter:
     Example:
         # Dense vector distance:
         documents(
-            where: { embedding: { cosine_distance: { dense: [0.1, 0.2, 0.3] } } }
+            where: { embedding: { cosineDistance: { dense: [0.1, 0.2] }, distanceWithin: 0.5 } }
             limit: 10
-        )
-        # Sparse vector distance:
-        documents(
-            where: {
-                sparse_embedding: {
-                    cosine_distance: { sparse: { indices: [1,3,5], values: [0.1,0.2,0.3] } }
-                }
-            }
         )
         # Binary vector distance:
         documents(
-            where: { binary_embedding: { hamming_distance: "101010" } }
+            where: { binaryEmbedding: { hammingDistance: "101010", distanceWithin: 2 } }
         )
     """
 

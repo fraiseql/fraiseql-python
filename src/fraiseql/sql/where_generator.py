@@ -86,10 +86,7 @@ def build_operator_composed(
 
     # A distance operator renders a number, not a predicate. Wrap it in the
     # requested comparison so PostgreSQL accepts it in a WHERE clause (#505).
-    if op in VECTOR_DISTANCE_OPERATORS and detected_field_type in (
-        FieldType.VECTOR,
-        FieldType.SPARSE_VECTOR,
-    ):
+    if op in VECTOR_DISTANCE_OPERATORS and detected_field_type == FieldType.VECTOR:
         query_vector, threshold, comparison = unpack_distance_filter(
             val, operator=op, distance_within=distance_within, field_name=field_name
         )

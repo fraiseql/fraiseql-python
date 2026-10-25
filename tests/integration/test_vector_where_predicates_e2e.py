@@ -143,6 +143,18 @@ class TestVectorFilterRejectsBadInput:
         with pytest.raises(WhereClauseError):
             render("embedding", "cosine_distance", {"nonsense": 1})
 
+    @pytest.mark.parametrize(
+        ("value", "extra"),
+        [
+            ({"sparse": {"indices": [0], "values": [1.0]}}, {"distance_within": 0.5}),
+            ({"indices": [0], "values": [1.0], "threshold": 0.5}, {}),
+        ],
+    )
+    def test_sparse_operand_raises(self, value, extra) -> None:
+        """There are no sparse builders: the operand would render as a dense vector."""
+        with pytest.raises(WhereClauseError, match="sparse"):
+            render("embedding", "cosine_distance", value, **extra)
+
     def test_unknown_comparison_raises(self) -> None:
         """An unsupported comparison must not fall back to a default operator."""
         with pytest.raises(WhereClauseError):
@@ -177,10 +189,9 @@ async def scoped_docs(class_db_pool, test_schema, pgvector_available) -> None:
 
 @pytest.mark.usefixtures("scoped_docs")
 class TestNonPredicateOperatorsNeverReachTheDatabase:
-    """Four registry entries rendered an expression, not a predicate (#510).
+    """Two registry entries render an expression, not a predicate (#510).
 
-    ``custom_distance``, ``vector_norm``, ``quantized_distance`` and
-    ``reconstruct`` are refused in a WHERE clause. Each test here first
+    ``custom_distance`` and ``vector_norm`` are refused in a WHERE clause. Each test here first
     *executes* the outcome being prevented, so the assertion that the fix
     raises is anchored to a demonstrated result set rather than to a string.
     """
@@ -240,8 +251,7 @@ class TestNonPredicateOperatorsNeverReachTheDatabase:
         """``vector_norm(col, 'l2')`` is not a function at any arity.
 
         pgvector declares ``vector_norm(vector)``. The two-argument form the
-        operator emitted -- against an uncast ``text`` column, and registered
-        for sparse fields where pgvector names the function ``l2_norm`` --
+        operator emitted -- against an uncast ``text`` column --
         failed on every execution, so no caller can be relying on it.
         """
         import psycopg
