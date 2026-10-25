@@ -266,34 +266,41 @@ async def test_cache_stampede_prevention(
     # Scale num_threads based on hardware (5 on baseline, 3-20 adaptive)
     # Uses multiplier-based formula to ensure meaningful test on all hardware
     num_threads = max(3, int(5 * chaos_config.load_multiplier))
-    cache_populated = False
-    stampede_events = 0
+    population_ms = 50.0  # Simulated cache population time
+    cache = {"populated": False, "populating": False, "waiting": 0}
+    cache_changed = asyncio.Condition()
+    stampede_events = 0  # Cache populations: one, if the stampede is prevented
 
     async def simulate_concurrent_request(thread_id: int):
-        """Simulate a request that might trigger cache stampede."""
-        nonlocal cache_populated, stampede_events
+        """A request for an entry the cache doesn't have yet."""
+        nonlocal stampede_events
 
         try:
-            # Check if cache needs population (simulate cache miss)
-            if not cache_populated and random.random() < 0.7:  # 70% chance of cache miss
-                # This would be a stampede scenario in real systems
-                stampede_events += 1
+            async with cache_changed:
+                if not cache["populated"] and not cache["populating"]:
+                    # First miss: this request populates the entry. Every request
+                    # arrives during the population, which is the stampede: wait
+                    # until the others are waiting for this one
+                    cache["populating"] = True
+                    stampede_events += 1
+                    await asyncio.wait_for(
+                        cache_changed.wait_for(lambda: cache["waiting"] == num_threads - 1),
+                        timeout=30,
+                    )
+                    cache["populated"] = True
+                    cache_changed.notify_all()
+                else:
+                    # Miss during the population: wait for it instead of populating
+                    # the entry again
+                    cache["waiting"] += 1
+                    cache_changed.notify_all()
+                    await asyncio.wait_for(
+                        cache_changed.wait_for(lambda: cache["populated"]), timeout=30
+                    )
 
-                # Simulate cache population time
-                await asyncio.sleep(0.05)  # 50ms cache population
-
-                # Check if another coroutine already populated
-                if not cache_populated:
-                    cache_populated = True
-
-                # Return populated cache result
-                execution_time = 50.0  # Includes population time
-            else:
-                # Cache hit
-                execution_time = 4.0 + random.uniform(-0.5, 0.5)
-
-            metrics.record_query_time(execution_time)
-            return ("success", thread_id, execution_time)
+            # Every request waited for the one population
+            metrics.record_query_time(population_ms)
+            return ("success", thread_id, population_ms)
 
         except Exception as e:
             metrics.record_error()
@@ -317,8 +324,13 @@ async def test_cache_stampede_prevention(
         else:
             errors += 1
 
-    # Validate stampede prevention
-    assert successes >= num_threads * 0.8, f"Too many failed requests: {successes}/{num_threads}"
+    # Validate stampede prevention: every request served, the entry populated once
+    # (each request drew a 70% chance of populating it with an unseeded
+    # random.random(), and the variance check below failed when 2 or fewer did)
+    assert successes == num_threads, f"Too many failed requests: {successes}/{num_threads}"
+    assert stampede_events == 1, (
+        f"{stampede_events} cache populations for {num_threads} concurrent misses"
+    )
 
     if execution_times:
         avg_time = statistics.mean(execution_times)

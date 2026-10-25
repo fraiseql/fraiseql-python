@@ -238,11 +238,7 @@ class TestCacheChaos(ChaosTestCase):
         Scenario: Multiple concurrent requests try to populate same cache entry.
         Expected: FraiseQL prevents cache stampede with proper synchronization.
         """
-        import queue
         import threading
-
-        MockFraiseQLClient()
-        FraiseQLTestScenarios.simple_user_query()
 
         self.metrics.start_test()
 
@@ -250,42 +246,49 @@ class TestCacheChaos(ChaosTestCase):
         # Scale num_threads based on hardware (5 on baseline, 3-20 adaptive)
         # Uses multiplier-based formula to ensure meaningful test on all hardware
         num_threads = max(3, int(5 * self.chaos_config.load_multiplier))
-        results_queue = queue.Queue()
-        cache_populated = False
-        stampede_events = 0
+        population_ms = 50.0  # Simulated cache population time
+        cache = {"populated": False, "populating": False, "waiting": 0}
+        cache_changed = threading.Condition()
+        stampede_events = 0  # Cache populations: one, if the stampede is prevented
+        results = []
 
         def simulate_concurrent_request(thread_id: int):
-            """Simulate a request that might trigger cache stampede."""
+            """A request for an entry the cache doesn't have yet."""
+            nonlocal stampede_events
+
             try:
-                nonlocal cache_populated, stampede_events
+                with cache_changed:
+                    if not cache["populated"] and not cache["populating"]:
+                        # First miss: this request populates the entry
+                        cache["populating"] = True
+                        stampede_events += 1
+                        # Every request arrives during the population, which is the
+                        # stampede: wait until the others are waiting for this one
+                        cache_changed.wait_for(
+                            lambda: cache["waiting"] == num_threads - 1, timeout=30
+                        )
+                        cache["populated"] = True
+                        cache_changed.notify_all()
+                    else:
+                        # Miss during the population: wait for it instead of
+                        # populating the entry again
+                        cache["waiting"] += 1
+                        cache_changed.notify_all()
+                        if not cache_changed.wait_for(lambda: cache["populated"], timeout=30):
+                            raise TimeoutError("cache population never finished")
 
-                # Check if cache needs population (simulate cache miss)
-                if not cache_populated and random.random() < 0.7:  # 70% chance of cache miss
-                    # This would be a stampede scenario in real systems
-                    stampede_events += 1
-
-                    # Simulate cache population time
-                    time.sleep(0.05)  # 50ms cache population
-
-                    if not cache_populated:  # Check if another thread already populated
-                        cache_populated = True
-
-                    # Return populated cache result
-                    execution_time = 50.0  # Includes population time
-                else:
-                    # Cache hit
-                    execution_time = 4.0 + random.uniform(-0.5, 0.5)
-
-                results_queue.put(("success", thread_id, execution_time))
+                # Every request waited for the one population
+                results.append(("success", thread_id, population_ms))
 
             except Exception as e:
-                results_queue.put(("error", thread_id, str(e)))
+                results.append(("error", thread_id, str(e)))
 
         # Start concurrent requests
-        threads = []
-        for i in range(num_threads):
-            thread = threading.Thread(target=simulate_concurrent_request, args=(i,))
-            threads.append(thread)
+        threads = [
+            threading.Thread(target=simulate_concurrent_request, args=(i,))
+            for i in range(num_threads)
+        ]
+        for thread in threads:
             thread.start()
 
         # Wait for completion
@@ -297,8 +300,7 @@ class TestCacheChaos(ChaosTestCase):
         errors = 0
         execution_times = []
 
-        while not results_queue.empty():
-            result_type, _thread_id, data = results_queue.get()
+        for result_type, _thread_id, data in results:
             if result_type == "success":
                 successes += 1
                 execution_times.append(data)
@@ -309,25 +311,20 @@ class TestCacheChaos(ChaosTestCase):
 
         self.metrics.end_test()
 
-        # Validate stampede prevention
-        assert successes >= num_threads * 0.8, (
-            f"Too many failed requests: {successes}/{num_threads}"
-        )
-        assert stampede_events > 0, "Should detect stampede events"
-        # With more threads, expect proportionally more stampede events
-        # But stampede prevention should keep it below 80% of threads
-        max_expected_stampedes = int(num_threads * 0.8)
-        assert stampede_events <= max_expected_stampedes, (
-            f"Too many stampede events: {stampede_events}/{num_threads} "
-            f"(expected <= {max_expected_stampedes})"
+        # Validate stampede prevention: every request served, the entry populated once
+        # (each request drew a 70% chance of populating it with an unseeded
+        # random.random(), and how many saw the cache empty depended on how fast the
+        # threads started: the counts failed about 1 run in 5)
+        assert successes == num_threads, f"Too many failed requests: {successes}/{num_threads}"
+        assert stampede_events == 1, (
+            f"{stampede_events} cache populations for {num_threads} concurrent misses"
         )
 
-        if execution_times:
-            avg_time = statistics.mean(execution_times)
-            max_time = max(execution_times)
-            assert max_time <= avg_time * 3, (
-                f"Excessive variance indicates stampede: max {max_time:.1f}ms vs avg {avg_time:.1f}ms"
-            )
+        avg_time = statistics.mean(execution_times)
+        max_time = max(execution_times)
+        assert max_time <= avg_time * 3, (
+            f"Excessive variance indicates stampede: max {max_time:.1f}ms vs avg {avg_time:.1f}ms"
+        )
 
     @pytest.mark.chaos
     @pytest.mark.chaos_cache
