@@ -39,8 +39,8 @@ class TestCoordinateBasicOperators:
         assert "POINT(" in sql_str
         assert "-122.3" in sql_str
         assert "47.6" in sql_str
-        assert "::point" in sql_str
-        assert "!=" in sql_str
+        assert "::point ~= POINT(" in sql_str
+        assert sql_str.startswith("NOT (")
 
     def test_in_coordinates(self):
         """Test coordinate IN list."""
@@ -69,8 +69,9 @@ class TestCoordinateBasicOperators:
         assert "POINT(" in sql_str
         assert "-118.2" in sql_str
         assert "34.0" in sql_str
-        assert "::point" in sql_str
-        assert "NOT IN" in sql_str
+        assert "::point ~= POINT(" in sql_str
+        assert sql_str.startswith("NOT (")
+        assert " OR " in sql_str
 
     def test_build_coordinate_equality_sql(self) -> None:
         """Should build proper POINT casting for coordinate equality."""
@@ -80,7 +81,7 @@ class TestCoordinateBasicOperators:
 
         # Should generate: ((data ->> 'location'))::point = POINT(-122.6, 45.5)
         sql_str = result.as_string(None)
-        assert "::point = POINT(" in sql_str
+        assert "::point ~= POINT(" in sql_str
         assert "data ->> 'location'" in sql_str
         assert "-122.6" in sql_str
         assert "45.5" in sql_str
@@ -94,8 +95,8 @@ class TestCoordinateBasicOperators:
         # Should generate: (data ->> 'coordinates')::point != POINT(-122.3425, 47.6097)
         sql_str = result.as_string(None)
         assert "data ->> 'coordinates'" in sql_str
-        assert "::point != POINT(" in sql_str
-        assert "-122.3425, 47.6097" in sql_str
+        assert sql_str.startswith("NOT (")
+        assert "::point ~= POINT( -122.3425, 47.6097)" in sql_str
 
     def test_build_coordinate_in_list_sql(self) -> None:
         """Should build proper POINT casting for coordinate IN lists."""
@@ -107,7 +108,7 @@ class TestCoordinateBasicOperators:
         # Should generate: (data ->> 'position')::point IN (POINT(-122.6, 45.5), POINT(-122.3425, 47.6097), POINT(-74.0060, 40.7128))
         sql_str = result.as_string(None)
         assert "data ->> 'position'" in sql_str
-        assert "IN (" in sql_str
+        assert sql_str.count(" OR ") == 2
         assert "POINT(" in sql_str
         assert "-122.6" in sql_str
         assert "45.5" in sql_str
@@ -128,7 +129,7 @@ class TestCoordinateBasicOperators:
         # Should generate: (data ->> 'location')::point NOT IN (POINT(0, 0), POINT(180, 90))
         sql_str = result.as_string(None)
         assert "data ->> 'location'" in sql_str
-        assert "NOT IN (" in sql_str
+        assert sql_str.startswith("NOT (")
         assert "POINT(0.0, 0.0)" in sql_str
         assert "POINT(180.0, 90.0)" in sql_str
 
@@ -144,11 +145,10 @@ class TestCoordinateDistancePostGIS:
         result = build_coordinate_distance_within_sql(path_sql, center, distance)
         sql_str = result.as_string(None)
         assert "ST_DWithin" in sql_str
-        assert "POINT(" in sql_str
-        assert "-122.6" in sql_str
-        assert "45.5" in sql_str
+        assert "ST_MakePoint(((location)::point)[0], ((location)::point)[1])" in sql_str
+        assert "ST_MakePoint( -122.6::float8, 45.5::float8)" in sql_str
+        assert "::geography" in sql_str
         assert "1000.0" in sql_str
-        assert "::point" in sql_str
 
     def test_distance_within_postgis_zero_distance(self):
         """Test distance within with zero distance."""
@@ -158,7 +158,7 @@ class TestCoordinateDistancePostGIS:
         result = build_coordinate_distance_within_sql(path_sql, center, distance)
         sql_str = result.as_string(None)
         assert "ST_DWithin" in sql_str
-        assert "POINT(" in sql_str
+        assert "ST_MakePoint(0.0::float8, 0.0::float8)" in sql_str
         assert "0.0" in sql_str
         assert "0.0" in sql_str
 
@@ -175,7 +175,7 @@ class TestCoordinateDistancePostGIS:
         assert "ST_DWithin(" in sql_str
         assert "data ->> 'coordinates'" in sql_str
         assert "::point" in sql_str
-        assert "POINT(" in sql_str
+        assert "::geography" in sql_str
         assert "-122.6" in sql_str
         assert "45.5" in sql_str
         assert "1000" in sql_str
@@ -195,8 +195,9 @@ class TestCoordinateDistanceHaversine:
         assert "ASIN" in sql_str
         assert "SQRT" in sql_str
         assert "RADIANS" in sql_str
-        assert "ST_Y" in sql_str
-        assert "ST_X" in sql_str
+        assert "ST_" not in sql_str  # PostGIS
+        assert "((location)::point)[1]" in sql_str  # latitude
+        assert "((location)::point)[0]" in sql_str  # longitude
         assert "5000.0" in sql_str
 
     def test_distance_within_haversine_equator(self):
@@ -206,7 +207,7 @@ class TestCoordinateDistanceHaversine:
         distance = 10000.0
         result = build_coordinate_distance_within_sql_haversine(path_sql, center, distance)
         sql_str = result.as_string(None)
-        assert "RADIANS(0.0)" in sql_str
+        assert "RADIANS(0.0::float8)" in sql_str
         assert "10000.0" in sql_str
 
     def test_build_coordinate_distance_within_sql_haversine(self) -> None:
@@ -241,8 +242,8 @@ class TestCoordinateDistanceEarthDistance:
         assert "40.7" in sql_str
         assert "-74.0" in sql_str
         assert "2000.0" in sql_str
-        assert "ST_Y" in sql_str
-        assert "ST_X" in sql_str
+        assert "ST_" not in sql_str  # PostGIS
+        assert "ll_to_earth(((location)::point)[1], ((location)::point)[0])" in sql_str
 
 
 class TestCoordinateEdgeCases:
@@ -265,8 +266,7 @@ class TestCoordinateEdgeCases:
         path_sql = SQL("location")
         result = build_coordinate_in_sql(path_sql, [])
         sql_str = result.as_string(None)
-        assert "::point" in sql_str
-        assert "IN ()" in sql_str
+        assert sql_str == "FALSE"
 
     def test_single_coordinate_in_list(self):
         """Test single coordinate in list."""

@@ -236,6 +236,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read, so `coordinate_distance_method="postgis"` in code still built Haversine
   SQL. The app's config now wins when it sets the method; without it, the
   environment variable is read as before.
+- **The coordinate SQL runs on PostgreSQL.** The Haversine `distance_within`
+  (the default method, "no extension needed") called PostGIS's `ST_Y` / `ST_X`
+  and cast `'location'::point` instead of the field; it now reads the point's
+  latitude and longitude as `p[1]` / `p[0]`, in plain SQL, with the formula's
+  halves in the right place (`sin²(Δ/2)`, not `sin²(Δ)/2`). `earthdistance` used
+  `ST_Y` too and passed `numeric` to `ll_to_earth()`; `postgis` called
+  `ST_DWithin` on `point`s, which PostGIS lacks, and in degrees: it now measures
+  geographies (WGS 84) in meters. `eq` / `neq` / `in` / `notin` compared points
+  with `=`, which `point` lacks; they use `~=`.
 - **`BodySizeLimiterMiddleware` passes the request body on to the app.** It
   read the body to measure it, then gave the app behind it an empty one, so
   every GraphQL `POST` behind it got a 422. It is now a plain ASGI middleware:

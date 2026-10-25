@@ -44,7 +44,7 @@ class CoordinateOperatorStrategy(BaseOperatorStrategy):
     converted to PostgreSQL POINT(longitude, latitude) format.
     """
 
-    SUPPORTED_OPERATORS = {"eq", "neq", "in", "notin", "distance_within"}
+    SUPPORTED_OPERATORS = {"eq", "neq", "in", "notin", "nin", "distance_within"}
 
     def supports_operator(self, operator: str, field_type: Optional[type]) -> bool:
         """Check if this is a coordinate operator."""
@@ -70,94 +70,30 @@ class CoordinateOperatorStrategy(BaseOperatorStrategy):
         field_type: Optional[type] = None,
         jsonb_column: Optional[str] = None,
     ) -> Optional[Composable]:
-        """Build SQL for coordinate operators with proper PostgreSQL POINT type casting."""
-        # Basic operations: cast to point
-        if operator in ("eq", "neq", "in", "notin"):
-            casted_path = SQL("({})::point").format(path_sql)
+        """Build SQL for coordinate operators with proper PostgreSQL POINT type casting.
 
-            if operator == "eq":
-                if not isinstance(value, tuple) or len(value) != 2:
-                    raise TypeError(
-                        f"eq operator requires a coordinate tuple (lat, lng), got {value}"
-                    )
-                lat, lng = value
-                # PostgreSQL POINT uses (x,y) = (longitude, latitude)
-                return SQL("{} = POINT({}, {})").format(casted_path, Literal(lng), Literal(lat))
+        ``point`` has no ``=`` operator: equality is ``~=`` ("same as").
+        """
+        if operator in ("eq", "neq", "in", "notin", "nin"):
+            casted_path = _point(path_sql)
 
-            if operator == "neq":
-                if not isinstance(value, tuple) or len(value) != 2:
-                    raise TypeError(
-                        f"neq operator requires a coordinate tuple (lat, lng), got {value}"
-                    )
-                lat, lng = value
-                return SQL("{} != POINT({}, {})").format(casted_path, Literal(lng), Literal(lat))
+            if operator in ("eq", "neq"):
+                same = SQL("{} ~= {}").format(casted_path, _point_literal(value, operator))
+                return same if operator == "eq" else SQL("NOT ({})").format(same)
 
+            if not isinstance(value, list):
+                raise TypeError(f"'{operator}' operator requires a list, got {type(value)}")
+            if not value:
+                return SQL("FALSE") if operator == "in" else SQL("TRUE")
+            any_same = SQL(" OR ").join(
+                SQL("{} ~= {}").format(casted_path, _point_literal(coord, operator))
+                for coord in value
+            )
             if operator == "in":
-                if not isinstance(value, list):
-                    raise TypeError(f"'in' operator requires a list, got {type(value)}")
+                return SQL("({})").format(any_same)
+            return SQL("NOT ({})").format(any_same)
 
-                point_literals = []
-                for coord in value:
-                    if not isinstance(coord, tuple) or len(coord) != 2:
-                        raise TypeError(
-                            f"in operator requires coordinate tuples (lat, lng), got {coord}"
-                        )
-                    lat, lng = coord
-                    point_literals.append(SQL("POINT({}, {})").format(Literal(lng), Literal(lat)))
-                placeholders = SQL(", ").join(point_literals)
-                return SQL("{} IN ({})").format(casted_path, placeholders)
-
-            if operator == "notin":
-                if not isinstance(value, list):
-                    raise TypeError(f"'notin' operator requires a list, got {type(value)}")
-
-                point_literals = []
-                for coord in value:
-                    if not isinstance(coord, tuple) or len(coord) != 2:
-                        raise TypeError(
-                            f"notin operator requires coordinate tuples (lat, lng), got {coord}"
-                        )
-                    lat, lng = coord
-                    point_literals.append(SQL("POINT({}, {})").format(Literal(lng), Literal(lat)))
-                placeholders = SQL(", ").join(point_literals)
-                return SQL("{} NOT IN ({})").format(casted_path, placeholders)
-
-            if operator == "notin":
-                if not isinstance(value, list):
-                    raise TypeError(f"'notin' operator requires a list, got {type(value)}")
-
-                sql_parts = [str(casted_path), " NOT IN ("]
-                for i, coord in enumerate(value):
-                    if i > 0:
-                        sql_parts.append(", ")
-                    if not isinstance(coord, tuple) or len(coord) != 2:
-                        raise TypeError(
-                            f"notin operator requires coordinate tuples (lat, lng), got {coord}"
-                        )
-                    lat, lng = coord
-                    sql_parts.extend([f"POINT({lng}, {lat})"])
-                sql_parts.append(")")
-                return SQL("".join(sql_parts))
-
-            if operator == "notin":
-                if not isinstance(value, list):
-                    raise TypeError(f"'notin' operator requires a list, got {type(value)}")
-
-                parts = [casted_path, SQL(" NOT IN (")]
-                for i, coord in enumerate(value):
-                    if i > 0:
-                        parts.append(SQL(", "))
-                    if not isinstance(coord, tuple) or len(coord) != 2:
-                        raise TypeError(
-                            f"notin operator requires coordinate tuples (lat, lng), got {coord}"
-                        )
-                    lat, lng = coord
-                    parts.extend([SQL("POINT("), Literal(lng), SQL(", "), Literal(lat), SQL(")")])
-                parts.append(SQL(")"))
-                return Composable(parts)
-
-        # Distance operations
-        elif operator == "distance_within":
+        if operator == "distance_within":
             # value should be a tuple: (center_coord, distance_meters)
             if not isinstance(value, tuple) or len(value) != 2:
                 raise TypeError(
@@ -171,80 +107,129 @@ class CoordinateOperatorStrategy(BaseOperatorStrategy):
                     f"distance_within center must be a coordinate tuple "
                     f"(lat, lng), got {center_coord}"
                 )
-            if not isinstance(distance_meters, (int, float)) or distance_meters < 0:
+            if (
+                not isinstance(distance_meters, (int, float))
+                or isinstance(distance_meters, bool)
+                or distance_meters < 0
+            ):
                 raise TypeError(
                     f"distance_within distance must be a positive number, got {distance_meters}"
                 )
 
             method = _distance_method()
-
-            # Build SQL based on configured method
-            if method == "postgis":
-                return self._build_distance_postgis(path_sql, center_coord, distance_meters)
-            if method == "earthdistance":
-                return self._build_distance_earthdistance(path_sql, center_coord, distance_meters)
-            if method == "haversine":
-                return self._build_distance_haversine(path_sql, center_coord, distance_meters)
-            raise ValueError(
-                f"Invalid coordinate_distance_method: '{method}'. "
-                f"Valid options: 'postgis', 'haversine', 'earthdistance'"
-            )
+            builders = {
+                "postgis": build_distance_postgis,
+                "earthdistance": build_distance_earthdistance,
+                "haversine": build_distance_haversine,
+            }
+            if method not in builders:
+                raise ValueError(
+                    f"Invalid coordinate_distance_method: '{method}'. "
+                    f"Valid options: 'postgis', 'haversine', 'earthdistance'"
+                )
+            return builders[method](path_sql, center_coord, distance_meters)
 
         return None
 
-    def _build_distance_postgis(
-        self, path_sql: Composable, center: tuple[float, float], distance_meters: float
-    ) -> Composable:
-        """Build SQL for distance using PostGIS ST_DWithin."""
-        lat, lng = center
-        casted_path = SQL("({})::point").format(path_sql)
 
-        return SQL("ST_DWithin({}, POINT({}, {}), {})").format(
-            casted_path, Literal(lng), Literal(lat), Literal(distance_meters)
-        )
+def _point(path_sql: Composable) -> Composed:
+    """``(path)::point``: a JSONB field's text, or a ``point`` column, as a point."""
+    return Composed([SQL("("), path_sql, SQL(")::point")])
 
-    def _build_distance_haversine(
-        self, path_sql: Composable, center: tuple[float, float], distance_meters: float
-    ) -> Composable:
-        """Build SQL for distance using Haversine formula."""
-        center_lat, center_lng = center
 
-        # Haversine formula: great-circle distance on spherical Earth
-        # d = 2 * R * arcsin(sqrt(sin²((lat2-lat1)/2) + cos(lat1)*cos(lat2)*sin²((lng2-lng1)/2)))
-        return SQL(
-            "6371000 * 2 * ASIN(SQRT("
-            "POWER(SIN(RADIANS({}) - RADIANS(ST_Y(({}::point)))), 2) / 2 + "
-            "COS(RADIANS({})) * COS(RADIANS(ST_Y(({}::point)))) * "
-            "POWER(SIN(RADIANS({}) - RADIANS(ST_X(({}::point)))), 2) / 2"
-            ")) <= {}"
-        ).format(
-            Literal(center_lat),
-            path_sql,
-            Literal(center_lat),
-            path_sql,
-            Literal(center_lng),
-            path_sql,
-            Literal(distance_meters),
-        )
+def _float(value: float) -> Composed:
+    # A bare 37.7749 is numeric, which ll_to_earth() doesn't take
+    return Composed([Literal(float(value)), SQL("::float8")])
 
-    def _build_distance_earthdistance(
-        self, path_sql: Composable, center: tuple[float, float], distance_meters: float
-    ) -> Composable:
-        """Build SQL for distance using earthdistance extension."""
-        lat, lng = center
-        casted_path = SQL("({})::point").format(path_sql)
 
-        return Composed(
-            [
-                SQL("earth_distance(ll_to_earth("),
-                Literal(lat),
-                SQL(", "),
-                Literal(lng),
-                SQL("), ll_to_earth(ST_Y("),
-                casted_path,
-                SQL("), ST_X("),
-                casted_path,
-                SQL("))) <= "),
-                Literal(distance_meters),
-            ]
-        )
+def _point_literal(coord: Any, operator: str) -> Composed:
+    """``POINT(lng, lat)`` for a (latitude, longitude) tuple."""
+    if not isinstance(coord, tuple) or len(coord) != 2:
+        raise TypeError(f"{operator} operator requires a coordinate tuple (lat, lng), got {coord}")
+    lat, lng = coord
+    return Composed([SQL("POINT("), Literal(lng), SQL(", "), Literal(lat), SQL(")")])
+
+
+def build_distance_haversine(
+    path_sql: Composable, center: tuple[float, float], distance_meters: float
+) -> Composed:
+    """Great-circle distance on a sphere of radius 6,371 km, in plain SQL.
+
+    A point is ``(longitude, latitude)``: ``p[0]`` is the longitude, ``p[1]`` the
+    latitude. No extension is needed (``ST_X`` / ``ST_Y`` are PostGIS's).
+
+    d = 2R * asin(sqrt(sin^2(dlat / 2) + cos(lat1) * cos(lat2) * sin^2(dlng / 2)))
+    """
+    center_lat, center_lng = center
+    point = _point(path_sql)
+    lat = Composed([SQL("("), point, SQL(")[1]")])
+    lng = Composed([SQL("("), point, SQL(")[0]")])
+    return Composed(
+        [
+            SQL("(2 * 6371000 * ASIN(LEAST(1, SQRT(POWER(SIN(RADIANS("),
+            lat,
+            SQL(" - "),
+            _float(center_lat),
+            SQL(") / 2), 2) + COS(RADIANS("),
+            _float(center_lat),
+            SQL(")) * COS(RADIANS("),
+            lat,
+            SQL(")) * POWER(SIN(RADIANS("),
+            lng,
+            SQL(" - "),
+            _float(center_lng),
+            SQL(") / 2), 2)))) <= "),
+            _float(distance_meters),
+            SQL(")"),
+        ]
+    )
+
+
+def build_distance_earthdistance(
+    path_sql: Composable, center: tuple[float, float], distance_meters: float
+) -> Composed:
+    """``earth_distance(ll_to_earth(lat, lng), ...)``: needs ``earthdistance`` (and ``cube``)."""
+    center_lat, center_lng = center
+    point = _point(path_sql)
+    return Composed(
+        [
+            SQL("(earth_distance(ll_to_earth("),
+            _float(center_lat),
+            SQL(", "),
+            _float(center_lng),
+            SQL("), ll_to_earth(("),
+            point,
+            SQL(")[1], ("),
+            point,
+            SQL(")[0])) <= "),
+            _float(distance_meters),
+            SQL(")"),
+        ]
+    )
+
+
+def build_distance_postgis(
+    path_sql: Composable, center: tuple[float, float], distance_meters: float
+) -> Composed:
+    """``ST_DWithin`` on geographies (WGS 84), so the distance is in meters: needs PostGIS.
+
+    On a ``point`` or a ``geometry``, ST_DWithin measures in the units of the
+    coordinates, degrees here.
+    """
+    center_lat, center_lng = center
+    point = _point(path_sql)
+    return Composed(
+        [
+            SQL("ST_DWithin(ST_SetSRID(ST_MakePoint(("),
+            point,
+            SQL(")[0], ("),
+            point,
+            SQL(")[1]), 4326)::geography, ST_SetSRID(ST_MakePoint("),
+            _float(center_lng),
+            SQL(", "),
+            _float(center_lat),
+            SQL("), 4326)::geography, "),
+            _float(distance_meters),
+            SQL(")"),
+        ]
+    )
