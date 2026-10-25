@@ -1577,10 +1577,7 @@ class FraiseQLRepository:
         where = kwargs.get("where")
         if where:
             table_columns = None
-            introspected = getattr(self, "_introspected_columns", {})
-            if view_name in introspected:
-                table_columns = introspected[view_name]
-            elif view_name in _table_metadata:
+            if view_name in _table_metadata:
                 table_columns = _table_metadata[view_name].get("columns")
             try:
                 clauses = [self._normalize_where(where, view_name, table_columns)]
@@ -1931,33 +1928,6 @@ class FraiseQLRepository:
                     *params,
                 )
                 return _function_result(function_name, dict(result) if result else None)
-
-    async def _ensure_table_columns_cached(self, view_name: str) -> None:
-        """Ensure table columns are cached for hybrid table detection.
-
-        PERFORMANCE OPTIMIZATION:
-        - Only introspect once per table per repository instance
-        - Cache both successes and failures to avoid repeated queries
-        - Use connection pool efficiently
-        """
-        if not hasattr(self, "_introspected_columns"):
-            self._introspected_columns = {}
-            self._introspection_in_progress = set()
-
-        # Skip if already cached or being introspected (avoid race conditions)
-        if view_name in self._introspected_columns or view_name in self._introspection_in_progress:
-            return
-
-        # Mark as in progress to prevent concurrent introspections
-        self._introspection_in_progress.add(view_name)
-
-        try:
-            await self._introspect_table_columns(view_name)
-        except Exception:
-            # Cache failure to avoid repeated attempts
-            self._introspected_columns[view_name] = set()
-        finally:
-            self._introspection_in_progress.discard(view_name)
 
     async def find(
         self, view_name: str, field_name: str | None = None, info: Any = None, **kwargs: Any
@@ -2926,7 +2896,8 @@ class FraiseQLRepository:
         Args:
             view_name: Database table/view name
             field: Field name to extract
-            **kwargs: Query parameters (where, limit, offset, order_by, etc.)
+            **kwargs: ``where``, ``mandatory_filters``, ``limit`` and ``offset``
+                (no ``order_by``: the values come in the database's order)
 
         Returns:
             List of field values (not full objects)
@@ -3245,9 +3216,6 @@ class FraiseQLRepository:
 
             if known_columns is not None:
                 table_columns = known_columns
-            # Try introspection cache first
-            elif hasattr(self, "_introspected_columns") and view_name in self._introspected_columns:
-                table_columns = self._introspected_columns[view_name]
             # Then try registered metadata
             elif view_name in _table_metadata:
                 metadata = _table_metadata[view_name]
@@ -3366,8 +3334,9 @@ class FraiseQLRepository:
             if registered_view.lower().replace("_", "") == type_name.lower().replace("_", ""):
                 return type_class
 
+        # Not an error: find() asks for every view, and a view needs no registered type
         available_views = list(_type_registry.keys())
-        logger.error(f"Type registry state: {_type_registry}")
+        logger.debug("No type registered for view %s", view_name)
         raise NotImplementedError(
             f"Type registry lookup for {view_name} not implemented. "
             f"Available views: {available_views}. Registry size: {len(_type_registry)}",
@@ -3695,24 +3664,6 @@ class FraiseQLRepository:
             **kwargs,
         )
 
-    async def _get_table_columns_cached(self, view_name: str) -> set[str] | None:
-        """Get table columns with caching.
-
-        Returns set of column names or None if unable to retrieve.
-        """
-        if not hasattr(self, "_introspected_columns"):
-            self._introspected_columns = {}
-
-        if view_name in self._introspected_columns:
-            return self._introspected_columns[view_name]
-
-        try:
-            columns = await self._introspect_table_columns(view_name)
-            self._introspected_columns[view_name] = columns
-            return columns
-        except Exception:
-            return None
-
     def _build_dict_where_condition(
         self,
         field_name: str,
@@ -3844,73 +3795,6 @@ class FraiseQLRepository:
         # Generate basic condition
         return basic_operators[operator](path_sql, value)
 
-    async def _introspect_table_columns(self, view_name: str) -> set[str]:
-        """Introspect actual table columns from database information_schema.
-
-        This provides accurate column information for hybrid tables.
-        Results are cached for performance.
-        """
-        if not hasattr(self, "_introspected_columns"):
-            self._introspected_columns = {}
-
-        if view_name in self._introspected_columns:
-            return self._introspected_columns[view_name]
-
-        try:
-            # Query information_schema to get actual columns
-            # PERFORMANCE: Use a single query to get all we need
-            query = """
-                SELECT
-                    column_name,
-                    data_type,
-                    udt_name
-                FROM information_schema.columns
-                WHERE table_name = %s
-                AND table_schema = 'public'
-                ORDER BY ordinal_position
-            """
-
-            async with self._pool.connection() as conn, conn.cursor() as cursor:
-                await cursor.execute(query, (view_name,))
-                rows = await cursor.fetchall()
-
-                # Extract column names and identify if JSONB exists
-                columns = set()
-                has_jsonb_data = False
-
-                for row in rows:
-                    # Handle both dict and tuple cursor results
-                    if isinstance(row, dict):
-                        col_name = row.get("column_name")
-                        udt_name = row.get("udt_name", "")
-                    else:
-                        # Tuple-based result (column_name, data_type, udt_name)
-                        col_name = row[0] if row else None
-                        udt_name = row[2] if len(row) > 2 else ""
-
-                    if col_name:
-                        columns.add(col_name)
-
-                        # Check if this is a JSONB data column
-                        if col_name == "data" and udt_name == "jsonb":
-                            has_jsonb_data = True
-
-                # Cache the result
-                self._introspected_columns[view_name] = columns
-
-                # Also cache whether this table has JSONB data column
-                if not hasattr(self, "_table_has_jsonb"):
-                    self._table_has_jsonb = {}
-                self._table_has_jsonb[view_name] = has_jsonb_data
-
-                return columns
-
-        except Exception as e:
-            logger.warning(f"Failed to introspect table {view_name}: {e}")
-            # Cache empty set to avoid repeated failures
-            self._introspected_columns[view_name] = set()
-            return set()
-
     def _should_use_jsonb_path_sync(self, view_name: str, field_name: str) -> bool:
         """Check if a field should use JSONB path or direct column access.
 
@@ -3936,17 +3820,6 @@ class FraiseQLRepository:
 
             # Use JSONB path only if: has data column AND field is not a regular column
             use_jsonb = has_jsonb and field_name not in columns
-            self._field_path_cache[cache_key] = use_jsonb
-            return use_jsonb
-
-        # SECOND BEST: Check if we have runtime introspected columns
-        if hasattr(self, "_introspected_columns") and view_name in self._introspected_columns:
-            columns = self._introspected_columns[view_name]
-            has_data_column = "data" in columns
-            is_regular_column = field_name in columns
-
-            # Use JSONB path only if: has data column AND field is not a regular column
-            use_jsonb = has_data_column and not is_regular_column
             self._field_path_cache[cache_key] = use_jsonb
             return use_jsonb
 

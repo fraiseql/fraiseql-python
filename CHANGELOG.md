@@ -803,6 +803,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   variable; `import_dashboards.sh` no longer stops after the first import (`set -e`
   and `((count++))`). A test runs each SQL query against `schema.sql`, and another
   checks each PromQL expression's metrics and labels against the exported ones.
+- **`find()` on a view without a registered type no longer logs an error.** It looked
+  up the view's type on each call and logged `Type registry state: {...}` (the whole
+  registry) at ERROR level when there was none, which is a normal case. That lookup
+  now logs `No type registered for view ...` at DEBUG.
 
 ## [1.30.0] - 2026-10-22
 
