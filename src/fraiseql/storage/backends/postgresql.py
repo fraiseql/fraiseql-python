@@ -25,12 +25,16 @@ class PostgreSQLAPQBackend(APQStorageBackend):
     connection pool (``psycopg_pool.ConnectionPool``), opened on first use, not the
     application's async pool. Each lookup is one indexed query; the text of a persisted
     query is also kept in process once read, since a hash always names the same text.
+    ``blocking_io`` is set, so the ``/graphql`` route makes its calls in a worker
+    thread, not on the event loop.
 
     Features:
     - Tables created on first use (``auto_create_tables``)
     - Tenant-isolated response caching
     - Graceful error handling: a failed read is a miss, a failed write is logged
     """
+
+    blocking_io = True  # one query per call: the request path calls it in a worker thread
 
     def __init__(
         self,
@@ -82,6 +86,7 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         self._pool = pool
         self._owns_pool = False
         self._lock = threading.Lock()
+        self._tables_lock = threading.Lock()
         self._tables_ready = not self._auto_create_tables
         self._query_text_cache: dict[str, str] = {}
 
@@ -328,8 +333,11 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         """Yield a pooled connection, creating the tables on first use."""
         with self._get_connection().connection() as conn:
             if not self._tables_ready:
-                self._ensure_tables_exist(conn)
-                self._tables_ready = True
+                # Calls run in worker threads: create the tables once.
+                with self._tables_lock:
+                    if not self._tables_ready:
+                        self._ensure_tables_exist(conn)
+                        self._tables_ready = True
             yield conn
 
     def _execute_query(self, sql: str, params: Optional[tuple] = None) -> None:

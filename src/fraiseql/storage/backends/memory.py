@@ -19,6 +19,8 @@ class MemoryAPQBackend(APQStorageBackend):
     is not shared between different backend instances.
     """
 
+    blocking_io = False  # dict lookups: called on the event loop
+
     def __init__(self, response_ttl: int | None = None) -> None:
         """Initialize the memory backend with empty storage.
 

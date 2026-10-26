@@ -156,3 +156,22 @@ def test_response_cache_is_stored_in_postgresql(make_app, postgres_url, table_pr
     assert _post(other_instance, _apq_body(query, with_query=False)) == {
         "data": {"hello": "Hello, cached!"}
     }
+
+
+def test_concurrent_first_calls_from_worker_threads_create_the_tables_once(
+    postgres_url, table_prefix
+) -> None:
+    """The route calls the backend in worker threads: the first calls may race."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    backend = PostgreSQLAPQBackend({"table_prefix": table_prefix}, database_url=postgres_url)
+    queries = [f'{{ hello(name: "t{i}") }}' for i in range(8)]
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            list(pool.map(lambda q: backend.register_queries([q]), queries))
+    finally:
+        backend.close()
+
+    with psycopg.connect(postgres_url) as conn:
+        stored = {row[0] for row in conn.execute(f"SELECT query FROM {table_prefix}queries")}
+    assert stored == set(queries)

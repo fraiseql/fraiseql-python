@@ -66,6 +66,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `apq_queries_dir` compute the hashes themselves and are unaffected. A custom
   backend can call the new `apq_store.check_query_hash(hash_value, query)`.
 
+- **The `postgresql` APQ backend no longer blocks the event loop.** Its lookups
+  use a synchronous connection pool, and the `/graphql` route called them on the
+  event loop: each APQ request for an unknown hash held every other request for
+  the length of a database query, or up to `connection_timeout` (30 seconds) when
+  the database was slow or its pool busy, so a stream of made-up hashes could
+  stall the server. The route now makes the backend's calls (query lookup and
+  registration, response cache read and write) in a worker thread. The backend
+  interface stays synchronous: a backend sets the new class attribute
+  `APQStorageBackend.blocking_io = True` to be called this way (`postgresql`
+  does; `memory` and custom backends are called on the event loop as before). The
+  `postgresql` backend now creates its tables once when first calls race.
+
 - **Locked dependencies moved past their published advisories.** `uv.lock` held
   64 known vulnerabilities, all in optional extras or development tools: pillow
   13.0.0, pypdf 6.21.2 and nltk 3.10.4 (`llamaindex`), aiohttp 3.14.5, black

@@ -5,10 +5,12 @@ enabling direct JSON passthrough to bypass GraphQL execution for
 pre-computed responses.
 """
 
+import asyncio
 import hashlib
 import json
 import logging
-from typing import Any, Optional
+from collections.abc import Callable
+from typing import Any, Optional, TypeVar
 
 from fraiseql.fastapi.config import FraiseQLConfig
 from fraiseql.fastapi.routers import GraphQLRequest
@@ -25,6 +27,22 @@ logger = logging.getLogger(__name__)
 
 # Global backend cache to avoid recreating backends
 _backend_cache: dict[str, APQStorageBackend] = {}
+
+_T = TypeVar("_T")
+
+
+async def call_backend(
+    backend: APQStorageBackend | None, fn: Callable[..., _T], /, *args: Any, **kwargs: Any
+) -> _T:
+    """Call ``fn`` (a synchronous call that uses ``backend``) from async code.
+
+    When the backend does blocking I/O (``backend.blocking_io``, as the ``postgresql``
+    backend does), ``fn`` runs in a worker thread so the event loop keeps serving other
+    requests during the lookup; otherwise it runs inline.
+    """
+    if backend is not None and getattr(backend, "blocking_io", False):
+        return await asyncio.to_thread(fn, *args, **kwargs)
+    return fn(*args, **kwargs)
 
 
 def compute_response_cache_key(

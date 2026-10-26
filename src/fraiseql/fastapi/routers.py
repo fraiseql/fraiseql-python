@@ -1387,9 +1387,11 @@ def create_graphql_router(
         apq_cache_target: dict[str, Any] = {}
         result = await _execute_graphql_request(request, http_request, context, apq_cache_target)
         if apq_cache_target:
-            from fraiseql.middleware.apq_caching import store_executed_response
+            from fraiseql.middleware.apq_caching import call_backend, store_executed_response
 
-            store_executed_response(
+            await call_backend(
+                apq_cache_target.get("backend"),
+                store_executed_response,
                 result,
                 config=config,
                 variables=request.variables,
@@ -1447,6 +1449,7 @@ def create_graphql_router(
         if is_apq_request and request.extensions and should_process_apq:
             from fraiseql.middleware.apq import create_apq_error_response, get_persisted_query
             from fraiseql.middleware.apq_caching import (
+                call_backend,
                 get_apq_backend,
                 handle_apq_request_with_cache,
             )
@@ -1485,8 +1488,8 @@ def create_graphql_router(
                 # it runs the stored text (the text sent matches its hash, checked above).
                 from fraiseql.middleware.apq import create_query_not_in_list_error
 
-                approved_query = apq_backend.get_persisted_query(
-                    sha256_hash
+                approved_query = await call_backend(
+                    apq_backend, apq_backend.get_persisted_query, sha256_hash
                 ) or get_persisted_query(sha256_hash)
                 if not approved_query:
                     logger.debug(f"APQ required mode: refusing unknown hash {sha256_hash[:8]}...")
@@ -1502,7 +1505,12 @@ def create_graphql_router(
 
                 # Also store in the backend if available
                 if apq_backend:
-                    apq_backend.store_persisted_query(sha256_hash, request.query)
+                    await call_backend(
+                        apq_backend,
+                        apq_backend.store_persisted_query,
+                        sha256_hash,
+                        request.query,
+                    )
 
                 # Continue with normal execution using the provided query
 
@@ -1510,8 +1518,13 @@ def create_graphql_router(
                 # This is a hash-only request - try to retrieve the query
 
                 # 1. Try cached response first (JSON passthrough)
-                cached_response = handle_apq_request_with_cache(
-                    request, apq_backend, config, context=context
+                cached_response = await call_backend(
+                    apq_backend,
+                    handle_apq_request_with_cache,
+                    request,
+                    apq_backend,
+                    config,
+                    context=context,
                 )
                 if cached_response:
                     # Operation authorization gate (issue #362): a cached (baked)
@@ -1525,7 +1538,11 @@ def create_graphql_router(
                         from fraiseql.security.authorization import enforce_operation_value
 
                         persisted_text = (
-                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                            await call_backend(
+                                apq_backend, apq_backend.get_persisted_query, sha256_hash
+                            )
+                            if apq_backend
+                            else None
                         )
                         op_type, op_name = _derive_operation_info(persisted_text)
                         try:
@@ -1560,7 +1577,11 @@ def create_graphql_router(
                         )
 
                         persisted_text = (
-                            apq_backend.get_persisted_query(sha256_hash) if apq_backend else None
+                            await call_backend(
+                                apq_backend, apq_backend.get_persisted_query, sha256_hash
+                            )
+                            if apq_backend
+                            else None
                         )
                         if persisted_text:
                             try:
@@ -1580,7 +1601,9 @@ def create_graphql_router(
 
                 # Try backend first
                 if apq_backend:
-                    persisted_query_text = apq_backend.get_persisted_query(sha256_hash)
+                    persisted_query_text = await call_backend(
+                        apq_backend, apq_backend.get_persisted_query, sha256_hash
+                    )
 
                 # Fallback to global store
                 if not persisted_query_text:

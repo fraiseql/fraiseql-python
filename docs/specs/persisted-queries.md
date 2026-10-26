@@ -503,8 +503,11 @@ config = FraiseQLConfig(
 > `database_url` (or `apq_backend_config["database_url"]`) on the first APQ request,
 > and creates its tables if they don't exist (`auto_create_tables`, default on).
 > Persisted queries survive a restart and are shared by every instance using that
-> database. Its lookups are synchronous: each holds the event loop for one indexed
-> query (a persisted query's text is kept in process once read).
+> database. Its methods are synchronous (one indexed query each; a persisted query's
+> text is kept in process once read), so the `/graphql` route calls them in a worker
+> thread: a slow or unavailable database doesn't stall the event loop. Up to
+> `pool_max_size` lookups run at once; the others wait for a connection, at most
+> `connection_timeout` seconds.
 
 `apq_backend_config` keys: `database_url` (default: the app's `database_url`),
 `table_prefix` (default `"apq_"`, may include a schema: `"myschema.apq_"`),
@@ -620,6 +623,11 @@ Custom backends must implement the APQ storage interface with the following meth
   (`fraiseql.storage.apq_store.check_query_hash` does it), as the built-in backends do
 - `register_queries(queries)` → dict mapping hash to query
 - `get_storage_stats()` → dict with backend statistics
+
+The methods are synchronous. A backend whose methods do blocking I/O (a database, a
+network cache) sets the class attribute `blocking_io = True`, and the `/graphql` route
+then calls them in a worker thread (`asyncio.to_thread`) instead of on the event loop;
+such a backend must be thread-safe. The default, `False`, calls them on the event loop.
 
 **Example Use Cases**:
 

@@ -1,7 +1,7 @@
 """APQ storage backend abstract interface for FraiseQL."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 
 class APQStorageBackend(ABC):
@@ -14,7 +14,16 @@ class APQStorageBackend(ABC):
     1. Persistent query storage by hash
     2. Pre-computed JSON response caching
     3. Direct JSON passthrough (bypass GraphQL execution for cached responses)
+
+    The methods are synchronous. A backend whose methods do blocking I/O (a database,
+    a network cache) sets ``blocking_io = True``: the ``/graphql`` route then calls them
+    in a worker thread (``asyncio.to_thread``), so a slow lookup doesn't stall the event
+    loop. Such a backend must be thread-safe.
     """
+
+    #: Whether the methods do blocking I/O, so the request path calls them in a worker
+    #: thread. False (called on the event loop) unless a backend sets it.
+    blocking_io: ClassVar[bool] = False
 
     @abstractmethod
     def get_persisted_query(self, hash_value: str) -> Optional[str]:
