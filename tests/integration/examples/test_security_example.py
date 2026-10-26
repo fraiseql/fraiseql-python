@@ -56,7 +56,8 @@ def _run(environment: str) -> dict:
         timeout=120,
         check=False,
         cwd=_ROOT,
-        env={**_env(), "ENVIRONMENT": environment},
+        # Outside development the example refuses to start without SECRET_KEY
+        env={**_env(), "ENVIRONMENT": environment, "SECRET_KEY": "test-only-secret"},
     )
     assert result.returncode == 0, result.stderr[-3000:]
     return json.loads(result.stdout.strip().splitlines()[-1])
