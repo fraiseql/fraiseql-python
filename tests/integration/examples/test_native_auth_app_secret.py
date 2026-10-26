@@ -39,4 +39,3 @@ async def test_create_app_fails_without_a_secret(
 
     with pytest.raises(RuntimeError, match="JWT_SECRET_KEY"):
         await native_auth_app.create_app()
-
