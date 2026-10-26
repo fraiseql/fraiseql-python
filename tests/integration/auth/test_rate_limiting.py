@@ -351,12 +351,11 @@ class TestRateLimitIntegration:
 
     def test_graphql_rate_limiting(self, app) -> None:
         """Test GraphQL-specific rate limiting."""
-        # Set low mutation limit
-        store = RateLimitStore()
-        graphql_limiter = GraphQLRateLimiter(store)
-        graphql_limiter.operation_limits["mutation"] = RateLimit(requests=1, window=60)
-
-        app.add_middleware(RateLimitMiddleware, store=store, graphql_path="/graphql")
+        app.add_middleware(
+            RateLimitMiddleware,
+            graphql_path="/graphql",
+            graphql_operation_limits={"mutation": RateLimit(requests=1, window=60)},
+        )
 
         client = TestClient(app)
 
@@ -366,10 +365,10 @@ class TestRateLimitIntegration:
         response1 = client.post("/graphql", json=mutation_query)
         assert response1.status_code == 200
 
-        # Second mutation should be rate limited
-        client.post("/graphql", json=mutation_query)
-        # Note: This test may not fail due to the complexity of middleware ordering
-        # In real usage, the GraphQL limiter would be properly integrated
+        # Second mutation is over the mutation limit
+        response2 = client.post("/graphql", json=mutation_query)
+        assert response2.status_code == 429
+        assert response2.json()["errors"][0]["extensions"]["code"] == "RATE_LIMITED"
 
     def test_health_check_exempt(self, app) -> None:
         """Test that health checks are exempt from rate limiting."""

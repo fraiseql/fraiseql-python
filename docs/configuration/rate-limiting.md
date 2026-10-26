@@ -206,8 +206,21 @@ On `POST /graphql`, `RateLimitMiddleware` also counts each request, per client, 
 - **estimated cost** (brace nesting depth × 10, plus the number of newlines and
   commas): 200 requests a minute under 50, 100 from 50 to 199, 20 from 200.
 
-These limits are fixed in `GraphQLRateLimiter`; `setup_rate_limiting` has no argument
-for them. A request over one of them gets `429` with a GraphQL error body:
+Change them with `graphql_operation_limits` (keys `query`, `mutation`,
+`subscription`) and `graphql_complexity_limits` (keys `low`, `medium`, `high`); the
+keys you pass replace those defaults, the others stay:
+
+```python
+setup_rate_limiting(
+    app,
+    graphql_operation_limits={"mutation": RateLimit(requests=5, window=60)},
+    graphql_complexity_limits={"high": RateLimit(requests=5, window=60)},
+)
+```
+
+`RateLimitMiddleware` takes the same two arguments. To turn a limit off in effect,
+give it a large `requests`. A request over one of them gets `429` with a GraphQL
+error body:
 
 ```json
 {

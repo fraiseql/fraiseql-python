@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Run the 1.31.1 file again to replace the function. `user_has_role()` is unchanged:
   like `requires_role`, it checks the roles assigned to the user.
 
+- **The GraphQL limits of `setup_rate_limiting` can be changed.** The per-operation
+  limits (100 queries, 20 mutations, 10 subscriptions a minute) and the per-cost
+  limits (200 / 100 / 20 a minute) on `POST /graphql` were hard-coded in
+  `GraphQLRateLimiter`, and changing them on an instance had no effect on the one
+  the middleware builds. `setup_rate_limiting` and `RateLimitMiddleware` now take
+  `graphql_operation_limits` and `graphql_complexity_limits`, merged over the
+  defaults (an unknown key raises `ValueError`).
+
 ### Security
 
 - **Locked dependencies moved past their published advisories.** `uv.lock` held

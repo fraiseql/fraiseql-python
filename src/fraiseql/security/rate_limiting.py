@@ -134,6 +134,34 @@ class RedisRateLimitStore:
             return timestamp, count
 
 
+def default_graphql_operation_limits() -> dict[str, RateLimit]:
+    """Per-client limits by GraphQL operation type (``query``, ``mutation``, ``subscription``)."""
+    return {
+        "query": RateLimit(requests=100, window=60),
+        "mutation": RateLimit(requests=20, window=60),
+        "subscription": RateLimit(requests=10, window=60),
+    }
+
+
+def default_graphql_complexity_limits() -> dict[str, RateLimit]:
+    """Per-client limits by estimated query cost tier (``low``, ``medium``, ``high``)."""
+    return {
+        "low": RateLimit(requests=200, window=60),  # complexity < 50
+        "medium": RateLimit(requests=100, window=60),  # complexity 50-199
+        "high": RateLimit(requests=20, window=60),  # complexity >= 200
+    }
+
+
+def _merge_limits(
+    name: str, defaults: dict[str, RateLimit], overrides: dict[str, RateLimit] | None
+) -> dict[str, RateLimit]:
+    unknown = set(overrides or {}) - set(defaults)
+    if unknown:
+        msg = f"{name}: unknown keys {sorted(unknown)}; expected {sorted(defaults)}"
+        raise ValueError(msg)
+    return {**defaults, **(overrides or {})}
+
+
 class GraphQLRateLimiter:
     """Rate limiter specifically for GraphQL operations.
 
@@ -142,25 +170,30 @@ class GraphQLRateLimiter:
         trusted_proxies: Proxy addresses or CIDR networks whose ``X-Forwarded-For``
             is believed (see :mod:`fraiseql.security.client_ip`). Without it, the
             client is the socket peer.
+        operation_limits: Limits by operation type, merged over
+            :func:`default_graphql_operation_limits`.
+        complexity_limits: Limits by cost tier, merged over
+            :func:`default_graphql_complexity_limits`.
+
+    Raises:
+        ValueError: If a limits dict has a key other than the defaults' keys.
     """
 
     def __init__(
         self,
         store: RateLimitStore | RedisRateLimitStore,
         trusted_proxies: TrustedProxies | list[str] | str | None = None,
+        operation_limits: dict[str, RateLimit] | None = None,
+        complexity_limits: dict[str, RateLimit] | None = None,
     ) -> None:
         self.store = store
         self.trusted_proxies = TrustedProxies.coerce(trusted_proxies)
-        self.operation_limits = {
-            "query": RateLimit(requests=100, window=60),
-            "mutation": RateLimit(requests=20, window=60),
-            "subscription": RateLimit(requests=10, window=60),
-        }
-        self.complexity_limits = {
-            "low": RateLimit(requests=200, window=60),  # complexity < 50
-            "medium": RateLimit(requests=100, window=60),  # complexity 50-200
-            "high": RateLimit(requests=20, window=60),  # complexity > 200
-        }
+        self.operation_limits = _merge_limits(
+            "operation_limits", default_graphql_operation_limits(), operation_limits
+        )
+        self.complexity_limits = _merge_limits(
+            "complexity_limits", default_graphql_complexity_limits(), complexity_limits
+        )
 
     def _extract_operation_info(self, request_body: dict) -> tuple[str, str | None, int]:
         """Extract operation type, name, and estimated complexity."""
@@ -326,6 +359,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         trusted_proxies: Proxy addresses or CIDR networks (``["10.0.0.0/8"]``). When
             the socket peer is one of them, the client IP is the right-most
             ``X-Forwarded-For`` address that is not a trusted proxy.
+        graphql_operation_limits: Overrides of the per-operation-type limits on
+            ``graphql_path`` (keys ``query``, ``mutation``, ``subscription``).
+        graphql_complexity_limits: Overrides of the per-cost-tier limits on
+            ``graphql_path`` (keys ``low``, ``medium``, ``high``).
     """
 
     def __init__(
@@ -336,6 +373,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         default_limit: RateLimit | None = None,
         graphql_path: str = "/graphql",
         trusted_proxies: TrustedProxies | list[str] | str | None = None,
+        graphql_operation_limits: dict[str, RateLimit] | None = None,
+        graphql_complexity_limits: dict[str, RateLimit] | None = None,
     ) -> None:
         super().__init__(app)
         self.store = store or RateLimitStore()
@@ -343,7 +382,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.default_limit = default_limit or RateLimit(requests=100, window=60)
         self.graphql_path = graphql_path
         self.trusted_proxies = TrustedProxies.coerce(trusted_proxies)
-        self.graphql_limiter = GraphQLRateLimiter(self.store, self.trusted_proxies)
+        self.graphql_limiter = GraphQLRateLimiter(
+            self.store,
+            self.trusted_proxies,
+            operation_limits=graphql_operation_limits,
+            complexity_limits=graphql_complexity_limits,
+        )
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -547,6 +591,8 @@ def setup_rate_limiting(
     custom_rules: list[RateLimitRule] | None = None,
     default_limit: RateLimit | None = None,
     trusted_proxies: TrustedProxies | list[str] | str | None = None,
+    graphql_operation_limits: dict[str, RateLimit] | None = None,
+    graphql_complexity_limits: dict[str, RateLimit] | None = None,
 ) -> RateLimitMiddleware:
     """Set up rate limiting middleware with sensible defaults.
 
@@ -560,9 +606,15 @@ def setup_rate_limiting(
             reverse proxy, either list the proxy here or have the ASGI server rewrite
             the peer (uvicorn ``--forwarded-allow-ips``), or every client shares the
             proxy's limit.
+        graphql_operation_limits: Per-client limits on ``POST /graphql`` by operation
+            type, merged over :func:`default_graphql_operation_limits`
+            (``{"mutation": RateLimit(requests=5, window=60)}``).
+        graphql_complexity_limits: Per-client limits on ``POST /graphql`` by
+            estimated cost tier, merged over :func:`default_graphql_complexity_limits`.
 
     Raises:
-        ValueError: If a ``trusted_proxies`` entry is ``"*"`` or not an IP or network.
+        ValueError: If a ``trusted_proxies`` entry is ``"*"`` or not an IP or network,
+            or a GraphQL limits dict has an unknown key.
     """
     # Choose store based on Redis availability
     store = RedisRateLimitStore(redis_client) if redis_client else RateLimitStore()
@@ -578,6 +630,8 @@ def setup_rate_limiting(
         rules=rules,
         default_limit=default_limit,
         trusted_proxies=proxies,
+        graphql_operation_limits=graphql_operation_limits,
+        graphql_complexity_limits=graphql_complexity_limits,
     )
 
     app.add_middleware(
@@ -586,6 +640,8 @@ def setup_rate_limiting(
         rules=rules,
         default_limit=default_limit,
         trusted_proxies=proxies,
+        graphql_operation_limits=graphql_operation_limits,
+        graphql_complexity_limits=graphql_complexity_limits,
     )
 
     return middleware

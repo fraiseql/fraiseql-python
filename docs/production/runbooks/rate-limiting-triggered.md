@@ -187,7 +187,9 @@ setup_rate_limiting(
 ```
 
 `custom_rules` replaces the default rules, so list every path you want limited. The
-per-operation-type and per-cost GraphQL limits are fixed and stay in place.
+per-operation-type and per-cost GraphQL limits stay in place; raise them with
+`graphql_operation_limits={"query": RateLimit(requests=300, window=60)}` and
+`graphql_complexity_limits={"medium": RateLimit(requests=200, window=60)}`.
 
 #### 2. Exempt a Trusted Client (If Safe)
 
