@@ -144,11 +144,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download all artifacts
+      # Only the distributions: the run also holds the SBOM bundle (a README.md,
+      # the signature, the certificate), which twine refuses as a distribution.
+      - name: Download the wheels
         uses: actions/download-artifact@v8
         with:
+          pattern: wheel-*
           path: dist/
           merge-multiple: true
+
+      - name: Download the sdist
+        uses: actions/download-artifact@v8
+        with:
+          name: sdist
+          path: dist/
 
       - name: List distributions
         run: ls -lh dist/
