@@ -107,6 +107,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `FraiseQLConfig` limiter (`rate_limit_enabled`) always keyed on the socket peer
   and is unchanged.
 
+- **The example row-level security policies ignore expired role assignments.**
+  `own_data_update_users`, `own_data_update_orders` and `product_management` of
+  `004_rbac_row_level_security.sql` let a user with the `admin` or `super_admin`
+  role through by reading `user_roles` directly, without its `expires_at`, so a user
+  whose admin assignment had expired still updated other users' rows and orders and
+  managed products. They now call `user_has_role()`, which skips expired
+  assignments; the roles they accept and their tenant scoping are unchanged.
+  **Existing installs must run the 1.31.1 `004_rbac_row_level_security.sql` again**
+  to replace the policies.
+
 ## [1.31.0] - 2026-10-25
 
 ### Changed

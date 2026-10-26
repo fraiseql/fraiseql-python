@@ -10,6 +10,9 @@
 --   orders:   tenant_id, user_id
 --   products: tenant_id
 -- and the session variables app.tenant_id, app.user_id and app.is_super_admin.
+-- The admin checks call user_has_role(), so an expired assignment doesn't count (before
+-- 1.31.1 they read user_roles directly and ignored expires_at: run this file again).
+-- The SELECT around each call has PostgreSQL evaluate it once per statement.
 
 -- Function to check if user has role (for use in policies).
 -- Like @requires_role and PermissionResolver.get_user_roles(), it checks the roles
@@ -91,12 +94,8 @@ BEGIN
         FOR UPDATE
         USING (
             id = current_setting('app.user_id', TRUE)::UUID
-            OR EXISTS (
-                SELECT 1 FROM user_roles ur
-                INNER JOIN roles r ON ur.role_id = r.id
-                WHERE ur.user_id = current_setting('app.user_id', TRUE)::UUID
-                AND r.name IN ('admin', 'super_admin')
-            )
+            OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'admin'))
+            OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'super_admin'))
         );
 
     CREATE INDEX IF NOT EXISTS idx_users_tenant_id ON users(tenant_id);
@@ -126,12 +125,8 @@ BEGIN
         FOR UPDATE
         USING (
             user_id = current_setting('app.user_id', TRUE)::UUID
-            OR EXISTS (
-                SELECT 1 FROM user_roles ur
-                INNER JOIN roles r ON ur.role_id = r.id
-                WHERE ur.user_id = current_setting('app.user_id', TRUE)::UUID
-                AND r.name IN ('admin', 'super_admin')
-            )
+            OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'admin'))
+            OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'super_admin'))
         );
 
     CREATE INDEX IF NOT EXISTS idx_orders_tenant_id ON orders(tenant_id);
@@ -162,12 +157,8 @@ BEGIN
     CREATE POLICY product_management ON products
         FOR ALL
         USING (
-            EXISTS (
-                SELECT 1 FROM user_roles ur
-                INNER JOIN roles r ON ur.role_id = r.id
-                WHERE ur.user_id = current_setting('app.user_id', TRUE)::UUID
-                AND r.name IN ('admin', 'super_admin')
-            )
+            (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'admin'))
+            OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'super_admin'))
         );
 
     CREATE INDEX IF NOT EXISTS idx_products_tenant_id ON products(tenant_id);

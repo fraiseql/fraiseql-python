@@ -197,6 +197,22 @@ tenant. `current_setting('app.user_id')` is the session variable FraiseQL
 sets from `info.context["user_id"]` before each query (see
 [Multi-tenancy](../advanced/multi-tenancy.md)).
 
+The file also applies example policies to tables named `users`, `orders` and
+`products`, if they exist. Their admin checks call `user_has_role()`, wrapped in a
+`SELECT` so that PostgreSQL evaluates the call once per statement:
+
+```sql
+USING (
+    user_id = current_setting('app.user_id', TRUE)::UUID
+    OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'admin'))
+    OR (SELECT user_has_role(current_setting('app.user_id', TRUE)::UUID, 'super_admin'))
+)
+```
+
+Before 1.31.1 they read `user_roles` directly and counted expired assignments: run the
+1.31.1 file again to replace them. Check role assignments the same way in your own
+policies: a query on `user_roles` must also test `expires_at`.
+
 ---
 
 ## GraphQL Directives (Strawberry only)
