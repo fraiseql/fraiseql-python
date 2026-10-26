@@ -361,7 +361,7 @@ is the CQRS data access object — reads via views, writes via functions.
 | `find_one` | `await db.find_one(view_name, id=..., **kwargs)` | Single row, or `None` if not found. |
 | `execute_function` | `await db.execute_function(function_name, input_data)` | Call a `fn_` PostgreSQL function (passes `input_data` as JSONB); returns the function's result dict. |
 | `count` | `await db.count(view_name, **kwargs)` | Integer count with the same `where=` semantics as `find`. |
-| `aggregate` | `await db.aggregate(view_name, aggregations, **kwargs)` | Run multiple aggregate expressions in one query. |
+| `aggregate` | `await db.aggregate(view_name, aggregations, **kwargs)` | Run multiple aggregate expressions in one query. The expressions are SQL written into the query as is: constants from your code only, never request input. |
 
 ```python
 # Read with filtering

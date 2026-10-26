@@ -3068,9 +3068,15 @@ class FraiseQLRepository:
     ) -> dict[str, Any]:
         """Perform multiple aggregations in a single query.
 
+        The expressions are SQL, written into the query as they are (only the
+        result names are quoted): pass constants from your code, never text
+        from a request. ``find(group_by=..., aggregations=...)`` takes
+        ``FUNC(field)`` checked against an allowlist instead.
+
         Args:
             view_name: Database table/view name
             aggregations: Dict mapping result names to SQL aggregation expressions
+                (trusted input only)
             **kwargs: Query parameters (where, tenant_id, etc.)
 
         Returns:
