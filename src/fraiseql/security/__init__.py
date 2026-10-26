@@ -474,8 +474,13 @@ def setup_production_security(
     domain: str,
     trusted_origins: set[str],
     redis_client: Any | None = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> dict[str, Any]:
-    """Set up production security with strict settings."""
+    """Set up production security with strict settings.
+
+    Behind a reverse proxy, pass its addresses as ``trusted_proxies`` (or run
+    uvicorn with ``--forwarded-allow-ips``), or every client shares its rate limit.
+    """
     return setup_security(
         app=app,
         secret_key=secret_key,
@@ -483,12 +488,14 @@ def setup_production_security(
         domain=domain,
         trusted_origins=trusted_origins,
         redis_client=redis_client,
+        trusted_proxies=trusted_proxies,
     )
 
 
 def setup_development_security(
     app: FastAPI,
     secret_key: str | None = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> dict[str, Any]:
     """Set up development security with permissive settings.
 
@@ -501,4 +508,5 @@ def setup_development_security(
         app=app,
         secret_key=secret_key,
         environment="development",
+        trusted_proxies=trusted_proxies,
     )

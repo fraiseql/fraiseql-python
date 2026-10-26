@@ -50,6 +50,9 @@ if not SECRET_KEY:
     SECRET_KEY = secrets.token_urlsafe(64)
 DOMAIN = os.getenv("DOMAIN", "api.example.com")
 TRUSTED_ORIGINS = os.getenv("TRUSTED_ORIGINS", "https://app.example.com").split(",")
+# Reverse proxies whose X-Forwarded-For the rate limiter believes (addresses or
+# CIDRs, comma-separated). Unset: each client is the socket peer.
+TRUSTED_PROXIES = [p for p in os.getenv("TRUSTED_PROXIES", "").split(",") if p.strip()]
 
 # create_fraiseql_app needs a URL; nothing here queries the database
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/secure_blog")
@@ -230,6 +233,7 @@ def create_app() -> FastAPI:
             domain=DOMAIN,
             trusted_origins=set(TRUSTED_ORIGINS),
             redis_client=redis_client,
+            trusted_proxies=TRUSTED_PROXIES or None,
         )
     elif ENVIRONMENT == "development":
         # More permissive: relaxed headers, no referrer check, non-Secure cookies

@@ -168,6 +168,8 @@ async def create_app() -> FastAPI:
         enable_csrf_protection=False,  # Disabled for API usage
         rate_limit_requests_per_minute=100,  # Higher limit for development
         rate_limit_auth_requests_per_minute=10,
+        # Behind a reverse proxy, name it, or every client shares one limit:
+        # trusted_proxies=["10.0.0.0/8"],
     )
 
     return app
