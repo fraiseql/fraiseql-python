@@ -85,8 +85,14 @@ profile = get_profile("standard")
 config = FraiseQLConfig(
     database_url="postgresql://localhost/fraiseql_db",
     introspection_policy=profile.introspection_policy.value,  # "authenticated"
+    max_query_depth=profile.max_query_depth,  # 15
+    complexity_max_score=profile.max_query_complexity,  # 1000
 )
 ```
+
+A deeper query is answered with `QUERY_TOO_DEEP`, a costlier one with
+`QUERY_TOO_COMPLEX`, and neither is executed (setting `complexity_max_score`
+turns the complexity check on).
 
 > **Applying a profile in 1.31:** `FraiseQLConfig` has no `security_profile` setting
 > (it ignores fields it doesn't declare). A profile is a `SecurityProfileConfig`
