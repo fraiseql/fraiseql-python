@@ -11,7 +11,10 @@
 --   products: tenant_id
 -- and the session variables app.tenant_id, app.user_id and app.is_super_admin.
 
--- Function to check if user has role (for use in policies)
+-- Function to check if user has role (for use in policies).
+-- Like @requires_role and PermissionResolver.get_user_roles(), it checks the roles
+-- assigned to the user (unexpired, in any tenant), not the roles they inherit: a
+-- super_admin doesn't have the admin role. To follow the hierarchy, check a permission.
 CREATE OR REPLACE FUNCTION user_has_role(p_user_id UUID, p_role_name TEXT)
 RETURNS BOOLEAN AS $$
 BEGIN
@@ -25,15 +28,34 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE;
 
--- Function to check if user has permission (for use in policies)
+-- Function to check if user has permission (for use in policies).
+-- Like PermissionResolver, it counts the permissions granted to each role assigned to
+-- the user (unexpired) and to that role's ancestors (get_inherited_roles() of
+-- 002_rbac_tables.sql: the role, its parent, the parent's parent...), and raises an
+-- error when an assigned role has an ancestor 10 levels up, where get_inherited_roles()
+-- stops (a shorter cycle gives each of its roles once). Unlike the resolver, it
+-- doesn't take a tenant: it counts the user's assignments in every tenant.
 CREATE OR REPLACE FUNCTION user_has_permission(p_user_id UUID, p_resource TEXT, p_action TEXT)
 RETURNS BOOLEAN AS $$
+DECLARE
+    v_cyclic_role UUID;
 BEGIN
+    SELECT ur.role_id INTO v_cyclic_role
+    FROM user_roles ur
+    CROSS JOIN LATERAL get_inherited_roles(ur.role_id) ir
+    WHERE ur.user_id = p_user_id
+    AND (ur.expires_at IS NULL OR ur.expires_at > NOW())
+    AND ir.depth >= 10
+    LIMIT 1;
+    IF v_cyclic_role IS NOT NULL THEN
+        RAISE EXCEPTION 'Cycle detected in role hierarchy for role %', v_cyclic_role;
+    END IF;
+
     RETURN EXISTS (
         SELECT 1
         FROM user_roles ur
-        INNER JOIN roles r ON ur.role_id = r.id
-        INNER JOIN role_permissions rp ON r.id = rp.role_id
+        CROSS JOIN LATERAL get_inherited_roles(ur.role_id) ir
+        INNER JOIN role_permissions rp ON rp.role_id = ir.role_id
         INNER JOIN permissions p ON rp.permission_id = p.id
         WHERE ur.user_id = p_user_id
         AND p.resource = p_resource

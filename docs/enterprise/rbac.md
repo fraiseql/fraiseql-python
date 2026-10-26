@@ -186,8 +186,14 @@ CREATE POLICY post_update ON tb_post
     USING (user_has_permission(current_setting('app.user_id')::uuid, 'post', 'update'));
 ```
 
-Both read the user's *direct* roles: unlike `PermissionResolver`, they don't follow
-`parent_role_id`. `current_setting('app.user_id')` is the session variable FraiseQL
+`user_has_permission` counts the permissions `PermissionResolver` would: those granted
+to each role assigned to the user (unexpired) and to that role's ancestors, through
+`get_inherited_roles()`; like the resolver, it raises an error when an assigned role has
+an ancestor ten levels up. Before 1.31.1 it read the assigned roles only. `user_has_role`
+checks the roles assigned to the user, as `requires_role` and
+`PermissionResolver.get_user_roles()` do: a `super_admin` doesn't have the `admin` role.
+Unlike the resolver, neither takes a tenant: they count the user's assignments in every
+tenant. `current_setting('app.user_id')` is the session variable FraiseQL
 sets from `info.context["user_id"]` before each query (see
 [Multi-tenancy](../advanced/multi-tenancy.md)).
 

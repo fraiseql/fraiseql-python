@@ -19,6 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-blank value, and passes that one secret to the auth provider and the
   middleware.
 
+- **`user_has_permission()` follows the role hierarchy.** The row-level security
+  helper of `004_rbac_row_level_security.sql` read the permissions of the roles
+  assigned to the user only, so a policy denied a `manager` a permission granted to
+  `viewer`, which `PermissionResolver` gives it. It now counts each assigned role's
+  ancestors through `get_inherited_roles()`, as the resolver does, and raises an
+  error where the resolver does (an assigned role with an ancestor ten levels up).
+  Run the 1.31.1 file again to replace the function. `user_has_role()` is unchanged:
+  like `requires_role`, it checks the roles assigned to the user.
+
 ### Security
 
 - **Locked dependencies moved past their published advisories.** `uv.lock` held
