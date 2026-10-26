@@ -8,6 +8,7 @@ A flat table covers the column case.
 import json
 from collections.abc import AsyncIterator
 
+import psycopg
 import pytest
 
 from fraiseql.db import FraiseQLRepository
@@ -92,6 +93,26 @@ class TestFieldHelpersWithWhere:
         assert await repo.sum(table, "amount", mandatory_filters=done) == 30.0
         assert await repo.max(table, "amount", mandatory_filters=done) == 20
         assert await repo.distinct(table, "status", mandatory_filters=done) == ["done"]
+
+
+class TestPluckLimitOffset:
+    async def test_limit_and_offset(self, class_db_pool, views) -> None:
+        repo = FraiseQLRepository(class_db_pool)
+
+        assert len(await repo.pluck(f"{views}.tb_order", "id", limit=2)) == 2
+        assert len(await repo.pluck(f"{views}.tb_order", "id", limit=5, offset=2)) == 1
+
+    @pytest.mark.parametrize("arg", ["limit", "offset"])
+    async def test_sql_in_a_string_is_a_value_not_sql(self, class_db_pool, views, arg) -> None:
+        """A string limit/offset is bound as a value; it used to be written into the SQL."""
+        repo = FraiseQLRepository(class_db_pool)
+
+        with pytest.raises(psycopg.errors.InvalidTextRepresentation):
+            await repo.pluck(
+                f"{views}.tb_order", "id", **{arg: f"1; DROP TABLE {views}.tb_order CASCADE"}
+            )
+
+        assert sorted(await repo.pluck(f"{views}.tb_order", "id")) == [1, 2, 3]
 
 
 class TestFieldHelpersOnAJsonbView:

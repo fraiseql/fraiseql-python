@@ -3034,7 +3034,7 @@ class FraiseQLRepository:
             # Get product names with limit
             names = await db.pluck("v_products", "name", limit=10)
         """
-        from psycopg.sql import SQL, Composed
+        from psycopg.sql import SQL, Composed, Literal
 
         limit = kwargs.pop("limit", None)
         offset = kwargs.pop("offset", None)
@@ -3046,13 +3046,12 @@ class FraiseQLRepository:
             _where_sql(where_parts),
         ]
 
+        # Bound as literals, like find(): a string here is a value, never SQL.
         if limit is not None:
-            query_parts.append(SQL(" LIMIT "))
-            query_parts.append(SQL(str(limit)))
+            query_parts.extend([SQL(" LIMIT "), Literal(limit)])
 
         if offset is not None:
-            query_parts.append(SQL(" OFFSET "))
-            query_parts.append(SQL(str(offset)))
+            query_parts.extend([SQL(" OFFSET "), Literal(offset)])
 
         query = Composed(query_parts)
 

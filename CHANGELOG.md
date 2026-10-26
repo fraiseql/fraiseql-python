@@ -46,6 +46,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   already used and which was never affected; sort on an expression in a view
   column, or write the query with `db.run()`.
 
+- **`db.pluck()` binds `limit` and `offset` as values.** It wrote them into the
+  SQL with `str()`, so a string `limit` such as `"1; DROP TABLE ..."` ran as
+  SQL. They are now literals, as `db.find()` already wrote them; an integer
+  works as before, and a string that isn't a number is a PostgreSQL error.
+
 ## [1.31.0] - 2026-10-25
 
 ### Changed
