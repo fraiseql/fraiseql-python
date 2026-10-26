@@ -324,31 +324,16 @@ jobs:
     # pip-audit's own dependency tree does not become part of the surface it is
     # auditing.
     #
-    # Ignored advisories — each with the reason it does not apply and when to drop it:
-    #
-    # PYSEC-2026-3740 (GHSA-8mgp-746c-j5xp, CVE-2026-81726): nltk <= 3.10.3, no
-    # patched release yet. nltk's model persistence APIs (TransitionParser,
-    # AveragedPerceptron, PerceptronTagger.save_to_json, save_maxent_params) bypass
-    # its pathsec sandbox for caller-chosen paths. nltk enters only through the
-    # optional `llamaindex` extra: llama-index-core uses its Punkt tokenizer,
-    # stopwords and nltk.data, and fraiseql never imports nltk. Once nltk ships a
-    # fix, drop the ignore and add an nltk floor to [tool.uv] constraint-dependencies.
-    #
-    # PYSEC-2026-4146 (GHSA-gvp8-978c-rx2q, CVE-2026-103001): pyjwt, no patched
-    # release yet. jwt.decode()/decode_complete() mutate a caller-supplied `options`
-    # dict in place when verify_signature is falsy, so a dict reused across calls
-    # carries the change into later decodes. fraiseql's only unverified decode
-    # (auth/native/tokens.py) passes a fresh dict literal per call, and auth0.py
-    # passes no options. Once pyjwt ships a fix, drop the ignore and raise the
-    # pyjwt floor.
+    # No advisory is ignored. To ignore one, add `--ignore-vuln <ID>` below with a
+    # comment here saying why it does not apply and when to drop it. The last two
+    # (PYSEC-2026-3740, nltk; PYSEC-2026-4146, pyjwt) were dropped in 1.31.1: nltk
+    # 3.10.4 is patched and the advisory no longer covers pyjwt >= 2.14.
     - name: Audit Python dependencies
       run: |
         uv export --all-extras --no-emit-project \
           --format requirements-txt -o audit-requirements.txt
         uvx --from 'pip-audit>=2.10.1' pip-audit \
           --requirement audit-requirements.txt \
-          --ignore-vuln PYSEC-2026-3740 \
-          --ignore-vuln PYSEC-2026-4146 \
           --format json --output audit-results.json
 
     # Only reached when pip-audit exits 0. Re-reads the report so a schema change
