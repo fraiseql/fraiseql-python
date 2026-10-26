@@ -257,7 +257,7 @@ config = FraiseQLConfig(
 ### max_query_depth
 
 - **Type**: `int | None`
-- **Default**: `None`
+- **Default**: `15` (since 1.31.1; `None` before)
 - **Description**: Reject a query nested deeper than this (`None` = unlimited). `{ users { id } }`
   has depth 1, `{ users { posts { id } } }` depth 2; fragments add no depth of their own. A
   deeper query gets a `QUERY_TOO_DEEP` GraphQL error (`extensions.depth`,

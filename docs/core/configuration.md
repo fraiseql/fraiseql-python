@@ -121,7 +121,7 @@ config = FraiseQLConfig(
 | introspection_policy | IntrospectionPolicy | PUBLIC | Schema introspection access control |
 | enable_playground | bool | True | Enable GraphQL playground IDE |
 | playground_tool | Literal | "graphiql" | GraphQL IDE to use (graphiql/apollo-sandbox) |
-| max_query_depth | int \| None | None | Reject queries nested deeper than this, with a `QUERY_TOO_DEEP` error (None = unlimited; introspection not counted) |
+| max_query_depth | int \| None | 15 | Reject queries nested deeper than this, with a `QUERY_TOO_DEEP` error (None = unlimited; introspection not counted) |
 | query_timeout | int | 30 | Statement timeout, in seconds, of every database read (`find`, `find_one`, `count`, ...), `db.run()` and `execute_function`: set as a transaction-local `statement_timeout`; 0 sets none |
 | auto_camel_case | bool | True | Auto-convert snake_case fields to camelCase |
 | include_execution_metadata | bool | False | Add `extensions.execution` (`mode`, `time_ms`) to responses in production too (outside production it is always added); a response served as raw Rust bytes carries no extensions either way |

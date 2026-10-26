@@ -293,7 +293,7 @@ Which GraphQL IDE to serve.
 ### `max_query_depth`
 
 **Type**: `int | None`
-**Default**: `None` (no depth limit)
+**Default**: `15` (since 1.31.1; `None`, no limit, before)
 **Environment**: `FRAISEQL_MAX_QUERY_DEPTH`
 
 Reject a query nested deeper than this. `{ users { id } }` has depth 1,

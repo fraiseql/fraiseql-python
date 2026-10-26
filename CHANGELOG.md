@@ -9,6 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.31.1]
 
+### Changed
+
+- **Queries nested deeper than 15 levels are refused by default.**
+  `FraiseQLConfig.max_query_depth` defaulted to `None`, so `/graphql` answered a
+  query of any depth: a cheap way to make the server do a lot of work. It now
+  defaults to `15`, counted as in 1.31.0 (`{ users { posts { id } } }` has depth
+  2; fragments add none; introspection isn't counted), and a deeper query gets a
+  `QUERY_TOO_DEEP` error before anything executes. Each Relay connection hop
+  (`edges { node { ... } }`) costs 2. **A client nesting deeper must be given a
+  higher limit**: `max_query_depth=25` or `FRAISEQL_MAX_QUERY_DEPTH=25`, or
+  `max_query_depth=None` for none. `GraphNoteRouter` and WebSocket subscriptions
+  apply it only when they are given the config.
+
 ### Fixed
 
 - **`examples/native_auth_app.py` no longer falls back to a built-in signing

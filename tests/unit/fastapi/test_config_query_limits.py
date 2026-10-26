@@ -8,10 +8,20 @@ from fraiseql.gql.query_limits import QueryLimits
 _URL = "postgresql://localhost/test"
 
 
-def test_no_limit_by_default() -> None:
+def test_a_depth_limit_of_15_by_default() -> None:
     config = FraiseQLConfig(database_url=_URL)
     assert config.complexity_enabled is False
+    assert QueryLimits.from_config(config) == QueryLimits(max_depth=15)
+
+
+def test_none_turns_the_depth_limit_off() -> None:
+    config = FraiseQLConfig(database_url=_URL, max_query_depth=None)
     assert QueryLimits.from_config(config) is None
+
+
+def test_the_depth_limit_from_the_environment(monkeypatch) -> None:
+    monkeypatch.setenv("FRAISEQL_MAX_QUERY_DEPTH", "25")
+    assert FraiseQLConfig(database_url=_URL).max_query_depth == 25
 
 
 def test_max_query_depth_alone() -> None:
@@ -44,7 +54,9 @@ def test_a_limit_from_the_environment_turns_complexity_on(monkeypatch) -> None:
 
 
 def test_complexity_enabled_false_wins_over_a_limit() -> None:
-    config = FraiseQLConfig(database_url=_URL, complexity_enabled=False, complexity_max_score=5)
+    config = FraiseQLConfig(
+        database_url=_URL, complexity_enabled=False, complexity_max_score=5, max_query_depth=None
+    )
     assert QueryLimits.from_config(config) is None
 
 

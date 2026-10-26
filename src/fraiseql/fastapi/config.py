@@ -144,7 +144,7 @@ class FraiseQLConfig(BaseSettings):
     GraphQL Settings:
         introspection_policy: Schema introspection policy (PUBLIC/DISABLED/AUTHENTICATED)
         enable_playground: Enable GraphQL IDE (auto-disabled in production)
-        max_query_depth: Reject queries nested deeper than this (default: None)
+        max_query_depth: Reject queries nested deeper than this (default: 15; None: no limit)
         auto_camel_case: Auto-convert snake_case to camelCase (default: True)
 
     Auth Settings:
@@ -203,8 +203,8 @@ class FraiseQLConfig(BaseSettings):
     introspection_policy: IntrospectionPolicy = IntrospectionPolicy.PUBLIC
     enable_playground: bool = True
     playground_tool: Literal["graphiql", "apollo-sandbox"] = "graphiql"  # Which GraphQL IDE to use
-    max_query_depth: int | None = Field(default=None, ge=1)
-    """Reject a query nested deeper than this; ``None`` (the default) is no limit.
+    max_query_depth: int | None = Field(default=15, ge=1)
+    """Reject a query nested deeper than this (default 15); ``None`` is no limit.
 
     ``{ users { id } }`` has depth 1, ``{ users { posts { id } } }`` depth 2. A deeper
     query is answered with a ``QUERY_TOO_DEEP`` GraphQL error and is not executed.
