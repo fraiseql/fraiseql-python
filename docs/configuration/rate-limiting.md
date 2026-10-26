@@ -16,7 +16,7 @@ Requests`. Rate limiting is **off by default**. There are two ways to turn it on
 |---|---|---|
 | Middleware | `fraiseql.middleware.RateLimiterMiddleware` | `fraiseql.security.RateLimitMiddleware` |
 | Turned on by | `rate_limit_enabled=True` | calling `setup_rate_limiting(app)` |
-| Client key | the client IP (`request.client.host`) | `request.state.user_id`, else an IP read from `X-Forwarded-For` / `X-Real-IP` / the peer |
+| Client key | the client IP (`request.client.host`) | `request.state.user_id`, else the client IP (`request.client.host`, or the forwarded address from a proxy listed in `trusted_proxies`) |
 | Limits | per minute and per hour, for every path | per path pattern, plus per GraphQL operation type and estimated cost |
 | Counting | sliding window | fixed window (the count resets when the window ends) |
 | Shared across instances | no (memory of each process) | with Redis (`redis_client=`) |
@@ -242,14 +242,32 @@ Successful responses carry no rate-limit headers.
 ### Client key
 
 The key is `user:<request.state.user_id>` when a middleware of yours sets
-`request.state.user_id`, otherwise `ip:<address>`, where the address is the first
-entry of `X-Forwarded-For`, else `X-Real-IP`, else the peer address.
+`request.state.user_id`, otherwise `ip:<address>`, where the address is the socket
+peer (`request.client.host`). `X-Forwarded-For` and `X-Real-IP` are ignored unless
+the peer is a proxy you list in `trusted_proxies`: a client that reaches the app
+directly could otherwise send a new value on every request and never be limited.
 
-> **Security note:** `RateLimitMiddleware` always believes `X-Forwarded-For` and
-> `X-Real-IP`. A client that reaches the app directly can send a different value on
-> every request and is then never limited. Deploy it only behind a proxy that
-> overwrites both headers, or use the `FraiseQLConfig` settings above, which key on
-> the peer address.
+Behind a reverse proxy or load balancer, the peer is the proxy, so every client
+would share one limit. Do one of these:
+
+- **Let uvicorn rewrite the peer.** `uvicorn app:app --proxy-headers
+  --forwarded-allow-ips="10.0.0.1"` replaces `request.client` with the address the
+  listed proxies forward (uvicorn does this for `127.0.0.1` by default). Nothing to
+  set in FraiseQL. This also fixes the key of the `FraiseQLConfig` limiter, its
+  allow and deny lists, and every other use of `request.client.host`.
+- **List the proxies in `trusted_proxies`** (addresses or CIDR networks):
+
+  ```python
+  setup_rate_limiting(app, trusted_proxies=["10.0.0.0/8", "192.168.1.5"])
+  ```
+
+  When the peer is one of them, the client IP is the right-most `X-Forwarded-For`
+  address that is not a trusted proxy (each proxy appends the address it received
+  the request from, so the entries left of that one may be forged). With no
+  `X-Forwarded-For`, `X-Real-IP` is used, else the peer. `"*"` is refused.
+  `setup_security(..., trusted_proxies=...)` passes the list on.
+
+Don't trust a proxy address that clients can also connect from directly.
 
 ### Several instances (Redis)
 

@@ -73,6 +73,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SQL. They are now literals, as `db.find()` already wrote them; an integer
   works as before, and a string that isn't a number is a PostgreSQL error.
 
+- **The `setup_rate_limiting` and native-auth rate limiters no longer believe
+  `X-Forwarded-For` from any client.** `RateLimitMiddleware` (from
+  `setup_rate_limiting` / `setup_security`) and the native-auth limiter (from
+  `add_security_middleware`) keyed each client on the first `X-Forwarded-For`
+  address, else `X-Real-IP`: a client calling the app directly could send a new
+  value on every request and was never limited, including on `/auth/login`. They
+  now key on the socket peer (`request.client.host`), and read the forwarding
+  headers only when the peer is listed in the new `trusted_proxies` argument
+  (addresses or CIDR networks; the client is then the right-most `X-Forwarded-For`
+  address that is not a trusted proxy). **Behind a reverse proxy or load balancer,
+  do one of these, or every client shares the proxy's limit:** run uvicorn with
+  `--proxy-headers --forwarded-allow-ips="<proxy addresses>"` (uvicorn already
+  does this for `127.0.0.1`, so a proxy on the same host needs nothing), or pass
+  `trusted_proxies=["10.0.0.0/8"]` (your proxy addresses) to
+  `setup_rate_limiting`, `setup_security` or `add_security_middleware`. The
+  `FraiseQLConfig` limiter (`rate_limit_enabled`) always keyed on the socket peer
+  and is unchanged.
+
 ## [1.31.0] - 2026-10-25
 
 ### Changed

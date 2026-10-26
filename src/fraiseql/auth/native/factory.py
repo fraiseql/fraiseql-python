@@ -123,6 +123,7 @@ def add_security_middleware(
     rate_limit_requests_per_minute: int = 60,
     rate_limit_auth_requests_per_minute: int = 5,
     csp_policy: Optional[str] = None,
+    trusted_proxies: list[str] | str | None = None,
 ) -> None:
     """Add security middleware to a FastAPI application.
 
@@ -135,6 +136,8 @@ def add_security_middleware(
         rate_limit_requests_per_minute: General rate limit per IP
         rate_limit_auth_requests_per_minute: Auth endpoint rate limit per IP
         csp_policy: Custom Content Security Policy
+        trusted_proxies: Proxy addresses or CIDR networks whose X-Forwarded-For
+            the rate limiter believes. Without it, the client IP is the socket peer.
     """
     if enable_rate_limiting:
         from fraiseql.auth.native.middleware import RateLimitMiddleware
@@ -143,6 +146,7 @@ def add_security_middleware(
             RateLimitMiddleware,
             requests_per_minute=rate_limit_requests_per_minute,
             auth_requests_per_minute=rate_limit_auth_requests_per_minute,
+            trusted_proxies=trusted_proxies,
         )
 
     if enable_security_headers:

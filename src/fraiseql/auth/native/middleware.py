@@ -9,6 +9,8 @@ from typing import Any, Optional
 from fastapi import FastAPI, Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from fraiseql.security.client_ip import TrustedProxies, get_client_ip
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware to add security headers to responses.
@@ -92,8 +94,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         redis_client: Any = None,
         redis_url: Optional[str] = None,
         redis_ttl: int = 3600,
+        trusted_proxies: list[str] | str | None = None,
     ) -> None:
         super().__init__(app)
+        # The socket peer is the client unless it is one of these proxies, whose
+        # X-Forwarded-For is then believed (see fraiseql.security.client_ip).
+        self.trusted_proxies = TrustedProxies.coerce(trusted_proxies)
         self.requests_per_minute = requests_per_minute
         self.burst_requests = burst_requests
         self.auth_requests_per_minute = auth_requests_per_minute
@@ -104,17 +110,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.last_cleanup = time.time()
 
     def _get_client_ip(self, request: Request) -> str:
-        """Get client IP address, considering proxy headers."""
-        # Check for forwarded headers (behind proxy/load balancer)
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip
-
-        return request.client.host if request.client else "unknown"
+        """Return the client IP: the socket peer, unless it is a trusted proxy."""
+        return get_client_ip(request, self.trusted_proxies)
 
     def _is_auth_endpoint(self, path: str) -> bool:
         """Check if the request path is an authentication endpoint."""

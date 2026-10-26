@@ -141,7 +141,8 @@ variables. Counts are kept in each process's memory, so each worker counts on it
 | `/graphql`, by estimated cost | 200 cheap, 100 medium, 20 expensive requests a minute |
 
 A client is `request.state.user_id` when a middleware of yours sets it, otherwise the
-IP (the first `X-Forwarded-For` address, then `X-Real-IP`, then the peer address).
+IP: the peer address, or, when the peer is listed in `trusted_proxies`, the right-most
+`X-Forwarded-For` address that is not a trusted proxy.
 Windows are fixed (the count resets when a window ends), and the counters live in
 each instance's memory unless the app passes `redis_client`.
 
@@ -230,8 +231,11 @@ With `FraiseQLConfig`, the client key is `request.client.host`. Behind a proxy t
 is the proxy's address unless the server takes the forwarded one; with uvicorn, run
 it with `--proxy-headers --forwarded-allow-ips="<proxy address>"`.
 
-With `setup_rate_limiting`, the key comes from `X-Forwarded-For` / `X-Real-IP`, which
-a client can set itself: make sure the proxy overwrites both.
+With `setup_rate_limiting`, the key is the peer address too: either run uvicorn as
+above, or pass the proxy addresses or networks as
+`setup_rate_limiting(app, trusted_proxies=["10.0.0.0/8"])`, and the forwarded address
+is used. Without either, every client shares the proxy's limit (one IP in the
+rejection logs, the proxy's).
 
 ### For Abusive Traffic (10 minutes)
 

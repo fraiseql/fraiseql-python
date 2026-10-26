@@ -13,6 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from fraiseql.audit import get_security_logger
+from fraiseql.security.client_ip import TrustedProxies, get_client_ip
 
 
 class RateLimitStrategy(Enum):
@@ -134,10 +135,22 @@ class RedisRateLimitStore:
 
 
 class GraphQLRateLimiter:
-    """Rate limiter specifically for GraphQL operations."""
+    """Rate limiter specifically for GraphQL operations.
 
-    def __init__(self, store: RateLimitStore | RedisRateLimitStore) -> None:
+    Args:
+        store: Where the counters live.
+        trusted_proxies: Proxy addresses or CIDR networks whose ``X-Forwarded-For``
+            is believed (see :mod:`fraiseql.security.client_ip`). Without it, the
+            client is the socket peer.
+    """
+
+    def __init__(
+        self,
+        store: RateLimitStore | RedisRateLimitStore,
+        trusted_proxies: TrustedProxies | list[str] | str | None = None,
+    ) -> None:
         self.store = store
+        self.trusted_proxies = TrustedProxies.coerce(trusted_proxies)
         self.operation_limits = {
             "query": RateLimit(requests=100, window=60),
             "mutation": RateLimit(requests=20, window=60),
@@ -260,17 +273,8 @@ class GraphQLRateLimiter:
         return None
 
     def _get_client_ip(self, request: Request) -> str:
-        """Extract client IP from request."""
-        # Check for forwarded headers
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip
-
-        return request.client.host if request.client else "unknown"
+        """Return the client IP: the socket peer, unless it is a trusted proxy."""
+        return get_client_ip(request, self.trusted_proxies)
 
     def _get_user_id(self, request: Request) -> str | None:
         """Extract user ID from request context."""
@@ -307,7 +311,22 @@ class GraphQLRateLimiter:
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """FastAPI middleware for rate limiting."""
+    """FastAPI middleware for rate limiting.
+
+    Requests are counted per authenticated user (``request.state.user_id``), else per
+    client IP. The client IP is the socket peer (``request.client.host``); forwarding
+    headers are only believed when the peer is listed in ``trusted_proxies``.
+
+    Args:
+        app: The application.
+        store: Where the counters live (in memory by default).
+        rules: Per-path limits, checked before ``default_limit``.
+        default_limit: The limit for every request (100 per minute by default).
+        graphql_path: The path whose POST bodies get the GraphQL operation limits.
+        trusted_proxies: Proxy addresses or CIDR networks (``["10.0.0.0/8"]``). When
+            the socket peer is one of them, the client IP is the right-most
+            ``X-Forwarded-For`` address that is not a trusted proxy.
+    """
 
     def __init__(
         self,
@@ -316,13 +335,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         rules: list[RateLimitRule] | None = None,
         default_limit: RateLimit | None = None,
         graphql_path: str = "/graphql",
+        trusted_proxies: TrustedProxies | list[str] | str | None = None,
     ) -> None:
         super().__init__(app)
         self.store = store or RateLimitStore()
         self.rules = rules or []
         self.default_limit = default_limit or RateLimit(requests=100, window=60)
         self.graphql_path = graphql_path
-        self.graphql_limiter = GraphQLRateLimiter(self.store)
+        self.trusted_proxies = TrustedProxies.coerce(trusted_proxies)
+        self.graphql_limiter = GraphQLRateLimiter(self.store, self.trusted_proxies)
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -441,16 +462,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return f"ip:{client_ip}"
 
     def _get_client_ip(self, request: Request) -> str:
-        """Extract client IP from request."""
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            return forwarded_for.split(",")[0].strip()
-
-        real_ip = request.headers.get("X-Real-IP")
-        if real_ip:
-            return real_ip
-
-        return request.client.host if request.client else "unknown"
+        """Return the client IP: the socket peer, unless it is a trusted proxy."""
+        return get_client_ip(request, self.trusted_proxies)
 
     def _matches_pattern(self, path: str, pattern: str) -> bool:
         """Check if path matches pattern (simple wildcard support)."""
@@ -533,13 +546,30 @@ def setup_rate_limiting(
     redis_client: Any = None,
     custom_rules: list[RateLimitRule] | None = None,
     default_limit: RateLimit | None = None,
+    trusted_proxies: TrustedProxies | list[str] | str | None = None,
 ) -> RateLimitMiddleware:
-    """Set up rate limiting middleware with sensible defaults."""
+    """Set up rate limiting middleware with sensible defaults.
+
+    Args:
+        app: The application.
+        redis_client: An async Redis client to share counters between processes.
+        custom_rules: Per-path rules (the default rules when omitted or empty).
+        default_limit: The limit for every request (100 per minute by default).
+        trusted_proxies: Proxy addresses or CIDR networks whose ``X-Forwarded-For``
+            is believed. Without it, the client IP is the socket peer: behind a
+            reverse proxy, either list the proxy here or have the ASGI server rewrite
+            the peer (uvicorn ``--forwarded-allow-ips``), or every client shares the
+            proxy's limit.
+
+    Raises:
+        ValueError: If a ``trusted_proxies`` entry is ``"*"`` or not an IP or network.
+    """
     # Choose store based on Redis availability
     store = RedisRateLimitStore(redis_client) if redis_client else RateLimitStore()
 
     # Use custom rules or defaults
     rules = custom_rules or create_default_rate_limit_rules()
+    proxies = TrustedProxies.coerce(trusted_proxies)
 
     # Create and add middleware
     middleware = RateLimitMiddleware(
@@ -547,8 +577,15 @@ def setup_rate_limiting(
         store=store,
         rules=rules,
         default_limit=default_limit,
+        trusted_proxies=proxies,
     )
 
-    app.add_middleware(RateLimitMiddleware, store=store, rules=rules, default_limit=default_limit)
+    app.add_middleware(
+        RateLimitMiddleware,
+        store=store,
+        rules=rules,
+        default_limit=default_limit,
+        trusted_proxies=proxies,
+    )
 
     return middleware
