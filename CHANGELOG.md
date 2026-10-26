@@ -50,6 +50,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **`SigningKeyManager` has no built-in audit signing key.** Without
+  `AUDIT_SIGNING_KEY` it fell back to `"test-key-for-testing"`, so its
+  `verify()` accepted a signature anyone could make with that published key. It
+  now has no key when the variable is unset or empty: `sign()` raises and
+  `verify()` refuses every signature. The PostgreSQL signing functions, which
+  sign the audit events, are not affected.
+
 - **Depth and complexity limits reach `GraphNoteRouter` and WebSocket
   subscriptions.** Since 1.31.0 the FastAPI router checks `max_query_depth` and
   the `complexity_*` settings, but `GraphNoteRouter` and the subscription
