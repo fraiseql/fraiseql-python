@@ -18,6 +18,7 @@ Usage:
 """
 
 import os
+import secrets
 from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
@@ -36,7 +37,17 @@ from fraiseql.types import ID
 
 # Environment configuration
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-key-change-in-production")
+# Signs the tokens the security middleware issues. Outside development there is
+# no default: a deployment that forgets it fails at startup. In development a
+# random key per process is enough (tokens don't survive a restart).
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if ENVIRONMENT != "development":
+        raise RuntimeError(
+            "Set SECRET_KEY to a long random secret, for example the output of "
+            "`python -c 'import secrets; print(secrets.token_urlsafe(64))'`"
+        )
+    SECRET_KEY = secrets.token_urlsafe(64)
 DOMAIN = os.getenv("DOMAIN", "api.example.com")
 TRUSTED_ORIGINS = os.getenv("TRUSTED_ORIGINS", "https://app.example.com").split(",")
 

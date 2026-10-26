@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   non-blank value, and passes that one secret to the auth provider and the
   middleware.
 
+- **`examples/security/secure_graphql_api.py` no longer falls back to a built-in
+  secret either.** Outside `ENVIRONMENT=development` it now fails at startup
+  without `SECRET_KEY`; in development it uses a random key per process.
+
 - **`user_has_permission()` follows the role hierarchy.** The row-level security
   helper of `004_rbac_row_level_security.sql` read the permissions of the roles
   assigned to the user only, so a policy denied a `manager` a permission granted to
