@@ -1,5 +1,8 @@
 """Tests for APQ memory storage backend."""
 
+import pytest
+
+from fraiseql.storage.apq_store import compute_query_hash
 from fraiseql.storage.backends.base import APQStorageBackend
 from fraiseql.storage.backends.memory import MemoryAPQBackend
 
@@ -14,8 +17,8 @@ def test_memory_backend_store_and_retrieve_query() -> None:
     """Test storing and retrieving persisted queries."""
     backend = MemoryAPQBackend()
 
-    hash_value = "test_hash_123"
     query = "{ users { id name } }"
+    hash_value = compute_query_hash(query)
 
     # Initially should return None
     assert backend.get_persisted_query(hash_value) is None
@@ -51,9 +54,8 @@ def test_memory_backend_multiple_queries() -> None:
     backend = MemoryAPQBackend()
 
     queries = {
-        "hash1": "{ users { id } }",
-        "hash2": "{ posts { title } }",
-        "hash3": "{ comments { content } }",
+        compute_query_hash(query): query
+        for query in ("{ users { id } }", "{ posts { title } }", "{ comments { content } }")
     }
 
     # Store all queries
@@ -86,21 +88,21 @@ def test_memory_backend_multiple_responses() -> None:
         assert retrieved == expected_response
 
 
-def test_memory_backend_overwrite_query() -> None:
-    """Test overwriting existing persisted query."""
+def test_memory_backend_refuses_another_query_under_a_stored_hash() -> None:
+    """A stored hash cannot be overwritten with a different query."""
     backend = MemoryAPQBackend()
 
-    hash_value = "test_hash_overwrite"
     query1 = "{ users }"
     query2 = "{ posts }"
+    hash_value = compute_query_hash(query1)
 
-    # Store first query
     backend.store_persisted_query(hash_value, query1)
+    backend.store_persisted_query(hash_value, query1)  # storing it again is fine
     assert backend.get_persisted_query(hash_value) == query1
 
-    # Overwrite with second query
-    backend.store_persisted_query(hash_value, query2)
-    assert backend.get_persisted_query(hash_value) == query2
+    with pytest.raises(ValueError, match="does not match"):
+        backend.store_persisted_query(hash_value, query2)
+    assert backend.get_persisted_query(hash_value) == query1
 
 
 def test_memory_backend_overwrite_response() -> None:
@@ -124,8 +126,8 @@ def test_memory_backend_separate_storages() -> None:
     """Test that query and response storage are separate."""
     backend = MemoryAPQBackend()
 
-    hash_value = "same_hash"
     query = "{ users }"
+    hash_value = compute_query_hash(query)
     response = {"data": {"posts": []}}
 
     # Store both with same hash
@@ -145,11 +147,11 @@ def test_memory_backend_edge_cases() -> None:
     assert backend.get_persisted_query("") is None
     assert backend.get_cached_response("") is None
 
-    # None values should not crash
-    backend.store_persisted_query("test", "")
+    # Empty values should not crash
+    backend.store_persisted_query(compute_query_hash(""), "")
     backend.store_cached_response("test", {})
 
-    assert backend.get_persisted_query("test") == ""
+    assert backend.get_persisted_query(compute_query_hash("")) == ""
     assert backend.get_cached_response("test") == {}
 
 
@@ -158,17 +160,15 @@ def test_memory_backend_isolation() -> None:
     backend1 = MemoryAPQBackend()
     backend2 = MemoryAPQBackend()
 
-    hash_value = "isolation_test"
-    query1 = "{ users }"
-    query2 = "{ posts }"
+    query = "{ users }"
+    hash_value = compute_query_hash(query)
 
-    # Store different queries in different instances
-    backend1.store_persisted_query(hash_value, query1)
-    backend2.store_persisted_query(hash_value, query2)
+    # Store in one instance only
+    backend1.store_persisted_query(hash_value, query)
 
-    # Should retrieve different values
-    assert backend1.get_persisted_query(hash_value) == query1
-    assert backend2.get_persisted_query(hash_value) == query2
+    # The other instance does not see it
+    assert backend1.get_persisted_query(hash_value) == query
+    assert backend2.get_persisted_query(hash_value) is None
 
 
 def test_memory_backend_backward_compatibility() -> None:
@@ -179,8 +179,8 @@ def test_memory_backend_backward_compatibility() -> None:
     clear_storage()
 
     # Test that existing functions still work
-    hash_value = "compatibility_test"
     query = "{ backward_compatibility }"
+    hash_value = compute_query_hash(query)
 
     store_persisted_query(hash_value, query)
     retrieved = get_persisted_query(hash_value)

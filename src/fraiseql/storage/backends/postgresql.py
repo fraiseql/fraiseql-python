@@ -128,7 +128,14 @@ class PostgreSQLAPQBackend(APQStorageBackend):
         Args:
             hash_value: SHA256 hash of the query
             query: GraphQL query string to store
+
+        Raises:
+            ValueError: If ``hash_value`` is not the SHA-256 of ``query`` (a database
+                failure is logged, not raised)
         """
+        from fraiseql.storage.apq_store import check_query_hash
+
+        check_query_hash(hash_value, query)
         try:
             self._execute_query(self._upsert_query_sql(), (hash_value, query))
             self._query_text_cache[hash_value] = query

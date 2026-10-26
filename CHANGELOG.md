@@ -56,6 +56,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   before anything executes; introspection is not counted. Without either argument
   they apply no limit, as before: pass the config to enforce it.
 
+- **`store_persisted_query` refuses a hash that is not the SHA-256 of its
+  query.** Since 1.31.0 an APQ request whose query does not match its hash is
+  refused, but the operator API only logged a warning and stored the text
+  anyway: `fraiseql.storage.apq_store.store_persisted_query` and the `memory`
+  and `postgresql` backends' `store_persisted_query` could put one query under
+  the hash of another, which every client sending that hash would then run. They
+  now raise `ValueError` and store nothing. `register_queries` and
+  `apq_queries_dir` compute the hashes themselves and are unaffected. A custom
+  backend can call the new `apq_store.check_query_hash(hash_value, query)`.
+
 - **Locked dependencies moved past their published advisories.** `uv.lock` held
   64 known vulnerabilities, all in optional extras or development tools: pillow
   13.0.0, pypdf 6.21.2 and nltk 3.10.4 (`llamaindex`), aiohttp 3.14.5, black

@@ -6,6 +6,8 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from fraiseql.storage.apq_store import compute_query_hash
+
 pytestmark = pytest.mark.integration
 
 
@@ -260,7 +262,7 @@ class TestAPQModeRouterIntegration:
 
         clear_storage()
         query = "{ hello }"
-        hash_value = "test_hash_required_mode"
+        hash_value = compute_query_hash(query)
         store_persisted_query(hash_value, query)
 
         with patch("fraiseql.fastapi.dependencies.get_db_pool") as mock_pool:
@@ -348,7 +350,7 @@ class TestAPQModeRouterIntegration:
 
         clear_storage()
         query = "{ hello }"
-        hash_value = "test_hash_optional_mode"
+        hash_value = compute_query_hash(query)
         store_persisted_query(hash_value, query)
 
         with patch("fraiseql.fastapi.dependencies.get_db_pool") as mock_pool:

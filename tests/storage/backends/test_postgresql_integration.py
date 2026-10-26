@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from fraiseql.storage.apq_store import compute_query_hash
 from fraiseql.storage.backends.postgresql import PostgreSQLAPQBackend
 
 pytestmark = pytest.mark.integration
@@ -63,8 +64,8 @@ def test_postgresql_backend_store_persisted_query(mock_execute, mock_config) -> 
     mock_config["auto_create_tables"] = False
     backend = PostgreSQLAPQBackend(mock_config)
 
-    hash_value = "abc123hash"
     query = "{ users { id name } }"
+    hash_value = compute_query_hash(query)
 
     backend.store_persisted_query(hash_value, query)
 
@@ -189,7 +190,7 @@ def test_postgresql_backend_error_handling(mock_config) -> None:
     # Test that database errors are handled gracefully
     with patch.object(backend, "_execute_query", side_effect=Exception("DB Error")):
         # Should not raise - should handle gracefully
-        backend.store_persisted_query("hash", "query")
+        backend.store_persisted_query(compute_query_hash("query"), "query")
         backend.store_cached_response("hash", {"data": {}})
 
     with patch.object(backend, "_fetch_one", side_effect=Exception("DB Error")):

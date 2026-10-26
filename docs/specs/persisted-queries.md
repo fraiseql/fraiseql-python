@@ -615,7 +615,9 @@ config = FraiseQLConfig(
 Custom backends must implement the APQ storage interface with the following methods:
 
 - `get_persisted_query(hash_value)` → query string or None
-- `store_persisted_query(hash_value, query)` → None
+- `store_persisted_query(hash_value, query)` → None; raise `ValueError` when
+  `hash_value` is not the SHA-256 of `query`
+  (`fraiseql.storage.apq_store.check_query_hash` does it), as the built-in backends do
 - `register_queries(queries)` → dict mapping hash to query
 - `get_storage_stats()` → dict with backend statistics
 

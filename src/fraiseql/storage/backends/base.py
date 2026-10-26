@@ -31,6 +31,10 @@ class APQStorageBackend(ABC):
     def store_persisted_query(self, hash_value: str, query: str) -> None:
         """Store query by hash.
 
+        Implementations should refuse a hash that is not the SHA-256 of ``query``
+        (``fraiseql.storage.apq_store.check_query_hash`` raises ``ValueError``), as the
+        built-in backends do.
+
         Args:
             hash_value: SHA256 hash of the query
             query: GraphQL query string to store

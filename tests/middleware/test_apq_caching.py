@@ -5,9 +5,13 @@ from unittest.mock import Mock
 import pytest
 
 from fraiseql.fastapi.config import FraiseQLConfig
+from fraiseql.storage.apq_store import compute_query_hash
 from fraiseql.storage.backends.memory import MemoryAPQBackend
 
 pytestmark = pytest.mark.integration
+
+_QUERY = "{ user(id: $userId) { id name email } }"
+_HASH = compute_query_hash(_QUERY)
 
 
 class MockGraphQLSchema:
@@ -38,7 +42,7 @@ def mock_request() -> None:
         query=None,
         variables={"userId": 123},
         operationName="GetUser",
-        extensions={"persistedQuery": {"version": 1, "sha256Hash": "abc123hash"}},
+        extensions={"persistedQuery": {"version": 1, "sha256Hash": _HASH}},
     )
 
 
@@ -59,8 +63,8 @@ def test_apq_cache_hit_returns_cached_response(
 ) -> None:
     """Test that cached responses are returned on cache hit."""
     # Setup: Store both query and cached response
-    hash_value = "abc123hash"
-    query = "{ user(id: $userId) { id name email } }"
+    hash_value = _HASH
+    query = _QUERY
     cached_response = {
         "data": {"user": {"id": 123, "name": "John Doe", "email": "john@example.com"}}
     }
@@ -86,8 +90,8 @@ def test_apq_cache_miss_falls_back_to_query_execution(
 ) -> None:
     """Test that cache miss falls back to normal query execution."""
     # Setup: Store only query, no cached response
-    hash_value = "abc123hash"
-    query = "{ user(id: $userId) { id name email } }"
+    hash_value = _HASH
+    query = _QUERY
 
     mock_backend.store_persisted_query(hash_value, query)
     # No cached response stored
@@ -103,8 +107,8 @@ def test_apq_cache_miss_falls_back_to_query_execution(
 def test_apq_cache_disabled_returns_none(mock_config, mock_backend, mock_request) -> None:
     """Test that caching is bypassed when disabled in config."""
     # Setup: Store both query and cached response
-    hash_value = "abc123hash"
-    query = "{ user(id: $userId) { id name email } }"
+    hash_value = _HASH
+    query = _QUERY
     cached_response = {"data": {"user": {"id": 123}}}
 
     mock_backend.store_persisted_query(hash_value, query)
@@ -123,7 +127,7 @@ def test_apq_cache_disabled_returns_none(mock_config, mock_backend, mock_request
 
 def test_apq_cache_response_storage(mock_config, mock_backend) -> None:
     """Test storing responses in cache after execution."""
-    hash_value = "abc123hash"
+    hash_value = _HASH
     response = {"data": {"user": {"id": 123, "name": "John Doe"}}}
 
     from fraiseql.middleware.apq_caching import store_response_in_cache
@@ -137,7 +141,7 @@ def test_apq_cache_response_storage(mock_config, mock_backend) -> None:
 
 def test_apq_cache_response_storage_disabled(mock_config, mock_backend) -> None:
     """Test that response storage is skipped when caching disabled."""
-    hash_value = "abc123hash"
+    hash_value = _HASH
     response = {"data": {"user": {"id": 123}}}
 
     # Disable caching
@@ -154,7 +158,7 @@ def test_apq_cache_response_storage_disabled(mock_config, mock_backend) -> None:
 
 def test_apq_cache_error_responses_not_cached(mock_config, mock_backend) -> None:
     """Test that error responses are not cached."""
-    hash_value = "abc123hash"
+    hash_value = _HASH
     error_response = {
         "errors": [{"message": "User not found", "extensions": {"code": "NOT_FOUND"}}]
     }
@@ -170,7 +174,7 @@ def test_apq_cache_error_responses_not_cached(mock_config, mock_backend) -> None
 
 def test_apq_cache_partial_responses_not_cached(mock_config, mock_backend) -> None:
     """Test that responses with errors are not cached."""
-    hash_value = "abc123hash"
+    hash_value = _HASH
     partial_response = {
         "data": {"user": {"id": 123, "name": "John"}},
         "errors": [{"message": "Email field access denied"}],
@@ -216,7 +220,7 @@ def test_apq_cache_with_variables_affects_caching() -> None:
     )
     backend = MemoryAPQBackend()
 
-    hash_value = "abc123hash"
+    hash_value = _HASH
     response1 = {"data": {"user": {"id": 1, "name": "Alice"}}}
     response2 = {"data": {"user": {"id": 2, "name": "Bob"}}}
 
