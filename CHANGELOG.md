@@ -149,6 +149,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   **Existing installs must run the 1.31.1 `004_rbac_row_level_security.sql` again**
   to replace the policies.
 
+- **`CQRSRepository` quotes filter keys and sort fields as SQL literals.**
+  `query()`, `query_interface()`, `list_entities()`, `find_by_view()` and
+  `count()` wrote each filter key and the `order_by` field between quotes in
+  `data->>'key'`, so a key holding a `'` ended the literal and the rest of it
+  ran as SQL (`{"x' IS NULL OR data->>'x": ...}` matched every row). Keys and
+  fields are now bound with `psycopg.sql.Literal`; a key with a quote in it now
+  reads that JSON key.
+
 ## [1.31.0] - 2026-10-25
 
 ### Changed

@@ -4,7 +4,7 @@ from typing import Any, TypeVar
 from uuid import UUID
 
 from psycopg import AsyncConnection
-from psycopg.sql import SQL, Composed
+from psycopg.sql import SQL, Composed, Literal
 
 from fraiseql.sql.where_generator import _make_filter_field_composed
 
@@ -165,8 +165,6 @@ class CQRSRepository:
             List of dictionaries with camelCase fields
         """
         # Build query using SQL composition
-        from psycopg.sql import Composed
-
         query_parts = [SQL("SELECT data FROM {} WHERE 1=1").format(SQL(view_name))]
 
         # Apply filters using proper WHERE clause generation
@@ -190,15 +188,11 @@ class CQRSRepository:
                         query_parts.append(where_condition)
                 elif isinstance(value, list):
                     # Handle array contains queries - use Literal for safety
-                    from psycopg.sql import Literal
-
-                    query_parts.append(SQL(" AND data->{} ?| ").format(SQL(f"'{key}'")))
+                    query_parts.append(SQL(" AND data->{} ?| ").format(Literal(key)))
                     query_parts.append(Literal(value))
                 else:
                     # Handle simple equality (backward compatibility) - use Literal for safety
-                    from psycopg.sql import Literal
-
-                    query_parts.append(SQL(" AND data->>{} = ").format(SQL(f"'{key}'")))
+                    query_parts.append(SQL(" AND data->>{} = ").format(Literal(key)))
                     # Convert booleans to lowercase strings to match JSON format
                     if isinstance(value, bool):
                         query_parts.append(Literal(str(value).lower()))
@@ -216,7 +210,7 @@ class CQRSRepository:
                 direction = "ASC"
                 field = order_by
 
-            order_sql = SQL(" ORDER BY data->>{} ").format(SQL(f"'{field}'"))
+            order_sql = SQL(" ORDER BY data->>{} ").format(Literal(field))
             if direction == "DESC":
                 order_sql += SQL("DESC")
             else:
@@ -224,8 +218,6 @@ class CQRSRepository:
             query_parts.append(order_sql)
 
         # Apply pagination - use Literal for consistency
-        from psycopg.sql import Literal
-
         query_parts.append(SQL(" LIMIT "))
         query_parts.append(Literal(limit))
         query_parts.append(SQL(" OFFSET "))
@@ -374,22 +366,22 @@ class CQRSRepository:
                     # Handle operators like $gt, $lt, etc
                     for op, val in value.items():
                         if op == "$gt":
-                            query_parts.append(SQL(" AND data->>{} > %s").format(SQL(f"'{key}'")))
+                            query_parts.append(SQL(" AND data->>{} > %s").format(Literal(key)))
                             params.append(str(val))
                         elif op == "$lt":
-                            query_parts.append(SQL(" AND data->>{} < %s").format(SQL(f"'{key}'")))
+                            query_parts.append(SQL(" AND data->>{} < %s").format(Literal(key)))
                             params.append(str(val))
                         elif op == "$gte":
-                            query_parts.append(SQL(" AND data->>{} >= %s").format(SQL(f"'{key}'")))
+                            query_parts.append(SQL(" AND data->>{} >= %s").format(Literal(key)))
                             params.append(str(val))
                         elif op == "$lte":
-                            query_parts.append(SQL(" AND data->>{} <= %s").format(SQL(f"'{key}'")))
+                            query_parts.append(SQL(" AND data->>{} <= %s").format(Literal(key)))
                             params.append(str(val))
                 elif isinstance(value, list):
-                    query_parts.append(SQL(" AND data->{} ?| %s").format(SQL(f"'{key}'")))
+                    query_parts.append(SQL(" AND data->{} ?| %s").format(Literal(key)))
                     params.append(value)
                 else:
-                    query_parts.append(SQL(" AND data->>{} = %s").format(SQL(f"'{key}'")))
+                    query_parts.append(SQL(" AND data->>{} = %s").format(Literal(key)))
                     params.append(str(value))
 
         # Apply ordering
@@ -397,7 +389,7 @@ class CQRSRepository:
             parts = order_by.split(" ")
             field = parts[0]
             direction = parts[1].upper() if len(parts) > 1 else "ASC"
-            order_sql = SQL(" ORDER BY data->>{} ").format(SQL(f"'{field}'"))
+            order_sql = SQL(" ORDER BY data->>{} ").format(Literal(field))
             if direction == "DESC":
                 order_sql += SQL("DESC")
             else:
@@ -791,10 +783,10 @@ class CQRSRepository:
             for key, value in where.items():
                 if isinstance(value, dict) and "eq" in value:
                     # Handle GraphQL where format
-                    conditions.append(SQL("data->>{} = %s").format(SQL(f"'{key}'")))
+                    conditions.append(SQL("data->>{} = %s").format(Literal(key)))
                     params.append(str(value["eq"]))
                 else:
-                    conditions.append(SQL("data->>{} = %s").format(SQL(f"'{key}'")))
+                    conditions.append(SQL("data->>{} = %s").format(Literal(key)))
                     params.append(str(value))
             query_parts.append(SQL(" AND ").join(conditions))
 
