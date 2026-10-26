@@ -139,6 +139,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `FraiseQLConfig` limiter (`rate_limit_enabled`) always keyed on the socket peer
   and is unchanged.
 
+- **The LlamaIndex `FraiseQLReader` no longer writes `where_clause` keys into its
+  SQL.** `aload_data(where_clause=...)` pasted a JSON key between quotes
+  (`metadata->>'key'`) and a column key as is, so a key holding a `'` (or any
+  SQL, for a column key) ran as SQL. The JSON key is now a query parameter, and a
+  column key, the selected columns and the table name are quoted identifiers, as
+  the LangChain integration already did. A column key is therefore
+  case-sensitive.
+
 - **The example row-level security policies ignore expired role assignments.**
   `own_data_update_users`, `own_data_update_orders` and `product_management` of
   `004_rbac_row_level_security.sql` let a user with the `admin` or `super_admin`
