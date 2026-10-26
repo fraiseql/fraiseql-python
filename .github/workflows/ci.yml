@@ -66,12 +66,20 @@ jobs:
         run: uv run --all-extras ty check src/
 
   unit-tests:
-    name: Unit Tests (Python ${{ matrix.python-version }})
+    name: Unit Tests (Python ${{ matrix.python-version }}, ${{ matrix.extras }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: ['3.13', '3.14']
+        extras: ['dev']
+        # The tests that need an optional extra skip under `dev` alone, so one job
+        # installs every extra to run them.
+        include:
+          - python-version: '3.13'
+            extras: 'all'
+    env:
+      UV_EXTRAS: ${{ matrix.extras == 'all' && '--all-extras' || '--extra dev' }}
     steps:
       - uses: actions/checkout@v7
 
@@ -85,14 +93,18 @@ jobs:
 
       # From uv.lock into .venv, as in the lint job.
       - name: Install dependencies
-        run: uv sync --locked --extra dev
+        run: uv sync --locked $UV_EXTRAS
 
       - name: Run unit tests
-        run: uv run --extra dev pytest tests/unit/ -q --tb=short
+        run: uv run $UV_EXTRAS pytest tests/unit/ -q --tb=short
 
   integration-tests:
-    name: Integration Tests (PostgreSQL)
+    name: Integration Tests (PostgreSQL, Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.13', '3.14']
 
     services:
       postgres:
@@ -118,7 +130,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.13'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install Rust (for fraiseql_rs extension)
         uses: dtolnay/rust-toolchain@stable
