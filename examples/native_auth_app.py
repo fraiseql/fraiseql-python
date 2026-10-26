@@ -20,7 +20,6 @@ from fastapi import FastAPI
 from psycopg_pool import AsyncConnectionPool
 
 import fraiseql
-from fraiseql.types import ID
 from fraiseql import create_fraiseql_app
 from fraiseql.auth.decorators import requires_auth, requires_role
 from fraiseql.auth.native.factory import (
@@ -29,6 +28,7 @@ from fraiseql.auth.native.factory import (
     create_native_auth_provider,
     get_native_auth_router,
 )
+from fraiseql.types import ID
 
 
 # Define GraphQL types
@@ -111,6 +111,15 @@ async def create_post(info, title: str, content: str) -> Post:
 
 async def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    # Tokens are signed with this secret: there is no default, so a deployment
+    # that forgets to set it fails here instead of signing with a public key.
+    jwt_secret = os.environ.get("JWT_SECRET_KEY", "").strip()
+    if not jwt_secret:
+        raise RuntimeError(
+            "Set JWT_SECRET_KEY to a long random secret, for example the output of "
+            "`python -c 'import secrets; print(secrets.token_urlsafe(64))'`"
+        )
+
     # Database setup
     database_url = os.environ.get(
         "DATABASE_URL", "postgresql://fraiseql:fraiseql@localhost/fraiseql_dev"
@@ -130,6 +139,7 @@ async def create_app() -> FastAPI:
     # Create native auth provider
     auth_provider = await create_native_auth_provider(
         db_pool=pool,
+        secret_key=jwt_secret,
         schema="public",  # Use "public" or tenant-specific schema
         access_token_ttl_minutes=15,
         refresh_token_ttl_days=30,
@@ -150,7 +160,6 @@ async def create_app() -> FastAPI:
     app.include_router(auth_router, prefix="/auth", tags=["authentication"])
 
     # Add security middleware
-    jwt_secret = os.environ.get("JWT_SECRET_KEY", "development-secret-change-in-production")
     add_security_middleware(
         app,
         secret_key=jwt_secret,

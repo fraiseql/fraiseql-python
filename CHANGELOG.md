@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.31.1]
 
+### Fixed
+
+- **`examples/native_auth_app.py` no longer falls back to a built-in signing
+  secret.** It passed `"development-secret-change-in-production"` to
+  `add_security_middleware` when `JWT_SECRET_KEY` was unset, so a copy deployed
+  without the variable would have used a key published in this repository.
+  `create_app()` now raises before connecting unless `JWT_SECRET_KEY` holds a
+  non-blank value, and passes that one secret to the auth provider and the
+  middleware.
+
 ### Security
 
 - **Locked dependencies moved past their published advisories.** `uv.lock` held
