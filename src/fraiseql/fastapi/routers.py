@@ -30,6 +30,7 @@ from fraiseql.core.field_resolvers import operation_selects_field_resolver
 from fraiseql.core.graphql_parser import RustGraphQLParser
 from fraiseql.core.rust_pipeline import RustResponseBytes
 from fraiseql.db import FraiseQLRepository
+from fraiseql.errors.masking import mask_database_error
 from fraiseql.execution.mode_selector import ModeSelector
 from fraiseql.execution.unified_executor import UnifiedExecutor
 from fraiseql.fastapi.config import FraiseQLConfig, IntrospectionPolicy
@@ -892,6 +893,8 @@ async def execute_multi_field_query(
     variables: dict[str, Any] | None,
     context: dict[str, Any],
     operation_name: str | None = None,
+    *,
+    is_production: bool = False,
 ) -> RustResponseBytes:
     """Execute multi-field query entirely in Rust - bypass graphql-core.
 
@@ -907,6 +910,8 @@ async def execute_multi_field_query(
         variables: Query variables
         context: GraphQL context with database connection, etc.
         operation_name: Operation to execute when the document holds several
+        is_production: Answer a field whose resolver raised a database error with
+            a generic message instead of the error's (it carries SQL text)
 
     Returns:
         RustResponseBytes with complete {"data": {...}} response
@@ -1119,6 +1124,9 @@ async def execute_multi_field_query(
             location = _extract_field_location(field_node)
             if location:
                 error_dict["locations"] = [location]
+
+            if is_production:
+                error_dict = mask_database_error(error_dict, e)
 
             errors.append(error_dict)
 
@@ -1712,6 +1720,7 @@ def create_graphql_router(
                         request.variables,
                         context,
                         operation_name=request.operationName,
+                        is_production=is_production_env,
                     )
                     # execute_multi_field_query returns RustResponseBytes
                     return Response(

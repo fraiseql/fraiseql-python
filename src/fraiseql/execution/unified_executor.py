@@ -6,6 +6,11 @@ from typing import Any, Optional
 from graphql import GraphQLSchema
 
 from fraiseql.analysis.query_analyzer import QueryAnalyzer
+from fraiseql.errors.masking import (
+    INTERNAL_ERROR_CODE,
+    INTERNAL_ERROR_MESSAGE,
+    mask_database_error,
+)
 from fraiseql.execution.mode_selector import ExecutionMode, ModeSelector
 from fraiseql.fastapi.json_encoder import clean_unset_values
 from fraiseql.fastapi.turbo import TurboRouter
@@ -127,7 +132,16 @@ class UnifiedExecutor:
             logger = logging.getLogger(__name__)
             logger.exception("Query execution failed in unified Rust mode")
 
-            # Return error response
+            # Return error response (the exception's text stays in the log in production)
+            if self._is_production:
+                return {
+                    "errors": [
+                        {
+                            "message": INTERNAL_ERROR_MESSAGE,
+                            "extensions": {"code": INTERNAL_ERROR_CODE},
+                        }
+                    ]
+                }
             return {
                 "errors": [
                     {
@@ -139,6 +153,11 @@ class UnifiedExecutor:
                     }
                 ]
             }
+
+    @property
+    def _is_production(self) -> bool:
+        """Whether the configured environment is ``"production"``."""
+        return getattr(self.mode_selector.config, "environment", None) == "production"
 
     def _format_error(self, error: Any) -> dict[str, Any]:
         """Format GraphQL error for response.
@@ -163,6 +182,10 @@ class UnifiedExecutor:
 
         if error.extensions:
             formatted["extensions"] = clean_unset_values(error.extensions)
+
+        if self._is_production:
+            # A database error's message carries the failing SQL
+            formatted = mask_database_error(formatted, error)
 
         return formatted
 

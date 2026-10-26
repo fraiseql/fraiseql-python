@@ -151,6 +151,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the LangChain integration already did. A column key is therefore
   case-sensitive.
 
+- **A database error no longer reaches the client in production.** With
+  `environment="production"`, a resolver that failed on a PostgreSQL error
+  (a missing view, a constraint, a `RAISE` in a function) answered with the
+  error's own message, which carries the failing SQL (`LINE 1: SELECT ...`) and
+  relation names: the default executor and the multi-root-field path returned it
+  verbatim. Such an error is now answered with `"Internal server error"` and
+  `extensions.code` `INTERNAL_SERVER_ERROR`, keeping its `path` and `locations`;
+  the full error is still logged. An exception that escapes execution altogether
+  is answered the same way. A `RAISE EXCEPTION` in a function (SQLSTATE `P0001`)
+  keeps its primary message, which its author wrote for the caller, without the
+  `DETAIL`, `HINT` and `CONTEXT` lines that named the function. Other resolver
+  errors (a `GraphQLError`, a `ValueError` you raise) keep their message, and
+  development is unchanged.
+
 - **The example row-level security policies ignore expired role assignments.**
   `own_data_update_users`, `own_data_update_orders` and `product_management` of
   `004_rbac_row_level_security.sql` let a user with the `admin` or `super_admin`
