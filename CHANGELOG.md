@@ -46,6 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **Depth and complexity limits reach `GraphNoteRouter` and WebSocket
+  subscriptions.** Since 1.31.0 the FastAPI router checks `max_query_depth` and
+  the `complexity_*` settings, but `GraphNoteRouter` and the subscription
+  transport (`SubscriptionManager`, `WebSocketConnection`) took no config, so a
+  query or subscription of any depth or cost ran through them. They now take
+  `config=` (a `FraiseQLConfig`) or `query_limits=` (a `QueryLimits`), and answer a
+  query over a limit with the same `QUERY_TOO_DEEP` / `QUERY_TOO_COMPLEX` error,
+  before anything executes; introspection is not counted. Without either argument
+  they apply no limit, as before: pass the config to enforce it.
+
 - **Locked dependencies moved past their published advisories.** `uv.lock` held
   64 known vulnerabilities, all in optional extras or development tools: pillow
   13.0.0, pypdf 6.21.2 and nltk 3.10.4 (`llamaindex`), aiohttp 3.14.5, black

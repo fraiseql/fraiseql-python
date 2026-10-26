@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 from graphql import GraphQLSchema, parse, subscribe
@@ -15,6 +15,10 @@ from graphql.execution import ExecutionResult
 
 from fraiseql.core.exceptions import WebSocketError
 from fraiseql.fastapi.json_encoder import clean_unset_values
+from fraiseql.gql.query_limits import QueryLimits
+
+if TYPE_CHECKING:
+    from fraiseql.fastapi.config import FraiseQLConfig
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +107,9 @@ class WebSocketConnection:
         subprotocol: SubProtocol = SubProtocol.GRAPHQL_WS,
         connection_init_timeout: float = 10.0,
         keep_alive_interval: float = 30.0,
+        query_limits: QueryLimits | None = None,
     ) -> None:
+        """Set up a connection; ``query_limits`` bounds each subscription's depth/complexity."""
         self.websocket = websocket
         self.connection_id = connection_id or str(uuid4())
         self.subprotocol = subprotocol
@@ -115,6 +121,7 @@ class WebSocketConnection:
         self.context: dict[str, Any] = {}
         self.subscriptions: dict[str, asyncio.Task] = {}
         self.connection_params: dict[str, Any] | None = None
+        self.query_limits = query_limits
         self.initialized_at: datetime | None = None
 
         self._keep_alive_task: asyncio.Task | None = None
@@ -249,6 +256,13 @@ class WebSocketConnection:
             query = message.payload.get("query", "")
             variables = message.payload.get("variables", {})
             operation_name = message.payload.get("operationName")
+
+            # Depth and complexity limits, before execution (introspection is not counted).
+            if self.query_limits is not None and query and self.schema is not None:
+                limit_error = self.query_limits.check(self.schema, query, operation_name, variables)
+                if limit_error is not None:
+                    await self._send_error(message.id, limit_error)
+                    return
 
             document = parse(query)
 
@@ -418,9 +432,25 @@ class WebSocketConnection:
 class SubscriptionManager:
     """Manages all WebSocket subscription connections."""
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        *,
+        config: "FraiseQLConfig | None" = None,
+        query_limits: QueryLimits | None = None,
+    ) -> None:
+        """Set up the manager.
+
+        Args:
+            config: Optional ``FraiseQLConfig`` whose ``max_query_depth`` and
+                ``complexity_*`` settings limit each subscription, as in the HTTP router.
+            query_limits: Explicit limits; they take precedence over ``config``.
+                With neither, subscriptions are not limited.
+        """
         self.connections: dict[str, WebSocketConnection] = {}
         self.schema: GraphQLSchema | None = None
+        if query_limits is None and config is not None:
+            query_limits = QueryLimits.from_config(config)
+        self.query_limits = query_limits
         self._lock = asyncio.Lock()
 
     async def add_connection(
@@ -437,7 +467,9 @@ class SubscriptionManager:
             protocol = SubProtocol.GRAPHQL_WS
 
         # Create connection
-        connection = WebSocketConnection(websocket=websocket, subprotocol=protocol)
+        connection = WebSocketConnection(
+            websocket=websocket, subprotocol=protocol, query_limits=self.query_limits
+        )
 
         # Set schema and context
         connection.schema = self.schema

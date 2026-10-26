@@ -354,6 +354,12 @@ object field 1 plus its selections, and a list field 1 plus its selections times
 Introspection (`__schema`, `__type`) is not counted; `introspection_policy` governs it.
 A rejected query gets a GraphQL error and runs no resolver or SQL.
 
+The FastAPI app reads these limits from its config. The other entry points take them
+too, from a config or as an explicit `QueryLimits` (`fraiseql.gql.query_limits`):
+`GraphNoteRouter(schema, config=config)` for the plain Starlette router, and
+`SubscriptionManager(config=config)` (or `WebSocketConnection(..., query_limits=...)`)
+for subscriptions over WebSocket. Without either, they apply no limit.
+
 **Examples**:
 
 ```python
