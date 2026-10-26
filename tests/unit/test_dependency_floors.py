@@ -23,10 +23,10 @@ PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 # package -> (first patched version, why it is in the tree)
 REQUIRED_FLOORS = {
     "sqlparse": ("0.6.0", "dev-only: used by scripts/, imported nowhere in src/"),
-    "nltk": ("3.10.0", "optional: transitive through the llamaindex extra"),
-    "pypdf": ("6.15.0", "optional: declared by the llamaindex extra"),
+    "nltk": ("3.10.4", "optional: transitive through the llamaindex extra"),
+    "pypdf": ("6.21.2", "optional: declared by the llamaindex extra"),
     "cryptography": ("50.0.0", "core in practice: pulled in by pyjwt[crypto]"),
-    "aiohttp": ("3.14.3", "optional: dev extra, and transitive via llama-index-core"),
+    "aiohttp": ("3.14.4", "optional: dev extra, and transitive via llama-index-core"),
     # Not a Dependabot alert — found by making the pip-audit CI gate authoritative,
     # which is the point of that change. `click.edit()` is a command injection, and
     # FraiseQL's CLI never calls it; the floor moves because the package is core.
@@ -35,6 +35,11 @@ REQUIRED_FLOORS = {
     # `DirectoryPromptRegistry.set()`, which llama-index-core does not use; the floor
     # moves because the extra declares the package.
     "banks": ("2.4.5", "optional: declared by the llamaindex extra"),
+    # The pip-audit gate on 1.31.0 (2026-10-26).
+    "pillow": ("13.0.0", "optional: declared by the llamaindex extra"),
+    "opentelemetry-api": ("1.45.1", "optional: declared by the tracing and all extras"),
+    "black": ("26.10.1", "dev-only: the dev extra"),
+    "filelock": ("4.2.1", "dev-only: the dev extra, and transitive via tox and virtualenv"),
 }
 
 

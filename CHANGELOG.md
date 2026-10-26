@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.1]
+
+### Security
+
+- **Locked dependencies moved past their published advisories.** `uv.lock` held
+  64 known vulnerabilities, all in optional extras or development tools: pillow
+  13.0.0, pypdf 6.21.2 and nltk 3.10.4 (`llamaindex`), aiohttp 3.14.5, black
+  26.10.1, filelock 4.2.4 and virtualenv 21.14.13 (`dev`), opentelemetry-api
+  1.45.1 (`tracing`), setuptools 84.2.1 and certifi 2026.10.23 (transitive). The
+  extras' floors are raised to the patched releases (pillow and filelock across a
+  major version), so installing `fraiseql[llamaindex]` or `fraiseql[tracing]`
+  can no longer resolve a vulnerable version. The core dependencies are
+  unchanged.
+
 ## [1.31.0] - 2026-10-25
 
 ### Changed
