@@ -4,6 +4,10 @@ from collections.abc import Iterator
 from unittest.mock import MagicMock
 
 import pytest
+
+# The OpenTelemetry SDK comes with the tracing extra; CI's unit job installs only dev.
+pytest.importorskip("opentelemetry.sdk", reason="needs the tracing extra")
+
 from fastapi.testclient import TestClient
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
