@@ -21,8 +21,10 @@ tags: ["documentation", "reference"]
   `tenant_id`, `timestamp`, `ip_address`).
 - **A hash chain built by PostgreSQL**: a `BEFORE INSERT` trigger sets each row's
   `previous_hash` (the latest `event_hash` of the same tenant), its `event_hash`
-  (SHA-256 over the previous hash and the event data) and its `signature`
-  (HMAC-SHA256 of the hash with the active key of `audit_signing_keys`).
+  (SHA-256 over the previous hash and every column of the event: `id`,
+  `event_type`, `event_data`, `user_id`, `tenant_id`, `timestamp`, `ip_address`,
+  `created_at`), its `hash_version` and its `signature` (HMAC-SHA256 of the hash
+  with the active key of `audit_signing_keys`).
 - **`verify_audit_chain()`**: an SQL function that recomputes the hashes.
 - **`AuditLogger`**: a small Python class that inserts events, one at a time or in
   batches, through a `FraiseQLRepository`.
@@ -152,6 +154,21 @@ changed is reported invalid; so is the event after a deleted one. It doesn't che
 signatures. It returns the events tenant by tenant; add `ORDER BY event_timestamp` for
 a single timeline.
 
+Each event is checked with the hash its `hash_version` column names, also returned by
+`verify_audit_chain()`:
+
+- **Version 2** (events written by 1.31.1 and later) covers every column listed above,
+  with the timestamps in UTC.
+- **Version 1** (events written before 1.31.1) covers `event_data` only: a change to
+  `event_type`, `user_id`, `tenant_id`, `timestamp` or `ip_address` of such an event
+  isn't detected.
+
+To upgrade an existing database, run the 1.31.1 `001_audit_tables.sql` again. It adds
+`hash_version` (existing rows get 1 and keep verifying as version 1) and replaces the
+trigger and `verify_audit_chain()`, so every event written afterwards is version 2.
+Existing rows aren't rehashed: that would make whatever they hold now look intact.
+The trigger always writes the current version, whatever the `INSERT` says.
+
 Before 1.31.0 it walked all tenants as one chain, and reported valid events invalid as
 soon as there was more than one tenant; running the 1.31.0 `001_audit_tables.sql` again
 replaces it (the `tenant_id` column is new).
@@ -225,6 +242,10 @@ CREATE TRIGGER bridge_to_cryptographic_audit
 `migrations/002_unified_audit.sql` describes another `audit_events` layout (CDC
 columns, `tenant_id NOT NULL`, `log_and_return_mutation()`). It is not compatible with
 `AuditLogger`, which writes the columns of `001_audit_tables.sql`: apply one of the two.
+Its chain has the same `hash_version` column and upgrade path: version 2 covers every
+column, version 1 (events written before 1.31.1) left out `id`, `user_id`, `ip_address`,
+`correlation_id` and `created_at`, and hashed the timestamp in the inserting session's
+`TimeZone`, so verify version 1 events in that time zone.
 
 ---
 

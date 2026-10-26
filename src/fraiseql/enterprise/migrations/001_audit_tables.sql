@@ -25,6 +25,14 @@ CREATE TABLE IF NOT EXISTS audit_events (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Which hash an event's event_hash is (see generate_event_hash_v2 below). Version 1
+-- hashed only event_data, so changing event_type, user_id, tenant_id, timestamp or
+-- ip_address went unnoticed by verify_audit_chain(). Events written before 1.31.1
+-- keep version 1 (the ADD COLUMN default) and still verify; the trigger writes
+-- version 2 for every new event.
+ALTER TABLE audit_events ADD COLUMN IF NOT EXISTS hash_version SMALLINT NOT NULL DEFAULT 1;
+ALTER TABLE audit_events ALTER COLUMN hash_version SET DEFAULT 2;
+
 -- Prevent updates and deletes
 DROP POLICY IF EXISTS audit_events_insert_only ON audit_events;
 CREATE POLICY audit_events_insert_only ON audit_events
@@ -46,7 +54,8 @@ RETURNS TEXT AS $$
     LIMIT 1;
 $$ LANGUAGE sql SECURITY DEFINER;
 
--- Function to generate event hash with chain linking
+-- Version 1 event hash: covers event_data only. Kept to verify events written
+-- before 1.31.1 (hash_version = 1); new events use generate_event_hash_v2.
 CREATE OR REPLACE FUNCTION generate_event_hash(
     event_data JSONB,
     previous_hash TEXT DEFAULT NULL
@@ -69,6 +78,47 @@ BEGIN
     RETURN encode(digest(chain_data, 'sha256'), 'hex');
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Version 2 event hash: covers every column of the event (all but the hash, the
+-- signature and previous_hash, which is the chain link itself). The timestamps are
+-- written in UTC, so the hash doesn't depend on the session's TimeZone.
+CREATE OR REPLACE FUNCTION generate_event_hash_v2(
+    p_id UUID,
+    p_event_type TEXT,
+    p_event_data JSONB,
+    p_user_id UUID,
+    p_tenant_id UUID,
+    p_timestamp TIMESTAMPTZ,
+    p_ip_address INET,
+    p_created_at TIMESTAMPTZ,
+    p_previous_hash TEXT
+)
+RETURNS TEXT AS $$
+    SELECT encode(digest(
+        COALESCE(p_previous_hash || ':', 'GENESIS:') || jsonb_build_object(
+            'hash_version', 2,
+            'id', p_id::TEXT,
+            'event_type', p_event_type,
+            'event_data', p_event_data,
+            'user_id', p_user_id::TEXT,
+            'tenant_id', p_tenant_id::TEXT,
+            'timestamp', to_char(p_timestamp AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
+            'ip_address', p_ip_address::TEXT,
+            'created_at', to_char(p_created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
+        )::TEXT,
+        'sha256'), 'hex');
+$$ LANGUAGE sql STABLE;
+
+-- The hash an event should have, by its hash_version (NULL for an unknown version).
+CREATE OR REPLACE FUNCTION compute_event_hash(e audit_events, previous_hash TEXT)
+RETURNS TEXT AS $$
+    SELECT CASE e.hash_version
+        WHEN 1 THEN generate_event_hash(e.event_data, previous_hash)
+        WHEN 2 THEN generate_event_hash_v2(
+            e.id, e.event_type, e.event_data, e.user_id, e.tenant_id,
+            e.timestamp, e.ip_address, e.created_at, previous_hash)
+    END;
+$$ LANGUAGE sql STABLE;
 
 -- Function to generate HMAC signature
 CREATE OR REPLACE FUNCTION generate_event_signature(event_hash TEXT)
@@ -105,8 +155,9 @@ BEGIN
     -- Get previous hash for chain (per-tenant to support multi-tenancy)
     SELECT get_latest_event_hash(NEW.tenant_id) INTO prev_hash;
 
-    -- Generate event hash
-    NEW.event_hash := generate_event_hash(NEW.event_data, prev_hash);
+    -- Generate event hash (always the current version, whatever the INSERT says)
+    NEW.hash_version := 2;
+    NEW.event_hash := compute_event_hash(NEW, prev_hash);
 
     -- Generate signature
     NEW.signature := generate_event_signature(NEW.event_hash);
@@ -123,8 +174,11 @@ $$ LANGUAGE plpgsql;
 -- form one more chain), so this walks each tenant's events in time order and
 -- recomputes each event_hash from the event before it in the same tenant. With a
 -- start_timestamp, a tenant's first event in the range is checked against the
--- tenant's latest event before it. Signatures are not checked.
--- Earlier versions returned no tenant_id column; the return type changed, hence the DROP.
+-- tenant's latest event before it. Each event is checked with the hash of its
+-- hash_version: events written before 1.31.1 verify as version 1, which doesn't cover
+-- event_type, user_id, tenant_id, timestamp or ip_address. Signatures are not checked.
+-- Earlier versions returned no tenant_id or hash_version column; the return type
+-- changed, hence the DROP.
 DROP FUNCTION IF EXISTS verify_audit_chain(TIMESTAMPTZ, TIMESTAMPTZ);
 CREATE FUNCTION verify_audit_chain(
     start_timestamp TIMESTAMPTZ DEFAULT NULL,
@@ -136,7 +190,8 @@ RETURNS TABLE(
     chain_valid BOOLEAN,
     expected_hash TEXT,
     actual_hash TEXT,
-    tenant_id UUID
+    tenant_id UUID,
+    hash_version SMALLINT
 ) AS $$
 DECLARE
     rec RECORD;
@@ -147,7 +202,8 @@ DECLARE
 BEGIN
     -- Each tenant's events in chronological order (the order the trigger links them in)
     FOR rec IN
-        SELECT e.id, e.timestamp AS ts, e.tenant_id AS tid, e.event_data, e.event_hash
+        SELECT e.id, e.timestamp AS ts, e.tenant_id AS tid, e.event_hash,
+               e.hash_version AS hv, e AS ev
         FROM audit_events e
         WHERE (start_timestamp IS NULL OR e.timestamp >= start_timestamp)
           AND (end_timestamp IS NULL OR e.timestamp <= end_timestamp)
@@ -166,15 +222,16 @@ BEGIN
         END IF;
 
         -- Calculate expected hash
-        expected := generate_event_hash(rec.event_data, prev_hash);
+        expected := compute_event_hash(rec.ev, prev_hash);
 
         -- Return verification result
         event_id := rec.id;
         event_timestamp := rec.ts;
-        chain_valid := (expected = rec.event_hash);
+        chain_valid := COALESCE(expected = rec.event_hash, FALSE);
         expected_hash := expected;
         actual_hash := rec.event_hash;
         tenant_id := rec.tid;
+        hash_version := rec.hv;
 
         RETURN NEXT;
 

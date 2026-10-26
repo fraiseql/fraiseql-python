@@ -169,3 +169,148 @@ class TestUnifiedVerifyAuditChainPerTenant:
 
         assert set(result) == {ids[2], ids[4]}
         assert all(result.values())
+
+
+async def verify_versions(conn) -> list[tuple[int, bool]]:
+    """(hash_version, chain_valid) of every event, in time order."""
+    cur = await conn.execute(
+        "SELECT hash_version, chain_valid FROM verify_audit_chain() "
+        "ORDER BY event_timestamp, event_id"
+    )
+    return [tuple(row) for row in await cur.fetchall()]
+
+
+@pytest.mark.asyncio
+class TestHashCoversEveryColumn:
+    """Version 2 of the event hash covers the columns, not just event_data (001)."""
+
+    @pytest.mark.parametrize(
+        ("column", "value"),
+        [
+            ("event_type", "user.view"),
+            ("user_id", "cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            ("timestamp", "2026-04-02T11:00:00Z"),
+            ("ip_address", "198.51.100.7"),
+            ("created_at", "2020-01-01T00:00:00Z"),
+            ("id", "dddddddd-dddd-dddd-dddd-dddddddddddd"),
+        ],
+    )
+    async def test_a_changed_column_is_detected(self, audit_conn, column, value) -> None:
+        await insert_event(audit_conn, TENANT_A, "2026-04-01T10:00:00Z", {"n": 0})
+        changed = await insert_event(audit_conn, TENANT_A, "2026-04-02T10:00:00Z", {"n": 1})
+        await audit_conn.execute(
+            f"UPDATE audit_events SET {column} = %s WHERE id = %s",
+            [value, changed],
+        )
+
+        assert await verify_versions(audit_conn) == [(2, True), (2, False)]
+
+    async def test_moving_an_event_to_another_tenant_is_detected(self, audit_conn) -> None:
+        await insert_event(audit_conn, TENANT_A, "2026-04-01T10:00:00Z", {"n": 0})
+        moved = await insert_event(audit_conn, TENANT_A, "2026-04-02T10:00:00Z", {"n": 1})
+        await audit_conn.execute(
+            "UPDATE audit_events SET tenant_id = %s WHERE id = %s", [TENANT_B, moved]
+        )
+
+        result = await verify(audit_conn)
+
+        assert result[moved] is False
+
+    async def test_an_insert_cannot_choose_the_old_hash_version(self, audit_conn) -> None:
+        await audit_conn.execute(
+            "INSERT INTO audit_events (event_type, event_data, hash_version) "
+            "VALUES ('test.event', '{}', 1)"
+        )
+
+        cur = await audit_conn.execute("SELECT hash_version FROM audit_events")
+        assert (await cur.fetchone())[0] == 2
+
+    async def test_verification_does_not_depend_on_the_session_time_zone(self, audit_conn) -> None:
+        await insert_event(audit_conn, TENANT_A, "2026-04-01T10:00:00Z", {"n": 0})
+        await audit_conn.execute("SET LOCAL TimeZone = 'Asia/Tokyo'")
+
+        assert await verify_versions(audit_conn) == [(2, True)]
+
+    async def test_events_written_before_the_upgrade_verify_as_version_1(self, audit_conn) -> None:
+        # The table and rows as 1.31.0 wrote them: no hash_version column, and an
+        # event_hash over event_data only.
+        await audit_conn.execute("ALTER TABLE audit_events DROP COLUMN hash_version")
+        await audit_conn.execute("ALTER TABLE audit_events DISABLE TRIGGER populate_crypto_trigger")
+        prev = None
+        for i in range(2):
+            cur = await audit_conn.execute(
+                "INSERT INTO audit_events (event_type, event_data, tenant_id, timestamp, "
+                "previous_hash, event_hash, signature) "
+                "VALUES ('test.event', %(data)s, %(tenant)s, %(ts)s, %(prev)s::text, "
+                "generate_event_hash(%(data)s, %(prev)s::text), 'sig') RETURNING event_hash",
+                {
+                    "data": Jsonb({"n": i}),
+                    "tenant": TENANT_A,
+                    "ts": f"2026-04-0{i + 1}T10:00:00Z",
+                    "prev": prev,
+                },
+            )
+            prev = (await cur.fetchone())[0]
+        await audit_conn.execute("ALTER TABLE audit_events ENABLE TRIGGER populate_crypto_trigger")
+
+        # The upgrade: run the file again, then keep logging.
+        await audit_conn.execute(MIGRATION.read_text())
+        await insert_event(audit_conn, TENANT_A, "2026-04-03T10:00:00Z", {"n": 2})
+
+        assert await verify_versions(audit_conn) == [(1, True), (1, True), (2, True)]
+
+
+@pytest.mark.asyncio
+class TestUnifiedHashCoversEveryColumn:
+    """The same for 002_unified_audit.sql, whose version 1 left out user_id and others."""
+
+    @pytest.mark.parametrize(
+        ("column", "value"),
+        [
+            ("user_id", "cccccccc-cccc-cccc-cccc-cccccccccccc"),
+            ("ip_address", "198.51.100.7"),
+            ("correlation_id", "dddddddd-dddd-dddd-dddd-dddddddddddd"),
+            ("operation_type", "DELETE"),
+            ("timestamp", "2026-04-02T11:00:00Z"),
+        ],
+    )
+    async def test_a_changed_column_is_detected(self, unified_conn, column, value) -> None:
+        await insert_unified_event(unified_conn, TENANT_A, "2026-04-01T10:00:00Z", 0)
+        changed = await insert_unified_event(unified_conn, TENANT_A, "2026-04-02T10:00:00Z", 1)
+        await unified_conn.execute(
+            f"UPDATE audit_events SET {column} = %s WHERE id = %s",
+            [value, changed],
+        )
+
+        assert await verify_versions(unified_conn) == [(2, True), (2, False)]
+
+    async def test_verification_does_not_depend_on_the_session_time_zone(
+        self, unified_conn
+    ) -> None:
+        await insert_unified_event(unified_conn, TENANT_A, "2026-04-01T10:00:00Z", 0)
+        await unified_conn.execute("SET LOCAL TimeZone = 'Asia/Tokyo'")
+
+        assert await verify_versions(unified_conn) == [(2, True)]
+
+    async def test_events_written_before_the_upgrade_verify_as_version_1(
+        self, unified_conn
+    ) -> None:
+        await unified_conn.execute("ALTER TABLE audit_events DROP COLUMN hash_version")
+        await unified_conn.execute(
+            "ALTER TABLE audit_events DISABLE TRIGGER populate_crypto_trigger"
+        )
+        await unified_conn.execute(
+            "INSERT INTO audit_events (tenant_id, entity_type, operation_type, timestamp, "
+            "event_hash, signature) VALUES (%(tenant)s, 'post', 'INSERT', %(ts)s, "
+            "generate_event_hash(%(tenant)s::uuid, 'post', NULL, 'INSERT', NULL, NULL, "
+            "NULL, NULL, NULL, %(ts)s::timestamptz, NULL), 'sig')",
+            {"tenant": TENANT_A, "ts": "2026-04-01T10:00:00Z"},
+        )
+        await unified_conn.execute(
+            "ALTER TABLE audit_events ENABLE TRIGGER populate_crypto_trigger"
+        )
+
+        await unified_conn.execute(UNIFIED_MIGRATION.read_text())
+        await insert_unified_event(unified_conn, TENANT_A, "2026-04-02T10:00:00Z", 1)
+
+        assert await verify_versions(unified_conn) == [(1, True), (2, True)]

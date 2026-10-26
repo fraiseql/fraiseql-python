@@ -30,6 +30,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   major version), so installing `fraiseql[llamaindex]` or `fraiseql[tracing]`
   can no longer resolve a vulnerable version. The core dependencies are
   unchanged.
+- **The audit chain hash covers every column of an event.** `verify_audit_chain()`
+  of `001_audit_tables.sql` recomputed each `event_hash` from `event_data` alone, so
+  changing an event's `event_type`, `user_id`, `tenant_id`, `timestamp` or
+  `ip_address` column still verified as intact; the hash of `002_unified_audit.sql`
+  left out `id`, `user_id`, `ip_address`, `correlation_id` and `created_at`, and
+  depended on the session's `TimeZone` (verifying in another time zone reported
+  valid events invalid). A new `hash_version` column records which hash an event
+  has: version 2, written for every new event, covers all its columns (timestamps
+  in UTC). **Existing installs must run the 1.31.1 `001_audit_tables.sql` (or
+  `002_unified_audit.sql`) again**: it adds `hash_version`, sets it to 1 on the
+  existing rows, which keep verifying as version 1 (with version 1's gaps), and
+  replaces the trigger and `verify_audit_chain()`, which now also returns
+  `hash_version`.
 
 - **A string `order_by` is read as column names, never written into the SQL as
   is.** `db.find(view, order_by="...")` appended the string after `ORDER BY`
