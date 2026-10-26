@@ -65,6 +65,14 @@ async def find(
 | field_name | str \| None | No | GraphQL field name for response wrapping. **Auto-inferred** from `info.field_name` (your resolver function name). Only specify if you need to override. |
 | **kwargs | Any | No | Query parameters: `where`, `limit`, `offset`, `order_by` |
 
+`order_by` takes a dict (`{"created_at": "DESC"}`), a list of dicts or of
+`(field, direction)` tuples, an `OrderBySet`, or the GraphQL `orderBy` input; these
+read JSONB fields. It also takes a string of the view's column names,
+`"created_at DESC, id"`: each name (optionally qualified, `t.col`, or double-quoted for a
+mixed-case column) may be followed by `ASC`/`DESC` and `NULLS FIRST`/`NULLS LAST`. The
+names are quoted into the SQL; any other string (an expression, a JSONB path such as
+`data->>'name'`, a column position) raises `ValueError`.
+
 > **Note**: The `info` parameter is automatically injected from the GraphQL context. The `field_name` is also **automatically extracted from `info.field_name`**, so you typically don't need to specify it!
 
 **Modern API (recommended)**:

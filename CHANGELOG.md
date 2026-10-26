@@ -31,6 +31,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   can no longer resolve a vulnerable version. The core dependencies are
   unchanged.
 
+- **A string `order_by` is read as column names, never written into the SQL as
+  is.** `db.find(view, order_by="...")` appended the string after `ORDER BY`
+  unchanged, so a resolver that forwarded a client's sort string let the client
+  run SQL (`"id; DROP TABLE ..."`). The string is now parsed as comma-separated
+  column names, each optionally qualified (`t.col`) and followed by `ASC`/`DESC`
+  and `NULLS FIRST`/`NULLS LAST`; every name is quoted into the query. An
+  unquoted name is folded to lower case as PostgreSQL folds it, so
+  `"createdAt DESC"` sorts on the same column as before; double-quote a
+  mixed-case name (`'"createdAt" DESC'`). **Any other string now raises
+  `ValueError`**: an expression (`lower(name)`), a JSONB path
+  (`data->>'name'`) or a column position (`1`). Sort on a JSONB field with the
+  dict or list form, `order_by={"name": "ASC"}`, which GraphQL `orderBy` input
+  already used and which was never affected; sort on an expression in a view
+  column, or write the query with `db.run()`.
+
 ## [1.31.0] - 2026-10-25
 
 ### Changed

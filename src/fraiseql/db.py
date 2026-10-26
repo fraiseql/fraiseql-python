@@ -334,6 +334,66 @@ def _parse_aggregation_expr(expr: str) -> tuple[str, str]:
     return func, field
 
 
+# One sort key of a string ``order_by``: a column name, optionally qualified
+# (``t.col``, ``s.t.col``), then optional ASC/DESC and NULLS FIRST/LAST. A name
+# is a plain ASCII identifier or a double-quoted one ("" escapes a quote).
+_ORDER_NAME = r'(?:[A-Za-z_][A-Za-z0-9_$]*|"(?:[^"\x00]|"")+")'
+_ORDER_KEY_RE = re.compile(
+    rf"\s*(?P<name>{_ORDER_NAME}(?:\s*\.\s*{_ORDER_NAME}){{0,2}})"
+    r"(?:\s+(?P<direction>ASC|DESC)\b)?"
+    r"(?:\s+NULLS\s+(?P<nulls>FIRST|LAST)\b)?"
+    r"\s*(?P<sep>,|\Z)",
+    re.IGNORECASE,
+)
+_ORDER_NAME_RE = re.compile(_ORDER_NAME)
+
+
+def _order_by_string_sql(order_by: str) -> Composed:
+    """Parse a string ``order_by`` into ``ORDER BY`` with each column name quoted.
+
+    The string is comma-separated sort keys, each ``name [ASC|DESC] [NULLS
+    FIRST|LAST]``, where ``name`` is a column, optionally qualified (``t.date``).
+    An unquoted name is folded to lower case, as PostgreSQL folds it, so
+    ``"createdAt DESC"`` sorts on the same column it always did; write
+    ``'"createdAt" DESC'`` for a mixed-case column.
+
+    The string never reaches the SQL as written: an expression, a JSONB path, a
+    position or anything else raises ``ValueError``.
+
+    Raises:
+        ValueError: If the string is not a list of sort keys.
+    """
+    from psycopg.sql import Identifier
+
+    keys: list[Composed] = []
+    pos = 0
+    while True:
+        match = _ORDER_KEY_RE.match(order_by, pos)
+        if match is None:
+            msg = (
+                f"order_by: cannot read {order_by!r} as a list of columns. A string "
+                "order_by takes comma-separated column names, each optionally followed "
+                "by ASC or DESC and NULLS FIRST or NULLS LAST, e.g. 'created_at DESC, id'. "
+                "To sort on a JSONB field, pass a dict or a list of dicts instead, "
+                "e.g. order_by={'created_at': 'DESC'}."
+            )
+            raise ValueError(msg)
+        names = [
+            name[1:-1].replace('""', '"') if name.startswith('"') else name.lower()
+            for name in _ORDER_NAME_RE.findall(match["name"])
+        ]
+        key: list[Any] = [Identifier(*names)]
+        if match["direction"]:
+            key.append(SQL(" " + match["direction"].upper()))
+        if match["nulls"]:
+            key.append(SQL(" NULLS " + match["nulls"].upper()))
+        keys.append(Composed(key))
+        if not match["sep"]:
+            break
+        pos = match.end()
+    return Composed([SQL("ORDER BY "), SQL(", ").join(keys)])
+
+
 def _build_jsonb_field_expr(field_path: str, jsonb_ref: str = "data") -> Composed:
     """Build a JSONB accessor expression for a field path.
 
@@ -1987,7 +2047,9 @@ class FraiseQLRepository:
             view_name: Database table/view name
             field_name: GraphQL field name for response wrapping
             info: Optional GraphQL resolve info for field selection
-            **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations)
+            **kwargs: Query parameters (where, limit, offset, order_by, group_by, aggregations).
+                A string ``order_by`` is column names only (``"created_at DESC, id"``);
+                anything else in a string raises ``ValueError``.
 
         Returns:
             RustResponseBytes ready for HTTP response
@@ -3405,8 +3467,8 @@ class FraiseQLRepository:
 
         Returns:
             The ``OrderBySet``, or None for a falsy value or a shape with no
-            instructions to read (a raw SQL string, which callers pass through
-            untouched).
+            instructions to read (a string, a list of column names that
+            ``_build_find_query`` parses with ``_order_by_string_sql``).
         """
         if not order_by:
             return None
@@ -3436,7 +3498,7 @@ class FraiseQLRepository:
                     source_type=_type_registry.get(view_name) if view_name else None,
                 )
             elif isinstance(order_set, str):
-                # Raw SQL string — the caller passes it through
+                # A list of column names, which _build_find_query parses
                 return None
             else:
                 msg = (
@@ -3475,8 +3537,8 @@ class FraiseQLRepository:
 
         Returns:
             ``(order_sql, needs_t_alias)``. A flat column renders ``t."col"``, so
-            the caller must ensure the FROM clause carries that alias; raw string
-            ``order_by`` is passed through untouched and reports ``(None, False)``.
+            the caller must ensure the FROM clause carries that alias; a string
+            ``order_by`` (parsed by ``_order_by_string_sql``) reports ``(None, False)``.
 
         ``flat_view`` is for a view without a JSONB column: it has no document to
         extract from, so each top-level sort field is one of its columns.
@@ -3686,7 +3748,8 @@ class FraiseQLRepository:
             query_parts.append(SQL(" "))
             query_parts.append(order_sql)
         elif isinstance(order_by, str):
-            query_parts.extend([SQL(" ORDER BY "), SQL(order_by)])
+            # Column names only, each quoted; anything else raises ValueError.
+            query_parts.extend([SQL(" "), _order_by_string_sql(order_by)])
 
         # Add LIMIT
         if limit is not None:
