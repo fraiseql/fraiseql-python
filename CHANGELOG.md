@@ -54,6 +54,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **`FraiseQLTracer` redacts sensitive GraphQL variables.** `trace_graphql_query`
+  and `trace_graphql_mutation` (and the `trace_graphql_operation` decorator)
+  recorded the variables in a span event as they came, so a `password`, a token
+  or an API key went to the tracing backend. A variable whose name contains
+  `password`, `token`, `secret`, `key`, `auth`, `credential`, `session` or
+  `cookie`, at any depth, is now recorded as `[REDACTED]`, as `GraphQLTracer`
+  already did.
+
 - **`setup_development_security()` has no built-in secret key.** Called without
   `secret_key`, it used a literal published in this repository. It now makes a
   random key for each call, so tokens it signs don't survive a restart; pass

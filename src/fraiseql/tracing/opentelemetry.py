@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable, Generator, Optional
 
 from fastapi import FastAPI, Request, Response
 
+from fraiseql.tracing.redaction import redact_variables
 from fraiseql.utils.annotations import wraps
 
 logger = logging.getLogger(__name__)
@@ -297,7 +298,7 @@ class FraiseQLTracer:
 
             if variables:
                 # Add variables as span events (to avoid sensitive data in attributes)
-                span.add_event("graphql.variables", {"variables": str(variables)})
+                span.add_event("graphql.variables", {"variables": str(redact_variables(variables))})
 
             # Add custom attributes from config
             for key, value in self.config.attributes.items():
@@ -334,7 +335,7 @@ class FraiseQLTracer:
             span.set_attribute("graphql.document", query)
 
             if variables:
-                span.add_event("graphql.variables", {"variables": str(variables)})
+                span.add_event("graphql.variables", {"variables": str(redact_variables(variables))})
 
             # Add custom attributes
             for key, value in self.config.attributes.items():
