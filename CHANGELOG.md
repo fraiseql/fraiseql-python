@@ -35,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the middleware builds. `setup_rate_limiting` and `RateLimitMiddleware` now take
   `graphql_operation_limits` and `graphql_complexity_limits`, merged over the
   defaults (an unknown key raises `ValueError`).
+- **`RateLimit(strategy=..., burst=...)` now says it is ignored.** Only a fixed window
+  is implemented; `SLIDING_WINDOW`, `TOKEN_BUCKET` and `burst` were silently counted
+  as a fixed window. They still are, but setting one logs a warning, and the
+  docstrings and docs say so.
 
 ### Security
 

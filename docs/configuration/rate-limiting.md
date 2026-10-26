@@ -169,8 +169,9 @@ A request counts against every rule whose pattern matches its path and against
 or `fnmatch` patterns when they contain `*`.
 
 `RateLimit` also takes `burst` and `strategy` (`RateLimitStrategy.FIXED_WINDOW`,
-`SLIDING_WINDOW`, `TOKEN_BUCKET`), but `RateLimitMiddleware` ignores both: every limit
-is a fixed window of `window` seconds.
+`SLIDING_WINDOW`, `TOKEN_BUCKET`), but they are not implemented: every limit is a
+fixed window of `window` seconds, and setting `burst` or another strategy logs a
+warning. For a sliding window, use the `FraiseQLConfig` settings above.
 
 A rule's `exempt_func(request) -> bool` lets a request through every limit when it
 returns `True`:

@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import time
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -15,9 +16,15 @@ from starlette.responses import JSONResponse
 from fraiseql.audit import get_security_logger
 from fraiseql.security.client_ip import TrustedProxies, get_client_ip
 
+logger = logging.getLogger(__name__)
+
 
 class RateLimitStrategy(Enum):
-    """Rate limiting strategies."""
+    """Rate limiting strategies.
+
+    Only ``FIXED_WINDOW`` is implemented: ``RateLimitMiddleware`` and both stores
+    count every limit in a fixed window, whatever the strategy.
+    """
 
     FIXED_WINDOW = "fixed_window"
     SLIDING_WINDOW = "sliding_window"
@@ -26,12 +33,28 @@ class RateLimitStrategy(Enum):
 
 @dataclass
 class RateLimit:
-    """Rate limit configuration."""
+    """Rate limit configuration: at most ``requests`` per fixed ``window`` of seconds.
+
+    ``burst`` and ``strategy`` are not implemented: every limit is a fixed window
+    (the count resets when the window ends). Setting either logs a warning.
+    """
 
     requests: int
     window: int  # seconds
-    burst: int | None = None  # for token bucket
-    strategy: RateLimitStrategy = RateLimitStrategy.FIXED_WINDOW
+    burst: int | None = None  # not implemented
+    strategy: RateLimitStrategy = RateLimitStrategy.FIXED_WINDOW  # only FIXED_WINDOW
+
+    def __post_init__(self) -> None:
+        strategy = getattr(self.strategy, "value", self.strategy)
+        if strategy != RateLimitStrategy.FIXED_WINDOW.value or self.burst is not None:
+            logger.warning(
+                "RateLimit(strategy=%r, burst=%r): only a fixed window is implemented; "
+                "this limit counts %d requests per fixed %ds window",
+                strategy,
+                self.burst,
+                self.requests,
+                self.window,
+            )
 
 
 @dataclass
