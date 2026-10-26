@@ -50,6 +50,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- **`setup_development_security()` has no built-in secret key.** Called without
+  `secret_key`, it used a literal published in this repository. It now makes a
+  random key for each call, so tokens it signs don't survive a restart; pass
+  `secret_key` to keep them.
+
 - **`SigningKeyManager` has no built-in audit signing key.** Without
   `AUDIT_SIGNING_KEY` it fell back to `"test-key-for-testing"`, so its
   `verify()` accepted a signature anyone could make with that published key. It

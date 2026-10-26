@@ -26,6 +26,7 @@ Example usage:
 """
 
 import logging
+import secrets
 from typing import Any
 
 from fastapi import FastAPI
@@ -487,9 +488,15 @@ def setup_production_security(
 
 def setup_development_security(
     app: FastAPI,
-    secret_key: str = "dev-secret-key-change-in-production",
+    secret_key: str | None = None,
 ) -> dict[str, Any]:
-    """Set up development security with permissive settings."""
+    """Set up development security with permissive settings.
+
+    Without ``secret_key`` a random key is made for this call, so tokens signed
+    with it don't survive a restart.
+    """
+    if not secret_key:
+        secret_key = secrets.token_urlsafe(32)
     return setup_security(
         app=app,
         secret_key=secret_key,
