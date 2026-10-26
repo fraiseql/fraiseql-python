@@ -9,20 +9,17 @@ def build_array_eq_sql(path_sql: SQL, value: list) -> Composed:
     import json
 
     json_str = json.dumps(value)
-    # Escape single quotes for SQL
-    safe_json = json_str.replace("'", "''")
-    return Composed([path_sql, SQL(" = "), Literal(safe_json), SQL("::jsonb")])
+    # Literal quotes the JSON itself
+    return Composed([path_sql, SQL(" = "), Literal(json_str), SQL("::jsonb")])
 
 
 def build_array_neq_sql(path_sql: SQL, value: list) -> Composed:
     """Build SQL for array inequality."""
-    # Compare JSONB arrays - embed JSON directly in SQL for now
+    # Compare JSONB arrays directly
     import json
 
     json_str = json.dumps(value)
-    # Escape single quotes for SQL
-    safe_json = json_str.replace("'", "''")
-    return Composed([path_sql, SQL(f" != '{safe_json}'::jsonb")])
+    return Composed([path_sql, SQL(" != "), Literal(json_str), SQL("::jsonb")])
 
 
 def build_array_contains_sql(path_sql: SQL, value: list) -> Composed:

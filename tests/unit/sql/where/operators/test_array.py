@@ -1,6 +1,6 @@
 """Comprehensive tests for array operator SQL building."""
 
-from psycopg.sql import SQL
+from psycopg.sql import SQL, Literal
 
 from fraiseql.sql.where.operators.arrays import (
     build_array_all_eq_sql,
@@ -44,6 +44,17 @@ class TestArrayBasicOperators:
         assert "::jsonb" in result_str
         assert "news" in result_str
         assert "tech" in result_str
+
+    def test_eq_quote_is_escaped_once(self):
+        """The JSON goes in a Literal as is: escaping it first doubled each quote."""
+        result = build_array_eq_sql(SQL("tags"), ["it's"])
+        assert result.as_string(None) == "tags = '[\"it''s\"]'::jsonb"
+
+    def test_neq_value_is_a_literal(self):
+        """The value is a Literal, not text pasted into the SQL template."""
+        result = build_array_neq_sql(SQL("tags"), ["it's", "100%"])
+        assert result.as_string(None) == "tags != '[\"it''s\", \"100%\"]'::jsonb"
+        assert Literal('["it\'s", "100%"]') in list(result)
 
 
 class TestArrayContainmentOperators:

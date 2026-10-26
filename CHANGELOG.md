@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is implemented; `SLIDING_WINDOW`, `TOKEN_BUCKET` and `burst` were silently counted
   as a fixed window. They still are, but setting one logs a warning, and the
   docstrings and docs say so.
+- **An array `eq` filter matches an element that holds a quote.** The JSON of
+  `tags: {eq: ["it's"]}` had its quotes escaped and was then quoted again as a
+  literal, so it compared against `["it''s"]` and matched nothing. `neq` wrote the
+  JSON into the SQL template itself; both now pass it as one literal.
 
 ### Security
 
