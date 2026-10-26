@@ -42,6 +42,18 @@ jobs:
               $PRERELEASE
           fi
 
+  # Signed CycloneDX SBOM attached to the release. A separate workflow, called
+  # here because a release created with GITHUB_TOKEN triggers no `release` event.
+  sbom:
+    name: SBOM
+    needs: create-release
+    permissions:
+      contents: write
+      id-token: write
+    uses: ./.github/workflows/sbom-generation.yml
+    with:
+      version: ${{ needs.create-release.outputs.version }}
+
   # Build wheels for each platform
   build-wheels:
     name: Build wheels (${{ matrix.os }})
