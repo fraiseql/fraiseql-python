@@ -173,66 +173,47 @@ pub fn build_success_response(
                 None => "entity".to_string(),
             });
 
-        // Only add entity if the field is selected
-        if is_selected(&field_name) {
-            // Check if entity is a wrapper object containing entity_field_name
-            // This happens when Python entity_flattener skips flattening (CASCADE case)
-            // The entity looks like: {"post": {...}, "message": "..."}
-            let actual_entity = if let Value::Object(entity_map) = entity {
-                // Check if the entity wrapper contains a field matching entity_field_name
-                if let Some(entity_field_name_raw) = entity_field_name {
-                    if let Some(nested_entity) = entity_map.get(entity_field_name_raw) {
-                        // Found nested entity - extract it
-                        nested_entity
-                    } else {
-                        // No nested field, use entire entity
-                        entity
-                    }
-                } else {
-                    // No entity_field_name hint, use entire entity
-                    entity
-                }
-            } else {
-                // Entity is not an object (array or primitive), use as-is
-                entity
-            };
+        // A wrapper holds the entity under entity_field_name, next to sibling fields:
+        // {"post": {...}, "message": "..."}
+        let wrapper = match (entity, entity_field_name) {
+            (Value::Object(entity_map), Some(raw_name)) if entity_map.contains_key(raw_name) => {
+                Some((entity_map, raw_name))
+            },
+            _ => None,
+        };
 
+        if is_selected(&field_name) {
+            let actual_entity =
+                wrapper.map_or(entity, |(entity_map, raw_name)| &entity_map[raw_name]);
             let mut transformed = transform_entity(actual_entity, entity_type, auto_camel_case);
 
             // Apply entity field filtering if selections provided (GitHub issue #525)
             if let Some(selections_json) = entity_selections {
-                // Parse selections JSON
+                // If parsing fails, silently skip filtering (backward compat)
                 if let Ok(selections) = serde_json::from_str::<Value>(selections_json) {
-                    // Filter entity fields based on GraphQL query
                     transformed = filter_entity_fields(&transformed, &selections);
                 }
-                // If parsing fails, silently skip filtering (backward compat)
             }
 
             obj.insert(field_name, transformed);
+        }
 
-            // If entity was a wrapper, copy other fields from it (like "message")
-            // But only if those fields are also selected
-            if let Value::Object(entity_map) = entity {
-                if let Some(entity_field_name_raw) = entity_field_name {
-                    if entity_map.contains_key(entity_field_name_raw) {
-                        // Entity was a wrapper - copy other fields
-                        for (key, value) in entity_map {
-                            if key != entity_field_name_raw && key != "entity" && key != "cascade" {
-                                // Don't copy the entity field itself, nested "entity", or CASCADE
-                                // CASCADE must only appear at success type level, never in entity
-                                let field_key = if auto_camel_case {
-                                    to_camel_case(key)
-                                } else {
-                                    key.clone()
-                                };
-                                // Only add if not already present AND field is selected
-                                if !obj.contains_key(&field_key) && is_selected(&field_key) {
-                                    obj.insert(field_key, transform_value(value, auto_camel_case));
-                                }
-                            }
-                        }
-                    }
+        // Copy a wrapper's siblings that are selected, whether or not the entity field is
+        // (GitHub issue #594). Never the entity field itself, a nested "entity", or
+        // CASCADE (CASCADE only appears at success type level), and never over a field
+        // the result already set.
+        if let Some((entity_map, raw_name)) = wrapper {
+            for (key, value) in entity_map {
+                if key == raw_name || key == "entity" || key == "cascade" {
+                    continue;
+                }
+                let field_key = if auto_camel_case {
+                    to_camel_case(key)
+                } else {
+                    key.clone()
+                };
+                if !obj.contains_key(&field_key) && is_selected(&field_key) {
+                    obj.insert(field_key, transform_value(value, auto_camel_case));
                 }
             }
         }
