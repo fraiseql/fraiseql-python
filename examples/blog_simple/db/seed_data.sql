@@ -466,4 +466,3 @@ INSERT INTO tb_comment (id, fk_post, fk_author, content, status) VALUES
 UPDATE tb_comment
 SET fk_parent = (SELECT pk_comment FROM tb_comment WHERE id = '75555555-5555-5555-5555-555555555555'::uuid)
 WHERE id = '76666666-6666-6666-6666-666666666666'::uuid;
-
