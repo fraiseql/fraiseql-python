@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.31.2] - 2026-11-05
+
+### Changed
+
+- **The Rust extension builds on PyO3 0.30** (`pyo3` and `pyo3-async-runtimes`).
+  No API change.
+
 ### Fixed
 
+- **A success type's wrapper fields are returned when its entity field is not
+  selected** (#594). When a mutation's entity was a wrapper
+  (`{"items": [...], "summary": {...}}`), the Rust builder copied `summary` onto
+  the success object only if `items` was selected too, so `summary { created }`
+  alone came back without the field. From Python this affected 1.28.x and 1.29.x
+  only; since 1.30.0 the response is built in full and then projected onto the
+  selection. The field-list path of the Rust builder no longer has the gate either.
 - **Diagnostics showed a field's response path as a `Path(prev=...)` repr.**
   The N+1 detector joined the fields of graphql-core's `Path` tuple instead of
   its keys, so a pattern's `field_path` read
@@ -18,6 +32,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `profile_resolver` logs and `ResolverError.query_context` now give the path
   as a list (`["posts", 0, "author"]`, the GraphQL `path` format), and
   `debug_graphql_info` prints `Path: posts.0.author`.
+
+### Security
+
+- **graphql-core 3.3.0 is excluded: it leaks every aborted validation.** When a
+  document had more validation errors than `max_errors` (100), graphql-core 3.3.0
+  raised one shared exception whose traceback grew with each raise, keeping each
+  document and its validation context alive for the life of the process
+  (GHSA-mpqx-q82w-9x46). Any client could exhaust a worker's memory with small
+  invalid queries, before depth or complexity limits run. The requirement is now
+  `graphql-core>=3.2.12,!=3.3.0`: 3.2 is not affected and stays allowed, and the
+  lock moves to 3.3.1. **Upgrade, or pin `graphql-core!=3.3.0` yourself.**
+- **Locked dependencies moved past their published advisories.** dnspython 2.9.2
+  (`dev`), langgraph 1.2.20 (`langchain`, `llm`, `all`), pyasn1 0.6.5 (transitive)
+  and pypdf 6.21.4 (`llamaindex`, whose floor is raised). The pip-audit gate
+  reports none left.
 
 ## [1.31.1] - 2026-10-26
 
