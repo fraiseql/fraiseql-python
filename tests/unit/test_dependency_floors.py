@@ -24,7 +24,6 @@ PYPROJECT = Path(__file__).resolve().parents[2] / "pyproject.toml"
 REQUIRED_FLOORS = {
     "sqlparse": ("0.6.0", "dev-only: used by scripts/, imported nowhere in src/"),
     "nltk": ("3.10.4", "optional: transitive through the llamaindex extra"),
-    "pypdf": ("6.21.2", "optional: declared by the llamaindex extra"),
     "cryptography": ("50.0.0", "core in practice: pulled in by pyjwt[crypto]"),
     "aiohttp": ("3.14.4", "optional: dev extra, and transitive via llama-index-core"),
     # Not a Dependabot alert — found by making the pip-audit CI gate authoritative,
@@ -40,6 +39,8 @@ REQUIRED_FLOORS = {
     "opentelemetry-api": ("1.45.1", "optional: declared by the tracing and all extras"),
     "black": ("26.10.1", "dev-only: the dev extra"),
     "filelock": ("4.2.1", "dev-only: the dev extra, and transitive via tox and virtualenv"),
+    # The pip-audit gate on 1.31.1 (2026-11-05).
+    "pypdf": ("6.21.4", "optional: declared by the llamaindex extra"),
 }
 
 
@@ -111,3 +112,17 @@ def test_cryptography_floor_is_declared_on_the_default_install(pyproject: dict) 
     """
     runtime = [name for name, _ in _declarations(pyproject, "cryptography")]
     assert "project.dependencies" in runtime
+
+
+def test_graphql_core_excludes_the_release_that_leaks_aborted_validations(pyproject: dict) -> None:
+    """GHSA-mpqx-q82w-9x46: graphql-core 3.3.0 keeps every validation aborted by
+    ``max_errors`` alive through a shared exception's traceback, so any client can
+    exhaust memory with small invalid documents. 3.2 creates a new error each time
+    and is not affected, so the 3.2 line stays allowed and only 3.3.0 is excluded.
+    """
+    declarations = _declarations(pyproject, "graphql-core")
+    assert declarations, "graphql-core is no longer declared"
+
+    for location, req in declarations:
+        assert not req.specifier.contains("3.3.0"), f"{location}: {req} admits 3.3.0"
+        assert req.specifier.contains("3.3.1"), f"{location}: {req} rejects the fix"
