@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5780,11 +5780,12 @@ authorization. Both are Python and both surface a denial as a GraphQL error with
 <code>GraphQLError</code> when the check fails.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">requires_any_permission</span><span class="p">,</span>
+    <span class="n">requires_any_role</span><span class="p">,</span>
     <span class="n">requires_auth</span><span class="p">,</span>
-    <span class="n">requires_role</span><span class="p">,</span>
     <span class="n">requires_permission</span><span class="p">,</span>
+    <span class="n">requires_role</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_any_role</span><span class="p">,</span> <span class="n">requires_any_permission</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
@@ -5794,7 +5795,7 @@ authorization. Both are Python and both surface a denial as a GraphQL error with
 <span class="w">    </span><span class="sd">"""Any authenticated user."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">})</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
@@ -6076,7 +6077,7 @@ JSONB rather than fetching then hiding. The view can branch on the session GUCs 
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
 <span class="w">        </span><span class="c1">-- Full card number only for admins; everyone else gets the last 4.</span>
-<span class="w">        </span><span class="s1">'cardNumber'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'card_number'</span><span class="p">,</span>
 <span class="w">            </span><span class="k">CASE</span>
 <span class="w">                </span><span class="k">WHEN</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.is_super_admin'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)::</span><span class="nb">boolean</span>
 <span class="w">                    </span><span class="k">THEN</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">card_number</span>
@@ -6223,7 +6224,7 @@ grants) if your compliance regime requires immutability.</p>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">export_user_data</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">JSON</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Export all data for the authenticated owner."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user_export"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user_export"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="72-hipaa">7.2 HIPAA<a class="headerlink" href="#72-hipaa" title="Permanent link">&para;</a></h3>
 <ul>
@@ -6258,7 +6259,7 @@ grants) if your compliance regime requires immutability.</p>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'cardNumber'</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'card_number'</span><span class="p">,</span>
 <span class="w">            </span><span class="k">CASE</span>
 <span class="w">                </span><span class="k">WHEN</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.is_super_admin'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">)::</span><span class="nb">boolean</span>
 <span class="w">                    </span><span class="k">THEN</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">card_number</span>
@@ -6488,10 +6489,10 @@ Python runtime and the database.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

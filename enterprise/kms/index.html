@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4878,10 +4878,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#user-password-encryption" class="md-nav__link">
+  <a href="#sensitive-field-encryption" class="md-nav__link">
     <span class="md-ellipsis">
       
-        User Password Encryption
+        Sensitive Field Encryption
       
     </span>
   </a>
@@ -4893,6 +4893,17 @@
     <span class="md-ellipsis">
       
         API Key Encryption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-stored-ciphertext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading Stored Ciphertext
       
     </span>
   </a>
@@ -4939,10 +4950,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#key-rotation-failures" class="md-nav__link">
+  <a href="#key-rotation-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key Rotation Failures
+        Key Rotation Status
       
     </span>
   </a>
@@ -4978,10 +4989,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#initialization-timeout" class="md-nav__link">
+  <a href="#request-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Initialization Timeout
+        Request Timeout
       
     </span>
   </a>
@@ -5673,10 +5684,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#user-password-encryption" class="md-nav__link">
+  <a href="#sensitive-field-encryption" class="md-nav__link">
     <span class="md-ellipsis">
       
-        User Password Encryption
+        Sensitive Field Encryption
       
     </span>
   </a>
@@ -5688,6 +5699,17 @@
     <span class="md-ellipsis">
       
         API Key Encryption
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reading-stored-ciphertext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reading Stored Ciphertext
       
     </span>
   </a>
@@ -5734,10 +5756,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#key-rotation-failures" class="md-nav__link">
+  <a href="#key-rotation-status" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Key Rotation Failures
+        Key Rotation Status
       
     </span>
   </a>
@@ -5773,10 +5795,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#initialization-timeout" class="md-nav__link">
+  <a href="#request-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Initialization Timeout
+        Request Timeout
       
     </span>
   </a>
@@ -5869,23 +5891,24 @@ tags: ["documentation", "reference"]</p>
 <ul>
 <li><strong>Multiple Providers</strong>: HashiCorp Vault, AWS KMS, GCP Cloud KMS, Local (dev)</li>
 <li><strong>Two Usage Patterns</strong>: Startup-time initialization (fast) or per-request (secure)</li>
-<li><strong>Envelope Encryption</strong>: Local AES-256-GCM with encrypted master key</li>
-<li><strong>Automatic Provider Selection</strong>: Transparently detect and use appropriate provider</li>
-<li><strong>Key Rotation</strong>: Automated key rotation with backward compatibility</li>
-<li><strong>Field Encryption</strong>: Convenient methods for encrypting individual fields</li>
-<li><strong>Compliance-Ready</strong>: Works with security policies and audit logging</li>
+<li><strong>Envelope Encryption</strong>: Local AES-256-GCM with a data key wrapped by the KMS master key</li>
+<li><strong>Provider Tracking</strong>: <code>decrypt()</code> uses the provider recorded in the <code>EncryptedData</code></li>
+<li><strong>Key Rotation</strong>: Replace the cached data key, or rotate the master key in the provider</li>
+<li><strong>Field Encryption</strong>: Convenient methods for encrypting individual string or bytes fields</li>
 </ul>
 <hr />
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <h3 id="vault-setup-recommended">Vault Setup (Recommended)<a class="headerlink" href="#vault-setup-recommended" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyManager</span><span class="p">,</span> <span class="n">VaultKMSProvider</span><span class="p">,</span> <span class="n">VaultConfig</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyManager</span><span class="p">,</span> <span class="n">VaultKMSProvider</span><span class="p">,</span> <span class="n">VaultConfig</span>
 
 <span class="c1"># Configure Vault provider</span>
 <span class="n">vault_config</span> <span class="o">=</span> <span class="n">VaultConfig</span><span class="p">(</span>
     <span class="n">vault_addr</span><span class="o">=</span><span class="s2">"https://vault.example.com:8200"</span><span class="p">,</span>
     <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"VAULT_TOKEN"</span><span class="p">),</span>
     <span class="n">mount_path</span><span class="o">=</span><span class="s2">"transit"</span><span class="p">,</span>  <span class="c1"># Default: transit</span>
-    <span class="n">namespace</span><span class="o">=</span><span class="s2">"your-namespace"</span>  <span class="c1"># Optional</span>
+    <span class="n">namespace</span><span class="o">=</span><span class="s2">"your-namespace"</span>  <span class="c1"># Optional (Vault Enterprise)</span>
 <span class="p">)</span>
 
 <span class="c1"># Create KMS with Vault</span>
@@ -5901,11 +5924,11 @@ tags: ["documentation", "reference"]</p>
 <h3 id="aws-kms-setup">AWS KMS Setup<a class="headerlink" href="#aws-kms-setup" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyManager</span><span class="p">,</span> <span class="n">AWSKMSProvider</span><span class="p">,</span> <span class="n">AWSKMSConfig</span>
 
-<span class="c1"># Configure AWS KMS</span>
+<span class="c1"># Configure AWS KMS: credentials come from the boto3 default chain</span>
+<span class="c1"># (IAM role, environment variables, ~/.aws), or from a named profile</span>
 <span class="n">aws_config</span> <span class="o">=</span> <span class="n">AWSKMSConfig</span><span class="p">(</span>
-    <span class="n">region</span><span class="o">=</span><span class="s2">"us-east-1"</span><span class="p">,</span>
-    <span class="n">access_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"AWS_ACCESS_KEY_ID"</span><span class="p">),</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"AWS_SECRET_ACCESS_KEY"</span><span class="p">)</span>
+    <span class="n">region_name</span><span class="o">=</span><span class="s2">"us-east-1"</span><span class="p">,</span>
+    <span class="n">profile_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># e.g. "dev" for a local AWS profile</span>
 <span class="p">)</span>
 
 <span class="n">key_manager</span> <span class="o">=</span> <span class="n">KeyManager</span><span class="p">(</span>
@@ -5919,50 +5942,60 @@ tags: ["documentation", "reference"]</p>
 <h3 id="gcp-cloud-kms-setup">GCP Cloud KMS Setup<a class="headerlink" href="#gcp-cloud-kms-setup" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">KeyManager</span><span class="p">,</span> <span class="n">GCPKMSProvider</span><span class="p">,</span> <span class="n">GCPKMSConfig</span>
 
-<span class="c1"># Configure GCP KMS</span>
+<span class="c1"># Configure GCP KMS: credentials come from Application Default Credentials</span>
+<span class="c1"># (GOOGLE_APPLICATION_CREDENTIALS, gcloud, or the workload's service account)</span>
 <span class="n">gcp_config</span> <span class="o">=</span> <span class="n">GCPKMSConfig</span><span class="p">(</span>
     <span class="n">project_id</span><span class="o">=</span><span class="s2">"my-project"</span><span class="p">,</span>
     <span class="n">location</span><span class="o">=</span><span class="s2">"global"</span><span class="p">,</span>
     <span class="n">key_ring</span><span class="o">=</span><span class="s2">"my-keyring"</span><span class="p">,</span>
-    <span class="n">credentials_file</span><span class="o">=</span><span class="s2">"/path/to/service-account.json"</span>
 <span class="p">)</span>
 
 <span class="n">key_manager</span> <span class="o">=</span> <span class="n">KeyManager</span><span class="p">(</span>
     <span class="n">providers</span><span class="o">=</span><span class="p">{</span><span class="s2">"gcp"</span><span class="p">:</span> <span class="n">GCPKMSProvider</span><span class="p">(</span><span class="n">gcp_config</span><span class="p">)},</span>
     <span class="n">default_provider</span><span class="o">=</span><span class="s2">"gcp"</span><span class="p">,</span>
-    <span class="n">default_key_id</span><span class="o">=</span><span class="s2">"projects/my-project/locations/global/keyRings/my-keyring/cryptoKeys/my-key"</span>
+    <span class="n">default_key_id</span><span class="o">=</span><span class="s2">"my-key"</span>  <span class="c1"># the crypto key name inside key_ring</span>
 <span class="p">)</span>
 
 <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
 </code></pre></div>
 <h3 id="using-kms-in-graphql">Using KMS in GraphQL<a class="headerlink" href="#using-kms-in-graphql" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Add to GraphQL context</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"key_manager"</span><span class="p">:</span> <span class="n">key_manager</span><span class="p">,</span>
-        <span class="c1"># ... other context</span>
-    <span class="p">}</span>
+<p>Initialize the key manager in the app's lifespan and put it in the GraphQL context
+with <code>context_getter</code>; fraiseql merges what it returns into its default context
+(<code>db</code>, <code>user</code>, ...):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
-<span class="nd">@strawberry</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">Info</span><span class="p">,</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="c1"># Encrypt sensitive field</span>
-    <span class="n">encrypted_password</span> <span class="o">=</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"key_manager"</span><span class="p">]</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
-        <span class="n">password</span><span class="p">,</span>
-        <span class="n">key_id</span><span class="o">=</span><span class="s2">"app-encryption-key"</span>
-    <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span>
 
-    <span class="k">return</span> <span class="n">create_user_record</span><span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">encrypted_password</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">:</span> <span class="n">FastAPI</span><span class="p">):</span>
+    <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>  <span class="c1"># one KMS call at startup</span>
+    <span class="k">yield</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"key_manager"</span><span class="p">:</span> <span class="n">key_manager</span><span class="p">}</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Customer</span><span class="p">,</span> <span class="n">ApiKeyCreated</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">customer</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_customer</span><span class="p">,</span> <span class="n">generate_api_key</span><span class="p">],</span>
+    <span class="n">context_getter</span><span class="o">=</span><span class="n">get_context</span><span class="p">,</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
+<p>Resolvers then read <code>info.context["key_manager"]</code>; see
+<a href="#integration-with-graphql">Integration with GraphQL</a> for the mutations.</p>
 <hr />
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <h3 id="two-usage-patterns">Two Usage Patterns<a class="headerlink" href="#two-usage-patterns" title="Permanent link">&para;</a></h3>
 <p>FraiseQL KMS supports two distinct patterns depending on your security needs:</p>
 <h4 id="pattern-1-startup-time-initialization-recommended">Pattern 1: Startup-Time Initialization (Recommended)<a class="headerlink" href="#pattern-1-startup-time-initialization-recommended" title="Permanent link">&para;</a></h4>
-<p><strong>Best for</strong>: High-throughput applications, response data encryption</p>
+<p><strong>Best for</strong>: High-throughput applications, short-lived encrypted data</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># At startup: Contact KMS once to get data key</span>
 <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
 
@@ -5970,26 +6003,32 @@ tags: ["documentation", "reference"]</p>
 <span class="n">encrypted</span> <span class="o">=</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">local_encrypt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># Microseconds</span>
 <span class="n">decrypted</span> <span class="o">=</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">local_decrypt</span><span class="p">(</span><span class="n">encrypted</span><span class="p">)</span>  <span class="c1"># Microseconds</span>
 
-<span class="c1"># Periodically: Rotate the data key</span>
-<span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">,</span> <span class="n">trigger</span><span class="o">=</span><span class="s2">"interval"</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="c1"># Periodically: replace the cached data key</span>
+<span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>Performance</strong>:</p>
 <ul>
 <li><code>initialize()</code>: 50-200ms (one-time at startup)</li>
 <li><code>local_encrypt()</code>: &lt; 1 microsecond</li>
 <li><code>local_decrypt()</code>: &lt; 1 microsecond</li>
-<li><code>rotate_data_key()</code>: 50-200ms (background task)</li>
+<li><code>rotate_data_key()</code>: 50-200ms</li>
 </ul>
 <p><strong>Envelope Encryption</strong>:</p>
 <div class="highlight"><pre><span></span><code>KMS stores: Master key (never leaves KMS)
-Application stores: Data key (AES-256) encrypted by master key
-Application RAM: Decrypted data key (for current hour)
+KMS returns: A new AES-256 data key, plus that key wrapped by the master key
+Application RAM: The plaintext data key, until the next initialize()/rotate_data_key()
 </code></pre></div>
+<p>The cached data key lives only in memory: <code>rotate_data_key()</code> (and a process
+restart) replaces it, and <code>local_decrypt()</code> can no longer decrypt what the previous
+key encrypted. Use <code>local_encrypt()</code> for data that doesn't outlive the key; for data
+you persist, use <code>encrypt()</code> / <code>encrypt_field()</code> (Pattern 2), whose <code>EncryptedData</code>
+records the KMS key, or keep a <code>DataKeyPair</code>'s wrapped key with the data
+(<a href="#generate-data-key-pair">Generate Data Key Pair</a>).</p>
 <h4 id="pattern-2-per-request-kms-high-security">Pattern 2: Per-Request KMS (High Security)<a class="headerlink" href="#pattern-2-per-request-kms-high-security" title="Permanent link">&para;</a></h4>
 <p><strong>Best for</strong>: Secrets management, high-security keys, rare encryption</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Every request: Contact KMS for encryption</span>
 <span class="n">encrypted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span>
-    <span class="n">plaintext</span><span class="p">,</span>
+    <span class="n">plaintext</span><span class="p">,</span>  <span class="c1"># bytes</span>
     <span class="n">key_id</span><span class="o">=</span><span class="s2">"high-security-key"</span><span class="p">,</span>
     <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"purpose"</span><span class="p">:</span> <span class="s2">"api_key_encryption"</span><span class="p">}</span>
 <span class="p">)</span>
@@ -6005,8 +6044,8 @@ Application RAM: Decrypted data key (for current hour)
 <p><strong>Use Cases</strong>:</p>
 <ul>
 <li>API key encryption (rare, high-security)</li>
-<li>Master password hashing (rare)</li>
 <li>Credential storage (infrequent)</li>
+<li>Persisted sensitive fields</li>
 <li>Not suitable for response data (too slow)</li>
 </ul>
 <h3 id="local-encryption-algorithm">Local Encryption Algorithm<a class="headerlink" href="#local-encryption-algorithm" title="Permanent link">&para;</a></h3>
@@ -6015,13 +6054,13 @@ Application RAM: Decrypted data key (for current hour)
     ↓
 Generate random 96-bit nonce
     ↓
-Encrypt with AES-256-GCM (16KB buffer)
+Encrypt with AES-256-GCM (cached data key)
     ↓
-Compute authentication tag (128-bit)
+Ciphertext with 128-bit authentication tag appended
     ↓
 Serialize: nonce + ciphertext + auth_tag
     ↓
-Encrypted data
+Encrypted bytes
 </code></pre></div>
 <p><strong>Security Properties</strong>:</p>
 <ul>
@@ -6041,8 +6080,8 @@ Encrypted data
     <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"VAULT_TOKEN"</span><span class="p">),</span>
     <span class="n">mount_path</span><span class="o">=</span><span class="s2">"transit"</span><span class="p">,</span>           <span class="c1"># Custom: default is "transit"</span>
     <span class="n">namespace</span><span class="o">=</span><span class="s2">"my-namespace"</span><span class="p">,</span>       <span class="c1"># Optional</span>
-    <span class="n">tls_verify</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>               <span class="c1"># TLS verification (recommended)</span>
-    <span class="n">tls_ca_cert</span><span class="o">=</span><span class="s2">"/path/to/ca.pem"</span>  <span class="c1"># Optional CA cert</span>
+    <span class="n">verify_tls</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                <span class="c1"># TLS verification (default: True)</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mf">30.0</span><span class="p">,</span>                   <span class="c1"># HTTP timeout in seconds (default: 30.0)</span>
 <span class="p">)</span>
 
 <span class="n">provider</span> <span class="o">=</span> <span class="n">VaultKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
@@ -6054,7 +6093,7 @@ vault<span class="w"> </span>secrets<span class="w"> </span><span class="nb">ena
 <span class="c1"># Create encryption key</span>
 vault<span class="w"> </span>write<span class="w"> </span>-f<span class="w"> </span>transit/keys/app-encryption-key
 
-<span class="c1"># Create policy for application</span>
+<span class="c1"># Create policy for application (fraiseql POSTs to these endpoints)</span>
 vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w"> </span>app<span class="w"> </span>-<span class="w"> </span><span class="s">&lt;&lt;EOF</span>
 <span class="s">path "transit/encrypt/app-encryption-key" {</span>
 <span class="s">  capabilities = ["update"]</span>
@@ -6063,7 +6102,7 @@ vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w">
 <span class="s">  capabilities = ["update"]</span>
 <span class="s">}</span>
 <span class="s">path "transit/datakey/plaintext/app-encryption-key" {</span>
-<span class="s">  capabilities = ["read"]</span>
+<span class="s">  capabilities = ["update"]</span>
 <span class="s">}</span>
 <span class="s">EOF</span>
 
@@ -6071,24 +6110,19 @@ vault<span class="w"> </span>policy<span class="w"> </span>write<span class="w">
 vault<span class="w"> </span>auth<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>approle
 vault<span class="w"> </span>write<span class="w"> </span>auth/approle/role/app<span class="w"> </span><span class="nv">policies</span><span class="o">=</span><span class="s2">"app"</span>
 </code></pre></div>
-<p><strong>Authentication Methods</strong>:</p>
-<ul>
-<li>Token (shown above)</li>
-<li>Kubernetes auth (in K8s cluster)</li>
-<li>AppRole auth (recommended for CI/CD)</li>
-</ul>
+<p><strong>Authentication</strong>: <code>VaultKMSProvider</code> sends <code>VaultConfig.token</code> with each request.
+Obtain the token however your deployment logs in to Vault (Kubernetes auth, AppRole,
+...), and pass it in.</p>
 <h3 id="aws-kms">AWS KMS<a class="headerlink" href="#aws-kms" title="Permanent link">&para;</a></h3>
 <p><strong>Best for</strong>: AWS-native deployments, AWS IAM integration</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">AWSKMSConfig</span><span class="p">,</span> <span class="n">AWSKMSProvider</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">AWSKMSConfig</span><span class="p">(</span>
-    <span class="n">region</span><span class="o">=</span><span class="s2">"us-east-1"</span><span class="p">,</span>
-    <span class="n">access_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"AWS_ACCESS_KEY_ID"</span><span class="p">),</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"AWS_SECRET_ACCESS_KEY"</span><span class="p">),</span>
-    <span class="c1"># OR use IAM role (no explicit credentials needed)</span>
+    <span class="n">region_name</span><span class="o">=</span><span class="s2">"us-east-1"</span><span class="p">,</span>  <span class="c1"># Default: "us-east-1"</span>
+    <span class="n">profile_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>        <span class="c1"># Optional named profile; else the boto3 default chain</span>
 <span class="p">)</span>
 
-<span class="n">provider</span> <span class="o">=</span> <span class="n">AWSKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">AWSKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># requires boto3</span>
 </code></pre></div>
 <p><strong>Key ID Formats</strong>:</p>
 <div class="highlight"><pre><span></span><code>arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012
@@ -6120,13 +6154,12 @@ alias/my-encryption-key
     <span class="n">project_id</span><span class="o">=</span><span class="s2">"my-project"</span><span class="p">,</span>
     <span class="n">location</span><span class="o">=</span><span class="s2">"global"</span><span class="p">,</span>  <span class="c1"># or "us", "eu", etc.</span>
     <span class="n">key_ring</span><span class="o">=</span><span class="s2">"my-keyring"</span><span class="p">,</span>
-    <span class="n">credentials_file</span><span class="o">=</span><span class="s2">"/path/to/service-account.json"</span>
-    <span class="c1"># OR use application default credentials (no file needed)</span>
 <span class="p">)</span>
 
-<span class="n">provider</span> <span class="o">=</span> <span class="n">GCPKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">GCPKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>  <span class="c1"># requires google-cloud-kms: pip install "fraiseql[kms-gcp]"</span>
 </code></pre></div>
-<p><strong>Key ID Format</strong>:</p>
+<p><strong>Key ID Format</strong>: pass the crypto key's name (<code>my-key</code>); the provider builds the
+resource path from the config:</p>
 <div class="highlight"><pre><span></span><code>projects/my-project/locations/global/keyRings/my-keyring/cryptoKeys/my-key
 </code></pre></div>
 <h3 id="local-development-kms">Local Development KMS<a class="headerlink" href="#local-development-kms" title="Permanent link">&para;</a></h3>
@@ -6134,22 +6167,22 @@ alias/my-encryption-key
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalKMSConfig</span><span class="p">,</span> <span class="n">LocalKMSProvider</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">LocalKMSConfig</span><span class="p">(</span>
-    <span class="n">master_key</span><span class="o">=</span><span class="sa">b</span><span class="s2">"development-master-key-32-bytes!"</span>  <span class="c1"># 32-byte key</span>
+    <span class="n">master_key</span><span class="o">=</span><span class="sa">b</span><span class="s2">"development-master-key-32-bytes!"</span>  <span class="c1"># 32 bytes; default: random per process</span>
 <span class="p">)</span>
 
 <span class="n">provider</span> <span class="o">=</span> <span class="n">LocalKMSProvider</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>Warning</strong>: Local KMS stores everything in-memory and is NOT suitable for production!</p>
+<p><strong>Warning</strong>: Local KMS keeps its master key in memory and is NOT suitable for production!</p>
 <hr />
 <h2 id="core-models">Core Models<a class="headerlink" href="#core-models" title="Permanent link">&para;</a></h2>
 <h3 id="keyreference">KeyReference<a class="headerlink" href="#keyreference" title="Permanent link">&para;</a></h3>
 <p>Immutable reference to a key:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">KeyReference</span><span class="p">:</span>
-    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># "vault", "aws", "gcp"</span>
+    <span class="n">provider</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># "vault", "aws", "gcp", "local"</span>
     <span class="n">key_id</span><span class="p">:</span> <span class="nb">str</span>                <span class="c1"># Provider-specific key ID</span>
     <span class="n">key_alias</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>      <span class="c1"># Human-readable alias</span>
-    <span class="n">purpose</span><span class="p">:</span> <span class="n">KeyPurpose</span>        <span class="c1"># ENCRYPT_DECRYPT or SIGN_VERIFY</span>
+    <span class="n">purpose</span><span class="p">:</span> <span class="n">KeyPurpose</span>        <span class="c1"># ENCRYPT_DECRYPT, SIGN_VERIFY or MAC</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>       <span class="c1"># When key was created</span>
 
     <span class="nd">@property</span>
@@ -6160,7 +6193,7 @@ alias/my-encryption-key
 <p>Immutable encrypted data with metadata:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">EncryptedData</span><span class="p">:</span>
-    <span class="n">ciphertext</span><span class="p">:</span> <span class="nb">bytes</span>           <span class="c1"># Encrypted data (nonce + ciphertext + tag)</span>
+    <span class="n">ciphertext</span><span class="p">:</span> <span class="nb">bytes</span>           <span class="c1"># Encrypted data (provider format)</span>
     <span class="n">key_reference</span><span class="p">:</span> <span class="n">KeyReference</span> <span class="c1"># Which key was used</span>
     <span class="n">algorithm</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># Provider-specific algorithm</span>
     <span class="n">encrypted_at</span><span class="p">:</span> <span class="n">datetime</span>      <span class="c1"># When encrypted</span>
@@ -6170,15 +6203,14 @@ alias/my-encryption-key
 <span class="w">        </span><span class="sd">"""Serialize for storage (ciphertext as hex)"""</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">"ciphertext"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ciphertext</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span>
-            <span class="s2">"key_reference"</span><span class="p">:</span> <span class="p">{</span>
-                <span class="s2">"provider"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_reference</span><span class="o">.</span><span class="n">provider</span><span class="p">,</span>
-                <span class="s2">"key_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_reference</span><span class="o">.</span><span class="n">key_id</span><span class="p">,</span>
-            <span class="p">},</span>
+            <span class="s2">"key_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">key_reference</span><span class="o">.</span><span class="n">qualified_id</span><span class="p">,</span>  <span class="c1"># "provider:key_id"</span>
             <span class="s2">"algorithm"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">algorithm</span><span class="p">,</span>
             <span class="s2">"encrypted_at"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">encrypted_at</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
             <span class="s2">"context"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span>
         <span class="p">}</span>
 </code></pre></div>
+<p>There is no <code>from_dict</code>; <a href="#reading-stored-ciphertext">Reading Stored Ciphertext</a>
+shows how to rebuild an <code>EncryptedData</code> from what <code>to_dict()</code> stored.</p>
 <h3 id="datakeypair">DataKeyPair<a class="headerlink" href="#datakeypair" title="Permanent link">&para;</a></h3>
 <p>For envelope encryption:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -6188,7 +6220,7 @@ alias/my-encryption-key
     <span class="n">key_reference</span><span class="p">:</span> <span class="n">KeyReference</span>
 </code></pre></div>
 <h3 id="rotationpolicy">RotationPolicy<a class="headerlink" href="#rotationpolicy" title="Permanent link">&para;</a></h3>
-<p>Key rotation configuration:</p>
+<p>Key rotation configuration, returned by a provider's <code>get_rotation_policy()</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RotationPolicy</span><span class="p">:</span>
     <span class="n">enabled</span><span class="p">:</span> <span class="nb">bool</span>
@@ -6203,7 +6235,7 @@ alias/my-encryption-key
 <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
 
 <span class="c1"># Check if initialized</span>
-<span class="k">if</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">is_initialized</span><span class="p">:</span>
+<span class="k">if</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">has_cached_data_key</span><span class="p">():</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Ready to encrypt/decrypt"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="hot-path-encryption-no-kms">Hot-Path Encryption (No KMS)<a class="headerlink" href="#hot-path-encryption-no-kms" title="Permanent link">&para;</a></h3>
@@ -6213,10 +6245,11 @@ alias/my-encryption-key
 <span class="c1"># Decrypt with cached key (microseconds)</span>
 <span class="n">plaintext_bytes</span> <span class="o">=</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">local_decrypt</span><span class="p">(</span><span class="n">encrypted_bytes</span><span class="p">)</span>
 </code></pre></div>
+<p>Both raise <code>RuntimeError</code> until <code>initialize()</code> has run.</p>
 <h3 id="per-request-encryption-with-kms">Per-Request Encryption (With KMS)<a class="headerlink" href="#per-request-encryption-with-kms" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Encrypt via KMS</span>
 <span class="n">encrypted_data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span>
-    <span class="n">plaintext</span><span class="o">=</span><span class="n">secret_string</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span>
+    <span class="n">secret_string</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span>
     <span class="n">key_id</span><span class="o">=</span><span class="s2">"api-key-encryption-key"</span><span class="p">,</span>
     <span class="n">provider</span><span class="o">=</span><span class="s2">"vault"</span><span class="p">,</span>  <span class="c1"># Optional: explicit provider</span>
     <span class="n">context</span><span class="o">=</span><span class="p">{</span>          <span class="c1"># Optional: authenticated data</span>
@@ -6225,56 +6258,49 @@ alias/my-encryption-key
     <span class="p">}</span>
 <span class="p">)</span>
 
-<span class="c1"># Store encrypted_data in database</span>
-<span class="n">db</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">encrypted_data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+<span class="c1"># Store encrypted_data.to_dict() in a JSONB column (see Integration with GraphQL)</span>
+<span class="n">stored</span> <span class="o">=</span> <span class="n">encrypted_data</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
-<span class="c1"># Decrypt via KMS (reads key_reference from encrypted_data)</span>
+<span class="c1"># Decrypt via KMS (uses the provider in encrypted_data.key_reference)</span>
 <span class="n">plaintext</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">encrypted_data</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="field-encryption">Field Encryption<a class="headerlink" href="#field-encryption" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Encrypt a field</span>
-<span class="n">encrypted_password</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
-    <span class="n">value</span><span class="o">=</span><span class="s2">"my-password"</span><span class="p">,</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Encrypt a field (str or bytes)</span>
+<span class="n">encrypted_value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
+    <span class="s2">"123-45-6789"</span><span class="p">,</span>
     <span class="n">key_id</span><span class="o">=</span><span class="s2">"default-key"</span><span class="p">,</span>
-    <span class="n">field_type</span><span class="o">=</span><span class="s2">"text"</span>  <span class="c1"># text, bytes, json</span>
 <span class="p">)</span>
 
-<span class="c1"># Decrypt a field</span>
-<span class="n">password</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt_field</span><span class="p">(</span>
-    <span class="n">encrypted_password</span><span class="p">,</span>
-    <span class="n">field_type</span><span class="o">=</span><span class="s2">"text"</span>
-<span class="p">)</span>
+<span class="c1"># Decrypt a field: returns str if a str was encrypted, bytes otherwise</span>
+<span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt_field</span><span class="p">(</span><span class="n">encrypted_value</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="key-rotation">Key Rotation<a class="headerlink" href="#key-rotation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Rotate the cached data key (background task)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Replace the cached data key (local_decrypt can't read data the old key encrypted)</span>
 <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">()</span>
 
-<span class="c1"># Schedule rotation</span>
-<span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span>
-    <span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">,</span>
-    <span class="n">trigger</span><span class="o">=</span><span class="s2">"interval"</span><span class="p">,</span>
-    <span class="n">hours</span><span class="o">=</span><span class="mi">1</span>  <span class="c1"># Rotate hourly</span>
-<span class="p">)</span>
-
-<span class="c1"># Get rotation status</span>
-<span class="n">policy</span> <span class="o">=</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">get_rotation_policy</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Next rotation: </span><span class="si">{</span><span class="n">policy</span><span class="o">.</span><span class="n">next_rotation</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="c1"># Rotate the master key in the provider, and read its rotation policy</span>
+<span class="n">provider</span> <span class="o">=</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">get_provider</span><span class="p">(</span><span class="s2">"vault"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">rotate_key</span><span class="p">(</span><span class="s2">"app-encryption-key"</span><span class="p">)</span>
+<span class="n">policy</span> <span class="o">=</span> <span class="k">await</span> <span class="n">provider</span><span class="o">.</span><span class="n">get_rotation_policy</span><span class="p">(</span><span class="s2">"app-encryption-key"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rotation enabled: </span><span class="si">{</span><span class="n">policy</span><span class="o">.</span><span class="n">enabled</span><span class="si">}</span><span class="s2">, next: </span><span class="si">{</span><span class="n">policy</span><span class="o">.</span><span class="n">next_rotation</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="generate-data-key-pair">Generate Data Key Pair<a class="headerlink" href="#generate-data-key-pair" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># For envelope encryption</span>
-<span class="n">key_pair</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">generate_data_key</span><span class="p">(</span>
-    <span class="n">key_id</span><span class="o">=</span><span class="s2">"master-key"</span><span class="p">,</span>
-    <span class="n">key_spec</span><span class="o">=</span><span class="s2">"AES_256"</span>  <span class="c1"># Size of data key</span>
-<span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
 
-<span class="c1"># Use plaintext_key for encryption</span>
-<span class="n">encrypted</span> <span class="o">=</span> <span class="n">key_pair</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.hazmat.primitives.ciphers.aead</span><span class="w"> </span><span class="kn">import</span> <span class="n">AESGCM</span>
 
-<span class="c1"># Store encrypted_key with data</span>
-<span class="n">db</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">encrypted_key</span><span class="o">=</span><span class="n">key_pair</span><span class="o">.</span><span class="n">encrypted_key</span><span class="p">)</span>
+<span class="c1"># For envelope encryption</span>
+<span class="n">key_pair</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">generate_data_key</span><span class="p">(</span><span class="n">key_id</span><span class="o">=</span><span class="s2">"master-key"</span><span class="p">)</span>
 
-<span class="c1"># Later: Decrypt to get plaintext_key again</span>
-<span class="n">decrypted_key</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">key_pair</span><span class="o">.</span><span class="n">encrypted_key</span><span class="p">)</span>
+<span class="c1"># Use plaintext_key for encryption, then drop it</span>
+<span class="n">nonce</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_bytes</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+<span class="n">ciphertext</span> <span class="o">=</span> <span class="n">AESGCM</span><span class="p">(</span><span class="n">key_pair</span><span class="o">.</span><span class="n">plaintext_key</span><span class="p">)</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">nonce</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+<span class="c1"># Store key_pair.encrypted_key.to_dict() with nonce and ciphertext</span>
+
+<span class="c1"># Later: Decrypt the wrapped key to get plaintext_key again</span>
+<span class="n">plaintext_key</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">key_pair</span><span class="o">.</span><span class="n">encrypted_key</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">AESGCM</span><span class="p">(</span><span class="n">plaintext_key</span><span class="p">)</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">nonce</span><span class="p">,</span> <span class="n">ciphertext</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="algorithm-mapping">Algorithm Mapping<a class="headerlink" href="#algorithm-mapping" title="Permanent link">&para;</a></h2>
@@ -6308,23 +6334,24 @@ alias/my-encryption-key
 </tr>
 <tr>
 <td>Local</td>
-<td><code>aes256-gcm96</code></td>
+<td><code>AES-256-GCM</code></td>
 <td>AES-256-GCM (local)</td>
 <td>Development only</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Note</strong>: Algorithm strings are provider-scoped. Don't compare <code>aes256-gcm96</code> from different providers - they're different implementations.</p>
+<p>A wrapped data key (<code>DataKeyPair.encrypted_key</code>) has the algorithm <code>data-key</code>.</p>
+<p><strong>Note</strong>: Algorithm strings are provider-scoped. Don't compare algorithm strings from different providers - they're different implementations.</p>
 <hr />
 <h2 id="security-best-practices">Security Best Practices<a class="headerlink" href="#security-best-practices" title="Permanent link">&para;</a></h2>
 <h3 id="1-use-vault-for-production">1. Use Vault for Production<a class="headerlink" href="#1-use-vault-for-production" title="Permanent link">&para;</a></h3>
 <p>Vault is the recommended provider for production:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Vault with secure token rotation</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Vault with TLS verification</span>
 <span class="n">vault_provider</span> <span class="o">=</span> <span class="n">VaultKMSProvider</span><span class="p">(</span>
     <span class="n">VaultConfig</span><span class="p">(</span>
         <span class="n">vault_addr</span><span class="o">=</span><span class="s2">"https://vault.secure.example.com"</span><span class="p">,</span>
         <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"VAULT_TOKEN"</span><span class="p">),</span>
-        <span class="n">tls_verify</span><span class="o">=</span><span class="kc">True</span>
+        <span class="n">verify_tls</span><span class="o">=</span><span class="kc">True</span>
     <span class="p">)</span>
 <span class="p">)</span>
 
@@ -6332,22 +6359,16 @@ alias/my-encryption-key
 <span class="n">local_provider</span> <span class="o">=</span> <span class="n">LocalKMSProvider</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># Development only!</span>
 </code></pre></div>
 <h3 id="2-rotate-keys-regularly">2. Rotate Keys Regularly<a class="headerlink" href="#2-rotate-keys-regularly" title="Permanent link">&para;</a></h3>
-<p>Set up automated key rotation:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Hourly rotation</span>
-<span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span>
-    <span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">,</span>
-    <span class="n">trigger</span><span class="o">=</span><span class="s2">"interval"</span><span class="p">,</span>
-    <span class="n">hours</span><span class="o">=</span><span class="mi">1</span>
-<span class="p">)</span>
-
-<span class="c1"># BAD - Manual or no rotation</span>
-<span class="c1"># (forgotten rotations = outdated keys)</span>
-</code></pre></div>
+<p>Rotate master keys in the provider (Vault, AWS and GCP keep old key versions, so
+existing ciphertext still decrypts), on the provider's schedule or with
+<code>provider.rotate_key(key_id)</code>. Replace the cached data key with
+<code>rotate_data_key()</code> only as often as the data <code>local_encrypt()</code> produced can be
+discarded.</p>
 <h3 id="3-use-encryption-context">3. Use Encryption Context<a class="headerlink" href="#3-use-encryption-context" title="Permanent link">&para;</a></h3>
-<p>Add additional authenticated data (AAD):</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Context for key derivation</span>
+<p>Add additional authenticated data (AAD); the same context is needed to decrypt:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Context binds the ciphertext to its use</span>
 <span class="n">encrypted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span>
-    <span class="n">secret</span><span class="p">,</span>
+    <span class="n">secret</span><span class="p">,</span>  <span class="c1"># bytes</span>
     <span class="n">context</span><span class="o">=</span><span class="p">{</span>
         <span class="s2">"purpose"</span><span class="p">:</span> <span class="s2">"jwt_signing_key"</span><span class="p">,</span>
         <span class="s2">"environment"</span><span class="p">:</span> <span class="s2">"production"</span><span class="p">,</span>
@@ -6361,19 +6382,20 @@ alias/my-encryption-key
 <h3 id="4-separate-key-per-purpose">4. Separate Key Per Purpose<a class="headerlink" href="#4-separate-key-per-purpose" title="Permanent link">&para;</a></h3>
 <p>Use different keys for different purposes:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Key per purpose</span>
-<span class="n">api_key_encryption</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span>
+<span class="n">api_key_encryption</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
     <span class="n">api_key</span><span class="p">,</span>
     <span class="n">key_id</span><span class="o">=</span><span class="s2">"api-key-encryption-key"</span>
 <span class="p">)</span>
-<span class="n">password_hashing</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span>
-    <span class="n">password</span><span class="p">,</span>
-    <span class="n">key_id</span><span class="o">=</span><span class="s2">"password-hashing-key"</span>
+<span class="n">tax_id_encryption</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
+    <span class="n">tax_id</span><span class="p">,</span>
+    <span class="n">key_id</span><span class="o">=</span><span class="s2">"customer-pii-key"</span>
 <span class="p">)</span>
 
 <span class="c1"># BAD - Single key for everything</span>
-<span class="n">secret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">key_id</span><span class="o">=</span><span class="s2">"universal-key"</span><span class="p">)</span>
-<span class="n">password</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">password</span><span class="p">,</span> <span class="n">key_id</span><span class="o">=</span><span class="s2">"universal-key"</span><span class="p">)</span>
+<span class="n">secret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">key_id</span><span class="o">=</span><span class="s2">"universal-key"</span><span class="p">)</span>
+<span class="n">pii</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span><span class="n">tax_id</span><span class="p">,</span> <span class="n">key_id</span><span class="o">=</span><span class="s2">"universal-key"</span><span class="p">)</span>
 </code></pre></div>
+<p>Store password hashes (bcrypt, argon2), not encrypted passwords.</p>
 <h3 id="5-never-log-plaintext-keys">5. Never Log Plaintext Keys<a class="headerlink" href="#5-never-log-plaintext-keys" title="Permanent link">&para;</a></h3>
 <p>Prevent accidental key exposure:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># GOOD - Don't log secrets</span>
@@ -6386,53 +6408,112 @@ alias/my-encryption-key
 <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Decrypted key: </span><span class="si">{</span><span class="n">decrypted_key</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>  <span class="c1"># SECURITY RISK!</span>
 </code></pre></div>
 <h3 id="6-verify-tls-certificates">6. Verify TLS Certificates<a class="headerlink" href="#6-verify-tls-certificates" title="Permanent link">&para;</a></h3>
-<p>Enable TLS verification for KMS:</p>
+<p>Keep TLS verification on for Vault (the default):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># GOOD - TLS verification enabled</span>
 <span class="n">vault_config</span> <span class="o">=</span> <span class="n">VaultConfig</span><span class="p">(</span>
     <span class="n">vault_addr</span><span class="o">=</span><span class="s2">"https://vault.example.com"</span><span class="p">,</span>
-    <span class="n">tls_verify</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">tls_ca_cert</span><span class="o">=</span><span class="s2">"/etc/ssl/certs/ca-bundle.crt"</span>
+    <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"VAULT_TOKEN"</span><span class="p">),</span>
+    <span class="n">verify_tls</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 
 <span class="c1"># BAD - TLS verification disabled</span>
 <span class="n">vault_config</span> <span class="o">=</span> <span class="n">VaultConfig</span><span class="p">(</span>
     <span class="n">vault_addr</span><span class="o">=</span><span class="s2">"https://vault.example.com"</span><span class="p">,</span>
-    <span class="n">tls_verify</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Security risk!</span>
+    <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"VAULT_TOKEN"</span><span class="p">),</span>
+    <span class="n">verify_tls</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Security risk!</span>
 <span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="integration-with-graphql">Integration with GraphQL<a class="headerlink" href="#integration-with-graphql" title="Permanent link">&para;</a></h2>
-<h3 id="user-password-encryption">User Password Encryption<a class="headerlink" href="#user-password-encryption" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@strawberry</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">register_user</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">Info</span><span class="p">,</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
+<p>These mutations store ciphertext through PostgreSQL functions, with the app from
+<a href="#using-kms-in-graphql">Using KMS in GraphQL</a> putting <code>key_manager</code> in the context.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_customer</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tax_id</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">  </span><span class="c1">-- EncryptedData.to_dict(), never the plaintext</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_customer</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="p">(</span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">tax_id</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;</span><span class="s1">'tax_id'</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">tb_customer</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_customer</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_api_key</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">pk_api_key</span><span class="w"> </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">encrypted_key</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">  </span><span class="c1">-- EncryptedData.to_dict()</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_api_key</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_api_key</span><span class="w"> </span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">encrypted_key</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">((</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;</span><span class="s1">'encrypted_key'</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">tb_api_key</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">id</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
+<h3 id="sensitive-field-encryption">Sensitive Field Encryption<a class="headerlink" href="#sensitive-field-encryption" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_customer"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Customer</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">customer</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Customer</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_customer"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_customer</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tax_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Customer</span><span class="p">:</span>
     <span class="n">key_manager</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"key_manager"</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="c1"># Encrypt password with KMS</span>
-    <span class="n">encrypted_password</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
-        <span class="n">password</span><span class="p">,</span>
-        <span class="n">key_id</span><span class="o">=</span><span class="s2">"password-encryption-key"</span>
+    <span class="c1"># Encrypt with KMS; the ciphertext is stored, never the plaintext</span>
+    <span class="n">encrypted_tax_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
+        <span class="n">tax_id</span><span class="p">,</span>
+        <span class="n">key_id</span><span class="o">=</span><span class="s2">"customer-pii-key"</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"purpose"</span><span class="p">:</span> <span class="s2">"tax_id"</span><span class="p">},</span>
     <span class="p">)</span>
 
-    <span class="c1"># Store encrypted password</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="p">(</span>
-        <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">,</span>
-        <span class="n">encrypted_password</span><span class="o">=</span><span class="n">encrypted_password</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+    <span class="c1"># fn_create_customer(input jsonb, OUT id uuid) inserts into tb_customer</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_create_customer"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">"tax_id"</span><span class="p">:</span> <span class="n">encrypted_tax_id</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()},</span>
     <span class="p">)</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">user</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_customer"</span><span class="p">,</span> <span class="s2">"createCustomer"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]}</span>
+    <span class="p">)</span>
 </code></pre></div>
 <h3 id="api-key-encryption">API Key Encryption<a class="headerlink" href="#api-key-encryption" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@strawberry</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_api_key</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">:</span> <span class="n">strawberry</span><span class="o">.</span><span class="n">types</span><span class="o">.</span><span class="n">Info</span><span class="p">,</span>
-    <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span>  <span class="c1"># UUID v4 for GraphQL ID</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ApiKeyResponse</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ApiKeyCreated</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># returned once, at creation</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_api_key</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ApiKeyCreated</span><span class="p">:</span>
     <span class="n">key_manager</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"key_manager"</span><span class="p">]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Generate random API key</span>
     <span class="n">api_key</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_urlsafe</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
@@ -6441,23 +6522,51 @@ alias/my-encryption-key
     <span class="n">encrypted_key</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt_field</span><span class="p">(</span>
         <span class="n">api_key</span><span class="p">,</span>
         <span class="n">key_id</span><span class="o">=</span><span class="s2">"api-key-encryption-key"</span><span class="p">,</span>
-        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}</span>
+        <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">)},</span>
     <span class="p">)</span>
 
-    <span class="c1"># Store encrypted key (never store plaintext!)</span>
-    <span class="n">db_key</span> <span class="o">=</span> <span class="n">ApiKey</span><span class="p">(</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span>
-        <span class="n">encrypted_key</span><span class="o">=</span><span class="n">encrypted_key</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
-        <span class="n">name</span><span class="o">=</span><span class="sa">f</span><span class="s2">"API Key (</span><span class="si">{</span><span class="n">api_key</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">...)"</span>
+    <span class="c1"># Store the encrypted key (never the plaintext)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_create_api_key"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">),</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"encrypted_key"</span><span class="p">:</span> <span class="n">encrypted_key</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()},</span>
     <span class="p">)</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">db_key</span><span class="p">)</span>
 
-    <span class="c1"># Return plaintext key ONLY at creation time</span>
-    <span class="k">return</span> <span class="n">ApiKeyResponse</span><span class="p">(</span><span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="c1"># Return the plaintext key ONLY at creation time</span>
+    <span class="k">return</span> <span class="n">ApiKeyCreated</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="reading-stored-ciphertext">Reading Stored Ciphertext<a class="headerlink" href="#reading-stored-ciphertext" title="Permanent link">&para;</a></h3>
+<p><code>to_dict()</code> keeps everything <code>decrypt()</code> needs; rebuild the <code>EncryptedData</code> from the
+stored JSONB:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="n">EncryptedData</span><span class="p">,</span> <span class="n">KeyPurpose</span><span class="p">,</span> <span class="n">KeyReference</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">encrypted_data_from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EncryptedData</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Rebuild the EncryptedData that to_dict() serialized."""</span>
+    <span class="n">provider</span><span class="p">,</span> <span class="n">key_id</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"key_id"</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># qualified id "provider:key_id"</span>
+    <span class="n">encrypted_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"encrypted_at"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">EncryptedData</span><span class="p">(</span>
+        <span class="n">ciphertext</span><span class="o">=</span><span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"ciphertext"</span><span class="p">]),</span>
+        <span class="n">key_reference</span><span class="o">=</span><span class="n">KeyReference</span><span class="p">(</span>
+            <span class="n">provider</span><span class="o">=</span><span class="n">provider</span><span class="p">,</span>
+            <span class="n">key_id</span><span class="o">=</span><span class="n">key_id</span><span class="p">,</span>
+            <span class="n">key_alias</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">purpose</span><span class="o">=</span><span class="n">KeyPurpose</span><span class="o">.</span><span class="n">ENCRYPT_DECRYPT</span><span class="p">,</span>
+            <span class="n">created_at</span><span class="o">=</span><span class="n">encrypted_at</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">algorithm</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"algorithm"</span><span class="p">],</span>
+        <span class="n">encrypted_at</span><span class="o">=</span><span class="n">encrypted_at</span><span class="p">,</span>
+        <span class="n">context</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"context"</span><span class="p">],</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># e.g. with the tax_id column of a tb_customer row</span>
+<span class="n">tax_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt_field</span><span class="p">(</span><span class="n">encrypted_data_from_dict</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"tax_id"</span><span class="p">]))</span>
 </code></pre></div>
 <hr />
 <h2 id="exception-handling">Exception Handling<a class="headerlink" href="#exception-handling" title="Permanent link">&para;</a></h2>
-<p>FraiseQL KMS defines specific exceptions:</p>
+<p>FraiseQL KMS defines specific exceptions, all subclasses of <code>KMSError</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.kms</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">KMSError</span><span class="p">,</span>
     <span class="n">EncryptionError</span><span class="p">,</span>
@@ -6466,18 +6575,53 @@ alias/my-encryption-key
     <span class="n">KeyRotationError</span><span class="p">,</span>
     <span class="n">ProviderConnectionError</span>
 <span class="p">)</span>
-
-<span class="k">try</span><span class="p">:</span>
+</code></pre></div>
+<p>The provider operations surface one exception each, with the specific cause
+(<code>KeyNotFoundError</code>, <code>ProviderConnectionError</code>, a client library error) chained as
+<code>__cause__</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Raises</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>encrypt()</code>, <code>encrypt_field()</code>, <code>generate_data_key()</code>, <code>initialize()</code>, <code>rotate_data_key()</code></td>
+<td><code>EncryptionError</code></td>
+</tr>
+<tr>
+<td><code>decrypt()</code>, <code>decrypt_field()</code></td>
+<td><code>DecryptionError</code></td>
+</tr>
+<tr>
+<td><code>provider.rotate_key()</code></td>
+<td><code>KeyRotationError</code></td>
+</tr>
+<tr>
+<td><code>local_encrypt()</code> / <code>local_decrypt()</code> before <code>initialize()</code></td>
+<td><code>RuntimeError</code></td>
+</tr>
+<tr>
+<td><code>local_decrypt()</code> of tampered data or data from another data key</td>
+<td><code>cryptography.exceptions.InvalidTag</code></td>
+</tr>
+<tr>
+<td>unknown <code>provider=</code> name</td>
+<td><code>ValueError</code></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
     <span class="n">encrypted</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">KeyNotFoundError</span><span class="p">:</span>
-    <span class="c1"># Key doesn't exist</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Key not found in KMS"</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">ProviderConnectionError</span><span class="p">:</span>
-    <span class="c1"># Can't reach KMS provider</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"KMS provider unreachable"</span><span class="p">)</span>
 <span class="k">except</span> <span class="n">EncryptionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="c1"># General encryption failure</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Encryption failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">__cause__</span><span class="p">,</span> <span class="n">KeyNotFoundError</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"Key not found in KMS"</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">__cause__</span><span class="p">,</span> <span class="n">ProviderConnectionError</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">"KMS provider unreachable"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Encryption failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
@@ -6486,24 +6630,23 @@ alias/my-encryption-key
 <span class="k">try</span><span class="p">:</span>
     <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">initialize</span><span class="p">()</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">"Vault connected"</span><span class="p">)</span>
-<span class="k">except</span> <span class="n">ProviderConnectionError</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Cannot reach Vault"</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">EncryptionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cannot get a data key from Vault: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">__cause__</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
     <span class="c1"># Check:</span>
     <span class="c1"># 1. Vault URL is correct</span>
     <span class="c1"># 2. Vault is running</span>
     <span class="c1"># 3. Network/firewall allows connection</span>
     <span class="c1"># 4. TLS certificate is valid</span>
+    <span class="c1"># 5. The token's policy allows transit/datakey/plaintext/&lt;key&gt;</span>
 </code></pre></div>
-<h3 id="key-rotation-failures">Key Rotation Failures<a class="headerlink" href="#key-rotation-failures" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Monitor rotation status</span>
-<span class="n">policy</span> <span class="o">=</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">get_rotation_policy</span><span class="p">()</span>
+<h3 id="key-rotation-status">Key Rotation Status<a class="headerlink" href="#key-rotation-status" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Ask the provider for the master key's rotation policy</span>
+<span class="n">policy</span> <span class="o">=</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">get_provider</span><span class="p">(</span><span class="s2">"vault"</span><span class="p">)</span><span class="o">.</span><span class="n">get_rotation_policy</span><span class="p">(</span><span class="s2">"app-encryption-key"</span><span class="p">)</span>
 
-<span class="k">if</span> <span class="n">policy</span><span class="o">.</span><span class="n">last_rotation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Never rotated - initialize first"</span><span class="p">)</span>
-
-<span class="n">time_since_rotation</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">policy</span><span class="o">.</span><span class="n">last_rotation</span>
-<span class="k">if</span> <span class="n">time_since_rotation</span> <span class="o">&gt;</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"Rotation may be delayed"</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">policy</span><span class="o">.</span><span class="n">enabled</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Automatic rotation is off for this key"</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">policy</span><span class="o">.</span><span class="n">last_rotation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">"Never rotated"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="decryption-errors">Decryption Errors<a class="headerlink" href="#decryption-errors" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Common causes:</span>
@@ -6522,34 +6665,22 @@ alias/my-encryption-key
 </code></pre></div>
 <hr />
 <h2 id="performance-tuning">Performance Tuning<a class="headerlink" href="#performance-tuning" title="Permanent link">&para;</a></h2>
-<h3 id="initialization-timeout">Initialization Timeout<a class="headerlink" href="#initialization-timeout" title="Permanent link">&para;</a></h3>
-<p>If <code>initialize()</code> times out:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Increase timeout</span>
-<span class="n">key_manager</span> <span class="o">=</span> <span class="n">KeyManager</span><span class="p">(</span>
-    <span class="n">providers</span><span class="o">=</span><span class="n">providers</span><span class="p">,</span>
-    <span class="n">initialization_timeout</span><span class="o">=</span><span class="mi">10</span>  <span class="c1"># 10 seconds</span>
+<h3 id="request-timeout">Request Timeout<a class="headerlink" href="#request-timeout" title="Permanent link">&para;</a></h3>
+<p>If <code>initialize()</code> or <code>encrypt()</code> times out against Vault, raise the HTTP timeout:</p>
+<div class="highlight"><pre><span></span><code><span class="n">vault_config</span> <span class="o">=</span> <span class="n">VaultConfig</span><span class="p">(</span>
+    <span class="n">vault_addr</span><span class="o">=</span><span class="s2">"https://vault.example.com:8200"</span><span class="p">,</span>
+    <span class="n">token</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"VAULT_TOKEN"</span><span class="p">),</span>
+    <span class="n">timeout</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>  <span class="c1"># seconds (default: 30.0)</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="rotation-frequency">Rotation Frequency<a class="headerlink" href="#rotation-frequency" title="Permanent link">&para;</a></h3>
-<p>Balance between security and performance:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># More frequent (more secure, slight overhead)</span>
-<span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">,</span> <span class="n">trigger</span><span class="o">=</span><span class="s2">"interval"</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-
-<span class="c1"># Less frequent (slight overhead reduction, older keys)</span>
-<span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span><span class="n">key_manager</span><span class="o">.</span><span class="n">rotate_data_key</span><span class="p">,</span> <span class="n">trigger</span><span class="o">=</span><span class="s2">"interval"</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
-
-<span class="c1"># Recommended: 1-4 hours for most applications</span>
-</code></pre></div>
+<p>A shorter cached-data-key lifetime limits how much data one key protects, but each
+<code>rotate_data_key()</code> is a KMS call and makes earlier <code>local_encrypt()</code> output
+unreadable: pick the interval from how long that data must stay readable.</p>
 <h3 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Cache encrypted API keys (reduces KMS calls)</span>
-<span class="nd">@cache</span><span class="o">.</span><span class="n">lru</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_api_key_decrypted</span><span class="p">(</span><span class="n">api_key_id</span><span class="p">):</span>
-    <span class="n">encrypted</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_api_key</span><span class="p">(</span><span class="n">api_key_id</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">key_manager</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">encrypted</span><span class="p">)</span>
-
-<span class="c1"># Don't cache plaintext secrets (security risk)</span>
-<span class="c1"># Always decrypt on demand for passwords/tokens</span>
-</code></pre></div>
+<p>Decrypted secrets that are reused (for example a third-party API key the app calls
+with) can be cached in memory to save KMS calls; don't cache decrypted passwords or
+per-user tokens, decrypt them on demand.</p>
 <hr />
 <h2 id="compliance-standards">Compliance &amp; Standards<a class="headerlink" href="#compliance-standards" title="Permanent link">&para;</a></h2>
 <p>FraiseQL KMS supports:</p>
@@ -6566,9 +6697,9 @@ alias/my-encryption-key
 <p>FraiseQL KMS provides:</p>
 <p>✅ <strong>Multiple providers</strong> - Vault, AWS, GCP, Local
 ✅ <strong>Two patterns</strong> - Fast (local) and secure (per-request)
-✅ <strong>Envelope encryption</strong> - Local AES-256-GCM with encrypted master key
-✅ <strong>Automatic provider selection</strong> - Transparent multi-provider support
-✅ <strong>Key rotation</strong> - Automated with backward compatibility
+✅ <strong>Envelope encryption</strong> - Local AES-256-GCM with a KMS-wrapped data key
+✅ <strong>Provider tracking</strong> - <code>EncryptedData</code> records the provider and key that encrypted it
+✅ <strong>Key rotation</strong> - Cached data key replacement and provider master-key rotation
 ✅ <strong>Field encryption</strong> - Convenient API for common use cases
 ✅ <strong>Compliance-ready</strong> - NIST, PCI-DSS, HIPAA, ISO 27001
 ✅ <strong>Production-grade</strong> - Microsecond latency (cached), 50-200ms (per-request)</p>
@@ -6648,10 +6779,10 @@ alias/my-encryption-key
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

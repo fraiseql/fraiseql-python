@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4948,8 +4948,8 @@
 <p>FraiseQL enables you to write complete business logic in a single Python file that AI models can easily understand and modify. Data composition happens in SQL views, business logic stays in clean Python:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># One file contains all business logic - AI models understand this perfectly</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
@@ -4958,15 +4958,6 @@
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">balance</span><span class="p">:</span> <span class="n">Decimal</span>
-
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_order"</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Order with all items and totals."""</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="s1">'OrderItem'</span><span class="p">]</span>
-    <span class="n">total</span><span class="p">:</span> <span class="n">Decimal</span>
-    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_order_item"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderItem</span><span class="p">:</span>
@@ -4977,7 +4968,16 @@
     <span class="n">price</span><span class="p">:</span> <span class="n">Decimal</span>
     <span class="n">product_name</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@input</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_order"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Order with all items and totals."""</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">items</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderItem</span><span class="p">]</span>
+    <span class="n">total</span><span class="p">:</span> <span class="n">Decimal</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ProcessOrderInput</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Input for processing an order."""</span>
     <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span>
@@ -4991,76 +4991,49 @@
     <span class="n">new_balance</span><span class="p">:</span> <span class="n">Decimal</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ProcessOrder</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">ProcessOrderInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessOrderResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Process an order payment and update balances."""</span>
 
-    <span class="nb">input</span><span class="p">:</span> <span class="n">ProcessOrderInput</span>
-    <span class="n">result</span><span class="p">:</span> <span class="n">ProcessOrderResult</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">charge</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProcessOrderResult</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span> <span class="k">as</span> <span class="n">cur</span><span class="p">:</span>
+            <span class="c1"># Lock the order and its user until the transaction ends</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"SELECT o.total, u.id AS user_id, u.balance "</span>
+                <span class="s2">"FROM tb_order o JOIN tb_user u ON u.id = o.user_id "</span>
+                <span class="s2">"WHERE o.id = </span><span class="si">%s</span><span class="s2"> FOR UPDATE"</span><span class="p">,</span>
+                <span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">order_id</span><span class="p">,),</span>
+            <span class="p">)</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ProcessOrderResult</span><span class="p">(</span>
+                    <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">order_id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">"Order not found"</span>
+                <span class="p">)</span>
 
-    <span class="nd">@resolver</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">input_data</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Complete order processing business logic."""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+            <span class="c1"># Business logic in clear Python</span>
+            <span class="k">if</span> <span class="n">row</span><span class="p">[</span><span class="s2">"balance"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">row</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]:</span>
+                <span class="k">return</span> <span class="n">ProcessOrderResult</span><span class="p">(</span>
+                    <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">order_id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Insufficient balance: </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'balance'</span><span class="p">]</span><span class="si">}</span><span class="s2"> &lt; </span><span class="si">{</span><span class="n">row</span><span class="p">[</span><span class="s1">'total'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="p">)</span>
 
-        <span class="c1"># Get order with all relationships (pre-composed in view)</span>
-        <span class="n">order</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"order_with_items"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">input_data</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">]})</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">order</span><span class="p">:</span>
+            <span class="n">new_balance</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"balance"</span><span class="p">]</span> <span class="o">-</span> <span class="n">row</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"UPDATE tb_user SET balance = </span><span class="si">%s</span><span class="s2"> WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="n">new_balance</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">])</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"UPDATE tb_order SET status = 'processed' WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">order_id</span><span class="p">,)</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="n">ProcessOrderResult</span><span class="p">(</span>
-                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">order_id</span><span class="o">=</span><span class="n">input_data</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">],</span>
-                <span class="n">message</span><span class="o">=</span><span class="s2">"Order not found"</span>
+                <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">order_id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">order_id</span><span class="p">,</span>
+                <span class="n">message</span><span class="o">=</span><span class="s2">"Order processed successfully"</span><span class="p">,</span>
+                <span class="n">new_balance</span><span class="o">=</span><span class="n">new_balance</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="c1"># Get user balance (from view)</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"user_with_balance"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]})</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">user</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ProcessOrderResult</span><span class="p">(</span>
-                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">order_id</span><span class="o">=</span><span class="n">input_data</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">],</span>
-                <span class="n">message</span><span class="o">=</span><span class="s2">"User not found"</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Business logic in clear Python</span>
-        <span class="n">user_balance</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s2">"balance"</span><span class="p">]))</span>
-        <span class="n">order_total</span> <span class="o">=</span> <span class="n">Decimal</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">order</span><span class="p">[</span><span class="s2">"total"</span><span class="p">]))</span>
-
-        <span class="k">if</span> <span class="n">user_balance</span> <span class="o">&lt;</span> <span class="n">order_total</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ProcessOrderResult</span><span class="p">(</span>
-                <span class="n">success</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="n">order_id</span><span class="o">=</span><span class="n">input_data</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">],</span>
-                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Insufficient balance: </span><span class="si">{</span><span class="n">user_balance</span><span class="si">}</span><span class="s2"> &lt; </span><span class="si">{</span><span class="n">order_total</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Atomic updates using repository</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">repo</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-            <span class="c1"># Update user balance</span>
-            <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="s2">"users"</span><span class="p">,</span>
-                <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]},</span>
-                <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">"balance"</span><span class="p">:</span> <span class="n">user_balance</span> <span class="o">-</span> <span class="n">order_total</span><span class="p">}</span>
-            <span class="p">)</span>
-
-            <span class="c1"># Update order status</span>
-            <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
-                <span class="s2">"orders"</span><span class="p">,</span>
-                <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">input_data</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">]},</span>
-                <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"processed"</span><span class="p">}</span>
-            <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">ProcessOrderResult</span><span class="p">(</span>
-            <span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-            <span class="n">order_id</span><span class="o">=</span><span class="n">input_data</span><span class="p">[</span><span class="s2">"order_id"</span><span class="p">],</span>
-            <span class="n">message</span><span class="o">=</span><span class="s2">"Order processed successfully"</span><span class="p">,</span>
-            <span class="n">new_balance</span><span class="o">=</span><span class="n">user_balance</span> <span class="o">-</span> <span class="n">order_total</span>
-        <span class="p">)</span>
+    <span class="c1"># One transaction: both updates commit together, or neither does</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">charge</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>AI models can:</strong></p>
-<ul>
-<li>Read and understand the complete business logic flow</li>
-<li>Modify validation rules without breaking encapsulation</li>
-<li>Add new features by extending the resolver method</li>
-<li>Debug issues by tracing through the Python logic</li>
-</ul>
 <p><strong>AI models can:</strong></p>
 <ul>
 <li>Read and understand the complete business logic flow</li>
@@ -5906,10 +5879,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

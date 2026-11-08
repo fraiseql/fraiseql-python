@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Migrating from other GraphQL frameworks to FraiseQL">
+        <meta name="description" content="Calling the Rust mutation response builder from code written for the old Python pipeline">
       
       
       
@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4568,45 +4568,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#key-changes" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Key Changes
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Key Changes">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#performance-improvements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Improvements
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#api-compatibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        API Compatibility
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#migration-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4630,10 +4591,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-update-function-calls" class="md-nav__link">
+  <a href="#2-pass-the-selection-document" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Update Function Calls
+        2. Pass the Selection Document
       
     </span>
   </a>
@@ -4641,21 +4602,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-handle-return-type-changes" class="md-nav__link">
+  <a href="#3-handle-the-return-type" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Handle Return Type Changes
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-update-type-annotations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Update Type Annotations
+        3. Handle the Return Type
       
     </span>
   </a>
@@ -4691,10 +4641,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#full-v2-format" class="md-nav__link">
+  <a href="#full-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Full v2 Format
+        Full Format
       
     </span>
   </a>
@@ -4707,102 +4657,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#status-taxonomy" class="md-nav__link">
+  <a href="#testing" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Status Taxonomy
+        Testing
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Status Taxonomy">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#success-states" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Success States
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#error-states" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Error States
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#noop-states" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Noop States
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#cascade-data-handling" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Cascade Data Handling
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#testing-migration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Testing Migration
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Testing Migration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#update-test-assertions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Update Test Assertions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#performance-testing" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Testing
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -4818,93 +4679,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphql-schema-updates" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphQL Schema Updates
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rollback-plan" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rollback Plan
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-expectations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Performance Expectations
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#troubleshooting" class="md-nav__link">
     <span class="md-ellipsis">
       
         Troubleshooting
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Troubleshooting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#common-issues" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Common Issues
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#debug-mode" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Debug Mode
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#complete-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complete Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Next Steps
       
     </span>
   </a>
@@ -4933,32 +4711,32 @@
 
 <h1 id="migration-guide-python-to-rust-mutation-pipeline">Migration Guide: Python to Rust Mutation Pipeline<a class="headerlink" href="#migration-guide-python-to-rust-mutation-pipeline" title="Permanent link">&para;</a></h1>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>This guide helps you migrate from the Python-based mutation pipeline to the new ultra-fast Rust implementation. The Rust pipeline provides 10-50x performance improvements while maintaining full API compatibility.</p>
-<h2 id="key-changes">Key Changes<a class="headerlink" href="#key-changes" title="Permanent link">&para;</a></h2>
-<h3 id="performance-improvements">Performance Improvements<a class="headerlink" href="#performance-improvements" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>10-50x faster</strong> response building</li>
-<li><strong>Zero-copy</strong> JSON parsing where possible</li>
-<li><strong>SIMD acceleration</strong> for string transformations</li>
-<li><strong>Arena-based memory management</strong></li>
-</ul>
-<h3 id="api-compatibility">API Compatibility<a class="headerlink" href="#api-compatibility" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Drop-in replacement for existing Python code</li>
-<li>Same function signatures and return formats</li>
-<li>Maintains all existing GraphQL response structures</li>
-</ul>
+<p>FraiseQL builds every mutation response in Rust: the Python mutation pipeline is gone,
+and there is nothing to switch back to. A class mutation (<code>@fraiseql.mutation</code>) calls
+the Rust builder itself, with the selection of the request, so an application that
+only defines mutations has nothing to migrate.</p>
+<p>This page is for code that called the response builder directly (tests, custom
+endpoints). <code>fraiseql.mutations</code> has no <code>build_mutation_response</code>; the function lives
+in the Rust extension, which ships inside the <code>fraiseql</code> package.</p>
 <h2 id="migration-steps">Migration Steps<a class="headerlink" href="#migration-steps" title="Permanent link">&para;</a></h2>
 <h3 id="1-update-imports">1. Update Imports<a class="headerlink" href="#1-update-imports" title="Permanent link">&para;</a></h3>
 <p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.mutations</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
+<div class="highlight"><pre><span></span><code>from fraiseql.mutations import build_mutation_response   # no longer exists
+from fraiseql_rs import build_mutation_response          # not a top-level module
 </code></pre></div>
 <p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">fraiseql_rs</span>
+
+<span class="n">build_mutation_response</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_mutation_response</span>
 </code></pre></div>
-<h3 id="2-update-function-calls">2. Update Function Calls<a class="headerlink" href="#2-update-function-calls" title="Permanent link">&para;</a></h3>
-<p>No changes required! The function signature remains identical:</p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
+<h3 id="2-pass-the-selection-document">2. Pass the Selection Document<a class="headerlink" href="#2-pass-the-selection-document" title="Permanent link">&para;</a></h3>
+<p>The call takes a selection document in <code>entity_selections</code> (format 2,
+<code>fraiseql_rs.MUTATION_SELECTION_FORMAT</code>): what the query selected on the success and
+error types, under its response keys. <code>null</code> for a type returns it unfiltered. It is
+required: a call without it raises <code>ValueError</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
     <span class="n">mutation_json</span><span class="o">=</span><span class="s1">'{"id": "123", "name": "John"}'</span><span class="p">,</span>
     <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
     <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
@@ -4967,42 +4745,22 @@
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
     <span class="n">cascade_selections</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">success_type_fields</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="s1">'{"format": 2, "success": null, "error": null}'</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="3-handle-return-type-changes">3. Handle Return Type Changes<a class="headerlink" href="#3-handle-return-type-changes" title="Permanent link">&para;</a></h3>
-<p><strong>Important:</strong> The Rust pipeline returns <code>bytes</code> instead of <code>dict</code>.</p>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Python pipeline returns dict</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-<span class="n">user</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">][</span><span class="s2">"user"</span><span class="p">]</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Rust pipeline returns bytes</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
+<p>A class mutation builds this document from the resolver's <code>info</code>, with
+<code>"typename": "selected"</code> so that <code>__typename</code> is written only where the query selects
+it. See <a href="../examples/#selecting-fields">Rust Mutation Pipeline Examples</a> for a filtered
+document.</p>
+<h3 id="3-handle-the-return-type">3. Handle the Return Type<a class="headerlink" href="#3-handle-the-return-type" title="Permanent link">&para;</a></h3>
+<p>The function returns the response body as <code>bytes</code>, ready to send:</p>
+<div class="highlight"><pre><span></span><code><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
 
 <span class="c1"># Parse to dict if needed</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="n">user</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">][</span><span class="s2">"user"</span><span class="p">]</span>
-</code></pre></div>
-<h3 id="4-update-type-annotations">4. Update Type Annotations<a class="headerlink" href="#4-update-type-annotations" title="Permanent link">&para;</a></h3>
-<p>If you're using type annotations:</p>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">result</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Any</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+<span class="c1"># {'__typename': 'User', 'id': '123', 'name': 'John'}</span>
 </code></pre></div>
 <h2 id="format-support">Format Support<a class="headerlink" href="#format-support" title="Permanent link">&para;</a></h2>
 <h3 id="simple-format-auto-detected">Simple Format (Auto-detected)<a class="headerlink" href="#simple-format-auto-detected" title="Permanent link">&para;</a></h3>
@@ -5013,7 +4771,7 @@
 <li>Entire JSON becomes the entity</li>
 <li>Assumes success status</li>
 </ul>
-<h3 id="full-v2-format">Full v2 Format<a class="headerlink" href="#full-v2-format" title="Permanent link">&para;</a></h3>
+<h3 id="full-format">Full Format<a class="headerlink" href="#full-format" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"created"</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User created successfully"</span><span class="p">,</span>
@@ -5025,193 +4783,46 @@
 <ul>
 <li>Complete mutation response structure</li>
 <li>Rich status taxonomy</li>
-<li>Cascade data support</li>
+<li>Cascade data support (written only when the query selects <code>cascade</code>)</li>
 </ul>
-<h2 id="status-taxonomy">Status Taxonomy<a class="headerlink" href="#status-taxonomy" title="Permanent link">&para;</a></h2>
-<p>The Rust pipeline supports a comprehensive status taxonomy:</p>
-<h3 id="success-states">Success States<a class="headerlink" href="#success-states" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>success</code>, <code>created</code>, <code>updated</code>, <code>deleted</code> → HTTP 200</li>
-</ul>
-<h3 id="error-states">Error States<a class="headerlink" href="#error-states" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>failed:*</code> → HTTP 422 or 500</li>
-<li><code>unauthorized:*</code> → HTTP 401</li>
-<li><code>forbidden:*</code> → HTTP 403</li>
-<li><code>not_found:*</code> → HTTP 404</li>
-<li><code>conflict:*</code> → HTTP 409</li>
-<li><code>timeout:*</code> → HTTP 408</li>
-</ul>
-<h3 id="noop-states">Noop States<a class="headerlink" href="#noop-states" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>noop:*</code> → HTTP 200 (success with no changes)</li>
-</ul>
-<h2 id="cascade-data-handling">Cascade Data Handling<a class="headerlink" href="#cascade-data-handling" title="Permanent link">&para;</a></h2>
-<p>Cascade data represents side effects of mutations:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"updated"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span><span class="w"> </span><span class="nt">"post_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">}],</span>
-<span class="w">  </span><span class="nt">"deleted"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"post-456"</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">"invalidations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"User:123"</span><span class="p">],</span>
-<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"create"</span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p><strong>Important:</strong> Cascade data appears at the mutation response level, never inside entity objects.</p>
-<h2 id="testing-migration">Testing Migration<a class="headerlink" href="#testing-migration" title="Permanent link">&para;</a></h2>
-<h3 id="update-test-assertions">Update Test Assertions<a class="headerlink" href="#update-test-assertions" title="Permanent link">&para;</a></h3>
-<p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="k">assert</span> <span class="n">result</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">][</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"CreateUserSuccess"</span>
-</code></pre></div>
-<p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<p>The status taxonomy and the codes of the error type are in
+<a href="../rust-mutation-pipeline/#status-taxonomy">Rust Mutation Pipeline Architecture</a>.</p>
+<h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
+    <span class="n">mutation_json</span><span class="o">=</span><span class="s1">'{"id": "123", "name": "John"}'</span><span class="p">,</span>
+    <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
+    <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+    <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
+    <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="s1">'{"format": 2, "success": null, "error": null}'</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">parsed</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="k">assert</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">][</span><span class="s2">"__typename"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"CreateUserSuccess"</span>
 </code></pre></div>
-<h3 id="performance-testing">Performance Testing<a class="headerlink" href="#performance-testing" title="Permanent link">&para;</a></h3>
-<p>Add benchmarks to verify performance improvements:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-
-<span class="c1"># Test Rust pipeline performance</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-<span class="n">rust_time</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">start</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust pipeline: </span><span class="si">{</span><span class="n">rust_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s"</span><span class="p">)</span>
-</code></pre></div>
 <h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
-<p>The Rust pipeline provides detailed error messages:</p>
+<p>Malformed JSON, a missing or wrong selection document, or a failed transformation
+raise <code>ValueError</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">try</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">build_mutation_response</span><span class="p">(</span>
+        <span class="n">mutation_json</span><span class="o">=</span><span class="s2">"{not json"</span><span class="p">,</span>
+        <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
+        <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+        <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
+        <span class="n">entity_selections</span><span class="o">=</span><span class="s1">'{"format": 2, "success": null, "error": null}'</span><span class="p">,</span>
+    <span class="p">)</span>
 <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-    <span class="c1"># Handle JSON parsing or transformation errors</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust pipeline error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
-<h2 id="graphql-schema-updates">GraphQL Schema Updates<a class="headerlink" href="#graphql-schema-updates" title="Permanent link">&para;</a></h2>
-<p>No schema changes required! The Rust pipeline maintains full compatibility with existing GraphQL schemas.</p>
-<h2 id="rollback-plan">Rollback Plan<a class="headerlink" href="#rollback-plan" title="Permanent link">&para;</a></h2>
-<p>If issues arise, you can rollback by changing imports back:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Rollback to Python pipeline</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.mutations</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-</code></pre></div>
-<h2 id="performance-expectations">Performance Expectations<a class="headerlink" href="#performance-expectations" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Operation</th>
-<th>Python Pipeline</th>
-<th>Rust Pipeline</th>
-<th>Improvement</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Simple entity</td>
-<td>~50μs</td>
-<td>~2μs</td>
-<td>25x</td>
-</tr>
-<tr>
-<td>Complex cascade</td>
-<td>~200μs</td>
-<td>~8μs</td>
-<td>25x</td>
-</tr>
-<tr>
-<td>Array entities</td>
-<td>~150μs</td>
-<td>~6μs</td>
-<td>25x</td>
-</tr>
-<tr>
-<td>Error responses</td>
-<td>~75μs</td>
-<td>~3μs</td>
-<td>25x</td>
-</tr>
-</tbody>
-</table>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="common-issues">Common Issues<a class="headerlink" href="#common-issues" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>TypeError: expected dict, got bytes</strong></li>
-<li>
-<p>Solution: Parse bytes to dict with <code>json.loads(result.decode('utf-8'))</code></p>
-</li>
-<li>
-<p><strong>UnicodeDecodeError</strong></p>
-</li>
-<li>
-<p>Solution: Ensure proper UTF-8 encoding: <code>result.decode('utf-8')</code></p>
-</li>
-<li>
-<p><strong>Performance regression</strong></p>
-</li>
-<li>Verify you're using <code>fraiseql_rs.build_mutation_response</code>, not the Python version</li>
+<li><strong><code>TypeError</code> / <code>AttributeError</code> on the result</strong>: it is <code>bytes</code>; parse it with
+   <code>json.loads(result)</code>.</li>
+<li><strong><code>ValueError: build_mutation_response needs a selection document of format 2</code></strong>:
+   pass <code>entity_selections</code>. If you do and still get it, the <code>fraiseql</code> package and its
+   Rust extension are from different versions: reinstall fraiseql (or, in a development
+   checkout, rebuild the extension with <code>uv run maturin develop</code>).</li>
 </ol>
-<h3 id="debug-mode">Debug Mode<a class="headerlink" href="#debug-mode" title="Permanent link">&para;</a></h3>
-<p>Enable debug logging to see format detection:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
-
-<span class="c1"># This will log format detection and transformation steps</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</code></pre></div>
-<h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
-<p><strong>Before (Python):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.mutations</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"created"</span><span class="p">,</span>
-        <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"User created"</span><span class="p">,</span>
-        <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"123"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">}</span>
-    <span class="p">})</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
-        <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
-        <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
-        <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
-        <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">result</span>
-</code></pre></div>
-<p><strong>After (Rust):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-        <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"created"</span><span class="p">,</span>
-        <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"User created"</span><span class="p">,</span>
-        <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"123"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">}</span>
-    <span class="p">})</span>
-
-    <span class="n">result_bytes</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
-        <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
-        <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
-        <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
-        <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Parse bytes to dict for compatibility</span>
-    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
-</code></pre></div>
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
-<ol>
-<li>Update imports in your codebase</li>
-<li>Run existing tests to ensure compatibility</li>
-<li>Monitor performance improvements</li>
-<li>Update documentation to reflect the new implementation</li>
-</ol>
-<p>The Rust pipeline is designed as a drop-in replacement, so migration should be straightforward with minimal code changes required.</p>
 
 
 
@@ -5290,10 +4901,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

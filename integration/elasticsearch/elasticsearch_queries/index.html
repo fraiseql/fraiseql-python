@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4871,6 +4871,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#monitoring-queries" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitoring Queries
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Monitoring Queries">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#check-cluster-health" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check Cluster Health
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#monitor-query-performance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Monitor Query Performance
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-index-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Check Index Statistics
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4903,244 +4953,233 @@ tags: ["documentation", "reference"]</p>
 <h2 id="basic-search-examples">Basic Search Examples<a class="headerlink" href="#basic-search-examples" title="Permanent link">&para;</a></h2>
 <h3 id="search-by-event-type">Search by Event Type<a class="headerlink" href="#search-by-event-type" title="Permanent link">&para;</a></h3>
 <p>Find all "created" events:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "term": {
-        "event_type": "Created"
-      }
-    },
-    "size": 50
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "term": {</span>
+<span class="s1">        "event_type": "Created"</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "size": 50</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="search-by-entity-type">Search by Entity Type<a class="headerlink" href="#search-by-entity-type" title="Permanent link">&para;</a></h3>
 <p>Find all events affecting "Order" entities:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "term": {
-        "entity_type": "Order"
-      }
-    },
-    "sort": [{"timestamp": "desc"}],
-    "size": 100
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "term": {</span>
+<span class="s1">        "entity_type": "Order"</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}],</span>
+<span class="s1">    "size": 100</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="search-by-user">Search by User<a class="headerlink" href="#search-by-user" title="Permanent link">&para;</a></h3>
 <p>Find all events triggered by a specific user:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "term": {
-        "user_id": "user-123"
-      }
-    },
-    "sort": [{"timestamp": "desc"}]
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "term": {</span>
+<span class="s1">        "user_id": "user-123"</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}]</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h2 id="advanced-queries">Advanced Queries<a class="headerlink" href="#advanced-queries" title="Permanent link">&para;</a></h2>
 <h3 id="full-text-search">Full-Text Search<a class="headerlink" href="#full-text-search" title="Permanent link">&para;</a></h3>
 <p>Find events with specific text in any field:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "match": {
-        "search_text": "payment failed"
-      }
-    },
-    "highlight": {
-      "fields": {
-        "search_text": {}
-      }
-    },
-    "size": 50
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "match": {</span>
+<span class="s1">        "search_text": "payment failed"</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "highlight": {</span>
+<span class="s1">      "fields": {</span>
+<span class="s1">        "search_text": {}</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "size": 50</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="date-range-query">Date Range Query<a class="headerlink" href="#date-range-query" title="Permanent link">&para;</a></h3>
 <p>Find events in the last 24 hours:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "range": {
-        "timestamp": {
-          "gte": "now-24h"
-        }
-      }
-    },
-    "sort": [{"timestamp": "desc"}],
-    "size": 100
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "range": {</span>
+<span class="s1">        "timestamp": {</span>
+<span class="s1">          "gte": "now-24h"</span>
+<span class="s1">        }</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}],</span>
+<span class="s1">    "size": 100</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="combination-query-andor">Combination Query (AND/OR)<a class="headerlink" href="#combination-query-andor" title="Permanent link">&para;</a></h3>
 <p>Find order creation events from the last 7 days:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "bool": {
-        "must": [
-          {"term": {"event_type": "Created"}},
-          {"term": {"entity_type": "Order"}},
-          {"range": {"timestamp": {"gte": "now-7d"}}}
-        ]
-      }
-    },
-    "sort": [{"timestamp": "desc"}]
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "bool": {</span>
+<span class="s1">        "must": [</span>
+<span class="s1">          {"term": {"event_type": "Created"}},</span>
+<span class="s1">          {"term": {"entity_type": "Order"}},</span>
+<span class="s1">          {"range": {"timestamp": {"gte": "now-7d"}}}</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}]</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h2 id="aggregations">Aggregations<a class="headerlink" href="#aggregations" title="Permanent link">&para;</a></h2>
 <h3 id="event-type-distribution">Event Type Distribution<a class="headerlink" href="#event-type-distribution" title="Permanent link">&para;</a></h3>
 <p>Count events by type (last 7 days):</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "size": 0,
-    "query": {
-      "range": {
-        "timestamp": {
-          "gte": "now-7d"
-        }
-      }
-    },
-    "aggs": {
-      "by_event_type": {
-        "terms": {
-          "field": "event_type",
-          "size": 50
-        }
-      }
-    }
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "size": 0,</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "range": {</span>
+<span class="s1">        "timestamp": {</span>
+<span class="s1">          "gte": "now-7d"</span>
+<span class="s1">        }</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "aggs": {</span>
+<span class="s1">      "by_event_type": {</span>
+<span class="s1">        "terms": {</span>
+<span class="s1">          "field": "event_type",</span>
+<span class="s1">          "size": 50</span>
+<span class="s1">        }</span>
+<span class="s1">      }</span>
+<span class="s1">    }</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="entity-type-distribution">Entity Type Distribution<a class="headerlink" href="#entity-type-distribution" title="Permanent link">&para;</a></h3>
 <p>Count events by entity type:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "size": 0,
-    "aggs": {
-      "by_entity_type": {
-        "terms": {
-          "field": "entity_type",
-          "size": 50
-        }
-      }
-    }
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "size": 0,</span>
+<span class="s1">    "aggs": {</span>
+<span class="s1">      "by_entity_type": {</span>
+<span class="s1">        "terms": {</span>
+<span class="s1">          "field": "entity_type",</span>
+<span class="s1">          "size": 50</span>
+<span class="s1">        }</span>
+<span class="s1">      }</span>
+<span class="s1">    }</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="timeline-histogram">Timeline Histogram<a class="headerlink" href="#timeline-histogram" title="Permanent link">&para;</a></h3>
 <p>Events per hour over the last 48 hours:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "size": 0,
-    "query": {
-      "range": {
-        "timestamp": {
-          "gte": "now-48h"
-        }
-      }
-    },
-    "aggs": {
-      "events_per_hour": {
-        "date_histogram": {
-          "field": "timestamp",
-          "fixed_interval": "1h"
-        }
-      }
-    }
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "size": 0,</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "range": {</span>
+<span class="s1">        "timestamp": {</span>
+<span class="s1">          "gte": "now-48h"</span>
+<span class="s1">        }</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "aggs": {</span>
+<span class="s1">      "events_per_hour": {</span>
+<span class="s1">        "date_histogram": {</span>
+<span class="s1">          "field": "timestamp",</span>
+<span class="s1">          "fixed_interval": "1h"</span>
+<span class="s1">        }</span>
+<span class="s1">      }</span>
+<span class="s1">    }</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h2 id="debugging-workflows">Debugging Workflows<a class="headerlink" href="#debugging-workflows" title="Permanent link">&para;</a></h2>
 <h3 id="find-events-by-entity-id">Find Events by Entity ID<a class="headerlink" href="#find-events-by-entity-id" title="Permanent link">&para;</a></h3>
 <p>Get all events related to a specific entity:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "bool": {
-        "must": [
-          {"term": {"entity_type": "Order"}},
-          {"term": {"entity_id": "550e8400-e29b-41d4-a716-446655440000"}}
-        ]
-      }
-    },
-    "sort": [{"timestamp": "asc"}],
-    "size": 1000
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "bool": {</span>
+<span class="s1">        "must": [</span>
+<span class="s1">          {"term": {"entity_type": "Order"}},</span>
+<span class="s1">          {"term": {"entity_id": "550e8400-e29b-41d4-a716-446655440000"}}</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "sort": [{"timestamp": "asc"}],</span>
+<span class="s1">    "size": 1000</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="find-failed-payment-events">Find Failed Payment Events<a class="headerlink" href="#find-failed-payment-events" title="Permanent link">&para;</a></h3>
 <p>Search for events containing payment errors:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "bool": {
-        "must": [
-          {"match": {"search_text": "payment"}},
-          {"match": {"search_text": "failed"}}
-        ],
-        "filter": [
-          {"range": {"timestamp": {"gte": "now-24h"}}}
-        ]
-      }
-    },
-    "highlight": {
-      "fields": {
-        "search_text": {"number_of_fragments": 3}
-      }
-    },
-    "sort": [{"timestamp": "desc"}],
-    "size": 100
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "bool": {</span>
+<span class="s1">        "must": [</span>
+<span class="s1">          {"match": {"search_text": "payment"}},</span>
+<span class="s1">          {"match": {"search_text": "failed"}}</span>
+<span class="s1">        ],</span>
+<span class="s1">        "filter": [</span>
+<span class="s1">          {"range": {"timestamp": {"gte": "now-24h"}}}</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "highlight": {</span>
+<span class="s1">      "fields": {</span>
+<span class="s1">        "search_text": {"number_of_fragments": 3}</span>
+<span class="s1">      }</span>
+<span class="s1">    },</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}],</span>
+<span class="s1">    "size": 100</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h2 id="using-with-kibana">Using with Kibana<a class="headerlink" href="#using-with-kibana" title="Permanent link">&para;</a></h2>
@@ -5189,85 +5228,80 @@ tags: ["documentation", "reference"]</p>
 <h2 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h2>
 <h3 id="use-filters-for-better-performance">Use Filters for Better Performance<a class="headerlink" href="#use-filters-for-better-performance" title="Permanent link">&para;</a></h3>
 <p>Filters are cached and faster than queries:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {
-      "bool": {
-        "filter": [
-          {"term": {"entity_type": "Order"}},
-          {"range": {"timestamp": {"gte": "now-7d"}}}
-        ],
-        "must": [
-          {"match": {"search_text": "payment"}}
-        ]
-      }
-    }
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {</span>
+<span class="s1">      "bool": {</span>
+<span class="s1">        "filter": [</span>
+<span class="s1">          {"term": {"entity_type": "Order"}},</span>
+<span class="s1">          {"range": {"timestamp": {"gte": "now-7d"}}}</span>
+<span class="s1">        ],</span>
+<span class="s1">        "must": [</span>
+<span class="s1">          {"match": {"search_text": "payment"}}</span>
+<span class="s1">        ]</span>
+<span class="s1">      }</span>
+<span class="s1">    }</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="limit-fields-retrieved">Limit Fields Retrieved<a class="headerlink" href="#limit-fields-retrieved" title="Permanent link">&para;</a></h3>
 <p>Only retrieve needed fields for faster response:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {...},
-    "_source": ["event_id", "event_type", "timestamp", "user_id"],
-    "size": 100
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {...},</span>
+<span class="s1">    "_source": ["event_id", "event_type", "timestamp", "user_id"],</span>
+<span class="s1">    "size": 100</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="use-search-after-for-pagination">Use Search After for Pagination<a class="headerlink" href="#use-search-after-for-pagination" title="Permanent link">&para;</a></h3>
 <p>More efficient than from/size for large result sets:</p>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="get-first-page">Get first page<a class="headerlink" href="#get-first-page" title="Permanent link">&para;</a></h1>
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {...},
-    "sort": [{"timestamp": "desc"}, {"_id": "desc"}],
-    "size": 100
-  }'</p>
-<h1 id="get-next-page-use-last-sort-values-from-previous-response">Get next page (use last sort values from previous response)<a class="headerlink" href="#get-next-page-use-last-sort-values-from-previous-response" title="Permanent link">&para;</a></h1>
-<p>curl -X POST "localhost:9200/FraiseQL-events-*/_search?pretty" \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "query": {...},
-    "sort": [{"timestamp": "desc"}, {"_id": "desc"}],
-    "size": 100,
-    "search_after": ["2025-01-25T12:34:56.789Z", "event-id-here"]
-  }'
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+<span class="c1"># Get first page</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {...},</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}, {"_id": "desc"}],</span>
+<span class="s1">    "size": 100</span>
+<span class="s1">  }'</span>
+
+<span class="c1"># Get next page (use last sort values from previous response)</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_search?pretty"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
+<span class="s1">    "query": {...},</span>
+<span class="s1">    "sort": [{"timestamp": "desc"}, {"_id": "desc"}],</span>
+<span class="s1">    "size": 100,</span>
+<span class="s1">    "search_after": ["2025-01-25T12:34:56.789Z", "event-id-here"]</span>
+<span class="s1">  }'</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h2 id="monitoring-queries">Monitoring Queries<a class="headerlink" href="#monitoring-queries" title="Permanent link">&para;</a></h2>
 <h3 id="check-cluster-health">Check Cluster Health<a class="headerlink" href="#check-cluster-health" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl "localhost:9200/_cluster/health?pretty"
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span><span class="s2">"localhost:9200/_cluster/health?pretty"</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="monitor-query-performance">Monitor Query Performance<a class="headerlink" href="#monitor-query-performance" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<h1 id="slow-log-for-queries-500ms">Slow log for queries &gt; 500ms<a class="headerlink" href="#slow-log-for-queries-500ms" title="Permanent link">&para;</a></h1>
-<p>curl "localhost:9200/_cat/indices/FraiseQL-*?v&amp;sort=store.size:desc"
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+<span class="c1"># Slow log for queries &gt; 500ms</span>
+curl<span class="w"> </span><span class="s2">"localhost:9200/_cat/indices/FraiseQL-*?v&amp;sort=store.size:desc"</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 <h3 id="check-index-statistics">Check Index Statistics<a class="headerlink" href="#check-index-statistics" title="Permanent link">&para;</a></h3>
-<p>```bash</p>
-<!-- Code example in BASH -->
-<p>curl "localhost:9200/FraiseQL-events-*/_stats?pretty"
-```text</p>
+<div class="highlight"><pre><span></span><code>&lt;!--<span class="w"> </span>Code<span class="w"> </span>example<span class="w"> </span><span class="k">in</span><span class="w"> </span>BASH<span class="w"> </span>--&gt;
+curl<span class="w"> </span><span class="s2">"localhost:9200/FraiseQL-events-*/_stats?pretty"</span>
+</code></pre></div>
 <!-- Code example in TEXT -->
 
 
@@ -5344,10 +5378,10 @@ tags: ["documentation", "reference"]</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

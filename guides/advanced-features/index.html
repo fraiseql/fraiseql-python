@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4732,17 +4732,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#advanced-cascade-patterns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Advanced Cascade Patterns
-      
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -4983,7 +4972,7 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># This runs for EVERY post! (1 + N queries)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Query</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
@@ -5194,7 +5183,7 @@
             <span class="n">post_id</span> <span class="o">=</span> <span class="n">notification</span><span class="o">.</span><span class="n">payload</span>
 
             <span class="c1"># Fetch the new post</span>
-            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">post_id</span><span class="p">})</span>
             <span class="k">yield</span> <span class="n">post</span>
 </code></pre></div>
 <p><strong>PostgreSQL Trigger</strong>:</p>
@@ -5243,7 +5232,7 @@
                 <span class="k">continue</span>
 
             <span class="n">post_id</span> <span class="o">=</span> <span class="n">UUID</span><span class="p">(</span><span class="n">notification</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
-            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">post_id</span><span class="p">})</span>
 
             <span class="c1"># Filter by author if specified</span>
             <span class="k">if</span> <span class="n">author_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">post</span><span class="o">.</span><span class="n">author_id</span> <span class="o">==</span> <span class="n">author_id</span><span class="p">:</span>
@@ -5262,54 +5251,68 @@
 <hr />
 <h2 id="graphql-cascade">GraphQL Cascade<a class="headerlink" href="#graphql-cascade" title="Permanent link">&para;</a></h2>
 <h3 id="automatic-cache-invalidation-and-side-effects">Automatic Cache Invalidation and Side Effects<a class="headerlink" href="#automatic-cache-invalidation-and-side-effects" title="Permanent link">&para;</a></h3>
-<p>GraphQL Cascade tracks mutation side effects and automatically invalidates affected queries.</p>
+<p>GraphQL Cascade sends a mutation's side effects to the client with its result, so the
+client can update or invalidate its cache without refetching.</p>
 <h3 id="how-it-works_1">How It Works<a class="headerlink" href="#how-it-works_1" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Mutation declares side effects</strong>: What data changed</li>
-<li><strong>Cascade tracks dependencies</strong>: Which queries depend on that data</li>
-<li><strong>Automatic invalidation</strong>: Client cache updated automatically</li>
+<li><strong>The SQL function returns the side effects</strong>: the entities it created, updated or
+   deleted, and the queries to invalidate, in the <code>cascade</code> field of its result</li>
+<li><strong>FraiseQL passes them on</strong>: with <code>@mutation(enable_cascade=True)</code>, the success type
+   gets a <code>cascade</code> field</li>
+<li><strong>The client applies them</strong>: Apollo or Relay update or invalidate the cached queries</li>
 </ol>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostInput</span><span class="p">:</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostSuccess</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">post</span><span class="p">:</span> <span class="n">Post</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">PostCreated</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>
-
-    <span class="c1"># Declare cascade effects</span>
-    <span class="n">cascade_effects</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">"posts"</span><span class="p">,</span>           <span class="c1"># Invalidate posts query</span>
-        <span class="s2">"user.posts"</span><span class="p">,</span>      <span class="c1"># Invalidate user's posts field</span>
-    <span class="p">]</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PostCreated</span> <span class="o">|</span> <span class="n">ValidationError</span><span class="p">:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_post"</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
-            <span class="s2">"author_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">,</span>
-        <span class="p">})</span>
-
-        <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-
-        <span class="c1"># Cascade automatically invalidates affected queries!</span>
-        <span class="k">return</span> <span class="n">PostCreated</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">post</span><span class="p">)</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreatePostSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreatePostError</span>
 </code></pre></div>
-<p><strong>Result</strong>: Client's <code>posts</code> query cache is automatically invalidated and refetched.</p>
-<h3 id="advanced-cascade-patterns">Advanced Cascade Patterns<a class="headerlink" href="#advanced-cascade-patterns" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUser</span><span class="p">:</span>
-    <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">UserUpdated</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>
-
-    <span class="c1"># Cascade with parameters</span>
-    <span class="n">cascade_effects</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="s2">"user"</span><span class="p">,</span>                          <span class="c1"># Invalidate user query</span>
-        <span class="s2">"users"</span><span class="p">,</span>                         <span class="c1"># Invalidate users list</span>
-        <span class="k">lambda</span> <span class="bp">self</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>  <span class="c1"># Dynamic cascade</span>
-    <span class="p">]</span>
+<p>The SQL function <code>create_post(input jsonb)</code> declares the effects with the cascade helpers:</p>
+<div class="highlight"><pre><span></span><code><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">    </span><span class="s1">'Post created'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">v_post_data</span><span class="p">,</span>
+<span class="w">    </span><span class="s1">'Post'</span><span class="p">,</span>
+<span class="w">    </span><span class="n">cascade_merge</span><span class="p">(</span>
+<span class="w">        </span><span class="n">cascade_entity_created</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_data</span><span class="p">),</span>
+<span class="w">        </span><span class="n">cascade_invalidate_cache</span><span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'user_posts'</span><span class="p">],</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="p">);</span>
 </code></pre></div>
+<p><strong>Result</strong>: the response's <code>cascade</code> lists the new <code>Post</code> and tells the client to
+invalidate its <code>posts</code> and <code>user_posts</code> queries.</p>
+<p>See <a href="../../features/graphql-cascade/">GraphQL Cascade</a> for the full function, the cascade
+structure and client integration.</p>
 <hr />
 <h2 id="vector-search">Vector Search<a class="headerlink" href="#vector-search" title="Permanent link">&para;</a></h2>
 <h3 id="semantic-search-with-pgvector">Semantic Search with pgvector<a class="headerlink" href="#semantic-search-with-pgvector" title="Permanent link">&para;</a></h3>
@@ -5322,28 +5325,46 @@
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span>
 <span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">embedding</span><span class="w"> </span><span class="n">vector</span><span class="p">(</span><span class="mi">1536</span><span class="p">);</span><span class="w">  </span><span class="c1">-- OpenAI embedding size</span>
 
-<span class="c1">-- Create index for fast similarity search</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">ivfflat</span><span class="w"> </span><span class="p">(</span><span class="n">embedding</span><span class="w"> </span><span class="n">vector_cosine_ops</span><span class="p">);</span>
+<span class="c1">-- Create index for fast similarity search (HNSW works from an empty table;</span>
+<span class="c1">-- an ivfflat index built before the data is loaded misses rows)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">hnsw</span><span class="w"> </span><span class="p">(</span><span class="n">embedding</span><span class="w"> </span><span class="n">vector_cosine_ops</span><span class="p">);</span>
+
+<span class="c1">-- Distance ordering runs on view columns: a search view exposes the</span>
+<span class="c1">-- post's fields as columns, without a data JSONB column</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post_search</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">embedding</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="query-with-vector-similarity">Query with Vector Similarity<a class="headerlink" href="#query-with-vector-similarity" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="c1"># A type over the flat search view (no JSONB data column)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post_search"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PostMatch</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_posts</span><span class="p">(</span>
     <span class="n">info</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">PostMatch</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Semantic search for posts."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Get query embedding (e.g., from OpenAI)</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
-    <span class="c1"># Vector similarity search</span>
+    <span class="c1"># Vector similarity search: nearest by cosine distance (embedding &lt;=&gt; query)</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">"v_post"</span><span class="p">,</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"embedding &lt;-&gt; </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"ASC"</span><span class="p">)],</span>  <span class="c1"># Cosine distance</span>
+        <span class="s2">"v_post_search"</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
-        <span class="n">params</span><span class="o">=</span><span class="p">[</span><span class="n">query_embedding</span><span class="p">],</span>
     <span class="p">)</span>
 </code></pre></div>
 <h3 id="distance-operators">Distance Operators<a class="headerlink" href="#distance-operators" title="Permanent link">&para;</a></h3>
@@ -5392,28 +5413,20 @@
     <span class="n">info</span><span class="p">,</span>
     <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">PostMatch</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Semantic search with vector similarity."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Get query embedding</span>
     <span class="n">embedding</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_embedding</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
 
-    <span class="c1"># Find similar posts</span>
-    <span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-<span class="w">        </span><span class="sd">"""</span>
-<span class="sd">        SELECT id, title, content,</span>
-<span class="sd">               embedding &lt;=&gt; $1::vector AS similarity</span>
-<span class="sd">        FROM v_post</span>
-<span class="sd">        WHERE embedding IS NOT NULL</span>
-<span class="sd">        ORDER BY embedding &lt;=&gt; $1::vector</span>
-<span class="sd">        LIMIT $2</span>
-<span class="sd">        """</span><span class="p">,</span>
-        <span class="n">embedding</span><span class="p">,</span>
-        <span class="n">limit</span>
+    <span class="c1"># Nearest posts by cosine distance (embedding &lt;=&gt; query), closest first</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_post_search"</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"isnull"</span><span class="p">:</span> <span class="kc">False</span><span class="p">}},</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">embedding</span><span class="p">}},</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
     <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">posts</span>
 </code></pre></div>
 <hr />
 <h2 id="advanced-filtering">Advanced Filtering<a class="headerlink" href="#advanced-filtering" title="Permanent link">&para;</a></h2>
@@ -5427,13 +5440,11 @@
 <span class="w">    </span><span class="sd">"""Full-text search in posts."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
+    <span class="c1"># tsv @@ websearch_to_tsquery(search)</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
         <span class="s2">"v_post"</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">"tsv"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"@@"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"to_tsquery"</span><span class="p">:</span> <span class="n">search</span><span class="p">}}</span>
-        <span class="p">},</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"ts_rank(tsv, to_tsquery($1))"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)],</span>
-        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"tsv"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"websearch_query"</span><span class="p">:</span> <span class="n">search</span><span class="p">}},</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>PostgreSQL Setup</strong>:</p>
@@ -5450,6 +5461,17 @@
 
 <span class="c1">-- Index for fast full-text search</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="p">(</span><span class="n">tsv</span><span class="p">);</span>
+
+<span class="c1">-- Expose tsv as a column of the view, next to data</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">tsv</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
+</code></pre></div>
+<p>Register the view's columns, so the <code>tsv</code> filter runs on the column rather than on a
+<code>data</code> key:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_type_for_view</span>
+
+<span class="n">register_type_for_view</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">table_columns</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">"tsv"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">},</span> <span class="n">has_jsonb_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="jsonb-queries">JSONB Queries<a class="headerlink" href="#jsonb-queries" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
@@ -5511,10 +5533,10 @@
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>  <span class="c1"># N+1 queries!</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">})</span>  <span class="c1"># N+1 queries!</span>
 </code></pre></div>
 <h3 id="2-index-vector-columns">2. Index Vector Columns<a class="headerlink" href="#2-index-vector-columns" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- IVFFlat index (faster queries, good for most cases)</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- IVFFlat index (faster to build; create it after loading the data)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">ivfflat</span><span class="w"> </span><span class="p">(</span><span class="n">embedding</span><span class="w"> </span><span class="n">vector_cosine_ops</span><span class="p">);</span>
 
 <span class="c1">-- HNSW index (best quality, slower inserts)</span>
@@ -5526,11 +5548,8 @@
 <li><strong>Polling</strong>: Periodic updates (dashboards, feeds)</li>
 </ul>
 <h3 id="4-batch-cascade-invalidations">4. Batch Cascade Invalidations<a class="headerlink" href="#4-batch-cascade-invalidations" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="n">cascade_effects</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s2">"posts"</span><span class="p">,</span>
-    <span class="s2">"users"</span><span class="p">,</span>
-    <span class="s2">"comments"</span><span class="p">,</span>
-<span class="p">]</span>  <span class="c1"># All invalidated in single operation</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- All invalidated in a single operation</span>
+<span class="n">cascade_invalidate_cache</span><span class="p">(</span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'posts'</span><span class="p">,</span><span class="w"> </span><span class="s1">'users'</span><span class="p">,</span><span class="w"> </span><span class="s1">'comments'</span><span class="p">],</span><span class="w"> </span><span class="s1">'INVALIDATE'</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
@@ -5614,10 +5633,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

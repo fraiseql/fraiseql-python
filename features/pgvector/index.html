@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4709,10 +4709,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#cosine-distance-cosine_distance" class="md-nav__link">
+  <a href="#cosine-distance-cosinedistance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cosine Distance (cosine_distance)
+        Cosine Distance (cosineDistance)
       
     </span>
   </a>
@@ -4720,10 +4720,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#l2-distance-l2_distance" class="md-nav__link">
+  <a href="#l2-distance-l2distance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        L2 Distance (l2_distance)
+        L2 Distance (l2Distance)
       
     </span>
   </a>
@@ -4731,10 +4731,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#inner-product-inner_product" class="md-nav__link">
+  <a href="#inner-product-innerproduct" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Inner Product (inner_product)
+        Inner Product (innerProduct)
       
     </span>
   </a>
@@ -4742,10 +4742,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#l1-distance-l1_distance" class="md-nav__link">
+  <a href="#l1-distance-l1distance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        L1 Distance (l1_distance)
+        L1 Distance (l1Distance)
       
     </span>
   </a>
@@ -4753,10 +4753,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#hamming-distance-hamming_distance" class="md-nav__link">
+  <a href="#hamming-distance-hammingdistance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Hamming Distance (hamming_distance)
+        Hamming Distance (hammingDistance)
       
     </span>
   </a>
@@ -4764,10 +4764,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#jaccard-distance-jaccard_distance" class="md-nav__link">
+  <a href="#jaccard-distance-jaccarddistance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Jaccard Distance (jaccard_distance)
+        Jaccard Distance (jaccardDistance)
       
     </span>
   </a>
@@ -4780,10 +4780,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#ordering-by-distance" class="md-nav__link">
+  <a href="#filtering-and-ordering-by-distance" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Ordering by Distance
+        Filtering and Ordering by Distance
       
     </span>
   </a>
@@ -5347,32 +5347,65 @@
 <li><code>text_embedding</code></li>
 <li><code>image_embedding</code></li>
 </ul>
-<p>Fields matching these patterns with <code>List[float]</code> type get <code>VectorFilter</code> in GraphQL schema.</p>
+<p>Fields matching these patterns with <code>List[float]</code> type get <code>VectorFilter</code> (in <code>where</code>) and
+<code>VectorOrderBy</code> (in <code>orderBy</code>) in the GraphQL schema.</p>
+<p>The distance operators work on the view's own <code>vector</code> (or <code>bit</code>) columns. A vector stored
+inside the JSONB <code>data</code> column can't be filtered or sorted by distance. Expose the vector as a
+column of the view: either declare the type over a view without a JSONB <code>data</code> column
+(<code>jsonb_column=None</code>), or keep <code>data</code> and add the vector as a column beside it. A distance
+<code>where</code> / <code>orderBy</code> reads the column (<code>"embedding" &lt;=&gt; ...</code>), and every other field is still read
+from <code>data</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraise_type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"documents"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">embedding</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- or: a view with a data column and the vector beside it</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_document</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">embedding</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">documents</span><span class="p">;</span>
+</code></pre></div>
 <h2 id="graphql-api">GraphQL API<a class="headerlink" href="#graphql-api" title="Permanent link">&para;</a></h2>
 <h3 id="vectorfilter-schema">VectorFilter Schema<a class="headerlink" href="#vectorfilter-schema" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">input</span><span class="w"> </span><span class="err">VectorFilter</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">l2_distance</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">inner_product</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">l1_distance</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">hamming_distance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
-<span class="w">  </span><span class="nl">jaccard_distance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">l2Distance</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">l1Distance</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">innerProduct</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">distanceWithin</span><span class="p">:</span><span class="w"> </span><span class="n">Float</span><span class="w">          </span><span class="c"># maximum distance to include</span>
+<span class="w">  </span><span class="nl">hammingDistance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">jaccardDistance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
 <span class="w">  </span><span class="nl">isnull</span><span class="p">:</span><span class="w"> </span><span class="n">Boolean</span>
 <span class="p">}</span>
-</code></pre></div>
-<h3 id="vectororderby-schema">VectorOrderBy Schema<a class="headerlink" href="#vectororderby-schema" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">input</span><span class="w"> </span><span class="err">VectorOrderBy</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">l2_distance</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">inner_product</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">l1_distance</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
-<span class="w">  </span><span class="nl">hamming_distance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
-<span class="w">  </span><span class="nl">jaccard_distance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+
+<span class="k">input</span><span class="w"> </span><span class="err">VectorDistanceInput</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">dense</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Float</span><span class="err">!]</span>
+<span class="w">  </span><span class="nl">sparse</span><span class="p">:</span><span class="w"> </span><span class="n">SparseVectorInput</span><span class="w">      </span><span class="c"># { indices: [Int!]!, values: [Float!]! }</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>A <code>where</code> keeps the rows whose distance to the query vector is at most <code>distanceWithin</code>.
+<code>distanceWithin</code> is required next to a distance operator: without it the query fails with
+<code>where: 'embedding' needs distanceWithin next to 'cosineDistance'</code>.</p>
+<h3 id="vectororderby-schema">VectorOrderBy Schema<a class="headerlink" href="#vectororderby-schema" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">input</span><span class="w"> </span><span class="err">VectorOrderBy</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nl">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">l2Distance</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">l1Distance</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">innerProduct</span><span class="p">:</span><span class="w"> </span><span class="n">VectorDistanceInput</span>
+<span class="w">  </span><span class="nl">hammingDistance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">jaccardDistance</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>An <code>orderBy</code> sorts by distance to the given vector, nearest first. It takes the same
+operand as a <code>where</code>: <code>{ dense: [...] }</code> for the float operators, a bit string for
+<code>hammingDistance</code> and <code>jaccardDistance</code>. Names are camelCase in GraphQL (with the default
+<code>auto_camel_case</code>) and snake_case in Python.</p>
+<p><code>db.find</code> filters and sorts on <code>dense</code> vectors only: a <code>sparse</code> operand raises an error in
+both, as the <code>sparsevec</code> literal would need the column's dimension.</p>
 <h3 id="distance-operators">Distance Operators<a class="headerlink" href="#distance-operators" title="Permanent link">&para;</a></h3>
 <p>FraiseQL exposes PostgreSQL pgvector's six native distance operators:</p>
-<h4 id="cosine-distance-cosine_distance">Cosine Distance (<code>cosine_distance</code>)<a class="headerlink" href="#cosine-distance-cosine_distance" title="Permanent link">&para;</a></h4>
+<h4 id="cosine-distance-cosinedistance">Cosine Distance (<code>cosineDistance</code>)<a class="headerlink" href="#cosine-distance-cosinedistance" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Operator</strong>: <code>&lt;=&gt;</code> (cosine distance)</li>
 <li><strong>Range</strong>: 0.0 (identical) to 2.0 (opposite)</li>
@@ -5380,7 +5413,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
 <span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5389,7 +5422,7 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="err">}</span>
 </code></pre></div>
-<h4 id="l2-distance-l2_distance">L2 Distance (<code>l2_distance</code>)<a class="headerlink" href="#l2-distance-l2_distance" title="Permanent link">&para;</a></h4>
+<h4 id="l2-distance-l2distance">L2 Distance (<code>l2Distance</code>)<a class="headerlink" href="#l2-distance-l2distance" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Operator</strong>: <code>&lt;-&gt;</code> (Euclidean distance)</li>
 <li><strong>Range</strong>: 0.0 (identical) to ∞ (very different)</li>
@@ -5397,7 +5430,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">l2_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">l2Distance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
 <span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5406,7 +5439,7 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="err">}</span>
 </code></pre></div>
-<h4 id="inner-product-inner_product">Inner Product (<code>inner_product</code>)<a class="headerlink" href="#inner-product-inner_product" title="Permanent link">&para;</a></h4>
+<h4 id="inner-product-innerproduct">Inner Product (<code>innerProduct</code>)<a class="headerlink" href="#inner-product-innerproduct" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Operator</strong>: <code>&lt;#&gt;</code> (negative inner product)</li>
 <li><strong>Range</strong>: More negative = more similar</li>
@@ -5414,7 +5447,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">inner_product</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">innerProduct</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
 <span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5423,7 +5456,7 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="err">}</span>
 </code></pre></div>
-<h4 id="l1-distance-l1_distance">L1 Distance (<code>l1_distance</code>)<a class="headerlink" href="#l1-distance-l1_distance" title="Permanent link">&para;</a></h4>
+<h4 id="l1-distance-l1distance">L1 Distance (<code>l1Distance</code>)<a class="headerlink" href="#l1-distance-l1distance" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Operator</strong>: <code>&lt;+&gt;</code> (Manhattan/Taxicab distance)</li>
 <li><strong>Range</strong>: 0.0 (identical) to ∞ (very different)</li>
@@ -5431,7 +5464,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">l1_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">l1Distance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
 <span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5440,7 +5473,7 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="err">}</span>
 </code></pre></div>
-<h4 id="hamming-distance-hamming_distance">Hamming Distance (<code>hamming_distance</code>)<a class="headerlink" href="#hamming-distance-hamming_distance" title="Permanent link">&para;</a></h4>
+<h4 id="hamming-distance-hammingdistance">Hamming Distance (<code>hammingDistance</code>)<a class="headerlink" href="#hamming-distance-hammingdistance" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Operator</strong>: <code>&lt;~&gt;</code> (binary Hamming distance)</li>
 <li><strong>Range</strong>: 0 (identical) to dimension size (completely different)</li>
@@ -5448,7 +5481,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">hamming_distance</span><span class="p">:</span><span class="w"> </span><span class="s">"0101010101..."</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">binaryEmbedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">hammingDistance</span><span class="p">:</span><span class="w"> </span><span class="s">"0101010101..."</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5457,7 +5490,7 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h4 id="jaccard-distance-jaccard_distance">Jaccard Distance (<code>jaccard_distance</code>)<a class="headerlink" href="#jaccard-distance-jaccard_distance" title="Permanent link">&para;</a></h4>
+<h4 id="jaccard-distance-jaccarddistance">Jaccard Distance (<code>jaccardDistance</code>)<a class="headerlink" href="#jaccard-distance-jaccarddistance" title="Permanent link">&para;</a></h4>
 <ul>
 <li><strong>Operator</strong>: <code>&lt;%&gt;</code> (binary Jaccard distance)</li>
 <li><strong>Range</strong>: 0.0 (identical) to 1.0 (no overlap)</li>
@@ -5465,7 +5498,7 @@
 </ul>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">jaccard_distance</span><span class="p">:</span><span class="w"> </span><span class="s">"0101010101..."</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">binaryEmbedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">jaccardDistance</span><span class="p">:</span><span class="w"> </span><span class="s">"0101010101..."</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5474,12 +5507,12 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="ordering-by-distance">Ordering by Distance<a class="headerlink" href="#ordering-by-distance" title="Permanent link">&para;</a></h3>
-<p>Order results by vector similarity:</p>
+<h3 id="filtering-and-ordering-by-distance">Filtering and Ordering by Distance<a class="headerlink" href="#filtering-and-ordering-by-distance" title="Permanent link">&para;</a></h3>
+<p>Keep the documents within a distance, nearest first:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
-<span class="w">    </span><span class="no">orderBy</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="p">,</span><span class="w"> </span><span class="no">distanceWithin</span><span class="err">:</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="no">orderBy</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
 <span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">10</span>
 <span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
@@ -5494,17 +5527,17 @@
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">documents</span><span class="p">(</span>
 <span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span>
-<span class="w">      </span><span class="no">tenant_id</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"550e8400-e29b-41d4-a716-446655440000"</span><span class="w"> </span><span class="p">}</span>
-<span class="w">      </span><span class="no">created_at</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-01-01"</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="p">,</span><span class="w"> </span><span class="no">distanceWithin</span><span class="err">:</span><span class="w"> </span><span class="mf">0.5</span><span class="w"> </span><span class="err">}</span>
+<span class="w">      </span><span class="no">tenantId</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eq</span><span class="p">:</span><span class="w"> </span><span class="s">"550e8400-e29b-41d4-a716-446655440000"</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="no">createdAt</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-01-01"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="err">}</span>
-<span class="w">    </span><span class="no">orderBy</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
+<span class="w">    </span><span class="no">orderBy</span><span class="err">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span><span class="w"> </span><span class="err">}</span>
 <span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">20</span>
 <span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">    </span><span class="n">content</span>
-<span class="w">    </span><span class="n">created_at</span>
+<span class="w">    </span><span class="n">createdAt</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="err">}</span>
 </code></pre></div>
@@ -5608,17 +5641,21 @@
 <span class="c1">-- ERROR: different vector dimensions 384 and 1536</span>
 </code></pre></div>
 <h3 id="invalid-vector-formats">Invalid Vector Formats<a class="headerlink" href="#invalid-vector-formats" title="Permanent link">&para;</a></h3>
-<p>FraiseQL validates vector input:</p>
+<p>GraphQL validates vector input against the schema:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Valid</span>
-<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">}</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 
 <span class="c"># Invalid - non-numeric values</span>
-<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"invalid"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">}</span>
-<span class="c"># GraphQL Error: All vector values must be numbers</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"invalid"</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># GraphQL Error: Float cannot represent non numeric value: "invalid"</span>
 
-<span class="c"># Invalid - wrong type</span>
-<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosine_distance</span><span class="p">:</span><span class="w"> </span><span class="s">"not_a_list"</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">}</span>
-<span class="c"># GraphQL Error: Vector must be a list of floats</span>
+<span class="c"># Invalid - a bare list where a VectorDistanceInput is expected (in orderBy and in where)</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># GraphQL Error: Expected value of type 'VectorDistanceInput' to be an object, found: [0.1, 0.2, 0.3].</span>
+
+<span class="c"># Invalid - a distance operator without distanceWithin</span>
+<span class="k">query</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">documents</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">embedding</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">cosineDistance</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">dense</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span><span class="w"> </span><span class="mf">0.2</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3</span><span class="p">]</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="c"># GraphQL Error: where: 'embedding' needs distanceWithin next to 'cosineDistance': the maximum distance to include</span>
 </code></pre></div>
 <h2 id="use-cases">Use Cases<a class="headerlink" href="#use-cases" title="Permanent link">&para;</a></h2>
 <h3 id="semantic-search">Semantic Search<a class="headerlink" href="#semantic-search" title="Permanent link">&para;</a></h3>
@@ -5627,9 +5664,8 @@
 
 <span class="n">documents</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
     <span class="s2">"documents"</span><span class="p">,</span>
-    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-    <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-    <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="recommendations">Recommendations<a class="headerlink" href="#recommendations" title="Permanent link">&para;</a></h3>
@@ -5639,11 +5675,11 @@
 <span class="n">similar_products</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
     <span class="s2">"products"</span><span class="p">,</span>
     <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">product_embedding</span><span class="p">},</span>
+        <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"vector"</span><span class="p">:</span> <span class="n">product_embedding</span><span class="p">,</span> <span class="s2">"threshold"</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}},</span>
         <span class="s2">"category"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">product</span><span class="o">.</span><span class="n">category</span><span class="p">}</span>  <span class="c1"># Same category</span>
     <span class="p">},</span>
-    <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">product_embedding</span><span class="p">}},</span>
-    <span class="n">limit</span><span class="o">=</span><span class="mi">5</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">product_embedding</span><span class="p">}},</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="rag-systems">RAG Systems<a class="headerlink" href="#rag-systems" title="Permanent link">&para;</a></h3>
@@ -5652,24 +5688,32 @@
 
 <span class="n">relevant_docs</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
     <span class="s2">"documents"</span><span class="p">,</span>
-    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-    <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-    <span class="n">limit</span><span class="o">=</span><span class="mi">3</span>
+    <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"vector"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">,</span> <span class="s2">"threshold"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">}}},</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">context</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"content"</span><span class="p">]</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">relevant_docs</span><span class="p">)</span>
+<span class="c1"># find returns a GraphQL-shaped response: the rows are under data.&lt;view&gt;</span>
+<span class="n">rows</span> <span class="o">=</span> <span class="n">relevant_docs</span><span class="o">.</span><span class="n">to_json</span><span class="p">()[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"documents"</span><span class="p">]</span>
+<span class="n">context</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">doc</span><span class="p">[</span><span class="s2">"content"</span><span class="p">]</span> <span class="k">for</span> <span class="n">doc</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="hybrid-search">Hybrid Search<a class="headerlink" href="#hybrid-search" title="Permanent link">&para;</a></h3>
-<p>Combine vector similarity with full-text search:</p>
+<p>Combine vector similarity with full-text search. The full-text operators
+(<code>matches</code>, <code>plain_query</code>, <code>phrase_query</code>, <code>websearch_query</code>) filter on a <code>tsvector</code>
+column, so give the table one:</p>
+<div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">documents</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">search_vector</span><span class="w"> </span><span class="n">tsvector</span>
+<span class="w">    </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="n">to_tsvector</span><span class="p">(</span><span class="s1">'english'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">' '</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">content</span><span class="p">))</span><span class="w"> </span><span class="n">STORED</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">documents</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="n">gin</span><span class="w"> </span><span class="p">(</span><span class="n">search_vector</span><span class="p">);</span>
+</code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1"># Vector + full-text hybrid search</span>
 <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
     <span class="s2">"documents"</span><span class="p">,</span>
     <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">},</span>
-        <span class="s2">"content"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"search"</span><span class="p">:</span> <span class="n">query_text</span><span class="p">}</span>  <span class="c1"># Full-text search</span>
+        <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"vector"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">,</span> <span class="s2">"threshold"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">}},</span>
+        <span class="s2">"search_vector"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"websearch_query"</span><span class="p">:</span> <span class="n">query_text</span><span class="p">},</span>  <span class="c1"># Full-text search</span>
     <span class="p">},</span>
-    <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-    <span class="n">limit</span><span class="o">=</span><span class="mi">20</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="migration-guide">Migration Guide<a class="headerlink" href="#migration-guide" title="Permanent link">&para;</a></h2>
@@ -5880,72 +5924,76 @@ docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </sp
 </code></pre></div>
 <h2 id="code-examples">Code Examples<a class="headerlink" href="#code-examples" title="Permanent link">&para;</a></h2>
 <h3 id="python-client-usage">Python Client Usage<a class="headerlink" href="#python-client-usage" title="Permanent link">&para;</a></h3>
+<p>Outside an app, build the pool and the repository yourself. <code>find()</code> returns a
+ready-made GraphQL response (<code>RustResponseBytes</code>), with the rows under
+<code>data.&lt;field_name&gt;</code>. Declare the type (<code>@fraiseql.type(sql_source="documents",
+jsonb_column=None)</code>, as below) for an <code>embedding</code> to come back as a list of floats;
+for a table no type is registered for, it comes back in pgvector's text form:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_db_pool</span>
+
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
+    <span class="n">pool</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_db_pool</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
+    <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
 
     <span class="c1"># Semantic search</span>
     <span class="n">query_embedding</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">]</span> <span class="o">*</span> <span class="mi">512</span>  <span class="c1"># 1536 dimensions</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
         <span class="s2">"documents"</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-        <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+        <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">documents</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result</span><span class="p">))[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"documents"</span><span class="p">]</span>
 
     <span class="c1"># Hybrid search</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"documents"</span><span class="p">,</span>
         <span class="s2">"documents"</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">},</span>
+            <span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"vector"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">,</span> <span class="s2">"threshold"</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">}},</span>
             <span class="s2">"category"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"technical"</span><span class="p">},</span>
-            <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01"</span><span class="p">}</span>
+            <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01"</span><span class="p">},</span>
         <span class="p">},</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-        <span class="n">limit</span><span class="o">=</span><span class="mi">20</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
+        <span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">documents</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="nb">bytes</span><span class="p">(</span><span class="n">result</span><span class="p">))[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"documents"</span><span class="p">]</span>
+
+    <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
 
 <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 <h3 id="fastapi-integration">FastAPI Integration<a class="headerlink" href="#fastapi-integration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLApp</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraise_type</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"documents"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Document</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">embedding</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>  <span class="c1"># Vector field</span>
+    <span class="n">embedding</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>  <span class="c1"># Vector field</span>
     <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@fraise_query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_documents</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">,</span>
-    <span class="n">query_embedding</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
-    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Document</span><span class="p">]:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}}</span>
-    <span class="k">if</span> <span class="n">category</span><span class="p">:</span>
-        <span class="n">where</span><span class="p">[</span><span class="s2">"category"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">category</span><span class="p">}</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">documents</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Document</span><span class="p">]:</span>
+    <span class="c1"># A list query gets where, orderBy, limit and offset; find applies them</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"documents"</span><span class="p">,</span> <span class="s2">"documents"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-        <span class="s2">"documents"</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span>
-        <span class="n">orderBy</span><span class="o">=</span><span class="p">{</span><span class="s2">"embedding"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"cosine_distance"</span><span class="p">:</span> <span class="n">query_embedding</span><span class="p">}},</span>
-        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
-    <span class="p">)</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQLApp</span><span class="p">(</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Document</span><span class="p">],</span>
-    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">search_documents</span><span class="p">]</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">documents</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="graphql-client-queries">GraphQL Client Queries<a class="headerlink" href="#graphql-client-queries" title="Permanent link">&para;</a></h3>
@@ -5958,11 +6006,11 @@ docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </sp
 <span class="sb">  ) {</span>
 <span class="sb">    documents(</span>
 <span class="sb">      where: {</span>
-<span class="sb">        embedding: { cosine_distance: $embedding }</span>
+<span class="sb">        embedding: { cosineDistance: { dense: $embedding }, distanceWithin: 0.5 }</span>
 <span class="sb">        category: { eq: $category }</span>
 <span class="sb">      }</span>
 <span class="sb">      orderBy: {</span>
-<span class="sb">        embedding: { cosine_distance: $embedding }</span>
+<span class="sb">        embedding: { cosineDistance: { dense: $embedding } }</span>
 <span class="sb">      }</span>
 <span class="sb">      limit: $limit</span>
 <span class="sb">    ) {</span>
@@ -6071,10 +6119,10 @@ docker<span class="w"> </span>run<span class="w"> </span>-e<span class="w"> </sp
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

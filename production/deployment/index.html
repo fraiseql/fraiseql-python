@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5324,34 +5324,28 @@
 <span class="nv">FRAISEQL_AUTH0_DOMAIN</span><span class="o">=</span>your-tenant.auth0.com
 <span class="nv">FRAISEQL_AUTH0_API_IDENTIFIER</span><span class="o">=</span>https://api.yourapp.com
 
-<span class="c1"># Performance</span>
-<span class="nv">FRAISEQL_JSON_PASSTHROUGH_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_TURBO_ROUTER_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_ENABLE_QUERY_CACHING</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_CACHE_TTL</span><span class="o">=</span><span class="m">300</span>
+<span class="c1"># Performance (the Rust pipeline and TurboRouter are always on)</span>
+<span class="nv">FRAISEQL_TURBO_ROUTER_CACHE_SIZE</span><span class="o">=</span><span class="m">1000</span>
 
 <span class="c1"># GraphQL</span>
 <span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
 <span class="nv">FRAISEQL_ENABLE_PLAYGROUND</span><span class="o">=</span><span class="nb">false</span>
-<span class="nv">FRAISEQL_MAX_QUERY_DEPTH</span><span class="o">=</span><span class="m">10</span>
 <span class="nv">FRAISEQL_QUERY_TIMEOUT</span><span class="o">=</span><span class="m">30</span>
 
-<span class="c1"># Monitoring</span>
-<span class="nv">FRAISEQL_ENABLE_METRICS</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_METRICS_PATH</span><span class="o">=</span>/metrics
+<span class="c1"># Monitoring: /metrics comes from setup_metrics(app) in code, not a variable</span>
 <span class="nv">SENTRY_DSN</span><span class="o">=</span>https://...@sentry.io/...
 <span class="nv">SENTRY_ENVIRONMENT</span><span class="o">=</span>production
 <span class="nv">SENTRY_TRACES_SAMPLE_RATE</span><span class="o">=</span><span class="m">0</span>.1
 
 <span class="c1"># CORS</span>
 <span class="nv">FRAISEQL_CORS_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_CORS_ORIGINS</span><span class="o">=</span>https://app.yourapp.com,https://www.yourapp.com
-
-<span class="c1"># Rate Limiting</span>
-<span class="nv">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="o">=</span><span class="m">60</span>
-<span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_HOUR</span><span class="o">=</span><span class="m">1000</span>
+<span class="nv">FRAISEQL_CORS_ORIGINS</span><span class="o">=</span><span class="s1">'["https://app.yourapp.com","https://www.yourapp.com"]'</span>
 </code></pre></div>
+<p>List values such as <code>FRAISEQL_CORS_ORIGINS</code> are JSON. <code>FraiseQLConfig</code> also declares
+<code>cache_ttl</code>, which nothing reads (deprecated), so it is left out here. To limit
+requests per client IP, add <code>FRAISEQL_RATE_LIMIT_ENABLED=true</code> (see
+<a href="../../configuration/rate-limiting/">Rate Limiting</a>). To limit query depth and size, add <code>FRAISEQL_MAX_QUERY_DEPTH=10</code> and
+<code>FRAISEQL_COMPLEXITY_MAX_SCORE=1000</code> (no limit by default).</p>
 <h3 id="kubernetes-secrets">Kubernetes Secrets<a class="headerlink" href="#kubernetes-secrets" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Secret</span>
@@ -5671,10 +5665,10 @@ kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </sp
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

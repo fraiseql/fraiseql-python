@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4936,12 +4936,10 @@
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">email_filter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">email_filter</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s1">'email__icontains'</span><span class="p">]</span> <span class="o">=</span> <span class="n">email_filter</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">email_filter</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"icontains"</span><span class="p">:</span> <span class="n">email_filter</span><span class="p">}}</span> <span class="k">if</span> <span class="n">email_filter</span> <span class="k">else</span> <span class="kc">None</span>
 
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="graphql-query-with-arguments">GraphQL: Query with Arguments<a class="headerlink" href="#graphql-query-with-arguments" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">GetFilteredUsers</span><span class="p">(</span><span class="nv">$emailFilter</span><span class="p">:</span><span class="w"> </span><span class="nb">String</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5043,50 +5041,46 @@
 </code></pre></div>
 <h2 id="mutation-create-operation">Mutation: Create Operation<a class="headerlink" href="#mutation-create-operation" title="Permanent link">&para;</a></h2>
 <h3 id="sql-business-logic-function">SQL: Business Logic Function<a class="headerlink" href="#sql-business-logic-function" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_post handles validation and insertion</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_title</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_content</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_author_id</span><span class="w"> </span><span class="n">uuid</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">uuid</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
-<span class="k">DECLARE</span>
-<span class="w">    </span><span class="n">v_post_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_post handles validation and insertion. It takes the arguments as</span>
+<span class="c1">-- one jsonb, and returns the new post's id as an OUT parameter.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">post_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_author_id</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Author does not exist'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert post</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">p_title</span><span class="p">,</span><span class="w"> </span><span class="n">p_content</span><span class="p">,</span><span class="w"> </span><span class="n">p_author_id</span><span class="p">)</span>
-<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">;</span>
-
-<span class="w">    </span><span class="c1">-- Return new post ID</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">post_id</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="python-mutation-resolver">Python: Mutation Resolver<a class="headerlink" href="#python-mutation-resolver" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutation</span><span class="p">,</span> <span class="nb">input</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@input</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreatePostInput</span><span class="p">:</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
-    <span class="c1"># Call PostgreSQL function</span>
-    <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_scalar</span><span class="p">(</span>
-        <span class="s2">"SELECT fn_create_post($1, $2, $3)"</span><span class="p">,</span>
-        <span class="p">[</span><span class="nb">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">]</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># Call PostgreSQL function: it gets one jsonb, and its OUT parameters come</span>
+    <span class="c1"># back as a dict</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_create_post"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"title"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="s2">"author_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">)},</span>
     <span class="p">)</span>
 
     <span class="c1"># Return created post</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">post_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_post"</span><span class="p">,</span> <span class="s2">"createPost"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"post_id"</span><span class="p">]}</span>
+    <span class="p">)</span>
 </code></pre></div>
 <h3 id="graphql-mutation-operation">GraphQL: Mutation Operation<a class="headerlink" href="#graphql-mutation-operation" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">CreateNewPost</span><span class="p">(</span><span class="nv">$input</span><span class="p">:</span><span class="w"> </span><span class="nc">CreatePostInput</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
@@ -5198,9 +5192,9 @@
 </ol>
 <h3 id="common-patterns">Common Patterns<a class="headerlink" href="#common-patterns" title="Permanent link">&para;</a></h3>
 <ul>
-<li>**Views (v_*)**: For real-time queries with joins</li>
-<li>**Functions (fn_*)**: For mutations with business logic</li>
-<li>**Table Views (tv_*)**: For denormalized data and aggregations</li>
+<li><strong>Views (v_*)</strong>: For real-time queries with joins</li>
+<li><strong>Functions (fn_*)</strong>: For mutations with business logic</li>
+<li><strong>Table Views (tv_*)</strong>: For denormalized data and aggregations</li>
 <li><strong>Nested Types</strong>: Automatic resolution from JSONB</li>
 </ul>
 <h3 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h3>
@@ -5285,10 +5279,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

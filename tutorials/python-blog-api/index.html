@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -3879,10 +3879,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#jsonb-keys-must-match-graphql-field-names" class="md-nav__link">
+  <a href="#jsonb-keys-are-snake_case" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JSONB keys must match GraphQL field names
+        JSONB keys are snake_case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order_by-takes-a-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        order_by takes a dict
       
     </span>
   </a>
@@ -3901,10 +3912,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pass-uuid-arguments-to-functions-as-strings" class="md-nav__link">
+  <a href="#cast-uuid-inputs-back-inside-the-function" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pass UUID arguments to functions as strings
+        Cast UUID inputs back inside the function
       
     </span>
   </a>
@@ -5238,10 +5249,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#jsonb-keys-must-match-graphql-field-names" class="md-nav__link">
+  <a href="#jsonb-keys-are-snake_case" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JSONB keys must match GraphQL field names
+        JSONB keys are snake_case
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#order_by-takes-a-dict" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        order_by takes a dict
       
     </span>
   </a>
@@ -5260,10 +5282,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pass-uuid-arguments-to-functions-as-strings" class="md-nav__link">
+  <a href="#cast-uuid-inputs-back-inside-the-function" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pass UUID arguments to functions as strings
+        Cast UUID inputs back inside the function
       
     </span>
   </a>
@@ -5349,7 +5371,7 @@ FastAPI app with <code>uvicorn</code>.</p>
 <ul>
 <li>FraiseQL's decorators: <code>@fraiseql.type</code>, <code>@fraiseql.query</code>, <code>@fraiseql.mutation</code>,
   <code>@fraiseql.input</code>, <code>@fraiseql.success</code>, <code>@fraiseql.error</code></li>
-<li>The <strong>CQRS</strong> split: read from <code>v_*</code> views, write through <code>fn_*</code> functions</li>
+<li>The <strong>CQRS</strong> split: read from <code>v_*</code> views, write through PostgreSQL functions</li>
 <li>The <strong>Trinity</strong> identifier pattern: <code>pk_*</code> (internal <code>BIGINT</code>), <code>id</code> (public <code>UUID</code>),
   <code>identifier</code> (optional human-readable slug)</li>
 <li>JSONB composition in views to fetch nested data in a single query</li>
@@ -5361,7 +5383,7 @@ FastAPI app with <code>uvicorn</code>.</p>
 <ul>
 <li><strong>Reads</strong> come from <code>v_*</code> views, each of which exposes an <code>id</code> column plus a
   <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>.</li>
-<li><strong>Writes</strong> go through <code>fn_*</code> PostgreSQL functions, which hold the validation
+<li><strong>Writes</strong> go through PostgreSQL functions, one per mutation, which hold the validation
   and write logic and return a JSONB result.</li>
 </ul>
 <p>This keeps your write tables normalized while letting reads return ready-to-serve
@@ -5421,10 +5443,11 @@ public <code>UUID</code> stable and non-enumerable. The <code>pk_*</code>/<code>
 exposed in GraphQL — only <code>id</code> (and optionally <code>identifier</code>) are.</p>
 </blockquote>
 <h3 id="step-13-read-views-the-query-side">Step 1.3: Read Views (the query side)<a class="headerlink" href="#step-13-read-views-the-query-side" title="Permanent link">&para;</a></h3>
-<p>A read view always exposes an <code>id</code> column (so resolvers can do <code>WHERE id = $1</code>)
-plus a <code>data</code> JSONB column built with <code>jsonb_build_object(...)</code>. Compose related
-data <strong>inside the view</strong> so a single query returns the full nested shape — this
-is how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>data</code>.</p>
+<p>A read view always exposes an <code>id</code> column plus a <code>data</code> JSONB column built with
+<code>jsonb_build_object(...)</code>. Add a plain column for anything a query filters on
+with <code>mandatory_filters</code> (here <code>published</code> and <code>post_id</code>). Compose related data
+<strong>inside the view</strong> so a single query returns the full nested shape — this is
+how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>data</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Author view</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_author</span><span class="w"> </span><span class="k">AS</span>
 <span class="k">SELECT</span>
@@ -5435,7 +5458,7 @@ is how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>dat
 <span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w">       </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w">      </span><span class="n">a</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'bio'</span><span class="p">,</span><span class="w">        </span><span class="n">a</span><span class="p">.</span><span class="n">bio</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w">  </span><span class="n">a</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="n">a</span><span class="p">;</span>
 
@@ -5444,14 +5467,13 @@ is how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>dat
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">published</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">         </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w">     </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w">   </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'published'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">published</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w">      </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'published'</span><span class="p">,</span><span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">published</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w">    </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'name'</span><span class="p">,</span><span class="w">  </span><span class="n">a</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
@@ -5466,11 +5488,10 @@ is how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>dat
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">post_id</span><span class="p">,</span>
-<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">        </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w">   </span><span class="k">c</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w">         </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'content'</span><span class="p">,</span><span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w">   </span><span class="n">a</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">a</span><span class="p">.</span><span class="n">name</span>
@@ -5485,46 +5506,74 @@ is how FraiseQL avoids N+1 queries. Never put <code>pk_*</code> inside <code>dat
 <span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w">   </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="p">;</span>
 </code></pre></div>
 <blockquote>
-<p><strong>JSON keys are camelCase.</strong> FraiseQL maps GraphQL's <code>createdAt</code> to your
-Python field <code>created_at</code> automatically, so build the JSONB with camelCase keys
-(<code>createdAt</code>, etc.) to match the GraphQL field names clients will request.</p>
+<p><strong>JSON keys are snake_case</strong>, like the Python field names (<code>created_at</code>).
+FraiseQL's <code>where</code> and <code>order_by</code> read these keys (<code>data -&gt; 'created_at'</code>),
+and the response turns them into the GraphQL names (<code>createdAt</code>).</p>
 </blockquote>
 <h3 id="step-14-write-functions-the-command-side">Step 1.4: Write Functions (the command side)<a class="headerlink" href="#step-14-write-functions-the-command-side" title="Permanent link">&para;</a></h3>
-<p>Mutations call <code>fn_*</code> PostgreSQL functions. Each function takes a single <code>jsonb</code>
-input, performs validation and the write, and returns a JSONB result indicating
-<code>success</code> (and typically the new row's <code>id</code>). All write business logic lives in
-PostgreSQL.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Create an author</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_author</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<p>Each mutation calls the PostgreSQL function named after it (<code>CreatePost</code> calls
+<code>create_post</code>). Each takes the GraphQL input as one
+<code>jsonb</code> (with snake_case keys: <code>input-&gt;&gt;'author_id'</code>), validates it, writes, and
+returns a <code>mutation_response</code> row:</p>
+<ul>
+<li><code>status</code>: <code>'created'</code> selects the mutation's success type; a prefix such as
+  <code>'validation:'</code> or <code>'not_found:'</code> selects its error type.</li>
+<li><code>message</code>: a human-readable message.</li>
+<li><code>entity</code>: the object the success type's field returns. Read it back from the
+  view, so it has the same shape as a query result.</li>
+</ul>
+<p>All write business logic lives in PostgreSQL.</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The row every mutation function returns</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TYPE</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">message</span><span class="w">         </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">entity_id</span><span class="w">       </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">entity_type</span><span class="w">     </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">entity</span><span class="w">          </span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_fields</span><span class="w">  </span><span class="nb">text</span><span class="p">[],</span>
+<span class="w">    </span><span class="k">cascade</span><span class="w">         </span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">    </span><span class="n">metadata</span><span class="w">        </span><span class="n">jsonb</span>
+<span class="p">);</span>
+
+<span class="c1">-- Create an author</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_author</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email is required'</span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'validation:email'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email is required'</span><span class="p">,</span>
+<span class="w">                   </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'conflict:email'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email is already registered'</span><span class="p">,</span>
+<span class="w">                   </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'bio'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'created'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Author created'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'Author'</span><span class="p">,</span>
+<span class="w">               </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_author</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_id</span><span class="p">),</span>
+<span class="w">               </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- Create a post (looks up the author by public UUID)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_author</span><span class="w"> </span><span class="nb">bigint</span><span class="p">;</span>
 <span class="w">    </span><span class="n">new_id</span><span class="w">      </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_author</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_author</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'authorId'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'author not found'</span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'not_found:author'</span><span class="p">,</span><span class="w"> </span><span class="s1">'author not found'</span><span class="p">,</span>
+<span class="w">                   </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_author</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">published</span><span class="p">)</span>
@@ -5536,33 +5585,39 @@ PostgreSQL.</p>
 <span class="w">    </span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'created'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Post created'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'Post'</span><span class="p">,</span>
+<span class="w">               </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_id</span><span class="p">),</span>
+<span class="w">               </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- Add a comment to a post</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_add_comment</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">add_comment</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_post</span><span class="w">   </span><span class="nb">bigint</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_fk_author</span><span class="w"> </span><span class="nb">bigint</span><span class="p">;</span>
 <span class="w">    </span><span class="n">new_id</span><span class="w">      </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_post</span><span class="w">   </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'postId'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_author</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'authorId'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_post</span><span class="w">   </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w">   </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w">   </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'post_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_author</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_author</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'post not found'</span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'not_found:post'</span><span class="p">,</span><span class="w"> </span><span class="s1">'post not found'</span><span class="p">,</span>
+<span class="w">                   </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_fk_author</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span><span class="w"> </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'author not found'</span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'not_found:author'</span><span class="p">,</span><span class="w"> </span><span class="s1">'author not found'</span><span class="p">,</span>
+<span class="w">                   </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">fk_author</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">v_fk_author</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'created'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Comment added'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'Comment'</span><span class="p">,</span>
+<span class="w">               </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_comment</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_id</span><span class="p">),</span>
+<span class="w">               </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5626,57 +5681,103 @@ views already compose — no extra resolvers or N+1 queries.</p>
 <h3 id="step-22-queries">Step 2.2: Queries<a class="headerlink" href="#step-22-queries" title="Permanent link">&para;</a></h3>
 <p>A <code>@fraiseql.query</code> resolver is an <code>async</code> function whose first parameter is
 <code>info</code>. Get the repository from <code>info.context["db"]</code> and call <code>db.find(...)</code> for
-lists or <code>db.find_one(...)</code> for a single record. The GraphQL field name is
-inferred from the function name.</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authors</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Author</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""List all authors."""</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_author"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"-createdAt"</span><span class="p">)</span>
+lists or <code>db.find_one(...)</code> for a single record, passing <code>info=info</code>: FraiseQL
+reads the requested fields and the field name from it. The GraphQL field name
+is inferred from the function name.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLResolveInfo</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Author</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">authors</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span>
+    <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Author</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""List authors, newest first unless orderBy says otherwise."""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_author"</span><span class="p">,</span>
+        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="n">order_by</span> <span class="ow">or</span> <span class="p">{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">},</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Author</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get a single author by id."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_author"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_author"</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">published</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""List posts, optionally filtered by published status."""</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span>
+    <span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span>
+    <span class="n">published</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">where</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""List posts, optionally only the published (or unpublished) ones."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">published</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">"published"</span><span class="p">]</span> <span class="o">=</span> <span class="n">published</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"-createdAt"</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">)</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span> <span class="k">if</span> <span class="n">published</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{</span><span class="s2">"published"</span><span class="p">:</span> <span class="n">published</span><span class="p">}</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_post"</span><span class="p">,</span>
+        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
+        <span class="n">mandatory_filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="n">order_by</span> <span class="ow">or</span> <span class="p">{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">},</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get a single post by id."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_comments</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""List comments for a post."""</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post_comments</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span> <span class="n">post_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Comment</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""List a post's comments, oldest first."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_comment"</span><span class="p">,</span> <span class="n">post_id</span><span class="o">=</span><span class="n">post_id</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"createdAt"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_comment"</span><span class="p">,</span>
+        <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">,</span>
+        <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"post_id"</span><span class="p">:</span> <span class="n">post_id</span><span class="p">},</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"ASC"</span><span class="p">},</span>
+    <span class="p">)</span>
 </code></pre></div>
 <p>The repository (<code>db</code>) is FraiseQL's CQRS repository. Its main query methods are:</p>
 <ul>
-<li><code>await db.find("v_x", **filters)</code> — list rows from a view</li>
-<li><code>await db.find_one("v_x", id=...)</code> — a single row (or <code>None</code>)</li>
-<li><code>await db.count("v_x", **filters)</code> — a count</li>
+<li><code>await db.find("v_x", info=info, where=..., order_by=..., limit=..., offset=...)</code>
+  — list rows from a view</li>
+<li><code>await db.find_one("v_x", info=info, mandatory_filters={"id": id})</code> — a single
+  row (or <code>None</code>)</li>
 </ul>
-<p>Filters become <code>WHERE</code> conditions; <code>order_by</code> accepts a column name, with a <code>-</code>
-prefix for descending (e.g. <code>"-createdAt"</code>).</p>
+<p><code>mandatory_filters</code> compares view <strong>columns</strong> for equality (<code>id</code>, <code>published</code>,
+<code>post_id</code> above), and the client can't remove it. <code>where</code> and <code>order_by</code> address
+<strong>keys of the <code>data</code> JSONB</strong> in snake_case: <code>order_by={"created_at": "DESC"}</code>
+sorts on <code>data -&gt; 'created_at'</code>. A query returning a list gets <code>where</code>,
+<code>orderBy</code>, <code>limit</code> and <code>offset</code> GraphQL arguments; declaring them, as <code>authors</code>
+and <code>posts</code> do, lets you set defaults and pass them on. Leave <code>where</code> and
+<code>order_by</code> unannotated: FraiseQL gives them the type's generated input types
+(<code>AuthorWhereInput</code>, <code>AuthorOrderByInput</code>).</p>
 <h3 id="step-23-inputs-and-result-types">Step 2.3: Inputs and Result Types<a class="headerlink" href="#step-23-inputs-and-result-types" title="Permanent link">&para;</a></h3>
-<p>Mutations take an <code>@fraiseql.input</code> and return a union of an <code>@fraiseql.success</code>
-and an <code>@fraiseql.error</code>. The <code>@fraiseql.success</code> decorator auto-injects
-<code>status</code>, <code>message</code>, <code>updated_fields</code>, and <code>id</code> fields.</p>
+<p>A mutation takes an <code>@fraiseql.input</code>, and returns its <code>@fraiseql.success</code> type
+or its <code>@fraiseql.error</code> type, chosen by the function's <code>status</code>.
+<code>@fraiseql.success</code> adds <code>status</code>, <code>message</code>, <code>updated_fields</code> and <code>id</code> to the
+class; its own field (<code>author</code> below) receives the function's <code>entity</code>.
+<code>@fraiseql.error</code> adds <code>status</code>, <code>message</code>, <code>code</code> (the HTTP-style code of the
+status prefix: 422 for <code>validation:</code>, 404 for <code>not_found:</code>, 409 for
+<code>conflict:</code>) and <code>errors</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateAuthorInput</span><span class="p">:</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -5716,72 +5817,41 @@ and an <code>@fraiseql.error</code>. The <code>@fraiseql.success</code> decorato
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MutationError</span><span class="p">:</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
+<span class="w">    </span><span class="sd">"""status, message and code come from the function's mutation_response."""</span>
 </code></pre></div>
 <h3 id="step-24-mutations">Step 2.4: Mutations<a class="headerlink" href="#step-24-mutations" title="Permanent link">&para;</a></h3>
-<p>A <code>@fraiseql.mutation</code> resolver calls a <code>fn_*</code> function via
-<code>db.execute_function(name, params)</code>. It receives the function's JSONB result as a
-dict; on success it reads the freshly written row back through a view and wraps it
-in the success type.</p>
+<p>A mutation is a class naming its input, success and error types. FraiseQL calls
+the PostgreSQL function named after the class in snake_case (<code>CreateAuthor</code> calls
+<code>create_author</code>) with the input as one <code>jsonb</code>, and turns the <code>mutation_response</code>
+it returns into the success or error type. To call a function with another name,
+pass <code>function="..."</code> together with <code>name="createAuthor"</code>: without <code>name=</code>, the
+GraphQL field is named after the function. The
+class body holds no code: the write logic is in the function.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_author</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateAuthorInput</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateAuthorSuccess</span> <span class="o">|</span> <span class="n">MutationError</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateAuthor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Create a new author."""</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">"fn_create_author"</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="s2">"bio"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">bio</span><span class="p">},</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">MutationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"Failed to create author"</span><span class="p">))</span>
 
-    <span class="n">author</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_author"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">CreateAuthorSuccess</span><span class="p">(</span><span class="n">author</span><span class="o">=</span><span class="n">author</span><span class="p">)</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateAuthorInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateAuthorSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">MutationError</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreatePostSuccess</span> <span class="o">|</span> <span class="n">MutationError</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Create a new post."""</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">"fn_create_post"</span><span class="p">,</span>
-        <span class="p">{</span>
-            <span class="s2">"title"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
-            <span class="s2">"content"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
-            <span class="s2">"authorId"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">),</span>
-            <span class="s2">"published"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">published</span><span class="p">,</span>
-        <span class="p">},</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">MutationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"Failed to create post"</span><span class="p">))</span>
 
-    <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">CreatePostSuccess</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">post</span><span class="p">)</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreatePostSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">MutationError</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_comment</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">AddCommentInput</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AddCommentSuccess</span> <span class="o">|</span> <span class="n">MutationError</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AddComment</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Add a comment to a post."""</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">"fn_add_comment"</span><span class="p">,</span>
-        <span class="p">{</span>
-            <span class="s2">"postId"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">post_id</span><span class="p">),</span>
-            <span class="s2">"authorId"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">author_id</span><span class="p">),</span>
-            <span class="s2">"content"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
-        <span class="p">},</span>
-    <span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">MutationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"Failed to add comment"</span><span class="p">))</span>
 
-    <span class="n">comment</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_comment"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="n">AddCommentSuccess</span><span class="p">(</span><span class="n">comment</span><span class="o">=</span><span class="n">comment</span><span class="p">)</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">AddCommentInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">AddCommentSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">MutationError</span>
 </code></pre></div>
 <hr />
 <h2 id="part-3-assemble-and-run-the-app">Part 3: Assemble and Run the App<a class="headerlink" href="#part-3-assemble-and-run-the-app" title="Permanent link">&para;</a></h2>
@@ -5798,7 +5868,7 @@ export, no compile, and no schema file</strong> — the schema is constructed at
     <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">,</span> <span class="s2">"postgresql://localhost/blog"</span><span class="p">),</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Author</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">authors</span><span class="p">,</span> <span class="n">author</span><span class="p">,</span> <span class="n">posts</span><span class="p">,</span> <span class="n">post</span><span class="p">,</span> <span class="n">post_comments</span><span class="p">],</span>
-    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_author</span><span class="p">,</span> <span class="n">create_post</span><span class="p">,</span> <span class="n">add_comment</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">CreateAuthor</span><span class="p">,</span> <span class="n">CreatePost</span><span class="p">,</span> <span class="n">AddComment</span><span class="p">],</span>
     <span class="n">title</span><span class="o">=</span><span class="s2">"Blog API"</span><span class="p">,</span>
     <span class="n">description</span><span class="o">=</span><span class="s2">"A simple blog API built with FraiseQL"</span><span class="p">,</span>
     <span class="n">production</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># False enables the GraphQL playground</span>
@@ -5919,16 +5989,17 @@ thanks to the JSONB composition in <code>v_post</code>:</p>
 query  { posts { ... } }   →   @fraiseql.query resolver           →   SELECT data FROM v_post
                                db.find("v_post")                       (JSONB, author embedded)
 
-mutation { createPost }    →   @fraiseql.mutation resolver        →   SELECT fn_create_post(jsonb)
-                               db.execute_function("fn_create_post")   (validate + INSERT)
+mutation { createPost }    →   @fraiseql.mutation class CreatePost →   SELECT * FROM create_post(jsonb)
+                                                                       (validate + INSERT,
+                                                                        returns mutation_response)
 </code></pre></div>
 <ul>
 <li><strong>Reads</strong> flow through <code>@fraiseql.query</code> → <code>db.find</code> / <code>db.find_one</code> → a <code>v_*</code>
   view's <code>data</code> JSONB. FraiseQL trims the JSONB to exactly the fields the client
   requested.</li>
-<li><strong>Writes</strong> flow through <code>@fraiseql.mutation</code> → <code>db.execute_function</code> → an
-  <code>fn_*</code> function that validates and writes, then the resolver reads the result
-  back through a view.</li>
+<li><strong>Writes</strong> flow through a <code>@fraiseql.mutation</code> class → its function,
+  which validates, writes and returns a <code>mutation_response</code> whose <code>entity</code> it
+  read back through a view. Its <code>status</code> picks the success or the error type.</li>
 <li><strong>The schema is built in memory at startup</strong> from your decorated Python
   objects. Restart the app to pick up Python changes; run new SQL with <code>psql</code> to
   pick up schema changes.</li>
@@ -5946,17 +6017,21 @@ mutation { createPost }    →   @fraiseql.mutation resolver        →   SELECT
 <span class="k">class</span><span class="w"> </span><span class="nc">Author</span><span class="p">:</span> <span class="o">...</span>
 </code></pre></div>
 <p>Without <code>sql_source</code>, FraiseQL can't map the type to a read view.</p>
-<h3 id="jsonb-keys-must-match-graphql-field-names">JSONB keys must match GraphQL field names<a class="headerlink" href="#jsonb-keys-must-match-graphql-field-names" title="Permanent link">&para;</a></h3>
-<p>GraphQL field <code>createdAt</code> maps to your Python field <code>created_at</code>. Build the view's
-JSONB with the <strong>camelCase</strong> key (<code>'createdAt', a.created_at</code>) so the data lines
-up with what clients request.</p>
+<h3 id="jsonb-keys-are-snake_case">JSONB keys are snake_case<a class="headerlink" href="#jsonb-keys-are-snake_case" title="Permanent link">&para;</a></h3>
+<p>Build the view's JSONB with the Python field name (<code>'created_at', a.created_at</code>),
+not the GraphQL one. <code>where</code> and <code>order_by</code> look up <code>data -&gt; 'created_at'</code>; with a
+camelCase key, a filter on that field matches nothing and a sort on it does
+nothing. FraiseQL camelCases the keys in the response (<code>createdAt</code>).</p>
+<h3 id="order_by-takes-a-dict"><code>order_by</code> takes a dict<a class="headerlink" href="#order_by-takes-a-dict" title="Permanent link">&para;</a></h3>
+<p><code>order_by={"created_at": "DESC"}</code>, or a list of such dicts for several keys. A
+string such as <code>"-created_at"</code> is not a sort specification.</p>
 <h3 id="never-expose-pk_">Never expose <code>pk_*</code><a class="headerlink" href="#never-expose-pk_" title="Permanent link">&para;</a></h3>
 <p>Keep <code>pk_*</code>/<code>fk_*</code> out of the <code>data</code> JSONB. Expose only <code>id</code> (a <code>UUID</code>) and,
 optionally, <code>identifier</code>.</p>
-<h3 id="pass-uuid-arguments-to-functions-as-strings">Pass <code>UUID</code> arguments to functions as strings<a class="headerlink" href="#pass-uuid-arguments-to-functions-as-strings" title="Permanent link">&para;</a></h3>
-<p><code>db.execute_function</code> serializes its params dict to JSONB. Cast <code>ID</code>/<code>UUID</code>
-arguments with <code>str(...)</code>, and cast them back inside the function (e.g.
-<code>(input-&gt;&gt;'authorId')::uuid</code>).</p>
+<h3 id="cast-uuid-inputs-back-inside-the-function">Cast <code>UUID</code> inputs back inside the function<a class="headerlink" href="#cast-uuid-inputs-back-inside-the-function" title="Permanent link">&para;</a></h3>
+<p>The input reaches the function as JSONB, where an <code>ID</code> is a string. Cast it
+back with <code>(input-&gt;&gt;'author_id')::uuid</code>. Input keys are snake_case, like the
+Python field names.</p>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>You've built a complete, runtime-served Blog API: PostgreSQL write tables, JSONB
@@ -5974,11 +6049,12 @@ read views, write functions, and Python decorators tying them to GraphQL.</p>
 <p>You've learned how to:</p>
 <ul>
 <li>Design a CQRS PostgreSQL schema: <code>tb_*</code> write tables (Trinity pattern), <code>v_*</code>
-  read views building a <code>data</code> JSONB, and <code>fn_*</code> write functions</li>
+  read views building a <code>data</code> JSONB, and write functions</li>
 <li>Define GraphQL types with <code>@fraiseql.type(sql_source=..., jsonb_column="data")</code></li>
 <li>Write query resolvers with <code>@fraiseql.query</code> using <code>db.find</code> / <code>db.find_one</code></li>
-<li>Write mutation resolvers with <code>@fraiseql.mutation</code> using <code>db.execute_function</code>,
-  returning <code>@fraiseql.success | @fraiseql.error</code> unions</li>
+<li>Write mutations as <code>@fraiseql.mutation</code> classes backed by functions
+  that return a <code>mutation_response</code>, answered with a <code>@fraiseql.success</code> or
+  <code>@fraiseql.error</code> type</li>
 <li>Assemble and serve the API with <code>create_fraiseql_app</code> and <code>uvicorn</code> — schema
   built in memory at startup, no compile step</li>
 </ul>
@@ -6060,10 +6136,10 @@ read views, write functions, and Python decorators tying them to GraphQL.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

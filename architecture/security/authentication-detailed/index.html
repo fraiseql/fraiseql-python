@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -7562,8 +7562,19 @@ GraphQL/JSON error response when validation fails.</p>
 <hr />
 <h2 id="10-audit-compliance">10. Audit &amp; Compliance<a class="headerlink" href="#10-audit-compliance" title="Permanent link">&para;</a></h2>
 <h3 id="101-authentication-event-logging">10.1 Authentication Event Logging<a class="headerlink" href="#101-authentication-event-logging" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AuthenticationAuditLog</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.types.json</span><span class="w"> </span><span class="kn">import</span> <span class="n">Jsonb</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AuthenticationAuditLog</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Log authentication events for compliance and investigation"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">log_event</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -7588,23 +7599,27 @@ GraphQL/JSON error response when validation fails.</p>
 <span class="sd">        - SUSPICIOUS_ACTIVITY</span>
 <span class="sd">        """</span>
         <span class="n">event</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">(),</span>
+            <span class="s2">"timestamp"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">),</span>
             <span class="s2">"event_type"</span><span class="p">:</span> <span class="n">event_type</span><span class="p">,</span>
             <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">,</span>
             <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">,</span>
             <span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
             <span class="s2">"ip_address"</span><span class="p">:</span> <span class="n">ip_address</span><span class="p">,</span>
             <span class="s2">"user_agent"</span><span class="p">:</span> <span class="n">user_agent</span><span class="p">,</span>
-            <span class="s2">"details"</span><span class="p">:</span> <span class="n">details</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="s2">"details"</span><span class="p">:</span> <span class="n">Jsonb</span><span class="p">(</span><span class="n">details</span> <span class="ow">or</span> <span class="p">{})</span>
         <span class="p">}</span>
 
         <span class="c1"># Store in immutable audit table</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">            INSERT INTO audit_log_authentication (</span>
-<span class="s2">                timestamp, event_type, user_id, tenant_id,</span>
-<span class="s2">                status, ip_address, user_agent, details</span>
-<span class="s2">            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">                INSERT INTO audit_log_authentication (</span>
+<span class="s2">                    timestamp, event_type, user_id, tenant_id,</span>
+<span class="s2">                    status, ip_address, user_agent, details</span>
+<span class="s2">                ) VALUES (</span>
+<span class="s2">                    </span><span class="si">%(timestamp)s</span><span class="s2">, </span><span class="si">%(event_type)s</span><span class="s2">, </span><span class="si">%(user_id)s</span><span class="s2">, </span><span class="si">%(tenant_id)s</span><span class="s2">,</span>
+<span class="s2">                    </span><span class="si">%(status)s</span><span class="s2">, </span><span class="si">%(ip_address)s</span><span class="s2">, </span><span class="si">%(user_agent)s</span><span class="s2">, </span><span class="si">%(details)s</span>
+<span class="s2">                )</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="n">event</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="102-compliance-requirements">10.2 Compliance Requirements<a class="headerlink" href="#102-compliance-requirements" title="Permanent link">&para;</a></h3>
 <p><strong>SOC 2 Type II:</strong></p>
@@ -7695,13 +7710,13 @@ Auth0), wrap two <code>AuthProvider</code> instances and try them in order. Each
 </code></pre></div>
 <hr />
 <h2 id="12-error-handling">12. Error Handling<a class="headerlink" href="#12-error-handling" title="Permanent link">&para;</a></h2>
-<p>FraiseQL v1's built-in authentication errors live in <code>fraiseql.auth</code> and subclass plain
+<p>FraiseQL v1's built-in authentication errors live in <code>fraiseql.auth.base</code> and subclass plain
 <code>Exception</code>: <code>AuthenticationError</code>, <code>TokenExpiredError</code>, <code>InvalidTokenError</code>,
 <code>InsufficientPermissionsError</code>. Authorization <em>denials</em> do not raise an HTTP 4xx from a
 router — they surface as a GraphQL error with a stable <code>extensions.code</code> (default
 <code>"FORBIDDEN"</code>), produced by the <code>Authorizer</code> / field-authorization machinery in
 <code>fraiseql.security</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthenticationError</span>  <span class="c1"># base; subclasses Exception</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthenticationError</span>  <span class="c1"># base; subclasses Exception</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">InvalidCredentialsError</span><span class="p">(</span><span class="n">AuthenticationError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Invalid username/password."""</span>
@@ -7841,10 +7856,10 @@ layer.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

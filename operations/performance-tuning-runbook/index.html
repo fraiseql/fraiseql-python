@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5906,9 +5906,10 @@ and <strong>the FastAPI app</strong> (connection pool, caching). This runbook co
 <h2 id="1-query-performance-analysis">1. Query Performance Analysis<a class="headerlink" href="#1-query-performance-analysis" title="Permanent link">&para;</a></h2>
 <h3 id="symptom-single-query-takes-1-second">Symptom: Single Query Takes &gt; 1 Second<a class="headerlink" href="#symptom-single-query-takes-1-second" title="Permanent link">&para;</a></h3>
 <h3 id="diagnosis-step-1-enable-query-logging">Diagnosis Step 1: Enable Query Logging<a class="headerlink" href="#diagnosis-step-1-enable-query-logging" title="Permanent link">&para;</a></h3>
-<p>FraiseQL is a Python/FastAPI application. Turn up Python logging to see the SQL it issues
-against your views and functions. Set the logger level via standard Python logging (or the
-<code>FRAISEQL_</code> environment, e.g. <code>FRAISEQL_DATABASE_ECHO=true</code> to echo SQL).</p>
+<p>FraiseQL is a Python/FastAPI application with no SQL echo setting (<code>database_echo</code> is
+deprecated and has no effect). Turn up Python logging for FraiseQL's own messages, and
+log the statements in PostgreSQL itself (<code>log_min_duration_statement</code>, or
+<code>pg_stat_statements</code>) to see the SQL it runs against your views and functions.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># In your app entry point, before create_fraiseql_app(...)</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
@@ -6444,7 +6445,7 @@ unbounded execution:</p>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
-    <span class="n">execution_timeout_ms</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># statement timeout, seconds</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Solution 3: Profile and Recycle</strong></p>
@@ -6657,10 +6658,10 @@ it complements, but does not replace, the result cache above.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

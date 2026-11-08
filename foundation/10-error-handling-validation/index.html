@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -6047,7 +6047,7 @@ Configuration, Internal
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
@@ -6141,7 +6141,7 @@ Configuration, Internal
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>                <span class="c1"># @success auto-injects status/message/updated_fields/id</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>               <span class="c1"># @fraiseql.failure is an accepted alias</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
@@ -6357,7 +6357,7 @@ Configuration, Internal
 <span class="c1"># If user_input = "' OR '1'='1", this becomes a SQL injection.</span>
 
 <span class="c1"># ✅ SAFE (what FraiseQL does internally — parameterized):</span>
-<span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_user WHERE name = $1"</span><span class="p">,</span> <span class="n">user_input</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT * FROM tb_user WHERE name = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="n">user_input</span><span class="p">,))</span>
 <span class="c1"># user_input is treated as pure data, never as SQL</span>
 </code></pre></div>
 <p>Mutation arguments reach PostgreSQL the same way — <code>db.execute_function("fn_x", {...})</code> binds the payload as a JSONB parameter, so a hostile string is data, not executable SQL.</p>
@@ -6397,7 +6397,7 @@ Configuration, Internal
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">row</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
@@ -6438,7 +6438,7 @@ Configuration, Internal
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">document</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Document</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">doc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_document"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">doc</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_document"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">doc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">can_read_document</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">doc</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
@@ -6894,10 +6894,10 @@ Client strategy: Show error, ask for a different username
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

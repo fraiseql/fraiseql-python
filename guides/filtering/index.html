@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4869,15 +4869,18 @@
 <span class="sd">Complete runnable example showing FraiseQL filtering.</span>
 
 <span class="sd">Prerequisites:</span>
-<span class="sd">- PostgreSQL with a users table/view</span>
+<span class="sd">- PostgreSQL with a v_user view (id, data JSONB)</span>
 <span class="sd">- FraiseQL installed: pip install "fraiseql&lt;2"</span>
 <span class="sd">"""</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringFilter</span><span class="p">,</span> <span class="n">BooleanFilter</span><span class="p">,</span> <span class="n">DateTimeFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
 
 <span class="c1"># 1. Define your GraphQL type</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
@@ -4889,55 +4892,51 @@
     <span class="n">is_verified</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
 
+
 <span class="c1"># 2. Create a filtered query resolver</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_verified_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Get all active, verified users created after 2024."""</span>
+<span class="w">    </span><span class="sd">"""Get all active, verified users created since 2024."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
         <span class="s2">"v_user"</span><span class="p">,</span>
+        <span class="s2">"activeVerifiedUsers"</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">,</span>
         <span class="n">where</span><span class="o">=</span><span class="p">{</span>
             <span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
             <span class="s2">"is_verified"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
-            <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">}</span>
-        <span class="p">}</span>
+            <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">},</span>
+        <span class="p">},</span>
     <span class="p">)</span>
 
-<span class="c1"># 3. Execute the query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">schema</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
 
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
-<span class="s2">    {</span>
-<span class="s2">      activeVerifiedUsers {</span>
-<span class="s2">        id</span>
-<span class="s2">        name</span>
-<span class="s2">        email</span>
-<span class="s2">        createdAt</span>
-<span class="s2">      }</span>
-<span class="s2">    }</span>
-<span class="s2">    """</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Errors: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'activeVerifiedUsers'</span><span class="p">])</span><span class="si">}</span><span class="s2"> users"</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'activeVerifiedUsers'</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  - </span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'email'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+<span class="c1"># 3. Serve it, and run the query</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">active_verified_users</span><span class="p">],</span>
+<span class="p">)</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="s2">"{ activeVerifiedUsers { id name email createdAt } }"</span>
+    <span class="k">with</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="n">query</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="s2">"errors"</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ Errors: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'errors'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">users</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"activeVerifiedUsers"</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">users</span><span class="p">)</span><span class="si">}</span><span class="s2"> users"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"  - </span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'name'</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">'email'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Expected Output:</strong></p>
-<div class="highlight"><pre><span></span><code>✅ Found 3 users
+<div class="highlight"><pre><span></span><code>✅ Found 2 users
   - Alice Johnson (alice@example.com)
   - Bob Smith (bob@example.com)
-  - Carol White (carol@example.com)
 </code></pre></div>
+<p>A list query also gets a <code>where</code> argument of its own (<code>UserWhereInput</code>), so clients
+can filter without a resolver of yours (see <a href="../../advanced/where-input-types/">Where Input Types</a>).</p>
 <hr />
 <h2 id="quick-decision">Quick Decision<a class="headerlink" href="#quick-decision" title="Permanent link">&para;</a></h2>
 <table>
@@ -4980,22 +4979,28 @@
 <h2 id="wheretype-syntax-recommended-for-static-queries">WhereType Syntax (Recommended for Static Queries)<a class="headerlink" href="#wheretype-syntax-recommended-for-static-queries" title="Permanent link">&para;</a></h2>
 <p>WhereType provides type-safe filtering with full IDE autocomplete support. Use this when your filter structure is known at development time.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.filters</span><span class="w"> </span><span class="kn">import</span> <span class="n">StringFilter</span><span class="p">,</span> <span class="n">BooleanFilter</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">BooleanFilter</span><span class="p">,</span> <span class="n">StringFilter</span><span class="p">,</span> <span class="n">create_graphql_where_input</span>
+
+<span class="n">UserWhereInput</span> <span class="o">=</span> <span class="n">create_graphql_where_input</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
+
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
         <span class="s2">"v_user"</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="n">UserWhere</span><span class="p">(</span>
+        <span class="s2">"activeUsers"</span><span class="p">,</span>
+        <span class="n">info</span><span class="p">,</span>
+        <span class="n">where</span><span class="o">=</span><span class="n">UserWhereInput</span><span class="p">(</span>
             <span class="n">status</span><span class="o">=</span><span class="n">StringFilter</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="s2">"active"</span><span class="p">),</span>
-            <span class="n">is_verified</span><span class="o">=</span><span class="n">BooleanFilter</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-        <span class="p">)</span>
+            <span class="n">is_verified</span><span class="o">=</span><span class="n">BooleanFilter</span><span class="p">(</span><span class="n">eq</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">),</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>Full IDE autocomplete and type checking</li>
-<li>Compile-time error detection</li>
+<li>Type-checker error detection</li>
 <li>Self-documenting code</li>
 </ul>
 <p>For complete documentation: <strong><a href="../../advanced/where-input-types/">Where Input Types Guide</a></strong></p>
@@ -5003,17 +5008,21 @@
 <h2 id="dict-based-filtering">Dict-Based Filtering<a class="headerlink" href="#dict-based-filtering" title="Permanent link">&para;</a></h2>
 <p>Dict-based filters are ideal for dynamic, runtime-built queries. Use this when filter criteria come from user input or configuration.</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
-
-<span class="c1"># Usage: {"status": {"eq": "active"}, "age": {"gte": 18}}</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verified_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+        <span class="n">where</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">status</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">verified_only</span><span class="p">:</span>
+        <span class="n">where</span><span class="p">[</span><span class="s2">"is_verified"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"searchUsers"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="simple-filter-example">Simple Filter Example<a class="headerlink" href="#simple-filter-example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">where_dict</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">},</span>
     <span class="s2">"created_at"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">}</span>
 <span class="p">}</span>
-<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="nested-object-filtering">Nested Object Filtering<a class="headerlink" href="#nested-object-filtering" title="Permanent link">&para;</a></h3>
 <p>Filter on properties of related objects stored in JSONB:</p>
@@ -5024,13 +5033,13 @@
         <span class="s2">"name"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"contains"</span><span class="p">:</span> <span class="s2">"router"</span><span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
-<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"assignments"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_assignment"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where_dict</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Generated SQL:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">assignments</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'status'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'active'</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'device'</span><span class="o">-&gt;&gt;</span><span class="s1">'is_active'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'true'</span>
-<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="k">data</span><span class="o">-&gt;</span><span class="s1">'device'</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">'%router%'</span><span class="w">  </span><span class="c1">-- icontains operator (case-insensitive)</span>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="ss">"data"</span><span class="p">::</span><span class="nb">text</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">"v_assignment"</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">"data"</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'status'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">1</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="ss">"data"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s1">'device'</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'is_active'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mi">2</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="ss">"data"</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s1">'device'</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'name'</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="err">$</span><span class="mi">3</span><span class="w">  </span><span class="c1">-- contains is case-sensitive; icontains uses ILIKE</span>
 </code></pre></div>
 <h3 id="camelcase-support">CamelCase Support<a class="headerlink" href="#camelcase-support" title="Permanent link">&para;</a></h3>
 <p>Dict-based filters automatically convert GraphQL-style camelCase to database snake_case:</p>
@@ -5252,13 +5261,12 @@
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="nested-filters-not-working">Nested Filters Not Working<a class="headerlink" href="#nested-filters-not-working" title="Permanent link">&para;</a></h3>
-<p>Dict-based filters support 2-level nesting only:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ Supported: 2 levels</span>
-<span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">}}}</span>
-
-<span class="c1"># ❌ Not supported: 3+ levels</span>
-<span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"address"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">}}}}}</span>
-</code></pre></div>
+<p>A nested filter follows the JSONB path of each level, as deep as the document goes:
+<code>{"device": {"location": {"address": {"city": {"eq": "Seattle"}}}}}</code> filters on
+<code>data -&gt; 'device' -&gt; 'location' -&gt; 'address' -&gt;&gt; 'city'</code>. Check that the keys of the
+view's JSONB are snake_case (<code>is_active</code>, not <code>isActive</code>): the filter looks the
+snake_case key up. An unknown operator raises <code>ValueError</code> naming the supported
+ones, and an empty nested filter (<code>{"device": {}}</code>) raises too.</p>
 <hr />
 <h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <ul>
@@ -5345,10 +5353,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

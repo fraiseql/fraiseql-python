@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4600,10 +4600,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#structured-logs-examples" class="md-nav__link">
+  <a href="#log-entries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structured Logs Examples
+        Log Entries
       
     </span>
   </a>
@@ -4834,10 +4834,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-implement-dataloader-for-n1-queries" class="md-nav__link">
+  <a href="#4-compose-related-rows-in-the-view-n1-queries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Implement DataLoader for N+1 Queries
+        4. Compose Related Rows in the View (N+1 Queries)
       
     </span>
   </a>
@@ -4997,7 +4997,7 @@
 
 
 <h1 id="database-performance-degradation-runbook">Database Performance Degradation Runbook<a class="headerlink" href="#database-performance-degradation-runbook" title="Permanent link">&para;</a></h1>
-<p><strong>Last Updated</strong>: 2025-12-29
+<p><strong>Last Updated</strong>: 2026-10-25
 <strong>Severity</strong>: HIGH
 <strong>MTTR Target</strong>: 15 minutes</p>
 <hr />
@@ -5014,75 +5014,78 @@
 <li>Increasing query latency over time</li>
 </ul>
 <h3 id="prometheus-metrics-to-monitor">Prometheus Metrics to Monitor<a class="headerlink" href="#prometheus-metrics-to-monitor" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Query duration exceeding 5 seconds</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">5</span>
+<p>FraiseQL doesn't time its SQL statements: <code>fraiseql_db_query_duration_seconds</code> and
+the pool gauges exist but only hold values the app records itself (see
+<a href="../#metrics-quick-reference">Metrics</a>). The request latency is always
+recorded once <code>setup_metrics(app)</code> is installed:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Average /graphql request over 5 seconds</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_sum</span><span class="p">{</span><span class="nl">endpoint</span><span class="o">=</span><span class="p">"</span><span class="s">/graphql</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_count</span><span class="p">{</span><span class="nl">endpoint</span><span class="o">=</span><span class="p">"</span><span class="s">/graphql</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">5</span>
 
-<span class="c1"># Connection pool near capacity</span>
+<span class="c1"># Connection pool near capacity (the app feeds the gauges with update_db_connections)</span>
 <span class="nv">fraiseql_db_connections_active</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">fraiseql_db_connections_total</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.8</span>
-
-<span class="c1"># Query timeout rate increasing</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_errors_total</span><span class="p">{</span><span class="nl">error_code</span><span class="o">=</span><span class="p">"</span><span class="s">QUERY_TIMEOUT</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.1</span>
 </code></pre></div>
-<h3 id="structured-logs-examples">Structured Logs Examples<a class="headerlink" href="#structured-logs-examples" title="Permanent link">&para;</a></h3>
+<h3 id="log-entries">Log Entries<a class="headerlink" href="#log-entries" title="Permanent link">&para;</a></h3>
+<p>A statement that <code>query_timeout</code> cancels in <code>db.run()</code> is logged on the
+<code>fraiseql.security</code> logger at <code>ERROR</code>, as a JSON security event:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T10:45:23.456Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"WARNING"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"database.slow_query"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Query exceeded performance threshold"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"query_duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">8500</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"query_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SELECT"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"table_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"users"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"threshold_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_123"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_abc123"</span>
+<span class="w">  </span><span class="nt">"event_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"query.timeout"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"error"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-25T10:45:30.123456+00:00"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_456"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_email"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"ip_address"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_agent"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request_id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"resource"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="s2">"timeout"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Query execution timeout"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"query_hash"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"execution_time"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="s2">"canceling statement due to statement timeout"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"query_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"database_query"</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T10:45:30.123Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ERROR"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"database.query_timeout"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Query exceeded timeout limit"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"query_duration_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">30000</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"timeout_ms"</span><span class="p">:</span><span class="w"> </span><span class="mi">30000</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"query_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SELECT"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"table_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"orders"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_456"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_def456"</span>
-<span class="p">}</span>
-</code></pre></div>
+<p>The <code>fraiseql.db</code> logger also logs the database error (<code>❌ Database error executing
+query</code>, with the traceback). FraiseQL logs nothing about slow queries that finish:
+PostgreSQL does, with <code>log_min_duration_statement</code> (below).</p>
 <hr />
 <h2 id="diagnostic-steps">🔍 Diagnostic Steps<a class="headerlink" href="#diagnostic-steps" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-check-current-query-performance">Step 1: Check Current Query Performance<a class="headerlink" href="#step-1-check-current-query-performance" title="Permanent link">&para;</a></h3>
 <p><strong>Via Prometheus</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Average query duration by query type</span>
-<span class="k">avg</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">query_type</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># p95 request duration, by path</span>
+<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">le</span><span class="p">,</span><span class="w"> </span><span class="nv">endpoint</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 <span class="o">)</span>
 
-<span class="c1"># Top 5 slowest tables</span>
+<span class="c1"># Slowest resolvers (those decorated with @with_metrics("query"))</span>
 <span class="k">topk</span><span class="o">(</span><span class="mi">5</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">table_name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_sum</span><span class="o">)</span>
+<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">operation_name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">operation_name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 <span class="o">)</span>
 </code></pre></div>
-<p><strong>Via Structured Logs</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Find slow queries in last 5 minutes</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "database.slow_query") |</span>
-<span class="s1">  "\(.timestamp) \(.context.table_name) \(.context.query_duration_ms)ms"'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
+<p><strong>Via Logs</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Statements cancelled by the timeout (security log)</span>
+grep<span class="w"> </span><span class="s1">'"query.timeout"'</span><span class="w"> </span>security_events.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
 
-<span class="c1"># Find query timeouts</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "database.query_timeout") |</span>
-<span class="s1">  "\(.timestamp) \(.context.table_name) \(.context.user_id)"'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
+<span class="c1"># Slow statements (PostgreSQL log, with log_min_duration_statement set)</span>
+grep<span class="w"> </span><span class="s1">'duration:'</span><span class="w"> </span>/var/log/postgresql/postgresql.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
+</code></pre></div>
+<p><strong>Via pg_stat_statements</strong> (if the extension is installed):</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">  </span><span class="n">calls</span><span class="p">,</span>
+<span class="w">  </span><span class="n">round</span><span class="p">(</span><span class="n">mean_exec_time</span><span class="p">::</span><span class="nb">numeric</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">mean_ms</span><span class="p">,</span>
+<span class="w">  </span><span class="n">round</span><span class="p">(</span><span class="n">total_exec_time</span><span class="p">::</span><span class="nb">numeric</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">total_ms</span><span class="p">,</span>
+<span class="w">  </span><span class="k">left</span><span class="p">(</span><span class="n">query</span><span class="p">,</span><span class="w"> </span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">query</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">pg_stat_statements</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">mean_exec_time</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="step-2-check-connection-pool-status">Step 2: Check Connection Pool Status<a class="headerlink" href="#step-2-check-connection-pool-status" title="Permanent link">&para;</a></h3>
-<p><strong>Via Prometheus</strong>:</p>
+<p><strong>Via Prometheus</strong> (when the app feeds the pool gauges):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Active connections</span>
 <span class="nv">fraiseql_db_connections_active</span>
 
@@ -5096,13 +5099,12 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <span class="o">(</span><span class="nv">fraiseql_db_connections_active</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">fraiseql_db_connections_total</span><span class="o">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
 </code></pre></div>
 <p><strong>Via Application Code</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="n">pool_stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_pool_stats</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Active: </span><span class="si">{</span><span class="n">pool_stats</span><span class="p">[</span><span class="s1">'active'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Idle: </span><span class="si">{</span><span class="n">pool_stats</span><span class="p">[</span><span class="s1">'idle'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Total: </span><span class="si">{</span><span class="n">pool_stats</span><span class="p">[</span><span class="s1">'total'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<p>The repository exposes its psycopg pool, whose <code>get_stats()</code> counts connections and
+waiting requests (from inside the running app, e.g. a resolver or an admin route):</p>
+<div class="highlight"><pre><span></span><code><span class="n">pool_stats</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Open: </span><span class="si">{</span><span class="n">pool_stats</span><span class="p">[</span><span class="s1">'pool_size'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Idle: </span><span class="si">{</span><span class="n">pool_stats</span><span class="p">[</span><span class="s1">'pool_available'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Waiting for a connection: </span><span class="si">{</span><span class="n">pool_stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'requests_waiting'</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="step-3-identify-problematic-queries">Step 3: Identify Problematic Queries<a class="headerlink" href="#step-3-identify-problematic-queries" title="Permanent link">&para;</a></h3>
 <p><strong>PostgreSQL - Find Long-Running Queries</strong>:</p>
@@ -5135,7 +5137,7 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <p><strong>PostgreSQL - Missing Indexes</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">SELECT</span>
 <span class="w">  </span><span class="n">schemaname</span><span class="p">,</span>
-<span class="w">  </span><span class="n">tablename</span><span class="p">,</span>
+<span class="w">  </span><span class="n">relname</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">table_name</span><span class="p">,</span>
 <span class="w">  </span><span class="n">seq_scan</span><span class="p">,</span>
 <span class="w">  </span><span class="n">seq_tup_read</span><span class="p">,</span>
 <span class="w">  </span><span class="n">idx_scan</span><span class="p">,</span>
@@ -5172,20 +5174,26 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <h2 id="resolution-steps">🔧 Resolution Steps<a class="headerlink" href="#resolution-steps" title="Permanent link">&para;</a></h2>
 <h3 id="immediate-actions-5-minutes">Immediate Actions (5 minutes)<a class="headerlink" href="#immediate-actions-5-minutes" title="Permanent link">&para;</a></h3>
 <h4 id="1-verify-query-timeout-configuration">1. Verify Query Timeout Configuration<a class="headerlink" href="#1-verify-query-timeout-configuration" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># Check current timeout setting</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
+<p><code>query_timeout</code> (seconds, default 30) becomes a transaction-local <code>statement_timeout</code>
+on every statement the repository runs: reads (<code>find</code>, <code>find_one</code>, <code>count</code> and the
+other read helpers), <code>db.run()</code> and mutation functions (<code>execute_function</code>), so
+PostgreSQL cancels one that runs longer:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-
-<span class="c1"># Default is 30 seconds</span>
-<span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">query_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
-
-<span class="c1"># For slow queries, temporarily increase timeout</span>
-<span class="n">conn</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="n">query_timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>  <span class="c1"># For slow queries, temporarily increase from 30</span>
+<span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Order</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">orders</span><span class="p">])</span>
 </code></pre></div>
-<p><strong>Environment Variable Override</strong>:</p>
+<p><strong>Environment Variable Override</strong> (read when the app is built from a <code>FraiseQLConfig</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># In production environment</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_QUERY_TIMEOUT</span><span class="o">=</span><span class="m">60</span><span class="w">  </span><span class="c1"># seconds</span>
+</code></pre></div>
+<p><code>find()</code>, <code>find_one()</code> and the other reads don't get it, so bound every statement
+the app sends with a timeout on its database role as well; new pool connections
+pick it up:</p>
+<div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">ROLE</span><span class="w"> </span><span class="n">app_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">statement_timeout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'30s'</span><span class="p">;</span>
 </code></pre></div>
 <h4 id="2-kill-long-running-queries-if-critical">2. Kill Long-Running Queries (If Critical)<a class="headerlink" href="#2-kill-long-running-queries-if-critical" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Find problematic query PID</span>
@@ -5201,17 +5209,18 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <span class="k">SELECT</span><span class="w"> </span><span class="n">pg_terminate_backend</span><span class="p">(</span><span class="o">&lt;</span><span class="n">pid</span><span class="o">&gt;</span><span class="p">);</span>
 </code></pre></div>
 <h4 id="3-temporarily-increase-connection-pool-size">3. Temporarily Increase Connection Pool Size<a class="headerlink" href="#3-temporarily-increase-connection-pool-size" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
+<p>The pool opens at most <code>database_pool_size + database_max_overflow</code> connections:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="c1"># Default configuration</span>
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>      <span class="c1"># Increase from default (usually 10)</span>
-    <span class="n">db_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>   <span class="c1"># Increase from default (usually 5)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># Default: 20 (create_fraiseql_app uses 10 in development)</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Default: 10</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><strong>Environment Variables</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DB_POOL_SIZE</span><span class="o">=</span><span class="m">20</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DB_MAX_OVERFLOW</span><span class="o">=</span><span class="m">10</span>
+<p><strong>Environment Variables</strong> (read when the app is built from a <code>FraiseQLConfig</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">30</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_MAX_OVERFLOW</span><span class="o">=</span><span class="m">10</span>
 </code></pre></div>
 <h3 id="short-term-fixes-15-30-minutes">Short-Term Fixes (15-30 minutes)<a class="headerlink" href="#short-term-fixes-15-30-minutes" title="Permanent link">&para;</a></h3>
 <h4 id="1-analyze-and-optimize-slow-queries">1. Analyze and Optimize Slow Queries<a class="headerlink" href="#1-analyze-and-optimize-slow-queries" title="Permanent link">&para;</a></h4>
@@ -5251,43 +5260,27 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <span class="c1"># Rule of thumb: pool_size = (available_connections / number_of_app_instances) * 0.8</span>
 
 <span class="c1"># Example for PostgreSQL with max_connections=100, 2 app instances</span>
-<span class="n">pool_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.8</span>  <span class="c1"># = 40 per instance</span>
+<span class="n">pool_size</span> <span class="o">=</span> <span class="p">(</span><span class="mi">100</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.8</span>  <span class="c1"># = 40 connections per instance, overflow included</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_pool_size</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>
-    <span class="n">db_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">db_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># seconds to wait for connection</span>
-    <span class="n">db_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># recycle connections after 1 hour</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># 30 + 10 = 40</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># seconds to wait for connection</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># recycle connections after 1 hour</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="long-term-solutions-1-days">Long-Term Solutions (1+ days)<a class="headerlink" href="#long-term-solutions-1-days" title="Permanent link">&para;</a></h3>
 <h4 id="1-implement-query-result-caching">1. Implement Query Result Caching<a class="headerlink" href="#1-implement-query-result-caching" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisCache</span>
-
-<span class="c1"># Enable caching for expensive queries</span>
-<span class="n">cache</span> <span class="o">=</span> <span class="n">RedisCache</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">"redis://localhost:6379"</span><span class="p">)</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># 5 minutes default TTL</span>
-<span class="p">)</span>
-
-<span class="c1"># Query results automatically cached</span>
-<span class="c1"># Cache key based on query hash</span>
-</code></pre></div>
+<p>Cache expensive reads with <code>fraiseql.caching</code> (<code>PostgresCache</code> + <code>ResultCache</code> +
+<code>CachedRepository</code>, stored in a PostgreSQL UNLOGGED table): see
+<a href="../../../performance/caching/">Caching</a> for the setup and invalidation.</p>
+<p>For reads that are expensive to compute rather than frequent, pre-compose them into
+a <code>tv_</code> projection table instead.</p>
 <h4 id="2-use-database-read-replicas">2. Use Database Read Replicas<a class="headerlink" href="#2-use-database-read-replicas" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_url</span><span class="o">=</span><span class="s2">"postgresql://primary:5432/db"</span><span class="p">,</span>
-    <span class="n">read_replica_urls</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">"postgresql://replica1:5432/db"</span><span class="p">,</span>
-        <span class="s2">"postgresql://replica2:5432/db"</span><span class="p">,</span>
-    <span class="p">],</span>
-    <span class="n">read_replica_strategy</span><span class="o">=</span><span class="s2">"round_robin"</span><span class="p">,</span>  <span class="c1"># or "random"</span>
-<span class="p">)</span>
-</code></pre></div>
+<p>fraiseql connects to one <code>database_url</code> and has no read/write routing. To offload
+reads, run a separate deployment of the API pointed at a replica (or at a
+connection pooler that routes to replicas), and send read-only traffic to it.</p>
 <h4 id="3-partition-large-tables">3. Partition Large Tables<a class="headerlink" href="#3-partition-large-tables" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Example: Partition orders by created_at month</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="p">(</span>
@@ -5304,28 +5297,42 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders_2025_02</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">orders</span>
 <span class="k">FOR</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="p">(</span><span class="s1">'2025-02-01'</span><span class="p">)</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="p">(</span><span class="s1">'2025-03-01'</span><span class="p">);</span>
 </code></pre></div>
-<h4 id="4-implement-dataloader-for-n1-queries">4. Implement DataLoader for N+1 Queries<a class="headerlink" href="#4-implement-dataloader-for-n1-queries" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.dataloaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<h4 id="4-compose-related-rows-in-the-view-n1-queries">4. Compose Related Rows in the View (N+1 Queries)<a class="headerlink" href="#4-compose-related-rows-in-the-view-n1-queries" title="Permanent link">&para;</a></h4>
+<p>A fraiseql query reads one view; embed related rows in its <code>data</code> JSONB and the
+whole tree comes back from a single SQL statement, however many orders there are:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'total'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">total</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">fk_user</span><span class="p">;</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">UserLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">):</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load_fn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_ids</span><span class="p">):</span>
-        <span class="c1"># Load multiple users in single query</span>
-        <span class="n">query</span> <span class="o">=</span> <span class="s2">"SELECT * FROM users WHERE id = ANY($1)"</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">user_ids</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 
-<span class="c1"># Use in GraphQL resolvers</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">"orders"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_orders</span><span class="p">(</span><span class="n">info</span><span class="p">):</span>
-    <span class="n">orders</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"SELECT * FROM orders"</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderUser</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="c1"># Efficiently load users (batched)</span>
-    <span class="n">user_loader</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user_loader"</span><span class="p">]</span>
-    <span class="k">for</span> <span class="n">order</span> <span class="ow">in</span> <span class="n">orders</span><span class="p">:</span>
-        <span class="n">order</span><span class="o">.</span><span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">user_loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">order</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">orders</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_order"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">OrderUser</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_order"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="monitoring-alerts">📊 Monitoring &amp; Alerts<a class="headerlink" href="#monitoring-alerts" title="Permanent link">&para;</a></h2>
@@ -5335,17 +5342,18 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">database_performance</span>
 <span class="w">    </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
 <span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DatabaseSlowQueries</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GraphQLSlowRequests</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">rate(fraiseql_db_query_duration_seconds_sum[5m])</span>
-<span class="w">          </span><span class="no">/ rate(fraiseql_db_query_duration_seconds_count[5m]) &gt; 5</span>
+<span class="w">          </span><span class="no">sum(rate(fraiseql_http_request_duration_seconds_sum{endpoint="/graphql"}[5m]))</span>
+<span class="w">          </span><span class="no">/ sum(rate(fraiseql_http_request_duration_seconds_count{endpoint="/graphql"}[5m])) &gt; 5</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Database</span><span class="nv"> </span><span class="s">queries</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">slow</span><span class="nv"> </span><span class="s">(&gt;</span><span class="nv"> </span><span class="s">5s</span><span class="nv"> </span><span class="s">average)"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Average</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">duration</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}s"</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"GraphQL</span><span class="nv"> </span><span class="s">requests</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">slow</span><span class="nv"> </span><span class="s">(&gt;</span><span class="nv"> </span><span class="s">5s</span><span class="nv"> </span><span class="s">average)"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Average</span><span class="nv"> </span><span class="s">request</span><span class="nv"> </span><span class="s">duration</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}s"</span>
 
+<span class="w">      </span><span class="c1"># Needs the pool gauges fed with update_db_connections</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DatabaseConnectionPoolExhausted</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
 <span class="w">          </span><span class="no">fraiseql_db_connections_active / fraiseql_db_connections_total &gt; 0.9</span>
@@ -5355,62 +5363,43 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Database</span><span class="nv"> </span><span class="s">connection</span><span class="nv"> </span><span class="s">pool</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">exhausted"</span>
 <span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">connections</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">use"</span>
-
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DatabaseQueryTimeouts</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">rate(fraiseql_errors_total{error_code="QUERY_TIMEOUT"}[5m]) &gt; 0.1</span>
-<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3m</span>
-<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
-<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Database</span><span class="nv"> </span><span class="s">query</span><span class="nv"> </span><span class="s">timeouts</span><span class="nv"> </span><span class="s">increasing"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">timeouts/sec</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">last</span><span class="nv"> </span><span class="s">5</span><span class="nv"> </span><span class="s">minutes"</span>
-
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DatabaseCacheHitRateLow</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">(sum(heap_blks_hit) / (sum(heap_blks_hit) + sum(heap_blks_read))) &lt; 0.95</span>
-<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
-<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
-<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Database</span><span class="nv"> </span><span class="s">cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">ratio</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">low</span><span class="nv"> </span><span class="s">(&lt;</span><span class="nv"> </span><span class="s">95%)"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Cache</span><span class="nv"> </span><span class="s">hit</span><span class="nv"> </span><span class="s">ratio:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}"</span>
 </code></pre></div>
+<p>Cancelled statements (<code>query.timeout</code>) have no metric: alert on the security event
+in your log stack. The buffer cache hit ratio comes from PostgreSQL
+(<code>pg_statio_user_tables</code>, query in Step 4), or from an exporter you run for it.</p>
 <h3 id="grafana-dashboard-panels">Grafana Dashboard Panels<a class="headerlink" href="#grafana-dashboard-panels" title="Permanent link">&para;</a></h3>
-<p><strong>1. Query Duration by Type</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">avg</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">query_type</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<p><strong>1. Request Duration by Path (p95)</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">le</span><span class="p">,</span><span class="w"> </span><span class="nv">endpoint</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 <span class="o">)</span>
 </code></pre></div>
-<p><strong>2. Connection Pool Utilization</strong>:</p>
+<p><strong>2. Connection Pool Utilization</strong> (pool gauges fed):</p>
 <div class="highlight"><pre><span></span><code><span class="nv">fraiseql_db_connections_active</span>
 <span class="nv">fraiseql_db_connections_idle</span>
 <span class="nv">fraiseql_db_connections_total</span>
 </code></pre></div>
-<p><strong>3. Slow Query Rate</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_queries_total</span><span class="p">{</span><span class="nl">query_duration_bucket</span><span class="o">=</span><span class="p">"</span><span class="s">+Inf</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<p><strong>3. Slowest Resolvers</strong> (resolvers decorated with <code>@with_metrics("query")</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">operation_name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">operation_name</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </code></pre></div>
-<p><strong>4. Query Timeout Rate</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_errors_total</span><span class="p">{</span><span class="nl">error_code</span><span class="o">=</span><span class="p">"</span><span class="s">QUERY_TIMEOUT</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-</code></pre></div>
+<p><strong>4. Cancelled Statements</strong> (log panel): the <code>query.timeout</code> security events over time.</p>
 <hr />
 <h2 id="verification">🔍 Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
 <p>After applying fixes, verify performance has improved:</p>
 <h3 id="1-check-metrics">1. Check Metrics<a class="headerlink" href="#1-check-metrics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Query duration should decrease</span>
-<span class="k">avg</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="w">    </span><span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_db_query_duration_seconds_count</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Request duration should decrease</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_sum</span><span class="p">{</span><span class="nl">endpoint</span><span class="o">=</span><span class="p">"</span><span class="s">/graphql</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_count</span><span class="p">{</span><span class="nl">endpoint</span><span class="o">=</span><span class="p">"</span><span class="s">/graphql</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
-<span class="c1"># Connection pool utilization should decrease</span>
+<span class="c1"># Connection pool utilization should decrease (pool gauges fed)</span>
 <span class="nv">fraiseql_db_connections_active</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">fraiseql_db_connections_total</span>
 </code></pre></div>
 <h3 id="2-check-logs">2. Check Logs<a class="headerlink" href="#2-check-logs" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Verify no recent slow queries</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "database.slow_query")'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
+<div class="highlight"><pre><span></span><code><span class="c1"># No recent cancelled statements</span>
+grep<span class="w"> </span><span class="s1">'"query.timeout"'</span><span class="w"> </span>security_events.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
 
-<span class="c1"># Verify no timeouts</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "database.query_timeout")'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
+<span class="c1"># No recent slow statements (PostgreSQL log)</span>
+grep<span class="w"> </span><span class="s1">'duration:'</span><span class="w"> </span>/var/log/postgresql/postgresql.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
 </code></pre></div>
 <h3 id="3-synthetic-test">3. Synthetic Test<a class="headerlink" href="#3-synthetic-test" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run load test</span>
@@ -5454,7 +5443,7 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <h2 id="related-resources">📚 Related Resources<a class="headerlink" href="#related-resources" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="https://wiki.postgresql.org/wiki/Performance_Optimization">PostgreSQL Performance Tuning</a></li>
-<li><a href="../../deployment/#connection-pooling">Connection Pool Best Practices</a></li>
+<li><a href="../../deployment/#database-connection-pool-scaling">Connection Pool Best Practices</a></li>
 <li><a href="../../../performance/performance-guide/">Query Optimization Guide</a></li>
 <li><a href="../../monitoring/">Monitoring Setup</a></li>
 <li><a href="../../health-checks/">Health Checks</a></li>
@@ -5564,10 +5553,10 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

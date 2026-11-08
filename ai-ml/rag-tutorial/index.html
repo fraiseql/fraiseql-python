@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4689,32 +4689,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-graphql-mutations" class="md-nav__link">
+  <a href="#using-the-rest-api" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using GraphQL Mutations
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#add-more-sample-documents" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Add More Sample Documents
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-rest-api" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using REST API
+        Using the REST API
       
     </span>
   </a>
@@ -4789,21 +4767,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#using-graphql-for-semantic-search" class="md-nav__link">
+  <a href="#using-the-rest-api_1" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Using GraphQL for Semantic Search
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-the-rest-api-recommended" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using the REST API (Recommended)
+        Using the REST API
       
     </span>
   </a>
@@ -4812,39 +4779,6 @@
         
           <li class="md-nav__item">
   <a href="#understanding-similarity-scores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Understanding Similarity Scores
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#advanced-using-graphql-optional" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Advanced: Using GraphQL (Optional)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#using-rest-api-for-semantic-search" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Using REST API for Semantic Search
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#understanding-similarity-scores_1" class="md-nav__link">
     <span class="md-ellipsis">
       
         Understanding Similarity Scores
@@ -5391,60 +5325,21 @@ python<span class="w"> </span>app.py
 </code></pre></div>
 <p>You should see:</p>
 <div class="highlight"><pre><span></span><code>🚀 RAG System Example
-📚 Features:
-   • Document storage with trinity pattern
-   • Vector embeddings with pgvector
-   • Semantic search via GraphQL
-   • RAG question answering
-   • LangChain integration
 
 📝 GraphQL endpoint: http://localhost:8000/graphql
 🔍 REST endpoints:
    • POST /api/documents/search - Semantic search
    • POST /api/rag/ask - RAG question answering
    • POST /api/documents/embed - Create with embedding
+   • GET /api/rag/status - Embeddings and LLM availability
+   • GET /health - Health check
 </code></pre></div>
 <p>Visit http://localhost:8000/graphql to open the GraphQL playground.</p>
 <hr />
 <h2 id="step-3-add-documents">Step 3: Add Documents<a class="headerlink" href="#step-3-add-documents" title="Permanent link">&para;</a></h2>
-<h3 id="using-graphql-mutations">Using GraphQL Mutations<a class="headerlink" href="#using-graphql-mutations" title="Permanent link">&para;</a></h3>
-<p>Open the GraphQL playground and create your first document:</p>
-<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">CreateFirstDocument</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">createDocument</span><span class="p">(</span>
-<span class="w">    </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">"What is FraiseQL?"</span>
-<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">"FraiseQL is a PostgreSQL-first GraphQL framework for the LLM era. It uses a Rust pipeline to transform PostgreSQL JSONB directly to HTTP responses, eliminating Python serialization overhead. The framework follows database-first principles with JSONB views, automatic session variable injection for security, and built-in caching, monitoring, and error tracking - all within PostgreSQL."</span>
-<span class="w">    </span><span class="n">source</span><span class="p">:</span><span class="w"> </span><span class="s">"documentation"</span>
-<span class="w">    </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">category</span><span class="p">:</span><span class="w"> </span><span class="s">"technical"</span>
-<span class="w">      </span><span class="n">difficulty</span><span class="p">:</span><span class="w"> </span><span class="s">"beginner"</span>
-<span class="w">      </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"introduction"</span><span class="p">,</span><span class="w"> </span><span class="s">"architecture"</span><span class="p">]</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">title</span>
-<span class="w">    </span><span class="n">createdAt</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<h3 id="add-more-sample-documents">Add More Sample Documents<a class="headerlink" href="#add-more-sample-documents" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">AddMoreDocuments</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">createDocument</span><span class="p">(</span>
-<span class="w">    </span><span class="n">title</span><span class="p">:</span><span class="w"> </span><span class="s">"FraiseQL Performance Benefits"</span>
-<span class="w">    </span><span class="n">content</span><span class="p">:</span><span class="w"> </span><span class="s">"FraiseQL delivers 10-100x performance improvements through its Rust pipeline that bypasses Python object serialization. Traditional frameworks: PostgreSQL → Rows → ORM → Python objects → GraphQL serialize → JSON. FraiseQL: PostgreSQL → JSONB → Rust field selection → HTTP Response. This eliminates the Python bottleneck while maintaining full GraphQL capabilities."</span>
-<span class="w">    </span><span class="n">source</span><span class="p">:</span><span class="w"> </span><span class="s">"documentation"</span>
-<span class="w">    </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">category</span><span class="p">:</span><span class="w"> </span><span class="s">"performance"</span>
-<span class="w">      </span><span class="n">difficulty</span><span class="p">:</span><span class="w"> </span><span class="s">"intermediate"</span>
-<span class="w">      </span><span class="n">tags</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"performance"</span><span class="p">,</span><span class="w"> </span><span class="s">"rust"</span><span class="p">,</span><span class="w"> </span><span class="s">"optimization"</span><span class="p">]</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">title</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<h3 id="using-rest-api">Using REST API<a class="headerlink" href="#using-rest-api" title="Permanent link">&para;</a></h3>
-<p>Alternatively, use the REST endpoint to create documents with automatic embeddings:</p>
+<h3 id="using-the-rest-api">Using the REST API<a class="headerlink" href="#using-the-rest-api" title="Permanent link">&para;</a></h3>
+<p>Documents are added through the REST endpoint, which embeds their content. (The
+GraphQL API reads documents: <code>documents</code> and <code>document</code>.)</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"http://localhost:8000/api/documents/embed"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
@@ -5481,9 +5376,7 @@ python<span class="w"> </span>app.py
 <hr />
 <h2 id="step-5-semantic-search">Step 5: Semantic Search<a class="headerlink" href="#step-5-semantic-search" title="Permanent link">&para;</a></h2>
 <p>Now for the magic! Search documents by meaning, not just keywords.</p>
-<h3 id="using-graphql-for-semantic-search">Using GraphQL for Semantic Search<a class="headerlink" href="#using-graphql-for-semantic-search" title="Permanent link">&para;</a></h3>
-<p>First, you need a query embedding. You can generate one using Python:</p>
-<h3 id="using-the-rest-api-recommended">Using the REST API (Recommended)<a class="headerlink" href="#using-the-rest-api-recommended" title="Permanent link">&para;</a></h3>
+<h3 id="using-the-rest-api_1">Using the REST API<a class="headerlink" href="#using-the-rest-api_1" title="Permanent link">&para;</a></h3>
 <p>The REST API handles embedding generation automatically:</p>
 <div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"http://localhost:8000/api/documents/search"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
@@ -5507,58 +5400,6 @@ python<span class="w"> </span>app.py
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="understanding-similarity-scores">Understanding Similarity Scores<a class="headerlink" href="#understanding-similarity-scores" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>0.9 - 1.0</strong>: Very similar (exact meaning match)</li>
-<li><strong>0.7 - 0.9</strong>: Similar (related concepts)</li>
-<li><strong>0.5 - 0.7</strong>: Somewhat related (loose connection)</li>
-<li><strong>0.0 - 0.5</strong>: Not similar (different topics)</li>
-</ul>
-<h3 id="advanced-using-graphql-optional">Advanced: Using GraphQL (Optional)<a class="headerlink" href="#advanced-using-graphql-optional" title="Permanent link">&para;</a></h3>
-<p>If you need GraphQL for semantic search, you'll need to generate embeddings separately:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Generate embedding first</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAIEmbeddings</span>
-
-<span class="n">embeddings</span> <span class="o">=</span> <span class="n">OpenAIEmbeddings</span><span class="p">(</span><span class="n">openai_api_key</span><span class="o">=</span><span class="s2">"your-key"</span><span class="p">)</span>
-<span class="n">query_embedding</span> <span class="o">=</span> <span class="n">embeddings</span><span class="o">.</span><span class="n">embed_query</span><span class="p">(</span><span class="s2">"your search query"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">query_embedding</span><span class="p">)</span>  <span class="c1"># Copy this</span>
-</code></pre></div>
-<p>Then use in GraphQL (note: this is cumbersome, prefer REST API):</p>
-<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">SemanticSearch</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">searchDocuments</span><span class="p">(</span>
-<span class="w">    </span><span class="n">queryEmbedding</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mf">0.01</span><span class="p">,</span><span class="w"> </span><span class="mf">-0.02</span><span class="p">,</span><span class="w"> </span><span class="err">...]</span><span class="w">  </span><span class="c"># Paste your 1536-dim embedding</span>
-<span class="w">    </span><span class="no">limit</span><span class="err">:</span><span class="w"> </span><span class="mi">5</span>
-<span class="w">  </span><span class="err">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">title</span>
-<span class="w">    </span><span class="n">similarity</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="err">}</span>
-</code></pre></div>
-<p><strong>For most use cases, stick with the REST API</strong> - it's simpler and more practical.</p>
-<h3 id="using-rest-api-for-semantic-search">Using REST API for Semantic Search<a class="headerlink" href="#using-rest-api-for-semantic-search" title="Permanent link">&para;</a></h3>
-<p>The REST API handles embedding generation automatically:</p>
-<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">"http://localhost:8000/api/documents/search"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{</span>
-<span class="s1">    "query": "How does FraiseQL improve GraphQL performance?",</span>
-<span class="s1">    "limit": 5</span>
-<span class="s1">  }'</span>
-</code></pre></div>
-<p>Expected response:</p>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"query"</span><span class="p">:</span><span class="w"> </span><span class="s2">"How does FraiseQL improve GraphQL performance?"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"results"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"123e4567-e89b-12d3-a456-426614174000"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FraiseQL Performance Benefits"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="s2">"FraiseQL delivers 10-100x performance improvements through its Rust pipeline..."</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"similarity"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.92</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"source"</span><span class="p">:</span><span class="w"> </span><span class="s2">"documentation"</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-<h3 id="understanding-similarity-scores_1">Understanding Similarity Scores<a class="headerlink" href="#understanding-similarity-scores_1" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>0.9 - 1.0</strong>: Very similar (exact meaning match)</li>
 <li><strong>0.7 - 0.9</strong>: Similar (related concepts)</li>
@@ -5624,17 +5465,9 @@ python<span class="w"> </span>app.py
 <hr />
 <h2 id="step-7-advanced-features">Step 7: Advanced Features<a class="headerlink" href="#step-7-advanced-features" title="Permanent link">&para;</a></h2>
 <h3 id="filtering-with-metadata">Filtering with Metadata<a class="headerlink" href="#filtering-with-metadata" title="Permanent link">&para;</a></h3>
-<p>Combine semantic search with metadata filters:</p>
-<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">FilteredSearch</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">documents</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">metadata</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="s">"category"</span>
-<span class="w">        </span><span class="n">equals</span><span class="p">:</span><span class="w"> </span><span class="s">"technical"</span>
-<span class="w">      </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<p>List the documents from one source with GraphQL:</p>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">DocumentationSources</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">documents</span><span class="p">(</span><span class="n">source</span><span class="p">:</span><span class="w"> </span><span class="s">"documentation"</span><span class="p">,</span><span class="w"> </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">title</span>
 <span class="w">    </span><span class="n">metadata</span>
@@ -5961,12 +5794,12 @@ curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authoriz
 ✅ <strong>Created</strong> a Trinity Pattern schema for documents and embeddings
 ✅ <strong>Built</strong> a GraphQL API with FraiseQL
 ✅ <strong>Implemented</strong> semantic search with vector similarity
-✅ <strong>Developed</strong> RAG question answering with LangChain
+✅ <strong>Developed</strong> RAG question answering with an OpenAI-compatible chat model
 ✅ <strong>Optimized</strong> performance with proper indexing
 ✅ <strong>Deployed</strong> a production-ready RAG system</p>
 <p>Your RAG system is now ready for production use! You can:</p>
 <ul>
-<li>Add documents via GraphQL mutations or REST API</li>
+<li>Add documents through the REST API and read them with GraphQL</li>
 <li>Perform semantic search to find relevant content</li>
 <li>Answer questions using retrieved context</li>
 <li>Scale to thousands of documents with proper indexing</li>
@@ -6047,10 +5880,10 @@ curl<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authoriz
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

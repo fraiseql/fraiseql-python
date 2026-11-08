@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4677,6 +4677,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="@fraiseql.mutation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#mutation-field-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation field names
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mutation-result-union-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation result union names
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -4992,7 +5020,7 @@
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">name_filter</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">"name__icontains"</span><span class="p">]</span> <span class="o">=</span> <span class="n">name_filter</span>
+        <span class="n">filters</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"icontains"</span><span class="p">:</span> <span class="n">name_filter</span><span class="p">}</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>See Also</strong>: <a href="../../core/queries-and-mutations/#query-decorator">Queries and Mutations</a></p>
@@ -5071,14 +5099,14 @@
 <td>bool | None</td>
 <td>None</td>
 <td>No</td>
-<td>Enable JSONB field extraction (inherits from global config)</td>
+<td>No effect: recorded in <code>__fraiseql_connection__</code> only; rows are read as <code>db.find</code> reads them</td>
 </tr>
 <tr>
 <td>jsonb_column</td>
 <td>str | None</td>
 <td>None</td>
 <td>No</td>
-<td>JSONB column name (inherits from global config)</td>
+<td>No effect: recorded only; the JSONB column is the one registered for the view</td>
 </tr>
 </tbody>
 </table>
@@ -5132,12 +5160,14 @@
     <span class="n">function</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">schema</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">context_params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">error_config</span><span class="p">:</span> <span class="n">MutationErrorConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">error_config</span><span class="p">:</span> <span class="n">MutationErrorConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">result_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">MutationName</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">InputType</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">SuccessType</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">FailureType</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ErrorType</span>
 </code></pre></div>
 <p><strong>Parameters (Class-based)</strong>:</p>
 <table>
@@ -5154,7 +5184,7 @@
 <td>function</td>
 <td>str | None</td>
 <td>None</td>
-<td>PostgreSQL function name (defaults to snake_case of class name)</td>
+<td>PostgreSQL function name (defaults to snake_case of class name). It only picks the SQL function: several mutations may share one</td>
 </tr>
 <tr>
 <td>schema</td>
@@ -5174,8 +5204,72 @@
 <td>None</td>
 <td>Error configuration for this mutation. If not specified, uses <code>default_error_config</code> from <code>FraiseQLConfig</code> (if set). <strong>DEPRECATED</strong> - Only used in non-HTTP mode. HTTP mode uses <a href="../../archive/mutations/status-strings/">status string taxonomy</a></td>
 </tr>
+<tr>
+<td>name</td>
+<td>str | None</td>
+<td>None</td>
+<td>GraphQL field name, used as given. See <a href="#mutation-field-names">Field names</a></td>
+</tr>
+<tr>
+<td>result_name</td>
+<td>str | None</td>
+<td>None</td>
+<td>GraphQL name of the result union, used as given. See <a href="#mutation-result-union-names">Result union names</a></td>
+</tr>
 </tbody>
 </table>
+<h4 id="mutation-field-names">Mutation field names<a class="headerlink" href="#mutation-field-names" title="Permanent link">&para;</a></h4>
+<p>A class mutation's GraphQL field is named after the class: <code>CreateUser</code> becomes
+<code>createUser</code> (<code>create_user</code> with <code>camel_case_fields=False</code>). A function
+mutation is named after the function. <code>name=</code> sets the field name directly.
+<code>function=</code> doesn't change the field name.</p>
+<p>Two mutations with the same field name make the schema build raise a
+<code>ValueError</code> that names both. Give one of them a different <code>name=</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Names taken from <code>function=</code></p>
+<p>Up to fraiseql 1.28, a class mutation was named after its <code>function=</code>:
+<code>RegisterUser</code> with <code>function="register_new_user"</code> was served as
+<code>registerNewUser</code>. fraiseql 1.x keeps that name, so upgrading renames
+nothing, and the schema build emits one <code>FutureWarning</code> listing every field
+still named this way, with its preferred name:</p>
+<div class="highlight"><pre><span></span><code>These mutations are named by fraiseql's legacy rule (a field after its function=, a result union after its success type):
+  field 'registerNewUser' (preferred: 'registerUser')
+fraiseql 1.x keeps these names. To choose a name and silence this warning, pass name="..." (field) or result_name="..." (union) to @mutation.
+</code></pre></div>
+<p>To keep the current name, pass it: <code>@fraiseql.mutation(function="register_new_user", name="registerNewUser")</code>.
+To switch to the preferred name, pass <code>name="registerUser"</code>. Either removes
+the mutation from the warning. (fraiseql 2.x on PyPI is the separate
+FraiseQL v2 project; it is not a later version of these names.)</p>
+<p>Mutations that shared a <code>function=</code> lost a field before 1.29. They get the
+class-derived names straight away, with no warning.</p>
+<p>For an auto-discovered mutation, the preferred name is the <code>name:</code> in its
+<code>@fraiseql:mutation</code> comment; set it to the current name to keep it.</p>
+</div>
+<h4 id="mutation-result-union-names">Mutation result union names<a class="headerlink" href="#mutation-result-union-names" title="Permanent link">&para;</a></h4>
+<p>A mutation whose success and error types differ returns a union of the two.
+Each mutation gets its own union, named after its field: <code>createUser</code> returns
+<code>CreateUserResult</code>. <code>result_name=</code> sets the union name directly. Several
+mutations may share success and error types; each still gets its own union.
+When the success and error types are the same class, there is no union and
+<code>result_name=</code> is ignored.</p>
+<p>Two mutations with the same union name make the schema build raise a
+<code>ValueError</code> that names both. Give one of them a different <code>result_name=</code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Names taken from the success type</p>
+<p>Up to fraiseql 1.28, the union was named after the success type:
+<code>UpdatePostTitle</code> with <code>success: PostSuccess</code> returned <code>PostResult</code>, and two
+mutations sharing a success type failed the schema build with
+<code>multiple types named '...Result'</code>. fraiseql 1.x keeps the union name of a
+mutation that works, and the same <code>FutureWarning</code> as for field names lists it:</p>
+<div class="highlight"><pre><span></span><code>  result union 'PostResult' (preferred: 'UpdatePostTitleResult')
+</code></pre></div>
+<p>Pass <code>result_name="PostResult"</code> to keep the current name, or
+<code>result_name="UpdatePostTitleResult"</code> to switch to the preferred one.
+Mutations that shared a success type get the preferred names straight away,
+with no warning.
+An auto-discovered mutation takes <code>result_name:</code> in its <code>@fraiseql:mutation</code>
+comment.</p>
+</div>
 <p><strong>Global Default</strong>: If you don't specify <code>error_config</code> on a mutation, FraiseQL will use <code>default_error_config</code> from your <code>FraiseQLConfig</code> (if set). This allows you to set a global error handling strategy and override it per-mutation when needed.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">DEFAULT_ERROR_CONFIG</span><span class="p">,</span> <span class="n">STRICT_STATUS_CONFIG</span>
 
@@ -5190,7 +5284,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateUserError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
 
 <span class="c1"># Overrides global default</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
@@ -5200,31 +5294,35 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">DeleteUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">DeleteUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">DeleteUserSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">DeleteUserError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">DeleteUserError</span>
 </code></pre></div>
 <p><strong>See</strong>: <a href="../config/#default_error_config">FraiseQLConfig.default_error_config</a> for details.</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="c1"># Function-based</span>
+<span class="c1"># Function-based: call the PostgreSQL function, then read the row back from the view</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user_account</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">create_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"createUserAccount"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]}</span>
+    <span class="p">)</span>
 
 <span class="c1"># Class-based</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateUserError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
 
-<span class="c1"># With custom function</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"register_new_user"</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">)</span>
+<span class="c1"># With custom function (name= sets the field to "registerUser"; without it,</span>
+<span class="c1"># fraiseql 1.x names the field after the function, "registerNewUser", and warns)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"register_new_user"</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"registerUser"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RegisterUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">RegistrationInput</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">RegistrationSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">RegistrationError</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">RegisterUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">RegisterUserError</span>
 
 <span class="c1"># With context parameters - maps context to PostgreSQL function params</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
@@ -5237,7 +5335,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateLocation</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateLocationInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateLocationSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateLocationError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateLocationError</span>
 </code></pre></div>
 <p><strong>How context_params Works</strong>:</p>
 <p><code>context_params</code> automatically injects GraphQL context values as PostgreSQL function parameters:</p>
@@ -5254,7 +5352,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateLocation</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateLocationInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateLocationSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateLocationError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateLocationError</span>
 
 <span class="c1"># PostgreSQL function signature</span>
 <span class="c1"># CREATE FUNCTION create_location(</span>
@@ -5285,7 +5383,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateOrder</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateOrderInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateOrderSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateOrderFailure</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateOrderError</span>
 
 <span class="c1"># PostgreSQL function</span>
 <span class="c1"># CREATE FUNCTION create_order(</span>
@@ -5311,7 +5409,7 @@
 <h3 id="success-error-result">@success / @error / @result<a class="headerlink" href="#success-error-result" title="Permanent link">&para;</a></h3>
 <p><strong>Purpose</strong>: Helper decorators for mutation result types</p>
 <p><strong>Usage</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.mutations.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">success</span><span class="p">,</span> <span class="n">failure</span><span class="p">,</span> <span class="n">result</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.mutations.decorators</span><span class="w"> </span><span class="kn">import</span> <span class="n">success</span><span class="p">,</span> <span class="n">error</span>
 
 <span class="nd">@success</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
@@ -5324,12 +5422,18 @@
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="nd">@result</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserResult</span><span class="p">:</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateUserSuccess</span> <span class="o">|</span> <span class="n">CreateUserError</span><span class="p">:</span>
+    <span class="o">...</span>
 </code></pre></div>
 <p><strong>Note</strong>: These are type markers, not required for mutations. Use @fraiseql.type instead for most cases.</p>
+<div class="admonition warning">
+<p class="admonition-title"><code>result()</code> is deprecated</p>
+<p><code>fraiseql.result(success_cls, error_cls)</code> builds a union type from a success
+and an error class. It is deprecated since 1.29 and keeps working in
+fraiseql 1.x: annotate <code>Success | Error</code> instead, and the mutation's union is named as
+described in <a href="#mutation-result-union-names">Result union names</a>.</p>
+</div>
 <h2 id="field-decorators">Field Decorators<a class="headerlink" href="#field-decorators" title="Permanent link">&para;</a></h2>
 <h3 id="field">@field<a class="headerlink" href="#field" title="Permanent link">&para;</a></h3>
 <p><strong>Purpose</strong>: Mark methods as GraphQL fields with custom resolvers</p>
@@ -5408,7 +5512,7 @@
         <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
             <span class="s2">"v_post"</span><span class="p">,</span>
             <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">},</span>
-            <span class="n">order_by</span><span class="o">=</span><span class="s2">"created_at DESC"</span><span class="p">,</span>
+            <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}],</span>
             <span class="n">limit</span><span class="o">=</span><span class="n">limit</span>
         <span class="p">)</span>
 </code></pre></div>
@@ -5464,7 +5568,7 @@
 <span class="k">class</span><span class="w"> </span><span class="nc">UserDataLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">):</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="n">db</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-        <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id__in"</span><span class="p">:</span> <span class="n">keys</span><span class="p">})</span>
+        <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"in"</span><span class="p">:</span> <span class="n">keys</span><span class="p">}})</span>
         <span class="c1"># Return in same order as keys</span>
         <span class="n">user_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">user</span> <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">}</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">user_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
@@ -5544,17 +5648,20 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_my_profile</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>  <span class="c1"># Guaranteed to be authenticated</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">})</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"getMyProfile"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">}</span>
+    <span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_auth</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_profile</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateProfileInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">user</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
-        <span class="s2">"v_user"</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">},</span>
-        <span class="n">updates</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="vm">__dict__</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">),</span> <span class="o">**</span><span class="nb">input</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"updateProfile"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">}</span>
     <span class="p">)</span>
 </code></pre></div>
 <p><strong>Raises</strong>: GraphQLError with code "UNAUTHENTICATED" if not authenticated</p>
@@ -5594,14 +5701,18 @@
 <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"users:write"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">create_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"createUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]}</span>
+    <span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"users:delete"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">delete_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
-    <span class="k">return</span> <span class="kc">True</span>
+    <span class="c1"># fn_delete_user(input jsonb, OUT deleted boolean)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">)})</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s2">"deleted"</span><span class="p">]</span>
 </code></pre></div>
 <p><strong>Raises</strong>:</p>
 <ul>
@@ -5693,7 +5804,8 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="c1"># Can be performed by users:write OR admin:all</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">},</span> <span class="n">updates</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">),</span> <span class="o">**</span><span class="nb">input</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()})</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"updateUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Raises</strong>:</p>
 <ul>
@@ -5862,10 +5974,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

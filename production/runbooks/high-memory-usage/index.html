@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4600,10 +4600,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#structured-logs-examples" class="md-nav__link">
+  <a href="#log-entries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structured Logs Examples
+        Log Entries
       
     </span>
   </a>
@@ -4795,10 +4795,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#4-limit-cache-size-if-using-in-memory-cache" class="md-nav__link">
+  <a href="#4-move-in-process-caches-out-of-the-process" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Limit Cache Size (If Using In-Memory Cache)
+        4. Move In-Process Caches Out of the Process
       
     </span>
   </a>
@@ -4845,10 +4845,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-implement-query-result-streaming" class="md-nav__link">
+  <a href="#3-cap-result-set-sizes" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Implement Query Result Streaming
+        3. Cap Result Set Sizes
       
     </span>
   </a>
@@ -4950,10 +4950,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-check-logs" class="md-nav__link">
+  <a href="#3-check-the-platform" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Check Logs
+        3. Check the Platform
       
     </span>
   </a>
@@ -5019,7 +5019,7 @@
 
 
 <h1 id="high-memory-usage-runbook">High Memory Usage Runbook<a class="headerlink" href="#high-memory-usage-runbook" title="Permanent link">&para;</a></h1>
-<p><strong>Last Updated</strong>: 2025-12-29
+<p><strong>Last Updated</strong>: 2026-10-25
 <strong>Severity</strong>: HIGH
 <strong>MTTR Target</strong>: 20 minutes</p>
 <hr />
@@ -5036,53 +5036,43 @@
 <li>Memory usage growing over time (memory leak)</li>
 </ul>
 <h3 id="prometheus-metrics-to-monitor">Prometheus Metrics to Monitor<a class="headerlink" href="#prometheus-metrics-to-monitor" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Memory usage percentage</span>
-<span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">node_memory_MemTotal_bytes</span><span class="o">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">80</span>
+<p>FraiseQL exports no memory metric, and its <code>/metrics</code> endpoint (<code>setup_metrics(app)</code>)
+serves its own registry, without the <code>process_*</code> and <code>python_gc_*</code> metrics that
+<code>prometheus_client</code> puts in its default one. Register those collectors on it:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">GCCollector</span><span class="p">,</span> <span class="n">PlatformCollector</span><span class="p">,</span> <span class="n">ProcessCollector</span>
 
-<span class="c1"># Memory growth rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10485760</span><span class="w">  </span><span class="c1"># 10MB/5min</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span>
 
-<span class="c1"># Python garbage collection frequency</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">python_gc_collections_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+<span class="n">ProcessCollector</span><span class="p">(</span><span class="n">registry</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">registry</span><span class="p">)</span>   <span class="c1"># process_resident_memory_bytes, process_cpu_seconds_total, ...</span>
+<span class="n">GCCollector</span><span class="p">(</span><span class="n">registry</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">registry</span><span class="p">)</span>        <span class="c1"># python_gc_collections_total, python_gc_objects_*</span>
+<span class="n">PlatformCollector</span><span class="p">(</span><span class="n">registry</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">registry</span><span class="p">)</span>  <span class="c1"># python_info</span>
 </code></pre></div>
-<h3 id="structured-logs-examples">Structured Logs Examples<a class="headerlink" href="#structured-logs-examples" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T11:15:42.789Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"WARNING"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"system.high_memory"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Application memory usage exceeds threshold"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"memory_used_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">1610612736</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"memory_limit_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">2147483648</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"memory_usage_percent"</span><span class="p">:</span><span class="w"> </span><span class="mf">75.0</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"threshold_percent"</span><span class="p">:</span><span class="w"> </span><span class="mf">70.0</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_mem123"</span>
-<span class="p">}</span>
+<p>Then (each worker process has its own registry and series):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Resident memory over 1.5 GiB</span>
+<span class="nv">process_resident_memory_bytes</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1.5</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span>
+
+<span class="c1"># Memory growth: more than 10 MiB over 5 minutes</span>
+<span class="kr">delta</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span>
+
+<span class="c1"># Garbage collections per second, by generation</span>
+<span class="kr">rate</span><span class="o">(</span><span class="nv">python_gc_collections_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T11:20:15.456Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ERROR"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"system.memory_critical"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Critical memory usage - OOM risk"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"memory_used_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">2013265920</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"memory_limit_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">2147483648</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"memory_usage_percent"</span><span class="p">:</span><span class="w"> </span><span class="mf">93.75</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"swap_used_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">524288000</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_mem456"</span>
-<span class="p">}</span>
+<p>On Kubernetes, the container's own metrics (cAdvisor, kube-state-metrics) compare
+memory with the limit, with nothing to add to the app:</p>
+<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">pod</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">container_memory_working_set_bytes</span><span class="p">{</span><span class="nl">container</span><span class="o">=</span><span class="p">"</span><span class="s">fraiseql</span><span class="p">"}</span><span class="o">)</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">pod</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">kube_pod_container_resource_limits</span><span class="p">{</span><span class="nl">container</span><span class="o">=</span><span class="p">"</span><span class="s">fraiseql</span><span class="p">",</span><span class="w"> </span><span class="nl">resource</span><span class="o">=</span><span class="p">"</span><span class="s">memory</span><span class="p">"}</span><span class="o">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">0.8</span>
 </code></pre></div>
+<h3 id="log-entries">Log Entries<a class="headerlink" href="#log-entries" title="Permanent link">&para;</a></h3>
+<p>FraiseQL logs nothing about memory. An OOM kill shows in the platform's events
+(<code>kubectl describe pod</code>, <code>docker inspect --format '{{.State.OOMKilled}}'</code>, the
+kernel log), not in the app's logs.</p>
 <hr />
 <h2 id="diagnostic-steps">🔍 Diagnostic Steps<a class="headerlink" href="#diagnostic-steps" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-check-current-memory-usage">Step 1: Check Current Memory Usage<a class="headerlink" href="#step-1-check-current-memory-usage" title="Permanent link">&para;</a></h3>
-<p><strong>Via Prometheus</strong>:</p>
+<p><strong>Via Prometheus</strong> (with <code>ProcessCollector</code> registered as above):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Current memory usage</span>
 <span class="nv">process_resident_memory_bytes</span>
-
-<span class="c1"># Memory usage percentage</span>
-<span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">node_memory_MemTotal_bytes</span><span class="o">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
 
 <span class="c1"># Virtual memory size</span>
 <span class="nv">process_virtual_memory_bytes</span>
@@ -5098,30 +5088,14 @@ ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><sp
 free<span class="w"> </span>-h
 </code></pre></div>
 <p><strong>Via Application Endpoint</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Health check endpoint includes memory stats</span>
-curl<span class="w"> </span>http://localhost:8000/health/detailed
-
-<span class="c1"># Expected response</span>
-<span class="o">{</span>
-<span class="w">  </span><span class="s2">"status"</span>:<span class="w"> </span><span class="s2">"healthy"</span>,
-<span class="w">  </span><span class="s2">"memory"</span>:<span class="w"> </span><span class="o">{</span>
-<span class="w">    </span><span class="s2">"used_bytes"</span>:<span class="w"> </span><span class="m">1610612736</span>,
-<span class="w">    </span><span class="s2">"limit_bytes"</span>:<span class="w"> </span><span class="m">2147483648</span>,
-<span class="w">    </span><span class="s2">"usage_percent"</span>:<span class="w"> </span><span class="m">75</span>.0
-<span class="w">  </span><span class="o">}</span>
-<span class="o">}</span>
+<p>fraiseql's <code>/health</code> only reports that the process is up, and <code>/ready</code> that the
+database answers; neither reports memory. Read memory from the system commands
+above, or from <code>process_resident_memory_bytes</code> on <code>/metrics</code> when the app exposes
+Prometheus metrics with a <code>ProcessCollector</code>.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>http://localhost:8000/health
+<span class="c1"># {"status": "healthy", "service": "fraiseql"}</span>
 </code></pre></div>
 <h3 id="step-2-identify-memory-consumers">Step 2: Identify Memory Consumers<a class="headerlink" href="#step-2-identify-memory-consumers" title="Permanent link">&para;</a></h3>
-<p><strong>Via Prometheus - Component Breakdown</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Database connection pool memory</span>
-<span class="nv">fraiseql_db_connections_total</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">10485760</span><span class="w">  </span><span class="c1"># ~10MB per connection estimate</span>
-
-<span class="c1"># Cache memory (if using in-memory cache)</span>
-<span class="nv">fraiseql_cache_size_bytes</span>
-
-<span class="c1"># Active GraphQL operations</span>
-<span class="nv">fraiseql_graphql_queries_total</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">fraiseql_graphql_queries_success</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">fraiseql_graphql_queries_errors</span>
-</code></pre></div>
 <p><strong>Via Python Memory Profiler</strong> (development only):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">tracemalloc</span>
 
@@ -5138,31 +5112,22 @@ curl<span class="w"> </span>http://localhost:8000/health/detailed
 <span class="k">for</span> <span class="n">stat</span> <span class="ow">in</span> <span class="n">top_stats</span><span class="p">[:</span><span class="mi">10</span><span class="p">]:</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">stat</span><span class="p">)</span>
 </code></pre></div>
-<p><strong>Via Structured Logs</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Find memory-related events</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event | startswith("system.memory")) |</span>
-<span class="s1">  "\(.timestamp) \(.event) \(.context.memory_usage_percent)%"'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
-
-<span class="c1"># Find large request payloads</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.context.request_size_bytes &gt; 1048576) |</span>
-<span class="s1">  "\(.timestamp) \(.context.request_size_bytes) bytes"'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
-</code></pre></div>
+<p><strong>Common consumers in a FraiseQL app</strong>:</p>
+<ul>
+<li>Large list queries: a <code>find()</code> without <code>limit</code> builds the whole result in memory
+  (check the resolvers, and the <code>limit</code> arguments clients send).</li>
+<li>The in-memory APQ store (<code>apq_storage_backend="memory"</code>, the default) keeps every
+  persisted query, and with <code>apq_cache_responses=True</code> every cached response, for
+  the life of the process.</li>
+<li>The in-memory rate limit counters, one entry per client key.</li>
+</ul>
 <h3 id="step-3-check-for-memory-leaks">Step 3: Check for Memory Leaks<a class="headerlink" href="#step-3-check-for-memory-leaks" title="Permanent link">&para;</a></h3>
-<p><strong>Python Garbage Collection Stats</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># GC collection frequency (high = potential leak)</span>
+<p><strong>Python Garbage Collection Stats</strong> (with <code>GCCollector</code> registered):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># GC collection frequency, by generation</span>
 <span class="kr">rate</span><span class="o">(</span><span class="nv">python_gc_collections_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
 
 <span class="c1"># Uncollectable objects (memory leak indicator)</span>
 <span class="nv">python_gc_objects_uncollectable_total</span>
-</code></pre></div>
-<p><strong>Check Object Count Growth</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Total Python objects</span>
-<span class="nv">python_gc_objects_collected_total</span>
-
-<span class="c1"># Object growth rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">python_gc_objects_collected_total</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span>
 </code></pre></div>
 <p><strong>Via Application Code</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
@@ -5181,15 +5146,11 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.co
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">obj_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="step-4-check-database-connection-pool">Step 4: Check Database Connection Pool<a class="headerlink" href="#step-4-check-database-connection-pool" title="Permanent link">&para;</a></h3>
-<p><strong>Via Prometheus</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Active connections (each uses ~10MB)</span>
-<span class="nv">fraiseql_db_connections_active</span>
-
-<span class="c1"># Total pool size</span>
-<span class="nv">fraiseql_db_connections_total</span>
-
-<span class="c1"># Idle connections (still use memory)</span>
+<p><strong>Via Prometheus</strong> (only if the app feeds the pool gauges with
+<code>update_db_connections</code>, see <a href="../#metrics-quick-reference">Metrics</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="nv">fraiseql_db_connections_active</span>
 <span class="nv">fraiseql_db_connections_idle</span>
+<span class="nv">fraiseql_db_connections_total</span>
 </code></pre></div>
 <p><strong>Via PostgreSQL</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Check connection count</span>
@@ -5203,20 +5164,12 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.co
 <span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">application_name</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="step-5-check-request-processing">Step 5: Check Request Processing<a class="headerlink" href="#step-5-check-request-processing" title="Permanent link">&para;</a></h3>
-<p><strong>Large Requests/Responses</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># HTTP request size histogram</span>
-<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_size_bytes_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<p>FraiseQL has no request or response size metric; sizes show in your proxy's access
+log. Slow requests, which hold their results in memory longer, show in the duration
+histogram:</p>
+<div class="highlight"><pre><span></span><code><span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span>
+<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">le</span><span class="p">,</span><span class="w"> </span><span class="nv">endpoint</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 <span class="o">)</span>
-
-<span class="c1"># Response size histogram</span>
-<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_response_size_bytes_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">)</span>
-</code></pre></div>
-<p><strong>Active Operations</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Count in-flight GraphQL operations</span>
-curl<span class="w"> </span>http://localhost:8000/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>fraiseql_graphql<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span><span class="s2">"#"</span>
 </code></pre></div>
 <hr />
 <h2 id="resolution-steps">🔧 Resolution Steps<a class="headerlink" href="#resolution-steps" title="Permanent link">&para;</a></h2>
@@ -5233,25 +5186,26 @@ systemctl<span class="w"> </span>restart<span class="w"> </span>fraiseql
 </code></pre></div>
 <p><strong>Note</strong>: Only restart if memory usage &gt; 90% and application is unresponsive.</p>
 <h4 id="2-force-garbage-collection">2. Force Garbage Collection<a class="headerlink" href="#2-force-garbage-collection" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># Via admin endpoint (if implemented)</span>
-<span class="n">curl</span> <span class="o">-</span><span class="n">X</span> <span class="n">POST</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">8000</span><span class="o">/</span><span class="n">admin</span><span class="o">/</span><span class="n">gc</span>
-
-<span class="c1"># Or via Python REPL in container</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
+<p>fraiseql has no endpoint for this; run it in a Python REPL attached to the process
+(e.g. with <code>py-spy</code> or a debugger), or restart the pod:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
 <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
 </code></pre></div>
 <h4 id="3-reduce-connection-pool-size-temporary">3. Reduce Connection Pool Size (Temporary)<a class="headerlink" href="#3-reduce-connection-pool-size-temporary" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># Update configuration</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
+<p>The pool opens at most <code>database_pool_size + database_max_overflow</code> connections:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_pool_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>  <span class="c1"># Reduce from default (10-20)</span>
-    <span class="n">db_max_overflow</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Reduce from default (5-10)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>  <span class="c1"># Default: 20 (create_fraiseql_app uses 10 in development)</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Default: 10</span>
 <span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">])</span>
 </code></pre></div>
-<p><strong>Environment Variable</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DB_POOL_SIZE</span><span class="o">=</span><span class="m">5</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DB_MAX_OVERFLOW</span><span class="o">=</span><span class="m">2</span>
+<p><strong>Environment Variable</strong> (read when the app is built from a <code>FraiseQLConfig</code>, as above;
+<code>create_fraiseql_app(database_url=...)</code> without <code>config</code> sets the pool size itself):</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">5</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_MAX_OVERFLOW</span><span class="o">=</span><span class="m">2</span>
 </code></pre></div>
 <h3 id="short-term-fixes-15-30-minutes">Short-Term Fixes (15-30 minutes)<a class="headerlink" href="#short-term-fixes-15-30-minutes" title="Permanent link">&para;</a></h3>
 <h4 id="1-analyze-memory-usage-pattern">1. Analyze Memory Usage Pattern<a class="headerlink" href="#1-analyze-memory-usage-pattern" title="Permanent link">&para;</a></h4>
@@ -5289,10 +5243,11 @@ curl<span class="w"> </span>http://localhost:8000/metrics<span class="w"> </span
 <span class="n">concurrent_requests</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="mf">0.1</span>  <span class="c1"># = 10</span>
 <span class="n">pool_size</span> <span class="o">=</span> <span class="n">concurrent_requests</span> <span class="o">*</span> <span class="mf">1.5</span>  <span class="c1"># Safety margin = 15</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_pool_size</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
-    <span class="n">db_max_overflow</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">db_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># Seconds a request waits for a free connection</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Memory Impact</strong>:</p>
@@ -5301,38 +5256,31 @@ pool_size=20 → ~200MB
 pool_size=10 → ~100MB
 </code></pre></div>
 <h4 id="3-implement-connection-recycling">3. Implement Connection Recycling<a class="headerlink" href="#3-implement-connection-recycling" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span>
-    <span class="n">db_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># Recycle connections after 1 hour</span>
-    <span class="n">db_pool_pre_ping</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Verify connections before use</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># Close and replace connections after 1 hour (default)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits</strong>:</p>
 <ul>
 <li>Prevents connection memory bloat</li>
 <li>Releases idle connection memory</li>
-<li>Detects stale connections</li>
 </ul>
-<h4 id="4-limit-cache-size-if-using-in-memory-cache">4. Limit Cache Size (If Using In-Memory Cache)<a class="headerlink" href="#4-limit-cache-size-if-using-in-memory-cache" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">LRUCache</span>
+<h4 id="4-move-in-process-caches-out-of-the-process">4. Move In-Process Caches Out of the Process<a class="headerlink" href="#4-move-in-process-caches-out-of-the-process" title="Permanent link">&para;</a></h4>
+<p>fraiseql's result cache (<code>fraiseql.caching.PostgresCache</code>, see
+<a href="../../../performance/caching/">Caching</a>) lives in a PostgreSQL UNLOGGED table, not
+in application memory. What does live in the process is the automatic persisted
+queries (APQ) store, which defaults to memory and grows with each distinct query
+(and each cached response, with <code>apq_cache_responses=True</code>). Keep it in PostgreSQL
+instead:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="c1"># Limit cache to 1000 entries (~10MB)</span>
-<span class="n">cache</span> <span class="o">=</span> <span class="n">LRUCache</span><span class="p">(</span><span class="n">max_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Switch to External Cache</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisCache</span>
-
-<span class="c1"># Use Redis instead of in-memory cache</span>
-<span class="n">cache</span> <span class="o">=</span> <span class="n">RedisCache</span><span class="p">(</span>
-    <span class="n">url</span><span class="o">=</span><span class="s2">"redis://localhost:6379"</span><span class="p">,</span>
-    <span class="n">max_memory</span><span class="o">=</span><span class="s2">"256mb"</span><span class="p">,</span>  <span class="c1"># Redis memory limit</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>  <span class="c1"># Default: "memory"</span>
 <span class="p">)</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span><span class="n">cache</span><span class="o">=</span><span class="n">cache</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="long-term-solutions-1-days">Long-Term Solutions (1+ days)<a class="headerlink" href="#long-term-solutions-1-days" title="Permanent link">&para;</a></h3>
 <h4 id="1-implement-memory-limits">1. Implement Memory Limits<a class="headerlink" href="#1-implement-memory-limits" title="Permanent link">&para;</a></h4>
@@ -5360,63 +5308,42 @@ pool_size=10 → ~100MB
 <span class="nb">echo</span><span class="w"> </span>-1000<span class="w"> </span>&gt;<span class="w"> </span>/proc/&lt;pid&gt;/oom_score_adj
 </code></pre></div>
 <h4 id="2-implement-request-size-limits">2. Implement Request Size Limits<a class="headerlink" href="#2-implement-request-size-limits" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Request</span><span class="p">,</span> <span class="n">HTTPException</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="n">Middleware</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseHTTPMiddleware</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">RequestSizeLimitMiddleware</span><span class="p">(</span><span class="n">BaseHTTPMiddleware</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10485760</span><span class="p">):</span>  <span class="c1"># 10MB default</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span> <span class="o">=</span> <span class="n">max_size</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-        <span class="n">content_length</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-length"</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">content_length</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">content_length</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
-                <span class="n">status_code</span><span class="o">=</span><span class="mi">413</span><span class="p">,</span>
-                <span class="n">detail</span><span class="o">=</span><span class="s2">"Request payload too large"</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span>
-    <span class="n">middleware</span><span class="o">=</span><span class="p">[</span>
-        <span class="n">Middleware</span><span class="p">(</span><span class="n">RequestSizeLimitMiddleware</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">10485760</span><span class="p">)</span>
-    <span class="p">]</span>
-<span class="p">)</span>
+<p>Cap request bodies before they reach the app, at the reverse proxy or ingress:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># nginx: answer 413 to bodies over 10MB</span>
+<span class="k">client_max_body_size</span><span class="w"> </span><span class="mi">10m</span><span class="p">;</span>
 </code></pre></div>
-<h4 id="3-implement-query-result-streaming">3. Implement Query Result Streaming<a class="headerlink" href="#3-implement-query-result-streaming" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># ingress-nginx</span>
+<span class="nt">metadata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">annotations</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">nginx.ingress.kubernetes.io/proxy-body-size</span><span class="p">:</span><span class="w"> </span><span class="s">"10m"</span>
+</code></pre></div>
+<h4 id="3-cap-result-set-sizes">3. Cap Result Set Sizes<a class="headerlink" href="#3-cap-result-set-sizes" title="Permanent link">&para;</a></h4>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">"users"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">):</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="c1"># Limit result set size</span>
     <span class="k">if</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Limit cannot exceed 1000"</span><span class="p">)</span>
 
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">"SELECT * FROM users LIMIT $1"</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Pagination for Large Results</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">query</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="s2">"orders"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_orders</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">,</span>
-    <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="p">):</span>
-    <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">page_size</span>
-
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orders</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">page</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">page_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
     <span class="c1"># Validate page_size</span>
     <span class="k">if</span> <span class="n">page_size</span> <span class="o">&gt;</span> <span class="mi">500</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Page size cannot exceed 500"</span><span class="p">)</span>
 
-    <span class="n">query</span> <span class="o">=</span> <span class="s2">"""</span>
-<span class="s2">        SELECT * FROM orders</span>
-<span class="s2">        ORDER BY created_at DESC</span>
-<span class="s2">        LIMIT $1 OFFSET $2</span>
-<span class="s2">    """</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">page_size</span><span class="p">,</span> <span class="n">offset</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_order"</span><span class="p">,</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}],</span>
+        <span class="n">limit</span><span class="o">=</span><span class="n">page_size</span><span class="p">,</span>
+        <span class="n">offset</span><span class="o">=</span><span class="p">(</span><span class="n">page</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">page_size</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div>
 <h4 id="4-horizontal-scaling">4. Horizontal Scaling<a class="headerlink" href="#4-horizontal-scaling" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># kubernetes deployment</span>
@@ -5443,6 +5370,8 @@ pool_size=10 → ~100MB
 <hr />
 <h2 id="monitoring-alerts">📊 Monitoring &amp; Alerts<a class="headerlink" href="#monitoring-alerts" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-alert-rules">Prometheus Alert Rules<a class="headerlink" href="#prometheus-alert-rules" title="Permanent link">&para;</a></h3>
+<p>These need the <code>ProcessCollector</code> and <code>GCCollector</code> registered on FraiseQL's
+registry (see Symptoms); the first two use Kubernetes container metrics instead.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># alerts/memory.yml</span>
 <span class="nt">groups</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">memory_usage</span>
@@ -5450,37 +5379,39 @@ pool_size=10 → ~100MB
 <span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighMemoryUsage</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 &gt; 80</span>
+<span class="w">          </span><span class="no">sum by (pod) (container_memory_working_set_bytes{container="fraiseql"})</span>
+<span class="w">          </span><span class="no">/ sum by (pod) (kube_pod_container_resource_limits{container="fraiseql", resource="memory"}) &gt; 0.8</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">(&gt;</span><span class="nv"> </span><span class="s">80%)"</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">(&gt;</span><span class="nv"> </span><span class="s">80%</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">limit)"</span>
 <span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Memory</span><span class="nv"> </span><span class="s">usage:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}"</span>
 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">CriticalMemoryUsage</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">(process_resident_memory_bytes / node_memory_MemTotal_bytes) * 100 &gt; 90</span>
+<span class="w">          </span><span class="no">sum by (pod) (container_memory_working_set_bytes{container="fraiseql"})</span>
+<span class="w">          </span><span class="no">/ sum by (pod) (kube_pod_container_resource_limits{container="fraiseql", resource="memory"}) &gt; 0.9</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Critical</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">(&gt;</span><span class="nv"> </span><span class="s">90%)"</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Critical</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">usage</span><span class="nv"> </span><span class="s">(&gt;</span><span class="nv"> </span><span class="s">90%</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">limit)"</span>
 <span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Memory</span><span class="nv"> </span><span class="s">usage:</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanizePercentage</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">OOM</span><span class="nv"> </span><span class="s">risk!"</span>
 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MemoryLeak</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">rate(process_resident_memory_bytes[30m]) &gt; 10485760  # 10MB growth per 30min</span>
+<span class="w">          </span><span class="no">delta(process_resident_memory_bytes[30m]) &gt; 10 * 1024 * 1024  # 10 MiB growth per 30min</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1h</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Potential</span><span class="nv"> </span><span class="s">memory</span><span class="nv"> </span><span class="s">leak</span><span class="nv"> </span><span class="s">detected"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Memory</span><span class="nv"> </span><span class="s">growing</span><span class="nv"> </span><span class="s">at</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanize</span><span class="nv"> </span><span class="s">}}bytes/sec"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Memory</span><span class="nv"> </span><span class="s">grew</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">humanize1024</span><span class="nv"> </span><span class="s">}}B</span><span class="nv"> </span><span class="s">in</span><span class="nv"> </span><span class="s">30</span><span class="nv"> </span><span class="s">minutes"</span>
 
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ExcessiveGarbageCollection</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">rate(python_gc_collections_total[5m]) &gt; 10</span>
+<span class="w">          </span><span class="no">sum by (instance) (rate(python_gc_collections_total[5m])) &gt; 10</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
@@ -5493,11 +5424,12 @@ pool_size=10 → ~100MB
 <div class="highlight"><pre><span></span><code><span class="nv">process_resident_memory_bytes</span>
 <span class="nv">process_virtual_memory_bytes</span>
 </code></pre></div>
-<p><strong>2. Memory Usage Percentage</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">node_memory_MemTotal_bytes</span><span class="o">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
+<p><strong>2. Memory Usage Against the Limit</strong> (Kubernetes):</p>
+<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">pod</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">container_memory_working_set_bytes</span><span class="p">{</span><span class="nl">container</span><span class="o">=</span><span class="p">"</span><span class="s">fraiseql</span><span class="p">"}</span><span class="o">)</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">pod</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">kube_pod_container_resource_limits</span><span class="p">{</span><span class="nl">container</span><span class="o">=</span><span class="p">"</span><span class="s">fraiseql</span><span class="p">",</span><span class="w"> </span><span class="nl">resource</span><span class="o">=</span><span class="p">"</span><span class="s">memory</span><span class="p">"}</span><span class="o">)</span>
 </code></pre></div>
 <p><strong>3. Memory Growth Rate</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kr">rate</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="kr">deriv</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span>
 </code></pre></div>
 <p><strong>4. Garbage Collection Activity</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kr">rate</span><span class="o">(</span><span class="nv">python_gc_collections_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
@@ -5507,11 +5439,8 @@ pool_size=10 → ~100MB
 <h2 id="verification">🔍 Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
 <p>After applying fixes, verify memory usage is stable:</p>
 <h3 id="1-check-metrics">1. Check Metrics<a class="headerlink" href="#1-check-metrics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Memory usage should be &lt; 80%</span>
-<span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">node_memory_MemTotal_bytes</span><span class="o">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
-
-<span class="c1"># Memory should not be growing</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1048576</span><span class="w">  </span><span class="c1"># &lt; 1MB per 10min</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Memory should not be growing: &lt; 1 MiB over 10 minutes</span>
+<span class="kr">delta</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1024</span>
 </code></pre></div>
 <h3 id="2-load-test">2. Load Test<a class="headerlink" href="#2-load-test" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run load test for 10 minutes</span>
@@ -5522,11 +5451,11 @@ watch<span class="w"> </span>-n<span class="w"> </span><span class="m">5</span><
 
 <span class="c1"># Memory should stabilize, not grow continuously</span>
 </code></pre></div>
-<h3 id="3-check-logs">3. Check Logs<a class="headerlink" href="#3-check-logs" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Verify no memory warnings</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event | startswith("system.memory"))'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
+<h3 id="3-check-the-platform">3. Check the Platform<a class="headerlink" href="#3-check-the-platform" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># No new OOM kills (Kubernetes)</span>
+kubectl<span class="w"> </span>get<span class="w"> </span>pods<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">'{range .items[*]}{.metadata.name}{" "}{.status.containerStatuses[0].lastState.terminated.reason}{"\n"}{end}'</span>
 
-<span class="c1"># Should see no recent warnings</span>
+<span class="c1"># Should show no recent "OOMKilled"</span>
 </code></pre></div>
 <hr />
 <h2 id="post-incident-review">📝 Post-Incident Review<a class="headerlink" href="#post-incident-review" title="Permanent link">&para;</a></h2>
@@ -5566,8 +5495,8 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <hr />
 <h2 id="related-resources">📚 Related Resources<a class="headerlink" href="#related-resources" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../deployment/#resource-limits">Container Memory Limits</a></li>
-<li><a href="../database-performance-degradation/#connection-pool">Connection Pool Configuration</a></li>
+<li><a href="../../deployment/">Container Memory Limits</a></li>
+<li><a href="../database-performance-degradation/#step-2-check-connection-pool-status">Connection Pool Configuration</a></li>
 <li><a href="../../../performance/caching/">Caching Best Practices</a></li>
 <li><a href="https://docs.python.org/3/library/gc.html">Python Memory Management</a></li>
 </ul>
@@ -5676,10 +5605,10 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

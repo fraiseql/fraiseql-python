@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4790,17 +4790,14 @@
 <span class="p">}</span>
 </code></pre></div>
 <p>Rust pipeline will extract only <code>id</code> and <code>firstName</code> from the full JSONB, ignoring other fields.</p>
-<p><strong>Configuration:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">field_projection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable field filtering (default)</span>
-<span class="p">)</span>
-</code></pre></div>
+<p><strong>Configuration:</strong> none. Field projection always happens; there is no <code>field_projection</code>
+setting (<code>FraiseQLConfig</code> ignores it).</p>
 <p><strong>Impact</strong>: 20-40% faster transformation for large objects with many fields</p>
 <h2 id="3-use-automatic-persisted-queries-apq">3. Use Automatic Persisted Queries (APQ)<a class="headerlink" href="#3-use-automatic-persisted-queries-apq" title="Permanent link">&para;</a></h2>
-<p>Enable APQ to cache query parsing:</p>
+<p>APQ is on by default (<code>apq_mode="optional"</code>). Pick where persisted queries are stored:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>  <span class="c1"># or "memory"</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>  <span class="c1"># or "memory" (the default)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Benefits:</strong></p>
@@ -4849,31 +4846,48 @@
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="5-batch-queries-with-dataloader-if-needed">5. Batch Queries with DataLoader (if needed)<a class="headerlink" href="#5-batch-queries-with-dataloader-if-needed" title="Permanent link">&para;</a></h2>
-<p>For N+1 query problems, use DataLoader pattern:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+<p>For N+1 query problems, use the DataLoader pattern: subclass
+<code>fraiseql.optimization.dataloader.DataLoader</code> and implement <code>batch_load</code>, which gets
+every key requested in the same tick and returns the values in the order of the keys.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 
-<span class="n">user_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">load_fn</span><span class="o">=</span><span class="n">batch_load_users</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
 
-<span class="c1"># Batches multiple user lookups into single query</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span>
-    <span class="n">user_loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="nb">id</span><span class="p">)</span> <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">user_ids</span>
-<span class="p">])</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.optimization.dataloader</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataLoader</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">UserLoader</span><span class="p">(</span><span class="n">DataLoader</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">batch_load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
+            <span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT id::text AS id, data FROM v_user WHERE id = ANY(</span><span class="si">%(ids)s</span><span class="s2">::uuid[])"</span><span class="p">),</span>
+            <span class="p">{</span><span class="s2">"ids"</span><span class="p">:</span> <span class="n">user_ids</span><span class="p">},</span>
+        <span class="p">))</span>
+        <span class="n">by_id</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">}</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">by_id</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">user_id</span> <span class="ow">in</span> <span class="n">user_ids</span><span class="p">]</span>
+
+
+<span class="n">user_loader</span> <span class="o">=</span> <span class="n">UserLoader</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+
+<span class="c1"># Batches multiple user lookups into a single query</span>
+<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">user_loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">user_id</span> <span class="ow">in</span> <span class="n">user_ids</span><span class="p">])</span>
 </code></pre></div>
 <h2 id="6-monitor-rust-performance">6. Monitor Rust Performance<a class="headerlink" href="#6-monitor-rust-performance" title="Permanent link">&para;</a></h2>
-<p>Track Rust pipeline metrics:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_metrics</span>
-
-<span class="n">metrics</span> <span class="o">=</span> <span class="n">get_metrics</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust transform avg: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">'rust_transform_avg_ms'</span><span class="p">]</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust transform p95: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">'rust_transform_p95_ms'</span><span class="p">]</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Normal values:</strong></p>
+<p>FraiseQL exports no Rust-specific metrics. Time the requests with the Prometheus
+metrics of <code>setup_metrics</code> (<code>fraiseql_http_request_duration_seconds</code>,
+<code>fraiseql_response_time_seconds</code>), or the <code>extensions.execution.time_ms</code> of a
+response outside production (see <code>include_execution_metadata</code>).</p>
+<p>Typical Rust transformation times, for comparison with your own measurements:</p>
 <ul>
 <li>Simple objects: 0.1-0.5ms</li>
 <li>Complex nested: 0.5-2ms</li>
 <li>Large arrays: 1-5ms</li>
 </ul>
-<p><strong>If higher:</strong> Check JSONB size or field projection settings</p>
+<p><strong>If higher:</strong> Check the JSONB size of the rows and how many fields the query selects</p>
 <h2 id="7-postgresql-configuration">7. PostgreSQL Configuration<a class="headerlink" href="#7-postgresql-configuration" title="Permanent link">&para;</a></h2>
 <p>Optimize PostgreSQL for JSONB queries:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- postgresql.conf</span>
@@ -4984,10 +4998,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

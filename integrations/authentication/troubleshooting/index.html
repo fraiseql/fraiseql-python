@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5134,8 +5134,9 @@ psql<span class="w"> </span><span class="s2">"</span><span class="nv">$FRAISEQL_
 <span class="c1"># If still failing, check the network path</span>
 telnet<span class="w"> </span>prod-db.internal<span class="w"> </span><span class="m">5432</span>
 
-<span class="c1"># Then start the app with debug logging to see the pool error:</span>
-<span class="nv">FRAISEQL_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>app:app
+<span class="c1"># Then start the app with debug logging (LOG_LEVEL is read by the</span>
+<span class="c1"># logging.basicConfig call shown under "Enable Debug Logging") to see the pool error:</span>
+<span class="nv">LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>app:app
 </code></pre></div>
 <h3 id="fatal-database-does-not-exist">"FATAL: database does not exist"<a class="headerlink" href="#fatal-database-does-not-exist" title="Permanent link">&para;</a></h3>
 <p><strong>Symptoms</strong>: PostgreSQL reports the database is not found</p>
@@ -5182,8 +5183,8 @@ psql<span class="w"> </span><span class="s2">"</span><span class="nv">$FRAISEQL_
 <span class="c1"># If the connection pool is the bottleneck, raise it in your config:</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">50</span>
 
-<span class="c1"># Then enable debug logging to confirm where the time goes:</span>
-<span class="nv">FRAISEQL_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>app:app
+<span class="c1"># Then enable debug logging (see "Enable Debug Logging") to confirm where the time goes:</span>
+<span class="nv">LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>app:app
 </code></pre></div>
 <h3 id="high-cpu-usage">High CPU Usage<a class="headerlink" href="#high-cpu-usage" title="Permanent link">&para;</a></h3>
 <p><strong>Symptoms</strong>: The app process uses a lot of CPU</p>
@@ -5329,9 +5330,15 @@ authorization decisions:</p>
 <span class="c1"># Or just the auth subtree (token validation, revocation, providers)</span>
 <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql.auth"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
 </code></pre></div>
-<p>You can also set the level via the <code>FRAISEQL_LOG_LEVEL</code> environment variable when
-launching the app:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload
+<p>FraiseQL has no log-level setting or <code>FRAISEQL_LOG_LEVEL</code> variable. To pick the
+level when launching the app, read a variable of your own in the app module, and
+give the records a handler (uvicorn only configures its own loggers):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"INFO"</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="nv">LOG_LEVEL</span><span class="o">=</span>DEBUG<span class="w"> </span>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--reload
 </code></pre></div>
 <h3 id="check-detailed-logs">Check Detailed Logs<a class="headerlink" href="#check-detailed-logs" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Run the app in the foreground and watch the logs</span>
@@ -5453,10 +5460,10 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

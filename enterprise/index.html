@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5054,12 +5054,15 @@ expiry. Revocation is enabled by default and tunable through <code>FraiseQLConfi
 <span class="nv">FRAISEQL_REVOCATION_TTL</span><span class="o">=</span><span class="m">86400</span>
 </code></pre></div>
 <h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>
-<p><strong>Brute-force and abuse protection</strong> on the GraphQL endpoint:</p>
+<p><strong>Brute-force and abuse protection</strong>, off by default. With <code>rate_limit_enabled</code>,
+<code>create_fraiseql_app</code> limits every path but <code>/health</code>, <code>/ready</code>, <code>/metrics</code> and <code>/</code>,
+per client IP:</p>
 <ul>
-<li>Per-minute and per-hour request ceilings.</li>
+<li>Per-minute and per-hour request ceilings, in a sliding window.</li>
 <li>Burst allowance for short traffic spikes.</li>
-<li>Sliding or fixed time windows.</li>
-<li>Whitelist/blacklist of client identifiers.</li>
+<li>Allow and deny lists of client IPs.</li>
+<li>Counts kept in each process's memory (see
+  <a href="../configuration/rate-limiting/">Rate Limiting</a> for a Redis-backed alternative).</li>
 </ul>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:pass@localhost/mydb"</span><span class="p">,</span>
@@ -5067,7 +5070,6 @@ expiry. Revocation is enabled by default and tunable through <code>FraiseQLConfi
     <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
     <span class="n">rate_limit_requests_per_hour</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">rate_limit_burst_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">rate_limit_window_type</span><span class="o">=</span><span class="s2">"sliding"</span><span class="p">,</span>  <span class="c1"># "sliding" or "fixed"</span>
 <span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="nv">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="o">=</span><span class="nb">true</span>
@@ -5121,7 +5123,7 @@ inspected or tampered with in transit.</p>
 </tr>
 <tr>
 <td>Rate limiting</td>
-<td><code>rate_limit_enabled</code>, <code>rate_limit_requests_per_minute</code>, <code>rate_limit_requests_per_hour</code>, <code>rate_limit_burst_size</code>, <code>rate_limit_window_type</code></td>
+<td><code>rate_limit_enabled</code>, <code>rate_limit_requests_per_minute</code>, <code>rate_limit_requests_per_hour</code>, <code>rate_limit_burst_size</code>, <code>rate_limit_whitelist</code>, <code>rate_limit_blacklist</code></td>
 <td><code>FRAISEQL_RATE_LIMIT_*</code></td>
 </tr>
 <tr>
@@ -5335,10 +5337,10 @@ flag. See the full field list and defaults in
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

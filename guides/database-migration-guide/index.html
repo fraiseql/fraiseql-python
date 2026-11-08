@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5981,7 +5981,7 @@ tb_organization (pk_organization, id, name)
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'organization'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">name</span>
@@ -6035,7 +6035,7 @@ tb_organization (pk_organization, id, name)
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="step-23-multi-tenancy-with-row-level-security">Step 2.3: Multi-tenancy with Row-Level Security<a class="headerlink" href="#step-23-multi-tenancy-with-row-level-security" title="Permanent link">&para;</a></h3>
 <p>For tenant isolation, add a tenant column to your write tables and enforce it with PostgreSQL <strong>Row-Level Security (RLS)</strong>. FraiseQL's CQRS repository sets the session GUCs from the request context — when <code>info.context</code> carries <code>tenant_id</code>, it issues <code>SET LOCAL app.tenant_id = …</code> per transaction, so your RLS policies see the current tenant.</p>
@@ -6144,9 +6144,9 @@ tb_organization (pk_organization, id, name)
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'postCount'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'commentCount'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'avgLikesPerPost'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">l</span><span class="p">.</span><span class="n">like_count</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="w">        </span><span class="s1">'post_count'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'comment_count'</span><span class="p">,</span><span class="w"> </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'avg_likes_per_post'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="k">AVG</span><span class="p">(</span><span class="n">l</span><span class="p">.</span><span class="n">like_count</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
@@ -6529,10 +6529,10 @@ paths and invalidate them when the underlying tables change:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

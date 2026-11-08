@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5481,33 +5481,38 @@
     <span class="k">return</span> <span class="n">result</span>
 </code></pre></div>
 <h3 id="alerting-on-degradation">Alerting on Degradation<a class="headerlink" href="#alerting-on-degradation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">HealthStatus</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring.sentry</span><span class="w"> </span><span class="kn">import</span> <span class="n">capture_message</span>
+<p>FraiseQL has no Sentry integration; record the degradation with the PostgreSQL error
+tracker (<code>init_error_tracker</code>, see <a href="../observability/#error-tracking">Observability</a>),
+whose notification rules can alert by email, Slack or webhook:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">get_error_tracker</span>
 
 <span class="n">health</span> <span class="o">=</span> <span class="n">HealthCheck</span><span class="p">()</span>
 <span class="c1"># ... register checks</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health/detailed"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_with_alerts</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">"""Health check with automatic alerting."""</span>
     <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">health</span><span class="o">.</span><span class="n">run_checks</span><span class="p">()</span>
 
     <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"degraded"</span><span class="p">:</span>
-        <span class="c1"># Alert to Sentry</span>
         <span class="n">failed_checks</span> <span class="o">=</span> <span class="p">{</span>
             <span class="n">name</span><span class="p">:</span> <span class="n">check</span>
             <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">check</span> <span class="ow">in</span> <span class="n">result</span><span class="p">[</span><span class="s2">"checks"</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">check</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"healthy"</span>
         <span class="p">}</span>
 
-        <span class="n">capture_message</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"Health check degraded: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">failed_checks</span><span class="p">)</span><span class="si">}</span><span class="s2"> checks failing"</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="s2">"warning"</span><span class="p">,</span>
-            <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">"failed_checks"</span><span class="p">:</span> <span class="n">failed_checks</span><span class="p">}</span>
-        <span class="p">)</span>
+        <span class="n">tracker</span> <span class="o">=</span> <span class="n">get_error_tracker</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">tracker</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_message</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Health check degraded: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">failed_checks</span><span class="p">)</span><span class="si">}</span><span class="s2"> checks failing"</span><span class="p">,</span>
+                <span class="n">level</span><span class="o">=</span><span class="s2">"warning"</span><span class="p">,</span>
+                <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"application"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"failed_checks"</span><span class="p">:</span> <span class="n">failed_checks</span><span class="p">}},</span>
+            <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">result</span>
 </code></pre></div>
+<p>On an app from <code>create_fraiseql_app</code>, <code>GET /health</code> and <code>GET /ready</code> are FraiseQL's
+own: a route you add on those paths is never reached, so use another path.</p>
 <h3 id="response-caching">Response Caching<a class="headerlink" href="#response-caching" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">HealthCheck</span><span class="p">,</span> <span class="n">check_database</span>
@@ -5705,10 +5710,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

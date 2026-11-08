@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4916,17 +4916,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#storage-methods" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Storage Methods
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#csrf-validation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5022,67 +5011,6 @@
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Rate Limiting">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rate-limiting-strategies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rate Limiting Strategies
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration-by-operation-type" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Configuration by Operation Type
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#complexity-based-rate-limiting" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complexity-Based Rate Limiting
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#response-headers" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Response Headers
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#store-implementations" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Store Implementations
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -5540,17 +5468,17 @@ tags: ["documentation", "reference"]</p>
 <td><strong>Query Depth</strong></td>
 <td>15 levels</td>
 <td>10 levels</td>
-<td>10 levels</td>
+<td><strong>5 levels</strong></td>
 </tr>
 <tr>
 <td><strong>Query Complexity</strong></td>
-<td>Unlimited</td>
-<td>Limited</td>
+<td>1000 max</td>
+<td>1000 max</td>
 <td><strong>500 max</strong></td>
 </tr>
 <tr>
 <td><strong>Body Size</strong></td>
-<td>No limit</td>
+<td>1 MB</td>
 <td>1 MB</td>
 <td><strong>512 KB</strong></td>
 </tr>
@@ -5558,14 +5486,48 @@ tags: ["documentation", "reference"]</p>
 </table>
 <h3 id="standard-profile-default">STANDARD Profile (Default)<a class="headerlink" href="#standard-profile-default" title="Permanent link">&para;</a></h3>
 <p><strong>Configuration</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
 
 <span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">"standard"</span><span class="p">)</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">security_profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/fraiseql_db"</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">profile</span><span class="o">.</span><span class="n">introspection_policy</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>  <span class="c1"># "authenticated"</span>
+    <span class="n">max_query_depth</span><span class="o">=</span><span class="n">profile</span><span class="o">.</span><span class="n">max_query_depth</span><span class="p">,</span>  <span class="c1"># 15</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="n">profile</span><span class="o">.</span><span class="n">max_query_complexity</span><span class="p">,</span>  <span class="c1"># 1000</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>A deeper query is answered with <code>QUERY_TOO_DEEP</code>, a costlier one with
+<code>QUERY_TOO_COMPLEX</code>, and neither is executed (setting <code>complexity_max_score</code>
+turns the complexity check on).</p>
+<blockquote>
+<p><strong>Applying a profile in 1.31:</strong> <code>FraiseQLConfig</code> has no <code>security_profile</code> setting
+(it ignores fields it doesn't declare). A profile is a <code>SecurityProfileConfig</code>
+value. <code>ProfileEnforcer(profile).apply_to_app(app)</code> is meant to install its
+middleware, but the app then fails to start (<code>apply_to_app</code> adds
+<code>SecurityHeadersMiddleware</code>, and another middleware, without the config they
+need). Install the profile's body-size limit and rate limit yourself instead:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BodySizeLimiterMiddleware</span><span class="p">,</span>
+    <span class="n">InMemoryRateLimiter</span><span class="p">,</span>
+    <span class="n">RateLimiterMiddleware</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileEnforcer</span><span class="p">,</span> <span class="n">get_profile</span>
+
+<span class="n">enforcer</span> <span class="o">=</span> <span class="n">ProfileEnforcer</span><span class="p">(</span><span class="n">get_profile</span><span class="p">(</span><span class="s2">"regulated"</span><span class="p">))</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">BodySizeLimiterMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">enforcer</span><span class="o">.</span><span class="n">get_body_size_config</span><span class="p">())</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+    <span class="n">RateLimiterMiddleware</span><span class="p">,</span>
+    <span class="n">rate_limiter</span><span class="o">=</span><span class="n">InMemoryRateLimiter</span><span class="p">(</span><span class="n">enforcer</span><span class="o">.</span><span class="n">get_rate_limit_config</span><span class="p">()),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>A body over the profile's <code>max_body_size</code> then gets 413, and a client over
+<code>rate_limit_requests_per_minute</code> gets 429 with <code>Retry-After</code> (counted per client
+IP, and per user when a middleware in front of it sets <code>request.state.user_id</code>, in each
+process's memory). The profile's introspection policy works as above,
+and the security headers as in
+<a href="#security-header-configuration">Security Header Configuration</a>.</p>
+</blockquote>
 <p><strong>Settings</strong>:</p>
 <ul>
 <li>TLS: Optional (development-friendly)</li>
@@ -5577,7 +5539,8 @@ tags: ["documentation", "reference"]</p>
 <li>Audit Level: STANDARD (basic event logging)</li>
 <li>Field-Level Audit: Disabled</li>
 <li>Query Depth Limit: 15 levels</li>
-<li>Query Complexity: Unlimited (auto-estimated)</li>
+<li>Query Complexity: 1000 max</li>
+<li>Request Body Size: 1 MB limit</li>
 </ul>
 <p><strong>Use Cases</strong>:</p>
 <ul>
@@ -5595,12 +5558,13 @@ tags: ["documentation", "reference"]</p>
 </ul>
 <h3 id="regulated-profile">REGULATED Profile<a class="headerlink" href="#regulated-profile" title="Permanent link">&para;</a></h3>
 <p><strong>Configuration</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
 
 <span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">"regulated"</span><span class="p">)</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">security_profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/fraiseql_db"</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">profile</span><span class="o">.</span><span class="n">introspection_policy</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>  <span class="c1"># "disabled"</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Settings</strong>:</p>
@@ -5614,7 +5578,7 @@ tags: ["documentation", "reference"]</p>
 <li>Audit Level: <strong>ENHANCED</strong> (detailed event tracking)</li>
 <li>Field-Level Audit: <strong>Enabled</strong> (track field access)</li>
 <li>Query Depth Limit: <strong>10 levels</strong> (reduced from STANDARD)</li>
-<li>Query Complexity: Limited to 5000 estimated units</li>
+<li>Query Complexity: 1000 max</li>
 <li>Request Body Size: 1 MB limit</li>
 </ul>
 <p><strong>Use Cases</strong>:</p>
@@ -5634,22 +5598,20 @@ tags: ["documentation", "reference"]</p>
 <li>Audit logging: Field access tracking for sensitive data</li>
 </ul>
 <p><strong>Production Deployment</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Require HTTPS only</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_SECURITY_PROFILE</span><span class="o">=</span>regulated
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_TLS_ENFORCE</span><span class="o">=</span><span class="nb">true</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_TLS_MIN_VERSION</span><span class="o">=</span><span class="m">1</span>.2
+<div class="highlight"><pre><span></span><code><span class="c1"># The one profile setting FraiseQLConfig reads from the environment</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUDIT_LEVEL</span><span class="o">=</span>enhanced
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUDIT_FIELD_ACCESS</span><span class="o">=</span><span class="nb">true</span>
 </code></pre></div>
+<p>TLS (and, for RESTRICTED, mTLS) is terminated in front of the app, at the load
+balancer or reverse proxy; FraiseQL has no setting for it.</p>
 <h3 id="restricted-profile">RESTRICTED Profile<a class="headerlink" href="#restricted-profile" title="Permanent link">&para;</a></h3>
 <p><strong>Configuration</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
 
 <span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">"restricted"</span><span class="p">)</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">security_profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/fraiseql_db"</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="n">profile</span><span class="o">.</span><span class="n">introspection_policy</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>  <span class="c1"># "disabled"</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Settings</strong>:</p>
@@ -5662,7 +5624,7 @@ tags: ["documentation", "reference"]</p>
 <li>Rate Limiting: <strong>10 requests/minute</strong> (highly restrictive)</li>
 <li>Audit Level: <strong>VERBOSE</strong> (comprehensive logging)</li>
 <li>Field-Level Audit: <strong>Enabled</strong> (all field access tracked)</li>
-<li>Query Depth Limit: <strong>10 levels</strong> (same as REGULATED)</li>
+<li>Query Depth Limit: <strong>5 levels</strong></li>
 <li>Query Complexity: <strong>500 max</strong> (very low limit)</li>
 <li>Request Body Size: <strong>512 KB limit</strong> (protective)</li>
 <li>CSRF: Strict validation with referrer checking</li>
@@ -5694,20 +5656,13 @@ tags: ["documentation", "reference"]</p>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>Production Deployment</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Maximum security configuration</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_SECURITY_PROFILE</span><span class="o">=</span>restricted
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_TLS_ENFORCE</span><span class="o">=</span><span class="nb">true</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_TLS_MIN_VERSION</span><span class="o">=</span><span class="m">1</span>.3
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_MTLS_ENABLE</span><span class="o">=</span><span class="nb">true</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_MTLS_CA_CERT</span><span class="o">=</span>/etc/tls/ca.crt
+<div class="highlight"><pre><span></span><code><span class="c1"># The one profile setting FraiseQLConfig reads from the environment</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_INTROSPECTION_POLICY</span><span class="o">=</span>disabled
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUDIT_LEVEL</span><span class="o">=</span>verbose
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_AUDIT_FIELD_ACCESS</span><span class="o">=</span><span class="nb">true</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_QUERY_COMPLEXITY_MAX</span><span class="o">=</span><span class="m">500</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_RATE_LIMIT_PER_MIN</span><span class="o">=</span><span class="m">10</span>
 </code></pre></div>
+<p>TLS (and, for RESTRICTED, mTLS) is terminated in front of the app, at the load
+balancer or reverse proxy; FraiseQL has no setting for it.</p>
 <h3 id="profile-enforcement">Profile Enforcement<a class="headerlink" href="#profile-enforcement" title="Permanent link">&para;</a></h3>
-<p>Security profiles are automatically enforced via middleware. Each request is validated against the profile's constraints:</p>
+<p>The order the profile middleware is designed to run in (see the note under STANDARD Profile for what runs in 1.31):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Middleware enforcement order:</span>
 <span class="c1"># 1. TLS validation (if profile requires)</span>
 <span class="c1"># 2. mTLS client certificate validation (if enabled)</span>
@@ -6052,12 +6007,17 @@ components on a generated SBOM:</p>
 <div class="highlight"><pre><span></span><code>Content-Security-Policy: default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'
 </code></pre></div>
 <p><strong>CSP Violation Reporting</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Configure webhook to receive CSP violations</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">csp_report_uri</span><span class="o">=</span><span class="s2">"https://security.example.com/csp-violations"</span><span class="p">,</span>
-    <span class="n">csp_report_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True = report only, False = enforce</span>
-<span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.security_headers</span><span class="w"> </span><span class="kn">import</span> <span class="n">CSPDirective</span><span class="p">,</span> <span class="n">add_csp_reporting</span>
+
+<span class="c1"># Receive violation reports at POST /csp-report and forward them to a webhook</span>
+<span class="n">add_csp_reporting</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="s2">"/csp-report"</span><span class="p">,</span> <span class="n">webhook_url</span><span class="o">=</span><span class="s2">"https://security.example.com/csp-violations"</span><span class="p">)</span>
+
+<span class="c1"># Point the policy at it; report_only=True sends Content-Security-Policy-Report-Only</span>
+<span class="n">csp</span><span class="o">.</span><span class="n">add_directive</span><span class="p">(</span><span class="n">CSPDirective</span><span class="o">.</span><span class="n">REPORT_URI</span><span class="p">,</span> <span class="s2">"/csp-report"</span><span class="p">)</span>
+<span class="n">csp</span><span class="o">.</span><span class="n">report_only</span> <span class="o">=</span> <span class="kc">False</span>
 </code></pre></div>
+<p><code>csp</code> is the <code>ContentSecurityPolicy</code> you pass to <code>SecurityHeadersConfig</code> (see
+Custom Configuration below).</p>
 <h4 id="http-strict-transport-security-hsts">HTTP Strict-Transport-Security (HSTS)<a class="headerlink" href="#http-strict-transport-security-hsts" title="Permanent link">&para;</a></h4>
 <p>Forces browser to use HTTPS for all future connections.</p>
 <p><strong>Header</strong>:</p>
@@ -6117,34 +6077,27 @@ Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Resource-Policy: same-site
 </code></pre></div>
 <h3 id="security-header-configuration">Security Header Configuration<a class="headerlink" href="#security-header-configuration" title="Permanent link">&para;</a></h3>
-<p><strong>Automatic Injection</strong>:</p>
-<p>FraiseQL automatically injects security headers based on security profile:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_profile</span>
+<p><strong>Presets</strong>:</p>
+<p>Security headers come from a <code>SecurityHeadersConfig</code>, not from the security
+profile. Two presets cover the common cases:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.security_headers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_development_security_config</span><span class="p">,</span>
+    <span class="n">create_production_security_config</span><span class="p">,</span>
+    <span class="n">setup_security_headers</span><span class="p">,</span>
+<span class="p">)</span>
 
-<span class="c1"># STANDARD profile</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">security_profile</span><span class="o">=</span><span class="n">get_profile</span><span class="p">(</span><span class="s2">"standard"</span><span class="p">))</span>
-<span class="c1"># Headers:</span>
-<span class="c1"># - CSP (permissive)</span>
-<span class="c1"># - HSTS (recommended)</span>
-<span class="c1"># - X-Content-Type-Options: nosniff</span>
-<span class="c1"># - X-Frame-Options: SAMEORIGIN</span>
+<span class="c1"># Production API: CSP default-src 'none', HSTS (max-age=31536000; includeSubDomains),</span>
+<span class="c1"># X-Frame-Options: DENY, X-Content-Type-Options: nosniff</span>
+<span class="n">setup_security_headers</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">create_production_security_config</span><span class="p">(</span><span class="s2">"api.example.com"</span><span class="p">,</span> <span class="n">api_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="p">)</span>
 
-<span class="c1"># REGULATED profile</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">security_profile</span><span class="o">=</span><span class="n">get_profile</span><span class="p">(</span><span class="s2">"regulated"</span><span class="p">))</span>
-<span class="c1"># Headers (stricter):</span>
-<span class="c1"># - CSP (strict, only 'self' allowed)</span>
-<span class="c1"># - HSTS (enforced, max-age=31536000)</span>
-<span class="c1"># - X-Frame-Options: DENY</span>
-<span class="c1"># - X-XSS-Protection: 1; mode=block</span>
-
-<span class="c1"># RESTRICTED profile (maximum security)</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">security_profile</span><span class="o">=</span><span class="n">get_profile</span><span class="p">(</span><span class="s2">"restricted"</span><span class="p">))</span>
-<span class="c1"># Headers (maximum):</span>
-<span class="c1"># - CSP (very strict, no inline scripts)</span>
-<span class="c1"># - HSTS (enforced + preload)</span>
-<span class="c1"># - X-Frame-Options: DENY</span>
-<span class="c1"># - All feature-policy restrictions enabled</span>
+<span class="c1"># Development: permissive CSP, no HSTS, X-Frame-Options: SAMEORIGIN</span>
+<span class="c1"># (this preset skips /graphql, /playground and the docs pages)</span>
+<span class="n">setup_security_headers</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">create_development_security_config</span><span class="p">())</span>
 </code></pre></div>
+<p><code>create_production_security_config(..., enable_hsts_preload=True)</code> adds <code>preload</code>
+to HSTS.</p>
 <p><strong>Custom Configuration</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.security_headers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">ContentSecurityPolicy</span><span class="p">,</span>
@@ -6193,29 +6146,6 @@ Cross-Origin-Resource-Policy: same-site
 <p><strong>Token Example</strong>:</p>
 <div class="highlight"><pre><span></span><code>Token: NrVy3e5K_J2x8aB9cDmQpRsT1uVwXyZa
 HMAC: e4c7e8f5a1b2c3d4e5f6a7b8c9d0e1f2
-</code></pre></div>
-<h3 id="storage-methods">Storage Methods<a class="headerlink" href="#storage-methods" title="Permanent link">&para;</a></h3>
-<p><strong>Cookie-Based</strong> (recommended for SPAs):</p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">csrf_token_storage</span><span class="o">=</span><span class="s2">"cookie"</span><span class="p">,</span>
-    <span class="n">csrf_cookie_secure</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>          <span class="c1"># HTTPS only</span>
-    <span class="n">csrf_cookie_httponly</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>        <span class="c1"># Not accessible to JavaScript</span>
-    <span class="n">csrf_cookie_samesite</span><span class="o">=</span><span class="s2">"strict"</span><span class="p">,</span>    <span class="c1"># Prevent cross-site cookie sends</span>
-    <span class="n">csrf_cookie_domain</span><span class="o">=</span><span class="s2">".example.com"</span><span class="p">,</span>
-    <span class="n">csrf_cookie_path</span><span class="o">=</span><span class="s2">"/graphql"</span><span class="p">,</span>
-<span class="p">)</span>
-</code></pre></div>
-<p><strong>Session-Based</strong> (server-side storage):</p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">csrf_token_storage</span><span class="o">=</span><span class="s2">"session"</span><span class="p">,</span>
-    <span class="c1"># Requires session middleware</span>
-<span class="p">)</span>
-</code></pre></div>
-<p><strong>Header-Based</strong> (custom header):</p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">csrf_token_storage</span><span class="o">=</span><span class="s2">"header"</span><span class="p">,</span>
-    <span class="n">csrf_header_name</span><span class="o">=</span><span class="s2">"X-CSRF-Token"</span><span class="p">,</span>
-<span class="p">)</span>
 </code></pre></div>
 <h3 id="csrf-validation">CSRF Validation<a class="headerlink" href="#csrf-validation" title="Permanent link">&para;</a></h3>
 <p><strong>Automatic Validation</strong>:</p>
@@ -6401,114 +6331,36 @@ Authorization:<span class="w"> </span>Bearer<span class="w"> </span>eyJhbGciOiJI
 </ul>
 <hr />
 <h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
-<p>FraiseQL provides sophisticated rate limiting based on GraphQL operations and query complexity.</p>
-<h3 id="rate-limiting-strategies">Rate Limiting Strategies<a class="headerlink" href="#rate-limiting-strategies" title="Permanent link">&para;</a></h3>
-<p><strong>Fixed Window</strong> (traditional):</p>
+<p>Rate limiting is off by default. <a href="../../configuration/rate-limiting/">Rate Limiting</a>
+describes both ways to turn it on:</p>
 <ul>
-<li>Time divided into fixed buckets (minute, hour, day)</li>
-<li>Count requests in current window</li>
-<li>Simple but susceptible to burst at window boundaries</li>
+<li><strong><code>FraiseQLConfig(rate_limit_enabled=True)</code></strong>: <code>create_fraiseql_app</code> installs
+  <code>RateLimiterMiddleware</code>. It counts requests per client IP, in a sliding window, in
+  each process's memory, against <code>rate_limit_requests_per_minute</code> and
+  <code>rate_limit_requests_per_hour</code>. Every counted response carries <code>X-RateLimit-Limit</code>,
+  <code>X-RateLimit-Remaining</code> and <code>X-RateLimit-Reset</code>.</li>
+<li><strong><code>setup_rate_limiting(app)</code></strong> (from <code>fraiseql.security</code>): installs
+  <code>RateLimitMiddleware</code>, with limits per path pattern and, on <code>POST /graphql</code>, per
+  operation type (100 queries, 20 mutations, 10 subscriptions a minute) and per
+  estimated cost (200 / 100 / 20 a minute for the low / medium / high tier). Windows
+  are fixed; counts are kept in memory, or in Redis with <code>redis_client=</code>.</li>
 </ul>
-<p><strong>Sliding Window</strong> (recommended):</p>
-<ul>
-<li>Requests in past N seconds</li>
-<li>More accurate burst detection</li>
-<li>Slightly more overhead</li>
-</ul>
-<p><strong>Token Bucket</strong> (smoothing):</p>
-<ul>
-<li>Tokens generated at constant rate</li>
-<li>Each request consumes tokens</li>
-<li>Burst capacity configurable</li>
-<li>Smooths traffic patterns</li>
-</ul>
-<p><strong>FraiseQL Default</strong>: Sliding window with 1-minute window</p>
-<h3 id="configuration-by-operation-type">Configuration by Operation Type<a class="headerlink" href="#configuration-by-operation-type" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="n">rate_limit_config</span> <span class="o">=</span> <span class="n">RateLimitConfig</span><span class="p">(</span>
-    <span class="n">strategies</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"query"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>           <span class="c1"># 100 queries/minute</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>           <span class="c1"># 1 minute</span>
-            <span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"sliding_window"</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="s2">"mutation"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>            <span class="c1"># 20 mutations/minute (stricter)</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-            <span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"sliding_window"</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="s2">"subscription"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>            <span class="c1"># 10 subscriptions</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-            <span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"token_bucket"</span><span class="p">,</span>  <span class="c1"># Smooth out subscriptions</span>
-        <span class="p">},</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-</code></pre></div>
-<h3 id="complexity-based-rate-limiting">Complexity-Based Rate Limiting<a class="headerlink" href="#complexity-based-rate-limiting" title="Permanent link">&para;</a></h3>
-<p>Automatically estimates query complexity and applies stricter limits to expensive queries:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Query complexity auto-estimation</span>
-<span class="c1"># Simple query (5 fields): ~10 units</span>
-<span class="c1"># Moderate query (20 fields, 1-2 levels): ~50 units</span>
-<span class="c1"># Complex query (100+ fields, nested): ~500+ units</span>
-
-<span class="n">rate_limit_config</span> <span class="o">=</span> <span class="n">RateLimitConfig</span><span class="p">(</span>
-    <span class="n">complexity_limits</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"low"</span><span class="p">:</span> <span class="p">{</span>      <span class="c1"># 0-50 complexity units</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="s2">"medium"</span><span class="p">:</span> <span class="p">{</span>   <span class="c1"># 50-200 complexity units</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="s2">"high"</span><span class="p">:</span> <span class="p">{</span>     <span class="c1"># 200-500 complexity units</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-        <span class="p">},</span>
-        <span class="s2">"critical"</span><span class="p">:</span> <span class="p">{</span> <span class="c1"># 500+ complexity units</span>
-            <span class="s2">"limit"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
-            <span class="s2">"window"</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-        <span class="p">},</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-</code></pre></div>
-<h3 id="response-headers">Response Headers<a class="headerlink" href="#response-headers" title="Permanent link">&para;</a></h3>
-<p>FraiseQL includes rate limit information in response headers:</p>
-<div class="highlight"><pre><span></span><code>HTTP/1.1 200 OK
-X-RateLimit-Limit: 100
-X-RateLimit-Remaining: 87
-X-RateLimit-Window: 60
-X-RateLimit-Reset: 1631384400
-</code></pre></div>
-<p><strong>Rate Limit Exceeded</strong> (HTTP 429):</p>
+<p>A request over a limit gets HTTP 429 with <code>Retry-After</code>. From <code>RateLimiterMiddleware</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="err">HTTP/</span><span class="mf">1.1</span><span class="w"> </span><span class="mi">429</span><span class="w"> </span><span class="err">Too</span><span class="w"> </span><span class="err">Ma</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">Reques</span><span class="kc">ts</span>
 <span class="err">Re</span><span class="kc">tr</span><span class="err">y</span><span class="mi">-</span><span class="err">A</span><span class="kc">fter</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span>
 
+<span class="p">{</span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rate limit exceeded. Retry after 45 seconds."</span><span class="p">}</span>
+</code></pre></div>
+<p>From the GraphQL limits of <code>RateLimitMiddleware</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="err">HTTP/</span><span class="mf">1.1</span><span class="w"> </span><span class="mi">429</span><span class="w"> </span><span class="err">Too</span><span class="w"> </span><span class="err">Ma</span><span class="kc">n</span><span class="err">y</span><span class="w"> </span><span class="err">Reques</span><span class="kc">ts</span>
+<span class="err">Re</span><span class="kc">tr</span><span class="err">y</span><span class="mi">-</span><span class="err">A</span><span class="kc">fter</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span>
+
 <span class="p">{</span>
 <span class="w">  </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
-<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rate limit exceeded"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RATE_LIMIT_EXCEEDED"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"limit"</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"reset_in"</span><span class="p">:</span><span class="w"> </span><span class="mi">45</span>
-<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Rate limit exceeded for mutation operations"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"RATE_LIMITED"</span><span class="p">,</span><span class="w"> </span><span class="nt">"limit"</span><span class="p">:</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="nt">"window"</span><span class="p">:</span><span class="w"> </span><span class="mi">60</span><span class="p">}</span>
 <span class="w">  </span><span class="p">}]</span>
 <span class="p">}</span>
-</code></pre></div>
-<h3 id="store-implementations">Store Implementations<a class="headerlink" href="#store-implementations" title="Permanent link">&para;</a></h3>
-<p><strong>In-Memory Store</strong> (development):</p>
-<div class="highlight"><pre><span></span><code><span class="n">RateLimitConfig</span><span class="p">(</span>
-    <span class="n">store</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># No external dependencies</span>
-    <span class="n">cleanup_interval</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># Cleanup every 5 minutes</span>
-<span class="p">)</span>
-</code></pre></div>
-<p><strong>Redis Store</strong> (production):</p>
-<div class="highlight"><pre><span></span><code><span class="n">RateLimitConfig</span><span class="p">(</span>
-    <span class="n">store</span><span class="o">=</span><span class="s2">"redis"</span><span class="p">,</span>
-    <span class="n">redis_url</span><span class="o">=</span><span class="s2">"redis://localhost:6379/0"</span><span class="p">,</span>
-    <span class="n">key_prefix</span><span class="o">=</span><span class="s2">"rate_limit:"</span><span class="p">,</span>
-    <span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>  <span class="c1"># Automatic cleanup after 1 hour</span>
-<span class="p">)</span>
 </code></pre></div>
 <hr />
 <h2 id="field-level-authorization">Field-Level Authorization<a class="headerlink" href="#field-level-authorization" title="Permanent link">&para;</a></h2>
@@ -7072,10 +6924,10 @@ at startup, cached in memory, and used for fast local AES-GCM encryption.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

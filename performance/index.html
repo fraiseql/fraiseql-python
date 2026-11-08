@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4850,17 +4850,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#custom-rust-extensions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom Rust Extensions
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#query-planning" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4920,11 +4909,14 @@
 </ul>
 <h2 id="performance-features">Performance Features<a class="headerlink" href="#performance-features" title="Permanent link">&para;</a></h2>
 <h3 id="1-rust-powered-json-processing">1. Rust-Powered JSON Processing<a class="headerlink" href="#1-rust-powered-json-processing" title="Permanent link">&para;</a></h3>
-<p>FraiseQL uses a Rust extension for JSON operations:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_graphql_response</span><span class="p">,</span> <span class="n">transform_json</span>
+<p>FraiseQL uses a Rust extension, shipped inside the <code>fraiseql</code> package, for JSON
+operations. <code>db.find</code> / <code>db.find_one</code> and class mutations call it; applications don't
+need to. On its own:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">fraiseql_rs</span>
 
-<span class="c1"># Fast JSON transformation</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">transform_json</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">transform_func</span><span class="p">)</span>
+<span class="c1"># snake_case keys to camelCase, without loading the JSON into Python objects</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">transform_json</span><span class="p">(</span><span class="s1">'{"user_name": "John", "email_address": "john@example.com"}'</span><span class="p">))</span>
+<span class="c1"># {"userName":"John","emailAddress":"john@example.com"}</span>
 </code></pre></div>
 <p><strong>Performance Benchmarks</strong> (fraiseql_rs v0.2.0):</p>
 <table>
@@ -4979,11 +4971,19 @@
 <h3 id="2-postgresql-view-optimization">2. PostgreSQL View Optimization<a class="headerlink" href="#2-postgresql-view-optimization" title="Permanent link">&para;</a></h3>
 <p>Read queries use PostgreSQL views for optimal performance:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_users</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">Info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="c1"># Automatically uses optimized view</span>
-    <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users_view"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="c1"># Reads the view's data column; Rust builds the response</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Best Practices</strong>:</p>
 <ul>
@@ -4992,24 +4992,23 @@
 <li>Use materialized views for expensive aggregations</li>
 </ul>
 <h3 id="3-efficient-n1-query-prevention">3. Efficient N+1 Query Prevention<a class="headerlink" href="#3-efficient-n1-query-prevention" title="Permanent link">&para;</a></h3>
-<p>FraiseQL includes DataLoader integration:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataloader</span>
-
-<span class="nd">@field</span>
-<span class="nd">@dataloader</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">Info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
-    <span class="c1"># Automatically batched</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"posts_view"</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
-</code></pre></div>
+<p>The first defence is the view itself: compose related data into the parent's
+<code>data</code> column (a <code>jsonb_agg</code> of a user's posts in <code>v_user</code>), so one query answers the
+whole tree. For fields that can't be composed in the view, FraiseQL has DataLoader
+integration (<code>@fraiseql.dataloader_field</code> with a <code>DataLoader</code> subclass from
+<code>fraiseql.optimization.dataloader</code>); see
+<a href="../guides/performance-optimization/#1-avoid-n1-query-problem">Avoid N+1 Query Problem</a>.</p>
 <h3 id="4-query-complexity-analysis">4. Query Complexity Analysis<a class="headerlink" href="#4-query-complexity-analysis" title="Permanent link">&para;</a></h3>
 <p>Prevent expensive queries with complexity limits:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComplexityConfig</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="n">config</span> <span class="o">=</span> <span class="n">ComplexityConfig</span><span class="p">(</span>
-    <span class="n">max_complexity</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">max_depth</span><span class="o">=</span><span class="mi">10</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>          <span class="c1"># QUERY_TOO_DEEP past 10 levels</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>   <span class="c1"># QUERY_TOO_COMPLEX over 1000</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>Both are checked before the query runs; no limit is on by default.</p>
 <h2 id="performance-benchmarks">Performance Benchmarks<a class="headerlink" href="#performance-benchmarks" title="Permanent link">&para;</a></h2>
 <p><strong>Latest Results</strong> (2025-10-17, fraiseql v0.11.5 with fraiseql_rs v0.2.0):</p>
 <h3 id="transformation-performance">Transformation Performance<a class="headerlink" href="#transformation-performance" title="Permanent link">&para;</a></h3>
@@ -5041,15 +5040,17 @@
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_posts_user_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">posts</span><span class="p">(</span><span class="n">user_id</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="2-connection-pooling">2. Connection Pooling<a class="headerlink" href="#2-connection-pooling" title="Permanent link">&para;</a></h3>
-<p>Configure optimal pool size:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+<p>Configure the pool size of the app's connection pool:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span>
-    <span class="n">pool</span><span class="p">,</span>
-    <span class="n">pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>  <span class="c1"># Adjust based on load</span>
-    <span class="n">max_overflow</span><span class="o">=</span><span class="mi">10</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>  <span class="c1"># Adjust based on load</span>
+    <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
+<p><code>create_fraiseql_app(config=config, ...)</code> opens the pool; <code>connection_pool_size=</code> and
+<code>connection_pool_max_overflow=</code> on <code>create_fraiseql_app</code> set the same values.</p>
 <h3 id="3-caching">3. Caching<a class="headerlink" href="#3-caching" title="Permanent link">&para;</a></h3>
 <p>Enable the pg_fraiseql_cache extension:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="n">EXTENSION</span><span class="w"> </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="n">pg_fraiseql_cache</span><span class="p">;</span>
@@ -5066,23 +5067,24 @@
 </code></pre></div>
 <h3 id="5-pagination">5. Pagination<a class="headerlink" href="#5-pagination" title="Permanent link">&para;</a></h3>
 <p>Always paginate large result sets:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-
-<span class="nd">@connection</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span>
-    <span class="n">info</span><span class="p">:</span> <span class="n">Info</span><span class="p">,</span>
-    <span class="n">first</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="k">return</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"users_view"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_page</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"usersPage"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"ASC"</span><span class="p">}]</span>
+    <span class="p">)</span>
 </code></pre></div>
+<p>For cursor pagination, <code>@fraiseql.connection</code> pages a view with <code>first</code> / <code>after</code>
+(see <a href="../reference/database/#paginate"><code>paginate()</code></a>).</p>
 <h2 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h2>
 <h3 id="query-performance">Query Performance<a class="headerlink" href="#query-performance" title="Permanent link">&para;</a></h3>
 <p>Monitor query execution time:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
-
-<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
-<span class="c1"># Logs all SQL queries with timing</span>
+<p>Time the SQL in PostgreSQL itself, where every statement FraiseQL sends shows up:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Log every statement slower than 100 ms</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">SYSTEM</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">log_min_duration_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'100ms'</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">pg_reload_conf</span><span class="p">();</span>
 </code></pre></div>
+<p>or read <code>pg_stat_statements</code> (<code>fraiseql.monitoring.init_query_stats</code> reads it for
+you).</p>
 <h3 id="metrics">Metrics<a class="headerlink" href="#metrics" title="Permanent link">&para;</a></h3>
 <p>Track key metrics:</p>
 <ul>
@@ -5114,16 +5116,6 @@
 <li>Monitor connection lifecycle</li>
 </ol>
 <h2 id="advanced-topics">Advanced Topics<a class="headerlink" href="#advanced-topics" title="Permanent link">&para;</a></h2>
-<h3 id="custom-rust-extensions">Custom Rust Extensions<a class="headerlink" href="#custom-rust-extensions" title="Permanent link">&para;</a></h3>
-<p>For maximum performance, write custom Rust functions:</p>
-<div class="highlight"><pre><span></span><code><span class="k">use</span><span class="w"> </span><span class="n">pyo3</span><span class="p">::</span><span class="n">prelude</span><span class="p">::</span><span class="o">*</span><span class="p">;</span>
-
-<span class="cp">#[pyfunction]</span>
-<span class="k">fn</span><span class="w"> </span><span class="nf">custom_transform</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="w"> </span><span class="kp">&amp;</span><span class="nc">PyAny</span><span class="p">)</span><span class="w"> </span><span class="p">-&gt;</span><span class="w"> </span><span class="nc">PyResult</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// Your high-performance logic</span>
-<span class="w">    </span><span class="nb">Ok</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-<span class="p">}</span>
-</code></pre></div>
 <h3 id="query-planning">Query Planning<a class="headerlink" href="#query-planning" title="Permanent link">&para;</a></h3>
 <p>Understand PostgreSQL query plans:</p>
 <div class="highlight"><pre><span></span><code><span class="k">EXPLAIN</span><span class="w"> </span><span class="k">ANALYZE</span>
@@ -5212,10 +5204,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

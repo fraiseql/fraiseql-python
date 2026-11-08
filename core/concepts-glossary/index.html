@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4947,8 +4947,8 @@
 </ul>
 <p><strong>See Also</strong>:</p>
 <ul>
-<li><a href="../../examples/complete_cqrs_blog/">CQRS Implementation</a> - Complete CQRS blog example</li>
-<li><a href="../../examples/blog_api/">Enterprise Patterns</a> - Production CQRS with audit trails</li>
+<li><a href="../../examples/blog_simple/">CQRS Implementation</a> - Blog with tb_ tables, JSONB views and mutation functions</li>
+<li><a href="../../examples/saas-starter/">Multi-tenant Patterns</a> - Tenant scoping on every query and mutation</li>
 <li>Independent scaling of reads and writes</li>
 </ul>
 <h3 id="jsonb-view-pattern">JSONB View Pattern<a class="headerlink" href="#jsonb-view-pattern" title="Permanent link">&para;</a></h3>
@@ -5235,41 +5235,55 @@
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
-<span class="c1">-- Mutation explicitly calls sync (CRITICAL!)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="n">p_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="c1">-- Mutation explicitly calls sync (CRITICAL!). A class mutation calls it with the</span>
+<span class="c1">-- input as one jsonb; mutation_response and mutation_created() come from</span>
+<span class="c1">-- migrations/trinity/005_add_mutation_response.sql</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span><span class="w"> </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Explicitly sync to projection table</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="n">v_user_id</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User created'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">),</span><span class="w"> </span><span class="s1">'User'</span>
+<span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>⚠️ CRITICAL: Explicit Sync Required</strong></p>
 <p>Projection tables do <strong>NOT</strong> auto-update. Every mutation must call sync functions:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ✅ CORRECT</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_user</span><span class="p">(...)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">update_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_name</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">;</span>
-<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="n">p_id</span><span class="p">);</span><span class="w">  </span><span class="c1">-- Must call!</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">((</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span><span class="w">  </span><span class="c1">-- Must call!</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_updated</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User updated'</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">),</span>
+<span class="w">        </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'name'</span><span class="p">],</span>
+<span class="w">        </span><span class="s1">'User'</span>
+<span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
-<span class="err">$$</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- ❌ WRONG - Missing sync!</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_user_broken</span><span class="p">(...)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">update_user_broken</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_name</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 <span class="w">    </span><span class="c1">-- tv_user will have stale data!</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_updated</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User updated'</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">),</span>
+<span class="w">        </span><span class="nb">ARRAY</span><span class="p">[</span><span class="s1">'name'</span><span class="p">],</span>
+<span class="w">        </span><span class="s1">'User'</span>
+<span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
-<span class="err">$$</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>Benefits:</strong></p>
 <ul>
@@ -5311,7 +5325,7 @@
 <span class="w">    </span><span class="n">email</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span><span class="k">lower</span><span class="p">(</span><span class="k">data</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">))</span><span class="w"> </span><span class="n">STORED</span>
 <span class="p">);</span>
 </code></pre></div>
-<p>See <a href="../../examples/hybrid_tables/">Projection Tables Example</a></p>
+<p>See <a href="../../examples/rag-system/">rag-system</a> for a projection table (<code>tv_document_embedding</code>) kept in sync by SQL functions.</p>
 <h2 id="graphql-concepts">GraphQL Concepts<a class="headerlink" href="#graphql-concepts" title="Permanent link">&para;</a></h2>
 <h3 id="auto-documentation">Auto-Documentation<a class="headerlink" href="#auto-documentation" title="Permanent link">&para;</a></h3>
 <p>FraiseQL automatically extracts field descriptions from your Python code for GraphQL schema documentation.</p>
@@ -5422,60 +5436,37 @@
         <span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
         <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
     <span class="p">})</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]})</span>
 </code></pre></div>
-<p><strong>Class-based pattern (with success/failure):</strong></p>
+<p><strong>Class-based pattern (with success/error):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Create a new user with explicit success/failure handling."""</span>
+<span class="w">    </span><span class="sd">"""Create a new user with explicit success/error handling."""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-        <span class="c1"># Call PostgreSQL function - all business logic in database</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">"email"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span>
-        <span class="p">})</span>
-
-        <span class="c1"># PostgreSQL function returns success/error indicator with user ID</span>
-        <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">"success"</span><span class="p">]:</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">])</span>
-            <span class="k">return</span> <span class="n">CreateUserSuccess</span><span class="p">(</span>
-                <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
-                <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"User created"</span><span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"error"</span><span class="p">],</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"VALIDATION_ERROR"</span><span class="p">)</span>
-        <span class="p">)</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ValidationError</span>
 </code></pre></div>
+<p>The class declares types only: fraiseql calls the PostgreSQL function
+<code>create_user</code> (the class name in snake_case) with the input as one <code>jsonb</code>, and
+turns the <code>mutation_response</code> it returns into <code>CreateUserSuccess</code> or
+<code>ValidationError</code>.</p>
 <p><strong>Corresponding PostgreSQL function:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_email</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation: Check email format using regex</span>
 <span class="w">    </span><span class="c1">-- Pattern: local-part@domain.tld (basic RFC 5322 compliance)</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Invalid email format'</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALID_EMAIL'</span>
-<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_validation_error</span><span class="p">(</span><span class="s1">'Invalid email format'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert user</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Audit log</span>
@@ -5483,18 +5474,20 @@
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'user_created'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'user_id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">-- Return success with user data</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User created successfully'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">            </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">p_name</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span>
+<span class="w">            </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span>
 <span class="w">        </span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User created successfully'</span>
+<span class="w">        </span><span class="s1">'User'</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
+<p><code>mutation_response</code> and the <code>mutation_*</code> helpers are defined in
+<code>migrations/trinity/005_add_mutation_response.sql</code>.</p>
 <h3 id="where-input-types">Where Input Types<a class="headerlink" href="#where-input-types" title="Permanent link">&para;</a></h3>
 <p>FraiseQL automatically generates strongly-typed <code>WhereInput</code> types for filtering with field-specific operators.</p>
 <p><strong>Basic operators (all types):</strong></p>
@@ -5535,21 +5528,24 @@
 </code></pre></div>
 <p><strong>Specialized Type Operators:</strong></p>
 <p><strong>1. Coordinates (Geographic Filtering)</strong></p>
+<p>A <code>Coordinate</code> field gets a <code>CoordinateFilter</code>: <code>eq</code>, <code>neq</code>, <code>in</code>, <code>nin</code> (values
+are <code>"latitude,longitude"</code> strings), <code>isnull</code>, and <code>distanceWithin</code>, the
+coordinates at most <code>radius</code> meters from <code>center</code> (<code>[latitude, longitude]</code>):</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">stores</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">location</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">distance_within</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">center</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="mf">7.7749</span><span class="p">,</span><span class="w"> </span><span class="mi">-12</span><span class="mf">2.4194</span><span class="p">]</span><span class="w">  </span><span class="c"># San Francisco</span>
-<span class="w">        </span><span class="n">radius</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="w">  </span><span class="c"># meters</span>
-<span class="w">      </span><span class="p">}</span>
-<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">location</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">distanceWithin</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">center</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">3</span><span class="mf">7.7749</span><span class="p">,</span><span class="w"> </span><span class="mi">-12</span><span class="mf">2.4194</span><span class="p">],</span><span class="w"> </span><span class="n">radius</span><span class="p">:</span><span class="w"> </span><span class="mi">5000</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
-<span class="w">    </span><span class="n">address</span>
 <span class="w">    </span><span class="n">location</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>In Python, <code>db.find("v_store", where={"location": {"distance_within": ((37.7749,
+-122.4194), 5000)}})</code>. The view holds the coordinate as a PostgreSQL <code>point</code>,
+<code>(longitude, latitude)</code>: a <code>point</code> column, or its text in the JSONB
+(<code>jsonb_build_object('location', location)</code>). <code>FraiseQLConfig.coordinate_distance_method</code>
+picks the distance SQL: <code>"haversine"</code> (the default, plain SQL), <code>"earthdistance"</code>
+(needs the <code>earthdistance</code> and <code>cube</code> extensions) or <code>"postgis"</code> (needs PostGIS).</p>
 <p><strong>2. Network Addresses (IP/CIDR Filtering)</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">servers</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -5569,7 +5565,7 @@
 <span class="w">    </span><span class="n">ipAddress</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">inRange</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">from</span><span class="p">:</span><span class="w"> </span><span class="s">"10.0.0.1"</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="p">:</span><span class="w"> </span><span class="s">"10.0.0.254"</span><span class="w"> </span><span class="p">}</span>
 <span class="w">      </span><span class="n">isPublic</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span>
-<span class="w">      </span><span class="n">NOT</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">isLoopback</span><span class="p">:</span><span class="w"> </span><span class="nb">true</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="n">isLoopback</span><span class="p">:</span><span class="w"> </span><span class="nb">false</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">hostname</span>
@@ -5597,8 +5593,8 @@
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">ancestor_of</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics.Computers.Laptops"</span><span class="w">  </span><span class="c"># All ancestor categories</span>
-<span class="w">      </span><span class="n">nlevel_gte</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w">                                  </span><span class="c"># At least 2 levels deep</span>
+<span class="w">      </span><span class="n">ancestorOf</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics.Computers.Laptops"</span><span class="w">   </span><span class="c"># All ancestor categories</span>
+<span class="w">      </span><span class="n">nlevelGte</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="w">                                  </span><span class="c"># At least 2 levels deep</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5609,8 +5605,8 @@
 <span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">subcategories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">descendant_of</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics"</span><span class="w">       </span><span class="c"># All subcategories</span>
-<span class="w">      </span><span class="n">matches_lquery</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics.*"</span><span class="w">    </span><span class="c"># Pattern matching</span>
+<span class="w">      </span><span class="n">descendantOf</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics"</span><span class="w">        </span><span class="c"># All subcategories</span>
+<span class="w">      </span><span class="n">matchesLquery</span><span class="p">:</span><span class="w"> </span><span class="s">"Electronics.*"</span><span class="w">     </span><span class="c"># Pattern matching</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">name</span>
@@ -5619,12 +5615,13 @@
 </code></pre></div>
 <p><strong>LTree hierarchical operators:</strong></p>
 <ul>
-<li><code>ancestor_of</code> - Path is ancestor of target</li>
-<li><code>descendant_of</code> - Path is descendant of target</li>
-<li><code>matches_lquery</code> - Pattern match with wildcards</li>
-<li><code>matches_ltxtquery</code> - Text search (AND/OR/NOT)</li>
-<li><code>nlevel_eq</code> / <code>nlevel_gt</code> / <code>nlevel_gte</code> / <code>nlevel_lt</code> / <code>nlevel_lte</code> - Path depth filtering</li>
+<li><code>ancestorOf</code> - Path is ancestor of target</li>
+<li><code>descendantOf</code> - Path is descendant of target</li>
+<li><code>matchesLquery</code> - Pattern match with wildcards</li>
+<li><code>matchesLtxtquery</code> - Text search (AND/OR/NOT)</li>
+<li><code>nlevelEq</code> / <code>nlevelGt</code> / <code>nlevelGte</code> / <code>nlevelLt</code> / <code>nlevelLte</code> - Path depth filtering</li>
 </ul>
+<p>(In a Python <code>where</code> dict the same operators are snake_case: <code>ancestor_of</code>, <code>nlevel_gte</code>, ...)</p>
 <p><strong>Logical Operators (All WhereInput Types)</strong></p>
 <p>Combine filters with AND, OR, NOT for complex queries:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
@@ -5804,13 +5801,15 @@
 <h2 id="performance-concepts">Performance Concepts<a class="headerlink" href="#performance-concepts" title="Permanent link">&para;</a></h2>
 <h3 id="query-complexity">Query Complexity<a class="headerlink" href="#query-complexity" title="Permanent link">&para;</a></h3>
 <p>Limiting query depth and breadth:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComplexityConfig</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="n">config</span> <span class="o">=</span> <span class="n">ComplexityConfig</span><span class="p">(</span>
-    <span class="n">max_complexity</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">max_depth</span><span class="o">=</span><span class="mi">10</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>          <span class="c1"># QUERY_TOO_DEEP past 10 levels</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>   <span class="c1"># QUERY_TOO_COMPLEX over 1000</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>Both are checked before the query runs; no limit is on by default.</p>
 <h3 id="apq-automatic-persisted-queries">APQ (Automatic Persisted Queries)<a class="headerlink" href="#apq-automatic-persisted-queries" title="Permanent link">&para;</a></h3>
 <p>Cache GraphQL queries by SHA-256 hash to reduce bandwidth and improve performance.</p>
 <p><strong>How it works:</strong></p>
@@ -5836,25 +5835,26 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># Default - LRU cache</span>
-    <span class="n">apq_cache_size</span><span class="o">=</span><span class="mi">1000</span>             <span class="c1"># Max cached queries</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># Default: in-process, unbounded</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>PostgreSQL backend (multi-instance):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
-    <span class="n">apq_storage_schema</span><span class="o">=</span><span class="s2">"apq_cache"</span><span class="p">,</span>     <span class="c1"># Schema for cache table</span>
-    <span class="n">apq_cache_ttl</span><span class="o">=</span><span class="mi">3600</span>                   <span class="c1"># TTL in seconds (optional)</span>
+    <span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"table_prefix"</span><span class="p">:</span> <span class="s2">"apq_"</span><span class="p">},</span>  <span class="c1"># Tables apq_queries, apq_responses</span>
 <span class="p">)</span>
-
-<span class="c1"># Creates table:</span>
-<span class="c1"># CREATE TABLE apq_cache.persisted_queries (</span>
-<span class="c1">#     query_hash TEXT PRIMARY KEY,</span>
-<span class="c1">#     query_text TEXT NOT NULL,</span>
-<span class="c1">#     created_at TIMESTAMPTZ DEFAULT NOW(),</span>
-<span class="c1">#     last_used TIMESTAMPTZ DEFAULT NOW()</span>
-<span class="c1"># );</span>
 </code></pre></div>
+<p>There is no TTL or size limit setting: stored queries stay until you delete them.</p>
+<blockquote>
+<p><strong>Note:</strong> the <code>postgresql</code> backend opens its own small connection pool to
+<code>database_url</code> (or <code>apq_backend_config["database_url"]</code>) on the first APQ request,
+and creates its tables if they don't exist (<code>auto_create_tables</code>, default on).
+Persisted queries survive a restart and are shared by every instance using that
+database. Its lookups are synchronous: each holds the event loop for one indexed
+query (a persisted query's text is kept in process once read).</p>
+</blockquote>
 <p><strong>Client usage (Apollo Client):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">ApolloClient</span><span class="p">,</span><span class="w"> </span><span class="nx">InMemoryCache</span><span class="p">,</span><span class="w"> </span><span class="nx">HttpLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@apollo/client'</span><span class="p">;</span>
 <span class="k">import</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">createPersistedQueryLink</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="kr">from</span><span class="w"> </span><span class="s1">'@apollo/client/link/persisted-queries'</span><span class="p">;</span>
@@ -5925,14 +5925,14 @@
 </tbody>
 </table>
 <p><strong>Monitoring:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">apq_metrics</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_global_metrics</span>
 
-<span class="c1"># Check APQ cache statistics</span>
-<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">apq_metrics</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hits</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">misses</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">hit_rate</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cached queries: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_queries</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="c1"># APQ statistics of this process</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">get_global_metrics</span><span class="p">()</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache hits: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">query_cache_hits</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Cache misses: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">query_cache_misses</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Hit rate: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">query_cache_hit_rate</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Requests: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">total_requests</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>See also:</strong></p>
 <ul>
@@ -6029,28 +6029,42 @@
 <h3 id="field-level-authorization">Field-Level Authorization<a class="headerlink" href="#field-level-authorization" title="Permanent link">&para;</a></h3>
 <p>Control access at the field level:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">field</span><span class="p">,</span> <span class="n">authorized</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">authorize_field</span>
 
-<span class="nd">@field</span>
-<span class="nd">@authorized</span><span class="p">(</span><span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s2">"admin"</span><span class="p">])</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">sensitive_field</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Only admins can access this field."""</span>
-    <span class="k">return</span> <span class="n">user</span><span class="o">.</span><span class="n">sensitive_data</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
+    <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">info</span><span class="p">:</span> <span class="s2">"admin"</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="p">[]))</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">sensitive_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Only admins can read this field."""</span>
+        <span class="k">return</span> <span class="s2">"..."</span>
 </code></pre></div>
+<p>A denied check returns a GraphQL error for that field, and <code>null</code> in its place; the
+rest of the response is still returned (a non-null field's <code>null</code> would null its
+parent instead).</p>
 <h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>
 <p>Prevent abuse:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">RateLimitConfig</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
-<span class="n">rate_limit</span> <span class="o">=</span> <span class="n">RateLimitConfig</span><span class="p">(</span>
-    <span class="n">requests_per_minute</span><span class="o">=</span><span class="mi">100</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>             <span class="c1"># off by default</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>  <span class="c1"># per client IP</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>See <a href="../../configuration/rate-limiting/">Rate Limiting</a> for the per-path and
+per-operation limiter (<code>setup_rate_limiting</code>).</p>
 <h3 id="introspection-control">Introspection Control<a class="headerlink" href="#introspection-control" title="Permanent link">&para;</a></h3>
 <p>Disable schema introspection in production:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">introspection_enabled</span><span class="o">=</span><span class="kc">False</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">introspection_policy</span><span class="o">=</span><span class="s2">"disabled"</span><span class="p">,</span>  <span class="c1"># or "authenticated"; "public" is the default</span>
 <span class="p">)</span>
 </code></pre></div>
+<p><code>environment="production"</code> sets <code>introspection_policy</code> to <code>"disabled"</code> on its own.</p>
 <h2 id="related">Related<a class="headerlink" href="#related" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../">Core Documentation</a></li>
@@ -6135,10 +6149,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

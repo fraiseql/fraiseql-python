@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5313,7 +5313,7 @@ the JSONB result to the success or error union member.</p>
     <span class="k">if</span> <span class="n">user_id</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
@@ -5476,7 +5476,7 @@ a next page, and builds the connection. All data comes from the <code>v_user</co
     <span class="n">first</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">first</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>            <span class="c1"># cap page size</span>
     <span class="n">offset</span> <span class="o">=</span> <span class="n">_decode_cursor</span><span class="p">(</span><span class="n">after</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">after</span> <span class="k">else</span> <span class="mi">0</span>
 
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"created_at_desc"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}],</span> <span class="n">limit</span><span class="o">=</span><span class="n">first</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
     <span class="n">has_next_page</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">first</span>
     <span class="n">rows</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[:</span><span class="n">first</span><span class="p">]</span>
 
@@ -5605,7 +5605,7 @@ generation to <code>db.find</code>. Parameters are always bound, never interpola
         <span class="c1"># `search_text` is a tsvector exposed by the view; see the SQL below.</span>
         <span class="n">where</span><span class="p">[</span><span class="s2">"search_text"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"matches"</span><span class="p">:</span> <span class="n">search</span><span class="p">}</span>
 
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="s2">"created_at_desc"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}],</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
     <span class="k">return</span> <span class="p">[</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 </code></pre></div>
 <h3 id="usage_2">Usage<a class="headerlink" href="#usage_2" title="Permanent link">&para;</a></h3>
@@ -5682,27 +5682,50 @@ async stream.</p>
 </code></pre></div>
 <h3 id="implementation_3">Implementation<a class="headerlink" href="#implementation_3" title="Permanent link">&para;</a></h3>
 <p>The subscription resolver is an <code>async def</code> generator. Here it bridges PostgreSQL
-<code>LISTEN/NOTIFY</code> to GraphQL: a <code>fn_</code>/trigger publishes on a channel, and the generator
-yields each fresh <code>User</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
+<code>LISTEN/NOTIFY</code> to GraphQL: a trigger publishes on a channel, and the generator
+yields each fresh <code>User</code>. <code>LISTEN</code> runs on a connection of its own, in autocommit
+mode (the repository has no <code>listen()</code> method), and the row is re-read with
+<code>db.run()</code>, which returns plain rows (<code>find_one()</code> returns a ready-made GraphQL
+response, which a subscription can't yield).</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">psycopg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
+
+<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">"postgresql://localhost/mydb"</span>
+<span class="n">USER_BY_ID</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT data FROM v_user WHERE id = </span><span class="si">%(id)s</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">notifications</span><span class="p">(</span><span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Yield the JSON payload of each NOTIFY on `channel`."""</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">DATABASE_URL</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s1">'LISTEN "</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s1">"'</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">notify</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">notifies</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">notify</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_created</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">"user_created"</span><span class="p">):</span>   <span class="c1"># LISTEN on a NOTIFY channel</span>
-        <span class="n">user_id</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">notifications</span><span class="p">(</span><span class="s2">"user_created"</span><span class="p">):</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">USER_BY_ID</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]}))</span>
+        <span class="k">if</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"data"</span><span class="p">]</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_updated</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user_updated:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">):</span>
-        <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">notifications</span><span class="p">(</span><span class="s2">"user_updated"</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">USER_BY_ID</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">payload</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]}))</span>
+        <span class="k">if</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"data"</span><span class="p">]</span>
 </code></pre></div>
-<p>On the PostgreSQL side, a trigger on <code>tb_user</code> issues the <code>NOTIFY</code>:</p>
+<p>On the PostgreSQL side, triggers on <code>tb_user</code> issue the <code>NOTIFY</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_user_created</span><span class="p">()</span>
 <span class="k">RETURNS</span><span class="w"> </span><span class="k">trigger</span>
 <span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
@@ -5716,6 +5739,20 @@ yields each fresh <code>User</code>.</p>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_user_created</span>
 <span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">INSERT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_user_created</span><span class="p">();</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_user_updated</span><span class="p">()</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="k">trigger</span>
+<span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span>
+<span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">pg_notify</span><span class="p">(</span><span class="s1">'user_updated'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">NEW</span><span class="p">.</span><span class="n">id</span><span class="p">)::</span><span class="nb">text</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">NEW</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="p">;</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TRIGGER</span><span class="w"> </span><span class="n">trg_user_updated</span>
+<span class="w">    </span><span class="k">AFTER</span><span class="w"> </span><span class="k">UPDATE</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_user_updated</span><span class="p">();</span>
 </code></pre></div>
 <h3 id="usage_3">Usage<a class="headerlink" href="#usage_3" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c"># Subscribe to new users</span>
@@ -5740,7 +5777,7 @@ yields each fresh <code>User</code>.</p>
 <p>PostgreSQL <code>LISTEN/NOTIFY</code> fans out to every connected backend that issues <code>LISTEN</code>, so
 running several FastAPI workers against the same database already distributes
 subscription delivery — no separate message broker is required. For very high fan-out,
-keep per-connection work light (a single <code>find_one</code> per event) and cap the number of
+keep per-connection work light (one read per event) and cap the number of
 concurrent subscriptions per connection.</p>
 <hr />
 <h2 id="pattern-5-file-uploads">Pattern 5: File Uploads<a class="headerlink" href="#pattern-5-file-uploads" title="Permanent link">&para;</a></h2>
@@ -5763,7 +5800,7 @@ resulting URL via a <code>fn_</code> function.</p>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">UploadSuccess</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UploadUserAvatarSuccess</span><span class="p">:</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
 
 
@@ -5778,7 +5815,7 @@ resulting URL via a <code>fn_</code> function.</p>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_user_avatar</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadSuccess</span> <span class="o">|</span> <span class="n">UploadError</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">upload_user_avatar</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="n">File</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UploadUserAvatarSuccess</span> <span class="o">|</span> <span class="n">UploadError</span><span class="p">:</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">file</span><span class="o">.</span><span class="n">content</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_AVATAR_BYTES</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"File size exceeds 5MB limit"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">mimetype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALLOWED_MIME</span><span class="p">:</span>
@@ -5797,12 +5834,12 @@ resulting URL via a <code>fn_</code> function.</p>
     <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">UploadError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"Failed to update avatar"</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">UploadSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">UploadUserAvatarSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
 </code></pre></div>
 <h3 id="client-usage">Client Usage<a class="headerlink" href="#client-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="nf">UploadAvatar</span><span class="p">(</span><span class="nv">$userId</span><span class="p">:</span><span class="w"> </span><span class="nb">ID</span><span class="p">!,</span><span class="w"> </span><span class="nv">$file</span><span class="p">:</span><span class="w"> </span><span class="nc">File</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">uploadUserAvatar</span><span class="p">(</span><span class="n">userId</span><span class="p">:</span><span class="w"> </span><span class="nv">$userId</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">:</span><span class="w"> </span><span class="nv">$file</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UploadSuccess</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UploadUserAvatarSuccess</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="n">avatarUrl</span><span class="w"> </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UploadError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="p">}</span>
@@ -5878,7 +5915,7 @@ view and arguments; <code>setup_auto_cascade_rules</code> registers invalidation
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="c1"># info.context["db"] is the CachedRepository; cache lookup is transparent.</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">return</span> <span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span>
 </code></pre></div>
 <h3 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">&para;</a></h3>
@@ -6155,10 +6192,10 @@ With result cache (80% hit rate):
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

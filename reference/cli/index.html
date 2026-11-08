@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5708,9 +5708,15 @@ fraiseql<span class="w"> </span>generate<span class="w"> </span>migration<span c
 <span class="c1">-- Updated_at trigger</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">update_users_updated_at</span><span class="p">()...</span>
 
-<span class="c1">-- View for FraiseQL</span>
+<span class="c1">-- View for FraiseQL: id and the timestamps go in data, where find() reads them</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_users</span><span class="w"> </span><span class="k">AS</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="k">data</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">data</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="s1">'updated_at'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">users</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 </code></pre></div>
@@ -5719,9 +5725,9 @@ fraiseql<span class="w"> </span>generate<span class="w"> </span>migration<span c
 </code></pre></div>
 <hr />
 <h3 id="generate-crud">generate crud<a class="headerlink" href="#generate-crud" title="Permanent link">&para;</a></h3>
-<p>Generate CRUD mutations boilerplate for a type.</p>
+<p>Generate CRUD mutations for a type, and the PostgreSQL functions they call.</p>
 <p><strong>Usage:</strong></p>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>generate<span class="w"> </span>crud<span class="w"> </span>TYPE_NAME
+<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>generate<span class="w"> </span>crud<span class="w"> </span>TYPE_NAME<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </code></pre></div>
 <p><strong>Arguments:</strong></p>
 <table>
@@ -5736,64 +5742,109 @@ fraiseql<span class="w"> </span>generate<span class="w"> </span>migration<span c
 <tr>
 <td><code>TYPE_NAME</code></td>
 <td>Yes</td>
-<td>Name of the type (e.g., User, Product)</td>
+<td>Name of the type (e.g., User, BlogPost)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--table TEXT</code></td>
+<td><code>TYPE_NAME</code> lowercase + <code>s</code></td>
+<td>Table the functions write, as <a href="#generate-migration"><code>generate migration</code></a> names it</td>
+</tr>
+<tr>
+<td><code>--types-module TEXT</code></td>
+<td><code>src.types</code></td>
+<td>Module the mutations import <code>TYPE_NAME</code> from</td>
 </tr>
 </tbody>
 </table>
 <p><strong>Generated Files:</strong></p>
-<p>Creates <code>src/mutations/{type_name}_mutations.py</code> with:</p>
 <ul>
-<li>Input types (Create, Update)</li>
-<li>Result types (Success, Error, Result union)</li>
-<li>Mutation functions (create, update, delete)</li>
+<li><code>src/mutations/{type_name}_mutations.py</code> (snake_case: <code>BlogPost</code> → <code>blog_post_mutations.py</code>):
+  <code>Create{Type}Input</code>, <code>Update{Type}Input</code>, <code>Delete{Type}Input</code>, <code>{Type}Success</code>,
+  <code>{Type}Error</code> and the class mutations <code>Create{Type}</code>, <code>Update{Type}</code>, <code>Delete{Type}</code></li>
+<li><code>migrations/{timestamp}_create_{table}_mutations.sql</code>: the <code>mutation_response</code> type
+  (if the database doesn't have it) and the functions <code>create_{type_name}</code>,
+  <code>update_{type_name}</code> and <code>delete_{type_name}</code>, for the <code>id</code>/<code>data</code> table
+  <code>generate migration</code> creates</li>
 </ul>
 <p><strong>Examples:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Generate CRUD for User type</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Generate CRUD for User</span>
 fraiseql<span class="w"> </span>generate<span class="w"> </span>crud<span class="w"> </span>User
 <span class="c1"># Creates: src/mutations/user_mutations.py</span>
+<span class="c1">#          migrations/20241010120000_create_users_mutations.sql</span>
 
-<span class="c1"># Generate CRUD for Product type</span>
-fraiseql<span class="w"> </span>generate<span class="w"> </span>crud<span class="w"> </span>Product
-<span class="c1"># Creates: src/mutations/product_mutations.py</span>
+<span class="c1"># Another table name, and the type defined in src/main.py</span>
+fraiseql<span class="w"> </span>generate<span class="w"> </span>crud<span class="w"> </span>Product<span class="w"> </span>--table<span class="w"> </span>tb_product<span class="w"> </span>--types-module<span class="w"> </span>src.main
 </code></pre></div>
 <p><strong>Generated Structure:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">User</span>
+
+
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@input</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserInput</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="nd">@success</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeleteUserInput</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserSuccess</span><span class="p">:</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@error</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserError</span><span class="p">:</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span>
+<span class="w">    </span><span class="sd">"""Why the mutation failed (status, message and code are added)."""</span>
 
-<span class="nd">@result</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">UserResult</span><span class="p">:</span>
-    <span class="k">pass</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span><span class="p">,</span> <span class="n">repository</span><span class="p">:</span> <span class="n">CQRSRepository</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserResult</span><span class="p">:</span>
-    <span class="c1"># Call your CQRS repository methods</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repository</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">UserResult</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">result</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>  <span class="c1"># calls create_user(input jsonb)</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">UserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">UserError</span>
+
+<span class="c1"># UpdateUser and DeleteUser the same way</span>
+</code></pre></div>
+<p>Each function returns a <code>mutation_response</code>: <code>create_user</code> inserts the input as the
+row's <code>data</code>, <code>update_user</code> merges the given fields into it, and <code>delete_user</code> sets
+<code>deleted_at</code>. The created, updated or deleted row is the <code>user</code> of <code>UserSuccess</code>; an
+unknown <code>id</code> answers <code>UserError</code> with status <code>failed:not_found</code> (code 404).</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Ada"</span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">name</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UserError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
 </code></pre></div>
 <p><strong>Next Steps:</strong></p>
 <ol>
-<li>Import and register mutations in your app</li>
-<li>Customize input fields and validation logic</li>
-<li>Implement repository calls with proper error handling</li>
+<li>Import <code>src/mutations/user_mutations.py</code> before you build the app: the mutations register on import</li>
+<li>Put your fields in the input types and in the functions</li>
+<li>Create the table (<code>fraiseql generate migration User</code>), then run the functions file:
+   <code>psql $DATABASE_URL -f migrations/..._create_users_mutations.sql</code></li>
 </ol>
 <hr />
 <h2 id="fraiseql-sql">fraiseql sql<a class="headerlink" href="#fraiseql-sql" title="Permanent link">&para;</a></h2>
@@ -6383,10 +6434,10 @@ fraiseql<span class="w"> </span>sql<span class="w"> </span>generate-view<span cl
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

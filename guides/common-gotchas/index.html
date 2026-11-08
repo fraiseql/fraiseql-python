@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5777,7 +5777,7 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">dataloader_field</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="n">user</span><span class="p">:</span> <span class="n">User</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">fk_user</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"fk_user"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Result:</strong> ~2 queries total (users + batched posts)</p>
 <p>*<em>Solution 2: Use table-backed views (tv_<em>)</em></em></p>
@@ -5902,36 +5902,39 @@ Result: Skipped record 11!
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><strong>Why:</strong> The cached query result was not invalidated by the write. FraiseQL's PostgreSQL-backed cache (<code>ResultCache</code>/<code>CachedRepository</code>) needs a cascade rule that links the mutation's table to the cached query.</p>
+<p><strong>Why:</strong> The cached query result was not invalidated by the write. FraiseQL's
+result cache (<code>ResultCache</code>, see the <a href="../../specs/caching/">Caching Specification</a>)
+invalidates nothing on its own when a mutation runs: an entry stays until its TTL
+expires or your code deletes it. (The CASCADE rules of <code>setup_auto_cascade_rules</code>
+don't delete <code>ResultCache</code> entries.)</p>
 <h3 id="solutions_1">Solutions<a class="headerlink" href="#solutions_1" title="Permanent link">&para;</a></h3>
-<p><strong>Solution 1: Configure cascade invalidation rules</strong></p>
-<p>Use <code>setup_auto_cascade_rules</code> (with the <code>SchemaAnalyzer</code>) so writes to a table automatically invalidate the query results that depend on it:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
-
-<span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema_analyzer</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Solution 2: TTL-based invalidation</strong></p>
-<p>Set a short cache TTL so stale entries expire on their own:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>  <span class="c1"># All cached query results expire after 60 seconds</span>
-<span class="p">)</span>
-</code></pre></div>
-<p><code>cache_ttl</code> is also settable via the <code>FRAISEQL_CACHE_TTL</code> environment variable.</p>
-<p><strong>Solution 3: Manual invalidation in the mutation</strong></p>
+<p><strong>Solution 1: Invalidate in the mutation</strong></p>
+<p>Key the cached reads so one pattern covers what the write changes, and invalidate
+it after the write (<code>cache</code> is your <code>ResultCache</code>; see
+<a href="../../performance/server-cache-invalidation/">Server-Side Cache Invalidation</a> for the
+whole app):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
+
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UpdateUserSuccess</span> <span class="o">|</span> <span class="n">UpdateUserError</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rename_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">cache</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"cache"</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">})</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># Drop stale query results for this user</span>
-    <span class="k">return</span> <span class="n">UpdateUserSuccess</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">User</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]))</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_rename_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
+    <span class="n">tenant_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">))</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fraiseql:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:user:*"</span><span class="p">)</span>  <span class="c1"># drop this tenant's cached user reads</span>
+    <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
+<p><strong>Solution 2: TTL-based invalidation</strong></p>
+<p>Set a short TTL so stale entries expire on their own:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span>
+
+<span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span>
+    <span class="n">backend</span><span class="o">=</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">pool</span><span class="p">),</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">(</span><span class="n">default_ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>  <span class="c1"># entries expire after 60 seconds</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>FraiseQLConfig.cache_ttl</code> (and <code>FRAISEQL_CACHE_TTL</code>) is deprecated and has no
+effect: no cache reads it.</p>
 <h3 id="gotcha-cache-hit-when-you-need-fresh-data">Gotcha: Cache Hit When You Need Fresh Data<a class="headerlink" href="#gotcha-cache-hit-when-you-need-fresh-data" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Critical data is cached but needs to be fresh for real-time operations.</p>
 <p><strong>Example:</strong></p>
@@ -5943,7 +5946,7 @@ Result: Skipped record 11!
 </code></pre></div>
 <h3 id="solutions_2">Solutions<a class="headerlink" href="#solutions_2" title="Permanent link">&para;</a></h3>
 <p><strong>Solution 1: Skip caching for volatile reads</strong></p>
-<p>Don't wrap volatile queries in <code>CachedRepository</code>; read straight from the view via <code>db.find</code> so every request hits PostgreSQL.</p>
+<p>Don't put volatile reads through <code>ResultCache</code>; read straight from the view via <code>db.find</code> so every request hits PostgreSQL.</p>
 <p><strong>Solution 2: Use subscriptions for real-time data</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">subscription</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">inventoryChanged</span><span class="p">(</span><span class="n">productId</span><span class="p">:</span><span class="w"> </span><span class="s">"123"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -5987,7 +5990,7 @@ Result: Skipped record 11!
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">salary_authorizer</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_compensation</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Compensation</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_compensation"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_compensation"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Or enforce row visibility with PostgreSQL Row-Level Security (RLS):</strong></p>
 <p>Define an RLS policy on the underlying table that reads request context set by FraiseQL (for example <code>current_setting('app.tenant_id')</code> and <code>current_setting('app.user_id')</code>), so callers only ever see rows they are allowed to read.</p>
@@ -6181,7 +6184,7 @@ Result: Skipped record 11!
 <span class="sd">    Response key: "users" (an array of User objects) unless aliased.</span>
 <span class="sd">    """</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">})</span>
 </code></pre></div>
 <hr />
 <h2 id="10-connection-pool-exhaustion">10. Connection Pool Exhaustion<a class="headerlink" href="#10-connection-pool-exhaustion" title="Permanent link">&para;</a></h2>
@@ -6229,15 +6232,20 @@ Result: Skipped record 11!
 </code></pre></div>
 <h3 id="solution_5">Solution<a class="headerlink" href="#solution_5" title="Permanent link">&para;</a></h3>
 <p><strong>Set a maximum query depth in the app config:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+        <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>  <span class="c1"># Reject queries nested deeper than 15 levels</span>
+    <span class="p">),</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
-    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>  <span class="c1"># Reject queries nested deeper than 15 levels</span>
 <span class="p">)</span>
 </code></pre></div>
-<p><code>max_query_depth</code> is also settable via <code>FRAISEQL_MAX_QUERY_DEPTH</code>. FraiseQL additionally runs query-complexity analysis (<code>complexity_max_depth</code>, <code>complexity_max_score</code>) that you can tune the same way.</p>
+<p>A deeper query gets a <code>QUERY_TOO_DEEP</code> GraphQL error before anything runs.
+<code>max_query_depth</code> is also settable via <code>FRAISEQL_MAX_QUERY_DEPTH</code>. To cap the size of a
+query as well, set <code>complexity_max_score</code> (each list multiplies the cost of what it
+selects by its <code>limit</code>, or by <code>complexity_default_list_size</code>).</p>
 <p><strong>Or bound the recursion explicitly in the query:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">user</span><span class="p">(</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="s">"1"</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -6353,10 +6361,10 @@ Result: Skipped record 11!
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

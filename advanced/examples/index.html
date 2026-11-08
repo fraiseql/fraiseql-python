@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4729,6 +4729,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#selecting-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Selecting Fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#custom-field-names" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4775,34 +4786,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Integration with Web Frameworks">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#fastapi-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        FastAPI Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#django-example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Django Example
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -4837,12 +4820,27 @@
 
 
 <h1 id="rust-mutation-pipeline-examples">Rust Mutation Pipeline Examples<a class="headerlink" href="#rust-mutation-pipeline-examples" title="Permanent link">&para;</a></h1>
+<p>These examples call <code>build_mutation_response</code>, the Rust function that turns a SQL
+function's result into the GraphQL response of a mutation. Applications don't call it:
+a class mutation (<code>@fraiseql.mutation</code>) does, with the selection of the request. Calling
+it directly is useful to see what the pipeline does with a given result, or in tests.</p>
+<p>The extension ships inside the <code>fraiseql</code> package (there is no separate <code>fraiseql_rs</code>
+module to import):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">fraiseql_rs</span>
+
+<span class="n">build_mutation_response</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_mutation_response</span>
+
+<span class="c1"># The selection document: which fields of the success and error types the query</span>
+<span class="c1"># selected. None for both means "unfiltered": every field the result has.</span>
+<span class="n">UNFILTERED</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"format"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="s2">"success"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"error"</span><span class="p">:</span> <span class="kc">None</span><span class="p">})</span>
+</code></pre></div>
+<p><code>entity_selections</code> is required. Its <code>format</code> is <code>fraiseql_rs.MUTATION_SELECTION_FORMAT</code>
+(2); see <a href="#selecting-fields">Selecting Fields</a> for a filtered document.</p>
 <h2 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h2>
 <h3 id="simple-entity-creation">Simple Entity Creation<a class="headerlink" href="#simple-entity-creation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
-<span class="c1"># Simple format - just entity data</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Simple format - just entity data</span>
 <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
     <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span>
     <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"John Doe"</span><span class="p">,</span>
@@ -4857,35 +4855,39 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="c1"># Result is bytes - parse to dict</span>
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Success"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"success"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"createdAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"createdAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01T00:00:00Z"</span>
+<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="full-format-with-status">Full Format with Status<a class="headerlink" href="#full-format-with-status" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Full v2 format with explicit status</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Full format with explicit status</span>
 <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
     <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"created"</span><span class="p">,</span>
     <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"User account created successfully"</span><span class="p">,</span>
+    <span class="s2">"entity_id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span>
     <span class="s2">"entity_type"</span><span class="p">:</span> <span class="s2">"User"</span><span class="p">,</span>
     <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span>
@@ -4906,10 +4908,11 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Will use entity_type from JSON</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
@@ -4917,14 +4920,19 @@
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User account created successfully"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"created"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"updatedFields"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"name"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"email"</span>
+<span class="w">      </span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span>
-<span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">"updatedFields"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"name"</span><span class="p">,</span><span class="w"> </span><span class="s2">"email"</span><span class="p">]</span>
+<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span>
+<span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -4934,9 +4942,9 @@
 <div class="highlight"><pre><span></span><code><span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
     <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"validation:"</span><span class="p">,</span>
     <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Email address is already in use"</span><span class="p">,</span>
-    <span class="s2">"entity_id"</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
-    <span class="s2">"entity_type"</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
-    <span class="s2">"entity"</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
+    <span class="s2">"entity_id"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"entity_type"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">"entity"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
     <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">"errors"</span><span class="p">:</span> <span class="p">[</span>
             <span class="p">{</span>
@@ -4955,10 +4963,11 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
@@ -4966,53 +4975,54 @@
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateUserError"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validation:"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Email address is already in use"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"field"</span><span class="p">:</span><span class="w"> </span><span class="s2">"email"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"duplicate"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"field"</span><span class="p">:</span><span class="w"> </span><span class="s2">"email"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"This email address is already registered"</span>
 <span class="w">        </span><span class="p">}</span>
-<span class="w">      </span><span class="p">]</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Email address is already in use"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validation:"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="different-error-types">Different Error Types<a class="headerlink" href="#different-error-types" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Unauthorized error</span>
-<span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"unauthorized:token_expired"</span><span class="p">,</span>
-    <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"Authentication token has expired"</span><span class="p">,</span>
-    <span class="s2">"entity_id"</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
-    <span class="s2">"entity_type"</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span>
-    <span class="s2">"entity"</span><span class="p">:</span> <span class="n">null</span>
-<span class="p">})</span>
-
-<span class="c1"># Forbidden error</span>
-<span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"forbidden:insufficient_permissions"</span><span class="p">,</span>
-    <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"You don't have permission to perform this action"</span>
-<span class="p">})</span>
-
-<span class="c1"># Not found error</span>
-<span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"not_found:user_missing"</span><span class="p">,</span>
-    <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"The requested user was not found"</span>
-<span class="p">})</span>
-
-<span class="c1"># Conflict error</span>
-<span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-    <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"conflict:duplicate_email"</span><span class="p">,</span>
-    <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"A user with this email already exists"</span>
-<span class="p">})</span>
+<p>The status prefix picks the error type and its <code>code</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">[</span>
+    <span class="s2">"unauthorized:token_expired"</span><span class="p">,</span>
+    <span class="s2">"forbidden:insufficient_permissions"</span><span class="p">,</span>
+    <span class="s2">"not_found:user_missing"</span><span class="p">,</span>
+    <span class="s2">"conflict:duplicate_email"</span><span class="p">,</span>
+    <span class="s2">"failed:validation"</span><span class="p">,</span>
+<span class="p">]:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
+        <span class="n">mutation_json</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">}),</span>
+        <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
+        <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+        <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
+        <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
+        <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">body</span><span class="p">[</span><span class="s2">"__typename"</span><span class="p">],</span> <span class="n">body</span><span class="p">[</span><span class="s2">"code"</span><span class="p">])</span>
+</code></pre></div>
+<p><strong>Output:</strong></p>
+<div class="highlight"><pre><span></span><code>unauthorized:token_expired CreateUserError 401
+forbidden:insufficient_permissions CreateUserError 403
+not_found:user_missing CreateUserError 404
+conflict:duplicate_email CreateUserError 409
+failed:validation CreateUserError 422
 </code></pre></div>
 <h2 id="cascade-data">Cascade Data<a class="headerlink" href="#cascade-data" title="Permanent link">&para;</a></h2>
 <h3 id="update-with-side-effects">Update with Side Effects<a class="headerlink" href="#update-with-side-effects" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
     <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"updated"</span><span class="p">,</span>
     <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"User profile updated"</span><span class="p">,</span>
+    <span class="s2">"entity_id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span>
     <span class="s2">"entity_type"</span><span class="p">:</span> <span class="s2">"User"</span><span class="p">,</span>
     <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span>
@@ -5023,17 +5033,25 @@
     <span class="s2">"cascade"</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">"updated"</span><span class="p">:</span> <span class="p">[</span>
             <span class="p">{</span>
+                <span class="s2">"__typename"</span><span class="p">:</span> <span class="s2">"Post"</span><span class="p">,</span>
                 <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"post-456"</span><span class="p">,</span>
-                <span class="s2">"author_name"</span><span class="p">:</span> <span class="s2">"John Smith"</span><span class="p">,</span>
-                <span class="s2">"updated_at"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span>
+                <span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"UPDATED"</span><span class="p">,</span>
+                <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"post-456"</span><span class="p">,</span> <span class="s2">"author_name"</span><span class="p">:</span> <span class="s2">"John Smith"</span><span class="p">}</span>
             <span class="p">}</span>
         <span class="p">],</span>
-        <span class="s2">"invalidations"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"User:user-123"</span><span class="p">,</span> <span class="s2">"Post:post-456"</span><span class="p">],</span>
-        <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"profile_update"</span><span class="p">,</span>
-            <span class="s2">"affected_entities"</span><span class="p">:</span> <span class="mi">2</span>
-        <span class="p">}</span>
+        <span class="s2">"deleted"</span><span class="p">:</span> <span class="p">[],</span>
+        <span class="s2">"invalidations"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"query_name"</span><span class="p">:</span> <span class="s2">"posts"</span><span class="p">,</span> <span class="s2">"strategy"</span><span class="p">:</span> <span class="s2">"INVALIDATE"</span><span class="p">,</span> <span class="s2">"scope"</span><span class="p">:</span> <span class="s2">"PREFIX"</span><span class="p">}],</span>
+        <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"timestamp"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">,</span> <span class="s2">"affected_count"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
     <span class="p">}</span>
+<span class="p">})</span>
+
+<span class="c1"># The cascade is written only when the query selects it: cascade_selections names</span>
+<span class="c1"># the selected cascade fields (and the fields of each part)</span>
+<span class="n">cascade_selections</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+    <span class="s2">"fields"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"updated"</span><span class="p">,</span> <span class="s2">"invalidations"</span><span class="p">,</span> <span class="s2">"metadata"</span><span class="p">],</span>
+    <span class="s2">"updated"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"fields"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"__typename"</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">,</span> <span class="s2">"operation"</span><span class="p">,</span> <span class="s2">"entity"</span><span class="p">]},</span>
+    <span class="s2">"invalidations"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"fields"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"query_name"</span><span class="p">,</span> <span class="s2">"strategy"</span><span class="p">,</span> <span class="s2">"scope"</span><span class="p">]},</span>
+    <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"fields"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"affected_count"</span><span class="p">]},</span>
 <span class="p">})</span>
 
 <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
@@ -5043,10 +5061,12 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"UpdateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">cascade_selections</span><span class="o">=</span><span class="n">cascade_selections</span><span class="p">,</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
@@ -5054,32 +5074,49 @@
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"updateUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UpdateUserSuccess"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User profile updated"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Smith"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"johnsmith@example.com"</span>
-<span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">"updatedFields"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"name"</span><span class="p">,</span><span class="w"> </span><span class="s2">"email"</span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"cascade"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">"updated"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="nt">"invalidations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">          </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"post-456"</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">"authorName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Smith"</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">"updatedAt"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2024-01-01T00:00:00Z"</span>
+<span class="w">            </span><span class="nt">"query_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"posts"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"scope"</span><span class="p">:</span><span class="w"> </span><span class="s2">"PREFIX"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"strategy"</span><span class="p">:</span><span class="w"> </span><span class="s2">"INVALIDATE"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">],</span>
-<span class="w">        </span><span class="nt">"invalidations"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">"User:user-123"</span><span class="p">,</span><span class="w"> </span><span class="s2">"Post:post-456"</span><span class="p">],</span>
 <span class="w">        </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"profile_update"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"affectedEntities"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
-<span class="w">        </span><span class="p">}</span>
+<span class="w">          </span><span class="nt">"affected_count"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">"updated"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">          </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Post"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"entity"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">"author_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Smith"</span><span class="p">,</span>
+<span class="w">              </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"post-456"</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"post-456"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"operation"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UPDATED"</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">]</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User profile updated"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"updated"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"updatedFields"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"name"</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">"email"</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"johnsmith@example.com"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Smith"</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>Without <code>cascade_selections</code> (the query doesn't select <code>cascade</code>), the response has no
+<code>cascade</code> key. See <a href="../../features/graphql-cascade/">GraphQL Cascade</a> for the shape of
+<code>cascade</code>.</p>
 <h2 id="array-entities">Array Entities<a class="headerlink" href="#array-entities" title="Permanent link">&para;</a></h2>
 <h3 id="bulk-operations">Bulk Operations<a class="headerlink" href="#bulk-operations" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">([</span>
@@ -5092,11 +5129,6 @@
         <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-2"</span><span class="p">,</span>
         <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Bob Wilson"</span><span class="p">,</span>
         <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"bob@example.com"</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-        <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-3"</span><span class="p">,</span>
-        <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Charlie Brown"</span><span class="p">,</span>
-        <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"charlie@example.com"</span>
     <span class="p">}</span>
 <span class="p">])</span>
 
@@ -5107,10 +5139,11 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUsersError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
@@ -5119,24 +5152,19 @@
 <span class="w">    </span><span class="nt">"createUsers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateUsersSuccess"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Success"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"success"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"users"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-1"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice Johnson"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"alice@example.com"</span>
+<span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Alice Johnson"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bob@example.com"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-2"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bob Wilson"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"bob@example.com"</span>
-<span class="w">        </span><span class="p">},</span>
-<span class="w">        </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-3"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Charlie Brown"</span><span class="p">,</span>
-<span class="w">          </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"charlie@example.com"</span>
+<span class="w">          </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Bob Wilson"</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
@@ -5145,6 +5173,8 @@
 </code></pre></div>
 <h2 id="noop-operations">Noop Operations<a class="headerlink" href="#noop-operations" title="Permanent link">&para;</a></h2>
 <h3 id="unchanged-data">Unchanged Data<a class="headerlink" href="#unchanged-data" title="Permanent link">&para;</a></h3>
+<p>A <code>noop:</code> status answers with the error type (code 422), the reason after the colon
+as the error's <code>identifier</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
     <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"noop:unchanged"</span><span class="p">,</span>
     <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"No changes were needed"</span><span class="p">,</span>
@@ -5164,53 +5194,108 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"UpdateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"updateUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UpdateUserSuccess"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User updated"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span>
-<span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">"updatedFields"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"UpdateUserError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"details"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"identifier"</span><span class="p">:</span><span class="w"> </span><span class="s2">"unchanged"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"No changes were needed"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"No changes were needed"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John Doe"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"noop:unchanged"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="advanced-features">Advanced Features<a class="headerlink" href="#advanced-features" title="Permanent link">&para;</a></h2>
-<h3 id="custom-field-names">Custom Field Names<a class="headerlink" href="#custom-field-names" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Use custom field names</span>
+<h3 id="selecting-fields">Selecting Fields<a class="headerlink" href="#selecting-fields" title="Permanent link">&para;</a></h3>
+<p>A class mutation sends the fields the query selected. A selection is
+<code>{"__type": ..., "fields": [{"name": ..., "alias": ..., "selections": ...}]}</code>: the
+response holds only those fields, each under its <code>alias</code> (the response key). With
+<code>"typename": "selected"</code>, <code>__typename</code> is written only where it is selected, as in a
+GraphQL response:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># mutation { createUser(...) { ... on CreateUserSuccess { u: user { id name } } } }</span>
+<span class="n">selections</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
+    <span class="s2">"format"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="s2">"typename"</span><span class="p">:</span> <span class="s2">"selected"</span><span class="p">,</span>
+    <span class="s2">"success"</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">"__type"</span><span class="p">:</span> <span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+        <span class="s2">"fields"</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"alias"</span><span class="p">:</span> <span class="s2">"u"</span><span class="p">,</span> <span class="s2">"selections"</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">"fields"</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"id"</span><span class="p">,</span> <span class="s2">"alias"</span><span class="p">:</span> <span class="s2">"id"</span><span class="p">},</span>
+                    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"name"</span><span class="p">,</span> <span class="s2">"alias"</span><span class="p">:</span> <span class="s2">"name"</span><span class="p">},</span>
+                <span class="p">]</span>
+            <span class="p">}},</span>
+        <span class="p">],</span>
+    <span class="p">},</span>
+    <span class="s2">"error"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">})</span>
+
 <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
-    <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
-    <span class="n">field_name</span><span class="o">=</span><span class="s2">"createAccount"</span><span class="p">,</span>  <span class="c1"># Custom GraphQL field name</span>
-    <span class="n">success_type</span><span class="o">=</span><span class="s2">"AccountCreationSuccess"</span><span class="p">,</span>
-    <span class="n">error_type</span><span class="o">=</span><span class="s2">"AccountCreationError"</span><span class="p">,</span>
-    <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"account"</span><span class="p">,</span>  <span class="c1"># Custom entity field name</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"Account"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
-<span class="p">)</span>
-</code></pre></div>
-<h3 id="disable-camelcase-conversion">Disable CamelCase Conversion<a class="headerlink" href="#disable-camelcase-conversion" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Keep original field names</span>
-<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
-    <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
+    <span class="n">mutation_json</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"John Doe"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"john@example.com"</span><span class="p">}),</span>
     <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
     <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Keep snake_case</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">selections</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Output:</strong></p>
+<div class="highlight"><pre><span></span><code>{'data': {'createUser': {'u': {'id': 'user-123', 'name': 'John Doe'}}}}
+</code></pre></div>
+<h3 id="custom-field-names">Custom Field Names<a class="headerlink" href="#custom-field-names" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Use custom field names</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
+    <span class="n">mutation_json</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"acc-1"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Main"</span><span class="p">}),</span>
+    <span class="n">field_name</span><span class="o">=</span><span class="s2">"createAccount"</span><span class="p">,</span>  <span class="c1"># Response key of the mutation field</span>
+    <span class="n">success_type</span><span class="o">=</span><span class="s2">"AccountCreationSuccess"</span><span class="p">,</span>
+    <span class="n">error_type</span><span class="o">=</span><span class="s2">"AccountCreationError"</span><span class="p">,</span>
+    <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"account"</span><span class="p">,</span>  <span class="c1"># Custom entity field name</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"Account"</span><span class="p">,</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Output:</strong></p>
+<div class="highlight"><pre><span></span><code>{'data': {'createAccount': {'__typename': 'AccountCreationSuccess', 'account': {'__typename': 'Account', 'id': 'acc-1', 'name': 'Main'}, 'id': 'acc-1', 'message': 'Success', 'status': 'success'}}}
+</code></pre></div>
+<h3 id="disable-camelcase-conversion">Disable CamelCase Conversion<a class="headerlink" href="#disable-camelcase-conversion" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c1"># Keep original field names</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
+    <span class="n">mutation_json</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"user-123"</span><span class="p">,</span> <span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"2024-01-01T00:00:00Z"</span><span class="p">}),</span>
+    <span class="n">field_name</span><span class="o">=</span><span class="s2">"create_user"</span><span class="p">,</span>
+    <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+    <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
+    <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Keep snake_case</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Output:</strong></p>
+<div class="highlight"><pre><span></span><code>{'data': {'create_user': {'__typename': 'CreateUserSuccess', 'id': 'user-123', 'message': 'Success', 'status': 'success', 'user': {'__typename': 'User', 'created_at': '2024-01-01T00:00:00Z', 'id': 'user-123'}}}}
 </code></pre></div>
 <h3 id="complex-nested-data">Complex Nested Data<a class="headerlink" href="#complex-nested-data" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
@@ -5228,8 +5313,8 @@
     <span class="p">},</span>
     <span class="s2">"preferences"</span><span class="p">:</span> <span class="p">{</span>
         <span class="s2">"notifications"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"email_enabled"</span><span class="p">:</span> <span class="n">true</span><span class="p">,</span>
-            <span class="s2">"sms_enabled"</span><span class="p">:</span> <span class="n">false</span>
+            <span class="s2">"email_enabled"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+            <span class="s2">"sms_enabled"</span><span class="p">:</span> <span class="kc">False</span>
         <span class="p">}</span>
     <span class="p">}</span>
 <span class="p">})</span>
@@ -5241,10 +5326,11 @@
     <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
     <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
     <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">response</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
 </code></pre></div>
 <p><strong>Output:</strong></p>
@@ -5252,25 +5338,27 @@
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Success"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"success"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"User"</span><span class="p">,</span>
 <span class="w">        </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user-123"</span><span class="p">,</span>
-<span class="w">        </span><span class="nt">"profile"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">          </span><span class="nt">"personal"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John"</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">"lastName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Doe"</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">"dateOfBirth"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1990-01-01"</span>
-<span class="w">          </span><span class="p">},</span>
-<span class="w">          </span><span class="nt">"contact"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">            </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span><span class="p">,</span>
-<span class="w">            </span><span class="nt">"phone"</span><span class="p">:</span><span class="w"> </span><span class="s2">"+1-555-0123"</span>
-<span class="w">          </span><span class="p">}</span>
-<span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"preferences"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"notifications"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">            </span><span class="nt">"emailEnabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="w">            </span><span class="nt">"smsEnabled"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">"profile"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"contact"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"email"</span><span class="p">:</span><span class="w"> </span><span class="s2">"john@example.com"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"phone"</span><span class="p">:</span><span class="w"> </span><span class="s2">"+1-555-0123"</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="nt">"personal"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"dateOfBirth"</span><span class="p">:</span><span class="w"> </span><span class="s2">"1990-01-01"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"firstName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"John"</span><span class="p">,</span>
+<span class="w">            </span><span class="nt">"lastName"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Doe"</span>
 <span class="w">          </span><span class="p">}</span>
 <span class="w">        </span><span class="p">}</span>
 <span class="w">      </span><span class="p">}</span>
@@ -5279,21 +5367,22 @@
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="integration-with-web-frameworks">Integration with Web Frameworks<a class="headerlink" href="#integration-with-web-frameworks" title="Permanent link">&para;</a></h2>
-<h3 id="fastapi-example">FastAPI Example<a class="headerlink" href="#fastapi-example" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<p><code>create_fraiseql_app</code> serves class mutations through this pipeline already. If you
+build the response yourself, return the bytes as they are:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">Response</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">graphql_endpoint</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">dict</span><span class="p">):</span>
-    <span class="c1"># ... parse GraphQL query ...</span>
 
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/create-user"</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
     <span class="c1"># Simulate database mutation result</span>
     <span class="n">db_result</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"created"</span><span class="p">,</span>
         <span class="s2">"message"</span><span class="p">:</span> <span class="s2">"User created"</span><span class="p">,</span>
+        <span class="s2">"entity_id"</span><span class="p">:</span> <span class="s2">"123"</span><span class="p">,</span>
+        <span class="s2">"entity_type"</span><span class="p">:</span> <span class="s2">"User"</span><span class="p">,</span>
         <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span>
             <span class="s2">"id"</span><span class="p">:</span> <span class="s2">"123"</span><span class="p">,</span>
             <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"John Doe"</span><span class="p">,</span>
@@ -5302,63 +5391,31 @@
     <span class="p">}</span>
 
     <span class="c1"># Build GraphQL response using Rust pipeline</span>
-    <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">db_result</span><span class="p">)</span>
     <span class="n">result_bytes</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
-        <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
+        <span class="n">mutation_json</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">db_result</span><span class="p">),</span>
         <span class="n">field_name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">,</span>
         <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
         <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
         <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span>
+        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
+        <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="c1"># Return bytes directly (FastAPI handles serialization)</span>
-    <span class="k">return</span> <span class="n">result_bytes</span>
-</code></pre></div>
-<h3 id="django-example">Django Example<a class="headerlink" href="#django-example" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">django.http</span><span class="w"> </span><span class="kn">import</span> <span class="n">JsonResponse</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">django.views.decorators.csrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">csrf_exempt</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
-<span class="nd">@csrf_exempt</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">graphql_view</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">method</span> <span class="o">!=</span> <span class="s1">'POST'</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">({</span><span class="s1">'error'</span><span class="p">:</span> <span class="s1">'Method not allowed'</span><span class="p">},</span> <span class="n">status</span><span class="o">=</span><span class="mi">405</span><span class="p">)</span>
-
-    <span class="c1"># ... parse GraphQL query ...</span>
-
-    <span class="c1"># Database operation</span>
-    <span class="n">db_result</span> <span class="o">=</span> <span class="n">perform_database_mutation</span><span class="p">(</span><span class="n">request_data</span><span class="p">)</span>
-
-    <span class="c1"># Build response</span>
-    <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">db_result</span><span class="p">)</span>
-    <span class="n">result_bytes</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
-        <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="n">field_name</span><span class="p">,</span>
-        <span class="n">success_type</span><span class="o">=</span><span class="n">success_type</span><span class="p">,</span>
-        <span class="n">error_type</span><span class="o">=</span><span class="n">error_type</span><span class="p">,</span>
-        <span class="n">entity_field_name</span><span class="o">=</span><span class="n">entity_field</span><span class="p">,</span>
-        <span class="n">entity_type</span><span class="o">=</span><span class="n">entity_type</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Parse and return</span>
-    <span class="n">response_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">result_bytes</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">JsonResponse</span><span class="p">(</span><span class="n">response_data</span><span class="p">)</span>
+    <span class="c1"># The bytes are already the JSON response body</span>
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">result_bytes</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="performance-comparison">Performance Comparison<a class="headerlink" href="#performance-comparison" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql_rs</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_mutation_response</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 
 <span class="c1"># Test data</span>
 <span class="n">mutation_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
     <span class="s2">"status"</span><span class="p">:</span> <span class="s2">"created"</span><span class="p">,</span>
+    <span class="s2">"entity_type"</span><span class="p">:</span> <span class="s2">"User"</span><span class="p">,</span>
     <span class="s2">"entity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"123"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Test"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"test@example.com"</span><span class="p">}</span>
 <span class="p">})</span>
 
 <span class="c1"># Benchmark Rust pipeline</span>
-<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span>
 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
     <span class="n">result</span> <span class="o">=</span> <span class="n">build_mutation_response</span><span class="p">(</span>
         <span class="n">mutation_json</span><span class="o">=</span><span class="n">mutation_json</span><span class="p">,</span>
@@ -5366,14 +5423,15 @@
         <span class="n">success_type</span><span class="o">=</span><span class="s2">"CreateUserSuccess"</span><span class="p">,</span>
         <span class="n">error_type</span><span class="o">=</span><span class="s2">"CreateUserError"</span><span class="p">,</span>
         <span class="n">entity_field_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span>
+        <span class="n">entity_type</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
+        <span class="n">entity_selections</span><span class="o">=</span><span class="n">UNFILTERED</span><span class="p">,</span>
     <span class="p">)</span>
-<span class="n">rust_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
+<span class="n">rust_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Rust pipeline: </span><span class="si">{</span><span class="n">rust_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">s for 1000 operations"</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Average: </span><span class="si">{</span><span class="n">rust_time</span><span class="o">/</span><span class="mi">1000</span><span class="o">*</span><span class="mi">1000</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms per operation"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Average: </span><span class="si">{</span><span class="n">rust_time</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">ms per operation"</span><span class="p">)</span>
 </code></pre></div>
-<p>Expected performance: ~0.5-2ms per operation depending on complexity.</p>
+<p>The time per call is in microseconds for small results; measure on your own data.</p>
 
 
 
@@ -5449,10 +5507,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

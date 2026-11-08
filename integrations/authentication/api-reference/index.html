@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4988,7 +4988,7 @@ available at <code>info.context["user"]</code> in every resolver.</p>
     <span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"member"</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">None</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">user_id</span><span class="p">})</span>
 </code></pre></div>
 <hr />
 <h2 id="resolver-decorators">Resolver decorators<a class="headerlink" href="#resolver-decorators" title="Permanent link">&para;</a></h2>
@@ -5215,8 +5215,14 @@ unless an authorizer is configured.</p>
 </tbody>
 </table>
 <p>Both stores implement the same async interface: <code>revoke_token(token_id, user_id)</code>,
-<code>is_revoked(token_id)</code>, <code>revoke_all_user_tokens(user_id)</code>, <code>cleanup_expired()</code>,
-and <code>get_revoked_count()</code>.</p>
+<code>is_revoked(token_id)</code>, <code>revoke_all_user_tokens(user_id)</code>, <code>revoked_before(user_id)</code>,
+<code>cleanup_expired()</code>, and <code>get_revoked_count()</code>.</p>
+<p><code>revoke_all_user_tokens(user_id)</code> revokes every token of that user issued before
+the call: <code>is_token_revoked</code> compares the token's <code>iat</code> with the time
+<code>revoked_before(user_id)</code> returns, for the user named by <code>sub</code>. Once a user's
+tokens were all revoked, that user's tokens without an <code>iat</code> claim are rejected
+too. Like a single revocation, it lasts 24 hours. A custom store without
+<code>revoked_before</code> gets token-id checks only.</p>
 <div class="highlight"><pre><span></span><code><span class="n">store</span> <span class="o">=</span> <span class="n">PostgreSQLRevocationStore</span><span class="p">(</span><span class="n">pool</span><span class="p">)</span>
 <span class="n">service</span> <span class="o">=</span> <span class="n">TokenRevocationService</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">RevocationConfig</span><span class="p">(</span><span class="n">ttl</span><span class="o">=</span><span class="mi">3600</span><span class="p">))</span>
 
@@ -5249,7 +5255,7 @@ endpoints from brute force.</p>
 <tbody>
 <tr>
 <td><code>RateLimit</code></td>
-<td><code>RateLimit(requests, window, burst=None, strategy=RateLimitStrategy.FIXED_WINDOW)</code> — <code>window</code> is in seconds.</td>
+<td><code>RateLimit(requests, window, burst=None, strategy=RateLimitStrategy.FIXED_WINDOW)</code> — <code>window</code> is in seconds. Only a fixed window is implemented: <code>burst</code> and the other strategies log a warning and are ignored.</td>
 </tr>
 <tr>
 <td><code>RateLimitRule</code></td>
@@ -5257,7 +5263,7 @@ endpoints from brute force.</p>
 </tr>
 <tr>
 <td><code>RateLimitStrategy</code></td>
-<td><code>FIXED_WINDOW</code>, <code>SLIDING_WINDOW</code>, <code>TOKEN_BUCKET</code>.</td>
+<td><code>FIXED_WINDOW</code> (the only one implemented), <code>SLIDING_WINDOW</code>, <code>TOKEN_BUCKET</code>.</td>
 </tr>
 <tr>
 <td><code>RateLimitStore</code></td>
@@ -5271,12 +5277,13 @@ endpoints from brute force.</p>
 </table>
 <div class="highlight"><pre><span></span><code><span class="n">login_rule</span> <span class="o">=</span> <span class="n">RateLimitRule</span><span class="p">(</span>
     <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/auth/login"</span><span class="p">,</span>
-    <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">strategy</span><span class="o">=</span><span class="n">RateLimitStrategy</span><span class="o">.</span><span class="n">SLIDING_WINDOW</span><span class="p">),</span>
+    <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>
     <span class="n">message</span><span class="o">=</span><span class="s2">"Too many login attempts, please try again shortly."</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><code>create_default_rate_limit_rules()</code> and <code>setup_rate_limiting(...)</code> provide a
-ready-made set of rules and wiring.</p>
+ready-made set of rules and wiring. The client is the socket peer unless you pass
+<code>trusted_proxies</code>; see <a href="../../../configuration/rate-limiting/#client-key">Rate Limiting</a>.</p>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Auth is configured through <code>FraiseQLConfig</code> (pydantic, <code>FRAISEQL_</code>-prefixed
@@ -5498,10 +5505,10 @@ errors with a stable <code>extensions.code</code>:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

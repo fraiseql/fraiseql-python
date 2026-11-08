@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4783,10 +4783,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#unsupported-deep-nesting" class="md-nav__link">
+  <a href="#deep-nesting" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Unsupported Deep Nesting
+        Deep Nesting
       
     </span>
   </a>
@@ -5093,21 +5093,20 @@
 <li><strong>Index size</strong>: ~20-50% of table size for GIN indexes</li>
 </ul>
 <h2 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h2>
-<h3 id="unsupported-deep-nesting">Unsupported Deep Nesting<a class="headerlink" href="#unsupported-deep-nesting" title="Permanent link">&para;</a></h3>
-<p>Dict-based filters support 2-level nesting only:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ Supported: 2 levels</span>
+<h3 id="deep-nesting">Deep Nesting<a class="headerlink" href="#deep-nesting" title="Permanent link">&para;</a></h3>
+<p>A nested filter follows the JSONB path of each level, as deep as the document goes:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># data -&gt; 'device' -&gt;&gt; 'location'</span>
 <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">}}}</span>
 
-<span class="c1"># ❌ Not supported: 3+ levels</span>
+<span class="c1"># data -&gt; 'device' -&gt; 'location' -&gt; 'address' -&gt;&gt; 'city'</span>
 <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"address"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"Seattle"</span><span class="p">}}}}}</span>
 </code></pre></div>
-<p>Deep nesting will log a warning and skip the nested fields.</p>
 <h3 id="invalid-filter-structures">Invalid Filter Structures<a class="headerlink" href="#invalid-filter-structures" title="Permanent link">&para;</a></h3>
-<p>Malformed filters are gracefully handled:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Empty nested filter - ignored (no conditions added)</span>
+<p>Malformed filters raise <code>ValueError</code> instead of being skipped:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Empty nested filter: "WhereClause must have at least one condition, ..."</span>
 <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{}}</span>
 
-<span class="c1"># Invalid operator - logged and skipped</span>
+<span class="c1"># Unknown operator: "Invalid operator 'invalid_field'. Supported operators: ..."</span>
 <span class="p">{</span><span class="s2">"device"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"invalid_field"</span><span class="p">:</span> <span class="s2">"not_an_operator"</span><span class="p">}}</span>
 </code></pre></div>
 <h2 id="choosing-between-wheretype-and-dict-syntax">Choosing Between WhereType and Dict Syntax<a class="headerlink" href="#choosing-between-wheretype-and-dict-syntax" title="Permanent link">&para;</a></h2>
@@ -5188,7 +5187,7 @@
 </code></pre></div>
 <h2 id="complete-example">Complete Example<a class="headerlink" href="#complete-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span><span class="p">,</span> <span class="n">register_type_for_view</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Device</span><span class="p">:</span>
@@ -5203,8 +5202,8 @@
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">device</span><span class="p">:</span> <span class="n">Device</span>
 
-<span class="c1"># Register types</span>
-<span class="n">register_type_for_view</span><span class="p">(</span><span class="s2">"assignments"</span><span class="p">,</span> <span class="n">Assignment</span><span class="p">)</span>
+<span class="c1"># Register types (the view is "id" + a JSONB "data" column)</span>
+<span class="n">register_type_for_view</span><span class="p">(</span><span class="s2">"assignments"</span><span class="p">,</span> <span class="n">Assignment</span><span class="p">,</span> <span class="n">has_jsonb_data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="c1"># Repository usage</span>
 <span class="n">repo</span> <span class="o">=</span> <span class="n">FraiseQLRepository</span><span class="p">(</span><span class="n">db_pool</span><span class="p">)</span>
@@ -5297,10 +5296,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

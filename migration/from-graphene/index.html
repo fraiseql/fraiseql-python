@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5179,7 +5179,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">author</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
@@ -5187,7 +5189,7 @@
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># ISO 8601 timestamp</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_post"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Post</span><span class="p">:</span>
@@ -5195,12 +5197,12 @@
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">created_at</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">created_at</span><span class="p">:</span> <span class="n">datetime</span>
 
     <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Resolve author from database"""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
         <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">author_id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="key-changes">Key Changes<a class="headerlink" href="#key-changes" title="Permanent link">&para;</a></h3>
@@ -5218,9 +5220,9 @@
 <p>Type hints for return type</p>
 </li>
 <li>
-<p><strong><code>graphene.ID</code></strong> → <strong><code>UUID</code></strong></p>
+<p><strong><code>graphene.ID</code></strong> → <strong><code>ID</code></strong> (from <code>fraiseql.types</code>)</p>
 </li>
-<li>PostgreSQL native UUID type</li>
+<li>A UUID by default (<code>IDPolicy.UUID</code>), PostgreSQL native</li>
 </ol>
 <hr />
 <h2 id="step-3-query-migration-1-2-days">Step 3: Query Migration (1-2 days)<a class="headerlink" href="#step-3-query-migration-1-2-days" title="Permanent link">&para;</a></h2>
@@ -5237,19 +5239,20 @@
         <span class="k">return</span> <span class="n">User</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
+<p>Each query is an <code>async</code> function decorated with <code>@fraiseql.query</code>; its name is the
+field name:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">:</span>
-    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Get user by ID"""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get user by ID"""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
-    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""List users"""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""List users"""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="32-queries-with-filtering">3.2 Queries with Filtering<a class="headerlink" href="#32-queries-with-filtering" title="Permanent link">&para;</a></h3>
 <p><strong>Before (Graphene with django-filter):</strong></p>
@@ -5272,29 +5275,23 @@
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
+<p>A query returning <code>list[User]</code> gets <code>where</code>, <code>orderBy</code>, <code>limit</code> and <code>offset</code>
+arguments, and <code>find</code> applies the ones the client passes:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">:</span>
-    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">info</span><span class="p">,</span>
-        <span class="n">where</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""List users with filtering"""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
-
-<span class="c1"># GraphQL (more powerful filtering)</span>
-<span class="n">query</span> <span class="p">{</span>
-  <span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span> <span class="p">{</span>
-    <span class="n">email</span><span class="p">:</span> <span class="p">{</span> <span class="n">endswith</span><span class="p">:</span> <span class="s2">"@example.com"</span> <span class="p">}</span>
-    <span class="n">created_at</span><span class="p">:</span> <span class="p">{</span> <span class="n">gte</span><span class="p">:</span> <span class="s2">"2025-01-01"</span> <span class="p">}</span>
-  <span class="p">})</span> <span class="p">{</span>
-    <span class="nb">id</span>
-    <span class="n">email</span>
-    <span class="n">name</span>
-  <span class="p">}</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""List users"""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">users</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">endswith</span><span class="p">:</span><span class="w"> </span><span class="s">"@example.com"</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">createdAt</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="s">"2025-01-01T00:00:00Z"</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">id</span>
+<span class="w">    </span><span class="n">email</span>
+<span class="w">    </span><span class="n">name</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>FraiseQL Filter Operators:</strong></p>
@@ -5310,6 +5307,9 @@
 <p>See <a href="../../advanced/filter-operators/">Filter Operators Reference</a> for complete list</p>
 <hr />
 <h2 id="step-4-mutation-migration-2-3-days">Step 4: Mutation Migration (2-3 days)<a class="headerlink" href="#step-4-mutation-migration-2-3-days" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Field names:</strong> these examples pass <code>name=</code> so each mutation is served under its class name (<code>CreatePost</code> → <code>createPost</code>). Without it, fraiseql 1.x serves a class whose <code>function=</code> differs from its name, such as <code>fn_create_post</code>, under the function's name (<code>fnCreatePost</code>) and the schema build emits a <code>FutureWarning</code>; from fraiseql 2.0 the class name is used. See <a href="../../reference/decorators/#mutation-field-names">Mutation field names</a>.</p>
+</blockquote>
 <h3 id="41-simple-mutations">4.1 Simple Mutations<a class="headerlink" href="#41-simple-mutations" title="Permanent link">&para;</a></h3>
 <p><strong>Before (Graphene):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">(</span><span class="n">graphene</span><span class="o">.</span><span class="n">Mutation</span><span class="p">):</span>
@@ -5328,25 +5328,52 @@
     <span class="n">create_user</span> <span class="o">=</span> <span class="n">CreateUser</span><span class="o">.</span><span class="n">Field</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_user"</span><span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Create a new user"""</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="c1"># Database function:</span>
-<span class="c1"># See [canonical fn_create_user()](../examples/canonical-examples.md#create-user-function)</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""status, message, errors and code are added by @fraiseql.error"""</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a new user"""</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
+
+<span class="c1"># Database function: called with the input as one jsonb, it returns a</span>
+<span class="c1"># mutation_response. See [canonical create_user()](../examples/canonical-examples.md#create-user-function)</span>
 <span class="c1"># for the complete implementation with validation and error handling.</span>
 
 <span class="c1"># Simple version for migration reference:</span>
-<span class="err">```</span><span class="n">sql</span>
-<span class="n">CREATE</span> <span class="n">OR</span> <span class="n">REPLACE</span> <span class="n">FUNCTION</span> <span class="n">fn_create_user</span><span class="p">(</span><span class="n">p_email</span> <span class="n">TEXT</span><span class="p">,</span> <span class="n">p_name</span> <span class="n">TEXT</span><span class="p">)</span>
-<span class="n">RETURNS</span> <span class="n">UUID</span> <span class="n">AS</span> <span class="err">$$</span>
-<span class="n">BEGIN</span>
-    <span class="n">INSERT</span> <span class="n">INTO</span> <span class="n">tb_user</span> <span class="p">(</span><span class="n">email</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="n">VALUES</span> <span class="p">(</span><span class="n">p_email</span><span class="p">,</span> <span class="n">p_name</span><span class="p">)</span> <span class="n">RETURNING</span> <span class="nb">id</span><span class="p">;</span>
-<span class="n">END</span><span class="p">;</span>
-<span class="err">$$</span> <span class="n">LANGUAGE</span> <span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User created'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">),</span><span class="w"> </span><span class="s1">'User'</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
+<p><code>mutation_response</code> and the <code>mutation_*</code> helpers come from
+<code>migrations/trinity/005_add_mutation_response.sql</code>.</p>
 <h3 id="42-complex-mutations-with-cascade">4.2 Complex Mutations with CASCADE<a class="headerlink" href="#42-complex-mutations-with-cascade" title="Permanent link">&para;</a></h3>
 <p><strong>Before (Graphene + Manual Cache Invalidation):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">(</span><span class="n">graphene</span><span class="o">.</span><span class="n">Mutation</span><span class="p">):</span>
@@ -5370,32 +5397,61 @@
         <span class="k">return</span> <span class="n">CreatePost</span><span class="p">(</span><span class="n">post</span><span class="o">=</span><span class="n">post</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>After (FraiseQL with CASCADE):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
-    <span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_post"</span><span class="p">,</span>
-    <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Automatic cache invalidation!</span>
-<span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Create a new post"""</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostInput</span><span class="p">:</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
 
-<span class="c1"># Database function</span>
-<span class="n">CREATE</span> <span class="n">OR</span> <span class="n">REPLACE</span> <span class="n">FUNCTION</span> <span class="n">fn_create_post</span><span class="p">(</span>
-    <span class="n">input_title</span> <span class="n">TEXT</span><span class="p">,</span>
-    <span class="n">input_content</span> <span class="n">TEXT</span><span class="p">,</span>
-    <span class="n">input_author_id</span> <span class="n">UUID</span>
-<span class="p">)</span> <span class="n">RETURNS</span> <span class="n">UUID</span> <span class="n">AS</span> <span class="err">$$</span>
-<span class="n">DECLARE</span>
-    <span class="n">new_post_id</span> <span class="n">UUID</span><span class="p">;</span>
-<span class="n">BEGIN</span>
-    <span class="n">INSERT</span> <span class="n">INTO</span> <span class="n">tb_post</span> <span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">author_id</span><span class="p">)</span>
-    <span class="n">VALUES</span> <span class="p">(</span><span class="n">input_title</span><span class="p">,</span> <span class="n">input_content</span><span class="p">,</span> <span class="n">input_author_id</span><span class="p">)</span>
-    <span class="n">RETURNING</span> <span class="nb">id</span> <span class="n">INTO</span> <span class="n">new_post_id</span><span class="p">;</span>
 
-    <span class="n">RETURN</span> <span class="n">new_post_id</span><span class="p">;</span>
-<span class="n">END</span><span class="p">;</span>
-<span class="err">$$</span> <span class="n">LANGUAGE</span> <span class="n">plpgsql</span><span class="p">;</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostSuccess</span><span class="p">:</span>
+    <span class="n">post</span><span class="p">:</span> <span class="n">Post</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""status, message, errors and code are added by @fraiseql.error"""</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
+    <span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_post"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"createPost"</span><span class="p">,</span>
+    <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Automatic cache invalidation!</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a new post"""</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreatePostSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreatePostError</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Database function: the cascade lists the new post and its updated author</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_post_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_author_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'author_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_post</span><span class="w"> </span><span class="n">JSONB</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="n">author_id</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">v_post</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">);</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'Post created'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">v_post</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'Post'</span><span class="p">,</span>
+<span class="w">        </span><span class="n">cascade_merge</span><span class="p">(</span>
+<span class="w">            </span><span class="n">cascade_entity_created</span><span class="p">(</span><span class="s1">'Post'</span><span class="p">,</span><span class="w"> </span><span class="n">v_post_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">v_post</span><span class="p">),</span>
+<span class="w">            </span><span class="n">cascade_entity_update</span><span class="p">(</span>
+<span class="w">                </span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_author_id</span><span class="p">)</span>
+<span class="w">            </span><span class="p">)</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>CASCADE Benefits:</strong></p>
 <ul>
@@ -5482,32 +5538,41 @@
 <span class="p">]</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:pass@localhost/db"</span><span class="p">,</span>
-    <span class="n">enable_rust_pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># 7-10x JSON performance</span>
-    <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Automatic cache invalidation</span>
-    <span class="n">allow_introspection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># GraphiQL</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="p">,</span> <span class="n">users</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">CreateUser</span><span class="p">,</span> <span class="n">CreatePost</span><span class="p">],</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>The Rust pipeline is always on, a mutation's cascade is turned on per mutation
+(<code>enable_cascade=True</code>), and GraphiQL is served in development
+(<code>enable_playground</code>, <code>introspection_policy</code> on <code>FraiseQLConfig</code>).</p>
 <p><strong>With Django (Hybrid Approach):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Keep Django for admin, auth, etc.</span>
-<span class="c1"># Add FraiseQL for GraphQL API</span>
+<p><code>create_fraiseql_app</code> returns an ASGI (FastAPI) app, which Django's <code>urlpatterns</code>
+can't route to. Serve both from one ASGI process instead: mount Django's ASGI app
+under the FraiseQL app, which keeps <code>/graphql</code> (and <code>/health</code>, <code>/ready</code>) and hands
+every other path to Django.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># asgi.py: keep Django for admin, auth, etc.; FraiseQL serves the GraphQL API</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">django.urls</span><span class="w"> </span><span class="kn">import</span> <span class="n">path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">django.core.asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_asgi_application</span>
 
-<span class="n">fraiseql_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">DATABASES</span><span class="p">[</span><span class="s1">'default'</span><span class="p">][</span><span class="s1">'URL'</span><span class="p">],</span>
-    <span class="n">enable_rust_pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"DJANGO_SETTINGS_MODULE"</span><span class="p">,</span> <span class="s2">"mysite.settings"</span><span class="p">)</span>
+<span class="n">django_app</span> <span class="o">=</span> <span class="n">get_asgi_application</span><span class="p">()</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>  <span class="c1"># noqa: E402</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"DATABASE_URL"</span><span class="p">],</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="p">,</span> <span class="n">users</span><span class="p">],</span>
 <span class="p">)</span>
-
-<span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">path</span><span class="p">(</span><span class="s1">'admin/'</span><span class="p">,</span> <span class="n">admin</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">urls</span><span class="p">),</span>
-    <span class="n">path</span><span class="p">(</span><span class="s1">'graphql/'</span><span class="p">,</span> <span class="n">fraiseql_app</span><span class="p">),</span>  <span class="c1"># FraiseQL endpoint</span>
-<span class="p">]</span>
+<span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="n">django_app</span><span class="p">)</span>  <span class="c1"># /admin/ and the rest go to Django</span>
 </code></pre></div>
+<p>Run it with <code>uvicorn asgi:app</code>.</p>
 <hr />
 <h2 id="step-7-testing-migration-1-day">Step 7: Testing Migration (1 day)<a class="headerlink" href="#step-7-testing-migration-1-day" title="Permanent link">&para;</a></h2>
 <h3 id="test-strategy">Test Strategy<a class="headerlink" href="#test-strategy" title="Permanent link">&para;</a></h3>
@@ -5536,22 +5601,22 @@
     <span class="k">assert</span> <span class="n">executed</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="s1">'createUser'</span><span class="p">][</span><span class="s1">'user'</span><span class="p">][</span><span class="s1">'email'</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test@example.com"</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLClient</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
 
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_create_user</span><span class="p">(</span><span class="n">graphql_client</span><span class="p">:</span> <span class="n">GraphQLClient</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">        mutation {</span>
-<span class="s2">            createUser(input: {email: "test@example.com", name: "Test"}) {</span>
-<span class="s2">                id</span>
-<span class="s2">                email</span>
-<span class="s2">                name</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_create_user</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""`app` is your create_fraiseql_app(...) app, against a test database"""</span>
+    <span class="k">with</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>  <span class="c1"># runs the app's lifespan, which opens the pool</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="s2">"""</span>
+<span class="s2">            mutation {</span>
+<span class="s2">                createUser(input: {email: "test@example.com", name: "Test"}) {</span>
+<span class="s2">                    ... on CreateUserSuccess { user { id email name } }</span>
+<span class="s2">                    ... on CreateUserError { message }</span>
+<span class="s2">                }</span>
 <span class="s2">            }</span>
-<span class="s2">        }</span>
-<span class="s2">    """</span><span class="p">)</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">is</span> <span class="kc">None</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'createUser'</span><span class="p">][</span><span class="s1">'email'</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test@example.com"</span>
+<span class="s2">        """</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="s2">"errors"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">body</span>
+    <span class="k">assert</span> <span class="n">body</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">][</span><span class="s2">"user"</span><span class="p">][</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test@example.com"</span>
 </code></pre></div>
 <hr />
 <h2 id="common-pitfalls">Common Pitfalls<a class="headerlink" href="#common-pitfalls" title="Permanent link">&para;</a></h2>
@@ -5563,8 +5628,9 @@
     <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
 <span class="c1"># ✅ Correct</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="2-using-django-orm-patterns">2. Using Django ORM Patterns<a class="headerlink" href="#2-using-django-orm-patterns" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Trying to use <code>.objects.filter()</code> syntax</p>
@@ -5576,7 +5642,7 @@
 <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"is_active"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="3-missing-database-functions">3. Missing Database Functions<a class="headerlink" href="#3-missing-database-functions" title="Permanent link">&para;</a></h3>
-<p><strong>Symptom:</strong> <code>MutationError: Function fn_create_user does not exist</code></p>
+<p><strong>Symptom:</strong> the mutation fails with <code>function fn_create_user(jsonb) does not exist</code></p>
 <p><strong>Fix:</strong> Create PostgreSQL function before mutation:</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(...)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5595,10 +5661,11 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 
-<span class="c"># ✅ FraiseQL (clean)</span>
+<span class="c"># ✅ FraiseQL (no clientMutationId)</span>
 <span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"test@example.com"</span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
+<span class="w">  </span><span class="n">createUser</span><span class="p">(</span><span class="n">input</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"test@example.com"</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Test"</span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">user</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -5642,28 +5709,11 @@ Requests<span class="w"> </span>per<span class="w"> </span>second:<span class="w
 <hr />
 <h2 id="hybrid-django-fraiseql">Hybrid Django + FraiseQL<a class="headerlink" href="#hybrid-django-fraiseql" title="Permanent link">&para;</a></h2>
 <p>You can keep Django for admin/auth and use FraiseQL for GraphQL:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># settings.py</span>
-<span class="n">INSTALLED_APPS</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="s1">'django.contrib.admin'</span><span class="p">,</span>  <span class="c1"># Keep Django admin</span>
-    <span class="s1">'django.contrib.auth'</span><span class="p">,</span>   <span class="c1"># Keep Django auth</span>
-    <span class="c1"># ... other Django apps</span>
-<span class="p">]</span>
-
-<span class="c1"># urls.py</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">django.contrib</span><span class="w"> </span><span class="kn">import</span> <span class="n">admin</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">django.urls</span><span class="w"> </span><span class="kn">import</span> <span class="n">path</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
-
-<span class="n">fraiseql_app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">DATABASES</span><span class="p">[</span><span class="s1">'default'</span><span class="p">][</span><span class="s1">'URL'</span><span class="p">],</span>
-    <span class="n">enable_rust_pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="n">urlpatterns</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="n">path</span><span class="p">(</span><span class="s1">'admin/'</span><span class="p">,</span> <span class="n">admin</span><span class="o">.</span><span class="n">site</span><span class="o">.</span><span class="n">urls</span><span class="p">),</span>
-    <span class="n">path</span><span class="p">(</span><span class="s1">'api/graphql/'</span><span class="p">,</span> <span class="n">fraiseql_app</span><span class="p">),</span>
-<span class="p">]</span>
-</code></pre></div>
+<p>Keep <code>django.contrib.admin</code> and <code>django.contrib.auth</code> in <code>INSTALLED_APPS</code>, and serve
+Django and FraiseQL from one ASGI app, as in
+<a href="#application-configuration">With Django (Hybrid Approach)</a> above: the FraiseQL app
+answers <code>/graphql</code>, and the Django app mounted under it answers <code>/admin/</code> and every
+other path.</p>
 <p><strong>Benefits:</strong></p>
 <ul>
 <li>Keep Django admin interface</li>
@@ -5763,10 +5813,10 @@ Requests<span class="w"> </span>per<span class="w"> </span>second:<span class="w
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

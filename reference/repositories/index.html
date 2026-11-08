@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5020,6 +5020,8 @@
 <li>Traditional repository pattern</li>
 </ul>
 <h3 id="methods_1">Methods<a class="headerlink" href="#methods_1" title="Permanent link">&para;</a></h3>
+<p>The entity-class methods read the view named after the class: <code>vw_</code> plus the class
+name in snake_case (<code>User</code> → <code>vw_user</code>), not the type's <code>sql_source</code>.</p>
 <h4 id="count_1">count()<a class="headerlink" href="#count_1" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
@@ -5034,8 +5036,9 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_count</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">UserWhereInput</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"connection"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>  <span class="c1"># Entity-class based</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>  <span class="c1"># takes a psycopg AsyncConnection</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>  <span class="c1"># Entity-class based</span>
 </code></pre></div>
 <h4 id="find_by_id">find_by_id()<a class="headerlink" href="#find_by_id" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
@@ -5064,13 +5067,14 @@
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">UserWhereInput</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"connection"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">list_entities</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>  <span class="c1"># Returns list[dict]</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">list_entities</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>  <span class="c1"># Returns list[dict]</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_count</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="p">:</span> <span class="n">UserWhereInput</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"connection"</span><span class="p">])</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>After (Modern)</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
@@ -5107,7 +5111,7 @@
 <h3 id="use-cqrsrepository">Use CQRSRepository ⚠️<a class="headerlink" href="#use-cqrsrepository" title="Permanent link">&para;</a></h3>
 <p><strong>Background Jobs</strong> (non-GraphQL):</p>
 <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_old_records</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">DATABASE_URL</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
         <span class="n">old_records</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">list_entities</span><span class="p">(</span>
             <span class="n">OldRecord</span><span class="p">,</span>
@@ -5121,7 +5125,7 @@
 <p><strong>CLI Utilities</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># scripts/export_users.py</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">export_users_to_csv</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">DATABASE_URL</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">repo</span> <span class="o">=</span> <span class="n">CQRSRepository</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
         <span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">list_entities</span><span class="p">(</span><span class="n">User</span><span class="p">)</span>
         <span class="c1"># Write to CSV file</span>
@@ -5232,10 +5236,10 @@ Suitable for non-critical paths
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

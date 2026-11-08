@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4963,36 +4963,43 @@
 <h2 id="migration-strategy">Migration Strategy<a class="headerlink" href="#migration-strategy" title="Permanent link">&para;</a></h2>
 <h3 id="phase-1-consolidate-apq-storage">Phase 1: Consolidate APQ Storage<a class="headerlink" href="#phase-1-consolidate-apq-storage" title="Permanent link">&para;</a></h3>
 <p>Replace Redis APQ storage with PostgreSQL:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Before: Redis-based APQ</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Before: a Redis-backed APQ store, plugged in as a custom backend</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"redis"</span><span class="p">,</span>
-    <span class="n">redis_url</span><span class="o">=</span><span class="s2">"redis://localhost:6379"</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/db"</span><span class="p">,</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"custom"</span><span class="p">,</span>
+    <span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"backend_class"</span><span class="p">:</span> <span class="s2">"myapp.apq.RedisAPQBackend"</span><span class="p">},</span>
 <span class="p">)</span>
 
-<span class="c1"># After: PostgreSQL-based APQ</span>
+<span class="c1"># After: PostgreSQL-based APQ (the default backend is "memory")</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>  <span class="c1"># Default</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/db"</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/db"</span><span class="p">,</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> the <code>postgresql</code> backend opens its own small connection pool to
+<code>database_url</code> (or <code>apq_backend_config["database_url"]</code>) on the first APQ request,
+and creates its tables if they don't exist (<code>auto_create_tables</code>, default on).
+Persisted queries survive a restart and are shared by every instance using that
+database. Its lookups are synchronous: each holds the event loop for one indexed
+query (a persisted query's text is kept in process once read).</p>
+</blockquote>
 <h3 id="phase-2-replace-error-tracking">Phase 2: Replace Error Tracking<a class="headerlink" href="#phase-2-replace-error-tracking" title="Permanent link">&para;</a></h3>
 <p>Migrate from external services to PostgreSQL tables:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Create error tracking tables</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">error_events</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="nb">serial</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
-<span class="w">    </span><span class="n">service_name</span><span class="w"> </span><span class="nb">varchar</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'fraiseql'</span><span class="p">,</span>
-<span class="w">    </span><span class="n">error_type</span><span class="w"> </span><span class="nb">varchar</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
-<span class="w">    </span><span class="n">error_message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
-<span class="w">    </span><span class="n">stack_trace</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
-<span class="w">    </span><span class="n">context</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span>
-<span class="w">    </span><span class="n">occurred_at</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">now</span><span class="p">()</span>
-<span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Create the error tracking tables (tb_error_log, tb_error_occurrence, ...)</span>
+psql<span class="w"> </span><span class="s2">"</span><span class="nv">$DATABASE_URL</span><span class="s2">"</span><span class="w"> </span>-f<span class="w"> </span>src/fraiseql/monitoring/schema.sql
+</code></pre></div>
+<p>Error tracking is not a <code>FraiseQLConfig</code> setting: start the tracker on a psycopg
+pool and capture exceptions with it.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">init_error_tracker</span>
 
-<span class="c1">-- Add error tracking to your GraphQL config</span>
-<span class="n">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">FraiseQLConfig</span><span class="p">(</span>
-<span class="w">    </span><span class="n">error_tracking_table</span><span class="o">=</span><span class="ss">"error_events"</span><span class="p">,</span>
-<span class="w">    </span><span class="n">enable_error_logging</span><span class="o">=</span><span class="k">True</span>
-<span class="p">)</span>
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="o">...</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"createOrder"</span><span class="p">})</span>
+    <span class="k">raise</span>
 </code></pre></div>
 <h3 id="phase-3-consolidate-monitoring">Phase 3: Consolidate Monitoring<a class="headerlink" href="#phase-3-consolidate-monitoring" title="Permanent link">&para;</a></h3>
 <p>Replace APM tools with PostgreSQL-based metrics:</p>
@@ -5121,10 +5128,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

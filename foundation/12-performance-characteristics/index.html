@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5839,9 +5839,11 @@ environment variables:</p>
     <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># production mode disables the playground and tightens defaults</span>
 <span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="c1"># Equivalent toggles via environment variables</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># The same settings from environment variables, which FraiseQLConfig reads</span>
+<span class="c1"># when you pass config=FraiseQLConfig() (without config=, the production=</span>
+<span class="c1"># argument sets the environment itself)</span>
 <span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_URL</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_PRODUCTION</span><span class="o">=</span><span class="nb">true</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
 </code></pre></div>
 <p>See <a href="../../guides/performance-optimization/">Performance Optimization</a> for the full set of
 caching and APQ options.</p>
@@ -5896,18 +5898,19 @@ caching and APQ options.</p>
 <p>FraiseQL reuses PostgreSQL connections from a pool. Tune the pool through application
 configuration — <code>create_fraiseql_app(...)</code> kwargs, <code>FraiseQLConfig</code>, or <code>FRAISEQL_*</code>
 environment variables — not a standalone config file:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Pool sizing via environment variables</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_MIN</span><span class="o">=</span><span class="m">10</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_MAX</span><span class="o">=</span><span class="m">50</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Pool sizing via environment variables: the pool keeps 2 connections open</span>
+<span class="c1"># and grows to DATABASE_POOL_SIZE + DATABASE_MAX_OVERFLOW</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_POOL_SIZE</span><span class="o">=</span><span class="m">40</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_DATABASE_MAX_OVERFLOW</span><span class="o">=</span><span class="m">10</span>
 </code></pre></div>
-<p><strong>Guidelines:</strong></p>
+<p><strong>Guidelines (maximum connections):</strong></p>
 <ul>
-<li>Light workload: min=5, max=20</li>
-<li>Moderate workload: min=10, max=50</li>
-<li>Heavy workload: min=20, max=100</li>
+<li>Light workload: 20</li>
+<li>Moderate workload: 50</li>
+<li>Heavy workload: 100</li>
 </ul>
 <p>A pool that is too small queues requests; one that is too large can overwhelm
-PostgreSQL. Size <code>pool_max</code> against your database's connection limit and core count.</p>
+PostgreSQL. Size the maximum against your database's connection limit and core count.</p>
 <hr />
 <h2 id="monitoring-and-profiling">Monitoring and Profiling<a class="headerlink" href="#monitoring-and-profiling" title="Permanent link">&para;</a></h2>
 <h3 id="key-metrics-to-track">Key Metrics to Track<a class="headerlink" href="#key-metrics-to-track" title="Permanent link">&para;</a></h3>
@@ -6181,10 +6184,10 @@ replication — rather than adding more app servers.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5464,7 +5464,7 @@ single <code>db.find</code> returns the whole tree:</p>
 <span class="w">            </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(</span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">                </span><span class="s1">'id'</span><span class="p">,</span><span class="w">           </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">                </span><span class="s1">'title'</span><span class="p">,</span><span class="w">        </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
-<span class="w">                </span><span class="s1">'commentCount'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
+<span class="w">                </span><span class="s1">'comment_count'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="k">c</span>
 <span class="w">                                 </span><span class="k">WHERE</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">fk_post</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">)</span>
 <span class="w">            </span><span class="p">))</span>
 <span class="w">            </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="n">p</span>
@@ -5483,7 +5483,7 @@ the lookups into one query instead of N:</p>
     <span class="c1"># Called once per comment, but FraiseQL collects the keys and issues a</span>
     <span class="c1"># single batched load — turning N+1 queries into 1.</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">author_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">comment</span><span class="o">.</span><span class="n">author_id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Solution C — cap depth and page nested lists.</strong> Keep request shapes sane and
 always paginate nested collections:</p>
@@ -5569,7 +5569,7 @@ multi-row updates) in the Python resolver instead of a PostgreSQL function</p>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="c1"># Validate by hand, in the app</span>
-    <span class="n">customer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_customer"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">)</span>
+    <span class="n">customer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_customer"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">customer_id</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">customer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">CreateOrderError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"unknown customer"</span><span class="p">)</span>
 
@@ -5596,7 +5596,7 @@ multi-row updates) in the Python resolver instead of a PostgreSQL function</p>
 </ul>
 <p><strong>Solution</strong>: Put the write logic in one <code>fn_</code> PostgreSQL function. The resolver
 just validates the shape of the input and calls it; the function does
-validation, the writes, and returns a JSONB result in a single transaction:</p>
+validation, the writes, and returns the result in a single transaction:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ CORRECT: resolver is thin; the database owns the write</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_order</span><span class="p">(</span>
@@ -5614,30 +5614,38 @@ validation, the writes, and returns a JSONB result in a single transaction:</p>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">CreateOrderSuccess</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">result</span><span class="p">[</span><span class="s2">"order"</span><span class="p">]))</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_order does the validation + all writes atomically and returns JSONB.</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span><span class="n">p_customer_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">,</span><span class="w"> </span><span class="n">p_lines</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_order does the validation + all writes atomically. execute_function</span>
+<span class="c1">-- passes the input as one jsonb and runs SELECT * FROM fn_create_order(...), so the</span>
+<span class="c1">-- OUT parameters are the keys of the dict it returns.</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_order</span><span class="p">(</span>
+<span class="w">    </span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span>
+<span class="w">    </span><span class="k">OUT</span><span class="w"> </span><span class="n">success</span><span class="w"> </span><span class="nb">boolean</span><span class="p">,</span>
+<span class="w">    </span><span class="k">OUT</span><span class="w"> </span><span class="n">code</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="k">OUT</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="k">OUT</span><span class="w"> </span><span class="ss">"order"</span><span class="w"> </span><span class="n">jsonb</span>
+<span class="p">)</span>
 <span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_order_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_customer_id</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">                                  </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'UNKNOWN_CUSTOMER'</span><span class="p">,</span>
-<span class="w">                                  </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'unknown customer'</span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="n">success</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">false</span><span class="p">;</span>
+<span class="w">        </span><span class="n">code</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'UNKNOWN_CUSTOMER'</span><span class="p">;</span>
+<span class="w">        </span><span class="n">message</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="s1">'unknown customer'</span><span class="p">;</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="p">(</span><span class="n">fk_customer</span><span class="p">)</span>
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_customer</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_customer_id</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_customer</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_customer</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'customer_id'</span><span class="p">)::</span><span class="n">uuid</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">(</span><span class="n">fk_order</span><span class="p">,</span><span class="w"> </span><span class="n">sku</span><span class="p">,</span><span class="w"> </span><span class="n">qty</span><span class="p">)</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_order</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">),</span>
 <span class="w">           </span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">'sku'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="n">line</span><span class="o">-&gt;&gt;</span><span class="s1">'qty'</span><span class="p">)::</span><span class="nb">int</span>
-<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="n">p_lines</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">line</span><span class="p">;</span>
+<span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;</span><span class="s1">'lines'</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">line</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">                              </span><span class="s1">'order'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">));</span>
+<span class="w">    </span><span class="n">success</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">true</span><span class="p">;</span>
+<span class="w">    </span><span class="ss">"order"</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_order_id</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="p">;</span>
 </code></pre></div>
@@ -5710,7 +5718,7 @@ and side effects that are either blocking <em>or</em> silently dropped on failur
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
     <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"current_user"</span><span class="p">]</span>
     <span class="k">if</span> <span class="n">user</span><span class="o">.</span><span class="n">created_by</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
@@ -5722,7 +5730,7 @@ and side effects that are either blocking <em>or</em> silently dropped on failur
     <span class="c1"># A *different* check, written by hand, in a different place</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="n">current</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"current_user"</span><span class="p">]</span>
-    <span class="n">target</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">target</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">if</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="o">!=</span> <span class="n">current</span><span class="o">.</span><span class="n">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">current</span><span class="o">.</span><span class="n">is_admin</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">PermissionError</span><span class="p">(</span><span class="s2">"Not authorized"</span><span class="p">)</span>
     <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
@@ -5750,7 +5758,7 @@ the operation, instead of re-implementing checks inline:</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">owner_or_admin</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span>
@@ -5942,7 +5950,7 @@ nobody asked for</p>
 <span class="w">        </span><span class="s1">'status'</span><span class="p">,</span><span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'lines'</span><span class="p">,</span><span class="w">     </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_line</span><span class="w"> </span><span class="p">...),</span>
 <span class="w">        </span><span class="s1">'history'</span><span class="p">,</span><span class="w">   </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_agg</span><span class="p">(...)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_order_event</span><span class="w"> </span><span class="p">...),</span><span class="w">  </span><span class="c1">-- huge, rarely read</span>
-<span class="w">        </span><span class="s1">'rawAudit'</span><span class="p">,</span><span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">audit_blob</span><span class="w">                                      </span><span class="c1">-- never requested</span>
+<span class="w">        </span><span class="s1">'raw_audit'</span><span class="p">,</span><span class="w">  </span><span class="n">o</span><span class="p">.</span><span class="n">audit_blob</span><span class="w">                                      </span><span class="c1">-- never requested</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">o</span><span class="p">;</span>
 
@@ -6354,10 +6362,10 @@ will be safer, faster, and far easier to reason about.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

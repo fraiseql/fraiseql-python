@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4936,11 +4936,17 @@
 </tr>
 <tr>
 <td>Decimal</td>
-<td>Float!</td>
-<td>High precision numbers</td>
+<td>Decimal!</td>
+<td>High precision numbers, serialized as a string</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Private fields</strong>: an annotated field whose name starts with <code>_</code> (<code>_email: str | None =
+None</code>) is a constructor argument and an attribute, but not a GraphQL field, and not in
+the <code>where</code> / <code>orderBy</code> inputs; this holds for <code>@fraiseql.input</code> and
+<code>@fraiseql.interface</code> too. Use one for a value a field resolver exposes after a check
+(see <a href="../../advanced/authentication/#field-level-authorization">Field-Level Authorization</a>).
+<code>fraise_field(graphql_name="_id")</code> exposes it under that name.</p>
 <h2 id="type-mapping-flow">Type Mapping Flow<a class="headerlink" href="#type-mapping-flow" title="Permanent link">&para;</a></h2>
 <h3 id="python-class-to-graphql-schema">Python Class to GraphQL Schema<a class="headerlink" href="#python-class-to-graphql-schema" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐
@@ -5584,17 +5590,6 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="k">pass</span>  <span class="c1"># Implementation handled by decorator</span>
 </code></pre></div>
-<p><strong>Manual usage</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_connection</span>
-
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_connection</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">first</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">first</span><span class="o">=</span><span class="n">first</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">create_connection</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">User</span><span class="p">)</span>
-</code></pre></div>
 <h3 id="paginatedresponse-offset-pagination">PaginatedResponse (Offset Pagination)<a class="headerlink" href="#paginatedresponse-offset-pagination" title="Permanent link">&para;</a></h3>
 <p><strong>Alias</strong>: <code>PaginatedResponse = Connection</code></p>
 <p><strong>Usage</strong>:</p>
@@ -5626,11 +5621,11 @@
 <h2 id="unset-sentinel">UNSET Sentinel<a class="headerlink" href="#unset-sentinel" title="Permanent link">&para;</a></h2>
 <p><strong>Purpose</strong>: Distinguish between "field not provided" and "field explicitly set to None"</p>
 <p><strong>Import</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">UNSET</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">UNSET</span>
 </code></pre></div>
 <p><strong>Usage in Input Types</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">UNSET</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">UNSET</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
@@ -5646,7 +5641,7 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">updates</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">updates</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">)}</span>
 
     <span class="c1"># Only include fields that were explicitly provided</span>
     <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">UNSET</span><span class="p">:</span>
@@ -5656,7 +5651,10 @@
     <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">bio</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">UNSET</span><span class="p">:</span>
         <span class="n">updates</span><span class="p">[</span><span class="s2">"bio"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">input</span><span class="o">.</span><span class="n">bio</span>
 
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">},</span> <span class="n">updates</span><span class="p">)</span>
+    <span class="c1"># fn_update_user sets only the keys present in its input: a null clears a column,</span>
+    <span class="c1"># an absent key leaves it alone. (input.to_dict() builds the same dict: it skips UNSET.)</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"updateUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>GraphQL Example</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c"># Mutation that only updates name (sets it to null)</span>
@@ -5790,10 +5788,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -6455,9 +6455,9 @@ triggers — ideal when the composition is expensive or deeply nested.</p>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span><span class="w">                                       </span><span class="c1">-- public UUID, used for WHERE id = $1</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'firstName'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'lastName'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'fullName'</span><span class="p">,</span><span class="w"> </span><span class="n">concat_ws</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'first_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'last_name'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'full_name'</span><span class="p">,</span><span class="w"> </span><span class="n">concat_ws</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">first_name</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">last_name</span><span class="p">),</span>
 <span class="w">        </span><span class="s1">'age'</span><span class="p">,</span><span class="w"> </span><span class="k">extract</span><span class="p">(</span><span class="k">YEAR</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">age</span><span class="p">(</span><span class="n">u</span><span class="p">.</span><span class="n">birth_date</span><span class="p">))::</span><span class="nb">int</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span><span class="p">;</span>
@@ -6531,10 +6531,10 @@ or from triggers):</p>
 <span class="w">    </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'postCount'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'commentCount'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'likeCount'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">pk_like</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'avgPostLength'</span><span class="p">,</span><span class="w"> </span><span class="k">avg</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">))</span>
+<span class="w">        </span><span class="s1">'post_count'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_post</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'comment_count'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">pk_comment</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'like_count'</span><span class="p">,</span><span class="w"> </span><span class="k">count</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">l</span><span class="p">.</span><span class="n">pk_like</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'avg_post_length'</span><span class="p">,</span><span class="w"> </span><span class="k">avg</span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">))</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span><span class="p">,</span>
 <span class="w">    </span><span class="n">now</span><span class="p">()</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -6924,7 +6924,7 @@ camelCases them for GraphQL by default.</p>
 <span class="w">                </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">                    </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
-<span class="w">                    </span><span class="s1">'joinedAt'</span><span class="p">,</span><span class="w"> </span><span class="n">ug</span><span class="p">.</span><span class="n">joined_at</span>
+<span class="w">                    </span><span class="s1">'joined_at'</span><span class="p">,</span><span class="w"> </span><span class="n">ug</span><span class="p">.</span><span class="n">joined_at</span>
 <span class="w">                </span><span class="p">)</span>
 <span class="w">            </span><span class="p">)</span><span class="w"> </span><span class="n">FILTER</span><span class="w"> </span><span class="p">(</span><span class="k">WHERE</span><span class="w"> </span><span class="k">g</span><span class="p">.</span><span class="n">pk_group</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">),</span>
 <span class="w">            </span><span class="s1">'[]'</span><span class="p">::</span><span class="n">jsonb</span>
@@ -6952,12 +6952,14 @@ camelCases them for GraphQL by default.</p>
 <p><strong>Query limitation:</strong> Prevent runaway recursion by bounding nesting depth in your view SQL
 (e.g. a recursive CTE with a <code>WHERE depth &lt; N</code> guard), and cap incoming GraphQL query
 complexity at the app level:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">FraiseQLConfig</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+        <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Reject Category -&gt; Category -&gt; Category... past 10 levels</span>
+    <span class="p">),</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Category</span><span class="p">],</span>
-    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># Prevent Category -&gt; Category -&gt; Category...</span>
 <span class="p">)</span>
 </code></pre></div>
 <hr />
@@ -7020,7 +7022,7 @@ value.</p>
     <span class="n">full_name</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># composed in the view</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- inside v_user's jsonb_build_object:</span>
-<span class="c1">--   'fullName', concat_ws(' ', u.first_name, u.last_name)</span>
+<span class="c1">--   'full_name', concat_ws(' ', u.first_name, u.last_name)</span>
 </code></pre></div>
 <h3 id="pattern-2-complex-aggregation-use-tv_">Pattern 2: Complex aggregation (use <code>tv_*</code>)<a class="headerlink" href="#pattern-2-complex-aggregation-use-tv_" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -7037,7 +7039,7 @@ value.</p>
 </code></pre></div>
 <h4 id="pattern-3-conditional-logic-use-case-in-the-view">Pattern 3: Conditional logic (use <code>CASE</code> in the view)<a class="headerlink" href="#pattern-3-conditional-logic-use-case-in-the-view" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1">-- inside the view's jsonb_build_object:</span>
-<span class="s1">'statusLabel'</span><span class="p">,</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span>
+<span class="s1">'status_label'</span><span class="p">,</span><span class="w"> </span><span class="k">CASE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'pending'</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'Waiting for payment'</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'confirmed'</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'Order confirmed'</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="s1">'shipped'</span><span class="w">   </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'In transit'</span>
@@ -7383,10 +7385,10 @@ drop the old key once clients have migrated.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

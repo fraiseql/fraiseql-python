@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4638,6 +4638,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#mutation-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Mutation Classes
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4906,37 +4917,31 @@
 </ul>
 <hr />
 <h2 id="postgresql-function-examples">PostgreSQL Function Examples<a class="headerlink" href="#postgresql-function-examples" title="Permanent link">&para;</a></h2>
+<p>A class mutation calls its function with the input as one <code>jsonb</code> argument (its
+keys in snake_case), after any <code>context_params</code>, and reads the
+<code>mutation_response</code> it returns. <code>mutation_response</code> and the <code>mutation_*</code> helpers
+come from <code>migrations/trinity/005_add_mutation_response.sql</code>. The mutation
+classes that call these functions are <a href="#mutation-classes">below</a>.</p>
 <h3 id="create-user-function">Create User Function<a class="headerlink" href="#create-user-function" title="Permanent link">&para;</a></h3>
 <p><strong>Complete example with validation and error handling:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_email</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Validation: Email format</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Invalid email format'</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALID_EMAIL'</span>
-<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_validation_error</span><span class="p">(</span><span class="s1">'Invalid email format'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Validation: Name length</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">LENGTH</span><span class="p">(</span><span class="n">p_name</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Name must be at least 2 characters'</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'INVALID_NAME'</span>
-<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">length</span><span class="p">(</span><span class="k">coalesce</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">))</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_validation_error</span><span class="p">(</span><span class="s1">'Name must be at least 2 characters'</span><span class="p">,</span><span class="w"> </span><span class="s1">'name'</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert user</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="p">,</span><span class="w"> </span><span class="n">p_identifier</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'identifier'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Audit log (optional)</span>
@@ -4944,24 +4949,14 @@
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'user_created'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'user_id'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">));</span>
 
 <span class="w">    </span><span class="c1">-- Return success with user data</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User created successfully'</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User created successfully'</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'User'</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">EXCEPTION</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">unique_violation</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email or identifier already exists'</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'DUPLICATE_USER'</span>
-<span class="w">        </span><span class="p">);</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">OTHERS</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="n">SQLERRM</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'DATABASE_ERROR'</span>
-<span class="w">        </span><span class="p">);</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_conflict</span><span class="p">(</span><span class="s1">'Email or identifier already exists'</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -4973,40 +4968,31 @@
 </ul>
 <hr />
 <h3 id="update-user-function">Update User Function<a class="headerlink" href="#update-user-function" title="Permanent link">&para;</a></h3>
-<p><strong>Example with optimistic locking:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_user</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_bio</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_avatar_url</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">NULL</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<p><strong>Example updating only the fields the input sets:</strong></p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">update_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
-<span class="w">    </span><span class="n">v_updated_rows</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Update only provided fields</span>
 <span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="w">    </span><span class="k">SET</span>
-<span class="w">        </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">),</span>
-<span class="w">        </span><span class="n">bio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p_bio</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">),</span>
-<span class="w">        </span><span class="n">avatar_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">p_avatar_url</span><span class="p">,</span><span class="w"> </span><span class="n">avatar_url</span><span class="p">),</span>
+<span class="w">        </span><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">),</span>
+<span class="w">        </span><span class="n">bio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'bio'</span><span class="p">,</span><span class="w"> </span><span class="n">bio</span><span class="p">),</span>
+<span class="w">        </span><span class="n">avatar_url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'avatar_url'</span><span class="p">,</span><span class="w"> </span><span class="n">avatar_url</span><span class="p">),</span>
 <span class="w">        </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span>
 <span class="w">      </span><span class="k">AND</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">GET</span><span class="w"> </span><span class="k">DIAGNOSTICS</span><span class="w"> </span><span class="n">v_updated_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ROW_COUNT</span><span class="p">;</span>
-
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_updated_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User not found'</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'NOT_FOUND'</span>
-<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_not_found</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'user'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User updated successfully'</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_updated</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User updated successfully'</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">),</span>
+<span class="w">        </span><span class="nb">ARRAY</span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_object_keys</span><span class="p">(</span><span class="n">jsonb_strip_nulls</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="s1">'id'</span><span class="p">))),</span>
+<span class="w">        </span><span class="s1">'User'</span>
 <span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
@@ -5014,34 +5000,84 @@
 <hr />
 <h3 id="delete-user-function-soft-delete">Delete User Function (Soft Delete)<a class="headerlink" href="#delete-user-function-soft-delete" title="Permanent link">&para;</a></h3>
 <p><strong>Example with cascade considerations:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_delete_user</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_id</span><span class="w"> </span><span class="n">UUID</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">delete_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
-<span class="w">    </span><span class="n">v_deleted_rows</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
+<span class="w">    </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Soft delete</span>
 <span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span>
 <span class="w">      </span><span class="k">AND</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">GET</span><span class="w"> </span><span class="k">DIAGNOSTICS</span><span class="w"> </span><span class="n">v_deleted_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">ROW_COUNT</span><span class="p">;</span>
-
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">v_deleted_rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">            </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">false</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'error'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User not found or already deleted'</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'code'</span><span class="p">,</span><span class="w"> </span><span class="s1">'NOT_FOUND'</span>
-<span class="w">        </span><span class="p">);</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_not_found</span><span class="p">(</span><span class="s1">'User'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">::</span><span class="nb">text</span><span class="p">);</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'message'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User deleted successfully'</span>
-<span class="w">    </span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_deleted</span><span class="p">(</span><span class="s1">'User deleted successfully'</span><span class="p">,</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'User'</span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
+</code></pre></div>
+<hr />
+<h3 id="mutation-classes">Mutation Classes<a class="headerlink" href="#mutation-classes" title="Permanent link">&para;</a></h3>
+<p><strong>The class mutations that call the functions above</strong> (each calls the function
+named after it in snake_case: <code>CreateUser</code> calls <code>create_user</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserInput</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">bio</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">avatar_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeleteUserInput</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeleteUserSuccess</span><span class="p">:</span>
+    <span class="c1"># Filled from the mutation_response's entity_id. @fraiseql.success adds id</span>
+    <span class="c1"># only to a type with an entity field, and this one has none.</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserError</span><span class="p">:</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># From the validation error's metadata</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">UserError</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUser</span><span class="p">:</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">UpdateUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">UserError</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">DeleteUser</span><span class="p">:</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">DeleteUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">DeleteUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">UserError</span>
 </code></pre></div>
 <hr />
 <h2 id="graphql-type-examples">GraphQL Type Examples<a class="headerlink" href="#graphql-type-examples" title="Permanent link">&para;</a></h2>
@@ -5156,7 +5192,8 @@
 <span class="w">    </span><span class="n">email</span><span class="p">:</span><span class="w"> </span><span class="s">"alice@example.com"</span>
 <span class="w">    </span><span class="n">identifier</span><span class="p">:</span><span class="w"> </span><span class="s">"alice"</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">success</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">__typename</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">user</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">id</span>
 <span class="w">        </span><span class="n">name</span>
@@ -5164,9 +5201,10 @@
 <span class="w">      </span><span class="p">}</span>
 <span class="w">      </span><span class="n">message</span>
 <span class="w">    </span><span class="p">}</span>
-<span class="w">    </span><span class="n">failure</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">...</span><span class="w"> </span><span class="k">on</span><span class="w"> </span><span class="nc">UserError</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">message</span>
 <span class="w">      </span><span class="n">code</span>
+<span class="w">      </span><span class="n">field</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
@@ -5245,7 +5283,7 @@
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- Usage in mutation (explicit sync required)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(...)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span><span class="w"> </span><span class="n">v_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">;</span>
@@ -5253,7 +5291,9 @@
 <span class="w">    </span><span class="c1">-- ✅ Explicitly sync to projection table</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="n">v_user_id</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User created'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_user_id</span><span class="p">),</span><span class="w"> </span><span class="s1">'User'</span>
+<span class="w">    </span><span class="p">);</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5285,10 +5325,10 @@
 <div class="highlight"><pre><span></span><code>Based on the [<span class="nt">canonical User table</span>](<span class="na">../examples/canonical-examples.md#user-table</span>),
 add a <span class="sb">`role`</span> column:
 
-```sql
-ALTER TABLE tb_user ADD COLUMN role TEXT DEFAULT 'user';
+<span class="sb">```sql</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="k">role</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'user'</span><span class="p">;</span>
+<span class="sb">```</span>
 </code></pre></div>
-<p>```</p>
 <hr />
 <h2 id="maintaining-this-file">Maintaining This File<a class="headerlink" href="#maintaining-this-file" title="Permanent link">&para;</a></h2>
 <p><strong>Guidelines for contributors:</strong></p>
@@ -5390,10 +5430,10 @@ ALTER TABLE tb_user ADD COLUMN role TEXT DEFAULT 'user';
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

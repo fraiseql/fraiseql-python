@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4567,10 +4567,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#find-vs-find_one-vs-find_required" class="md-nav__link">
+  <a href="#find-vs-find_one-vs-exists" class="md-nav__link">
     <span class="md-ellipsis">
       
-        find() vs find_one() vs find_required()
+        find() vs find_one() vs exists()
       
     </span>
   </a>
@@ -4841,14 +4841,16 @@
 <p>Quick visual guides to help you make the right architectural decisions for your FraiseQL application.</p>
 <hr />
 <h2 id="database-methods-comparison">Database Methods Comparison<a class="headerlink" href="#database-methods-comparison" title="Permanent link">&para;</a></h2>
-<h3 id="find-vs-find_one-vs-find_required">find() vs find_one() vs find_required()<a class="headerlink" href="#find-vs-find_one-vs-find_required" title="Permanent link">&para;</a></h3>
-<p><strong>Choose the right method based on your use case:</strong></p>
+<h3 id="find-vs-find_one-vs-exists">find() vs find_one() vs exists()<a class="headerlink" href="#find-vs-find_one-vs-exists" title="Permanent link">&para;</a></h3>
+<p><strong>Choose the right method based on your use case.</strong> <code>find</code> and <code>find_one</code> take the
+view name, the GraphQL field name and <code>info</code>, and return the field's response, ready
+for the client: return it from the resolver as is.</p>
 <table>
 <thead>
 <tr>
 <th>Method</th>
-<th>Returns</th>
-<th>Raises on Not Found?</th>
+<th>Answers</th>
+<th>No match</th>
 <th>Use When</th>
 <th>Example</th>
 </tr>
@@ -4856,63 +4858,79 @@
 <tbody>
 <tr>
 <td><strong><code>find()</code></strong></td>
-<td><code>list[T]</code></td>
-<td>❌ No (empty list)</td>
+<td>a list field</td>
+<td><code>[]</code></td>
 <td>Multiple results expected</td>
-<td><code>users = await db.find(User, where={"status": "active"})</code></td>
+<td><code>await db.find("v_user", "users", info, where={"status": {"eq": "active"}})</code></td>
 </tr>
 <tr>
 <td><strong><code>find_one()</code></strong></td>
-<td><code>T \| None</code></td>
-<td>❌ No (returns None)</td>
+<td>an optional field</td>
+<td><code>null</code></td>
 <td>Result is optional</td>
-<td><code>user = await db.find_one(User, id=user_id)</code></td>
+<td><code>await db.find_one("v_user", "user", info, mandatory_filters={"id": user_id})</code></td>
 </tr>
 <tr>
-<td><strong><code>find_required()</code></strong></td>
-<td><code>T</code></td>
-<td>✅ Yes (ValueError)</td>
-<td>Result must exist</td>
-<td><code>user = await db.find_required(User, id=user_id)</code></td>
+<td><strong><code>exists()</code></strong></td>
+<td>a <code>bool</code></td>
+<td><code>False</code></td>
+<td>Check before answering, e.g. to raise when a row must exist</td>
+<td><code>await db.exists("v_user", mandatory_filters={"id": user_id})</code></td>
 </tr>
 </tbody>
 </table>
+<p>There is no <code>find_required()</code>: to make a missing row an error, check with <code>exists()</code>
+(or <code>count()</code>) and raise, which answers with a GraphQL error.</p>
 <p><strong>Decision tree:</strong></p>
 <pre class="mermaid"><code>flowchart TD
     A[Need to query database?] --&gt;|Yes| B{How many results?}
     A --&gt;|No| Z[Don't query]
 
-    B --&gt;|Multiple/List| C[Use find&lt;br/&gt;Returns list[T]]
+    B --&gt;|Multiple/List| C[Use find&lt;br/&gt;list field]
     B --&gt;|Single| D{Is result optional?}
 
-    D --&gt;|Yes, can be None| E[Use find_one&lt;br/&gt;Returns T | None]
-    D --&gt;|No, must exist| F[Use find_required&lt;br/&gt;Raises if not found]
+    D --&gt;|Yes, can be null| E[Use find_one&lt;br/&gt;optional field]
+    D --&gt;|No, must exist| F[Check with exists&lt;br/&gt;raise if missing, then find_one]
 
     style C fill:#90EE90
     style E fill:#87CEEB
     style F fill:#FFB6C1</code></pre>
 <p><strong>Code examples:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># find() - Get multiple results</span>
-<span class="n">users</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">})</span>
-<span class="k">if</span> <span class="ow">not</span> <span class="n">users</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"No active users"</span><span class="p">)</span>  <span class="c1"># Empty list, not None</span>
-<span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">users</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="c1"># find_one() - Optional single result</span>
-<span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"some-uuid"</span><span class="p">)</span>
-<span class="k">if</span> <span class="n">user</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"User not found"</span><span class="p">)</span>  <span class="c1"># Handle None</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
-<span class="c1"># find_required() - Required single result</span>
-<span class="k">try</span><span class="p">:</span>
-    <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_required</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"some-uuid"</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># Always has value if we get here</span>
-<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s2">"User not found - exception raised"</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="c1"># find() - a list field: the rows that match, [] when none do</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">active_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"activeUsers"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}})</span>
+
+
+<span class="c1"># find_one() - an optional field: null when no row matches</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+
+
+<span class="c1"># A row that must exist: check first, and raise to answer with a GraphQL error</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_required</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">}):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"User </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2"> not found"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"userRequired"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
+<p><code>{ user(id: "...") { name } }</code> answers <code>{"user": null}</code> for an unknown id;
+<code>userRequired</code> answers <code>null</code> with the error <code>User ... not found</code>.</p>
 <hr />
 <h2 id="view-types-decision-matrix">View Types Decision Matrix<a class="headerlink" href="#view-types-decision-matrix" title="Permanent link">&para;</a></h2>
 <h3 id="jsonb-view-vs-projection-table-vs-materialized-view">JSONB View vs Projection Table vs Materialized View<a class="headerlink" href="#jsonb-view-vs-projection-table-vs-materialized-view" title="Permanent link">&para;</a></h3>
@@ -5319,9 +5337,9 @@
 <tr>
 <td><strong>Class-Based</strong></td>
 <td>Complex mutations</td>
-<td>Explicit success/failure types</td>
+<td>Explicit success/error types</td>
 <td>Medium</td>
-<td><code>class CreateUser: success: UserCreated; failure: ValidationError</code></td>
+<td><code>class CreateUser: success: CreateUserSuccess; error: ValidationError</code></td>
 </tr>
 </tbody>
 </table>
@@ -5338,37 +5356,23 @@
         <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
         <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span>
     <span class="p">})</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]})</span>
 </code></pre></div>
-<p><strong>Class-based pattern (with success/failure):</strong></p>
+<p><strong>Class-based pattern (with success/error):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutation</span>
 
 <span class="nd">@mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Mutation with explicit success/failure handling."""</span>
+<span class="w">    </span><span class="sd">"""Mutation with explicit success/error handling."""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">UserCreated</span>  <span class="c1"># Success type</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>  <span class="c1"># Failure type</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">):</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
-            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-            <span class="s2">"email"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span>
-        <span class="p">})</span>
-
-        <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s2">"success"</span><span class="p">]:</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="n">User</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">])</span>
-            <span class="k">return</span> <span class="n">UserCreated</span><span class="p">(</span>
-                <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
-                <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"User created"</span><span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-            <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"error"</span><span class="p">],</span>
-            <span class="n">code</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"code"</span><span class="p">,</span> <span class="s2">"VALIDATION_ERROR"</span><span class="p">)</span>
-        <span class="p">)</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>  <span class="c1"># Success type</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ValidationError</span>  <span class="c1"># Error type</span>
 </code></pre></div>
+<p>A class mutation has no resolver body: fraiseql calls the PostgreSQL function
+<code>create_user(input jsonb)</code>, which returns a <code>mutation_response</code>, and builds
+<code>CreateUserSuccess</code> or <code>ValidationError</code> from its status. To run Python code,
+use a function mutation that returns <code>CreateUserSuccess | ValidationError</code>.</p>
 <p><strong>Decision tree:</strong></p>
 <pre class="mermaid"><code>flowchart TD
     A[Writing a mutation?] --&gt;|Yes| B{Need explicit error types?}
@@ -5596,12 +5600,12 @@
 <tr>
 <td><strong>Multi-instance Support</strong></td>
 <td>❌ No (each instance has own cache)</td>
-<td>✅ Yes (shared cache)</td>
+<td>⚠️ Not yet (see the note below)</td>
 </tr>
 <tr>
 <td><strong>Persistence</strong></td>
 <td>❌ Lost on restart</td>
-<td>✅ Survives restarts</td>
+<td>⚠️ Not yet (see the note below)</td>
 </tr>
 <tr>
 <td><strong>Performance</strong></td>
@@ -5625,8 +5629,8 @@
 </tr>
 <tr>
 <td><strong>TTL Support</strong></td>
-<td>✅ Yes</td>
-<td>✅ Yes</td>
+<td>❌ No</td>
+<td>❌ No</td>
 </tr>
 </tbody>
 </table>
@@ -5648,25 +5652,26 @@
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># Default</span>
-    <span class="n">apq_cache_size</span><span class="o">=</span><span class="mi">1000</span>             <span class="c1"># Max cached queries</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># Default: in-process, unbounded</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>PostgreSQL backend (production, multi-instance):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
-    <span class="n">apq_storage_schema</span><span class="o">=</span><span class="s2">"apq_cache"</span><span class="p">,</span>
-    <span class="n">apq_cache_ttl</span><span class="o">=</span><span class="mi">3600</span>  <span class="c1"># 1 hour TTL</span>
+    <span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"table_prefix"</span><span class="p">:</span> <span class="s2">"apq_"</span><span class="p">},</span>  <span class="c1"># Tables apq_queries, apq_responses</span>
 <span class="p">)</span>
-
-<span class="c1"># Automatically creates:</span>
-<span class="c1"># CREATE TABLE apq_cache.persisted_queries (</span>
-<span class="c1">#     query_hash TEXT PRIMARY KEY,</span>
-<span class="c1">#     query_text TEXT NOT NULL,</span>
-<span class="c1">#     created_at TIMESTAMPTZ DEFAULT NOW(),</span>
-<span class="c1">#     last_used TIMESTAMPTZ DEFAULT NOW()</span>
-<span class="c1"># );</span>
 </code></pre></div>
+<p>There is no TTL or size limit setting: stored queries stay until you delete them.</p>
+<blockquote>
+<p><strong>Note:</strong> the <code>postgresql</code> backend opens its own small connection pool to
+<code>database_url</code> (or <code>apq_backend_config["database_url"]</code>) on the first APQ request,
+and creates its tables if they don't exist (<code>auto_create_tables</code>, default on).
+Persisted queries survive a restart and are shared by every instance using that
+database. Its lookups are synchronous: each holds the event loop for one indexed
+query (a persisted query's text is kept in process once read).</p>
+</blockquote>
 <hr />
 <h2 id="framework-comparison">Framework Comparison<a class="headerlink" href="#framework-comparison" title="Permanent link">&para;</a></h2>
 <h3 id="fraiseql-vs-other-python-graphql-frameworks">FraiseQL vs Other Python GraphQL Frameworks<a class="headerlink" href="#fraiseql-vs-other-python-graphql-frameworks" title="Permanent link">&para;</a></h3>
@@ -5886,10 +5891,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5329,12 +5329,23 @@
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 🟢 <strong>Security Profile Configured</strong></li>
 </ul>
-<div class="highlight"><pre><span></span><code><span class="c1"># Verify in application code</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityProfile</span>
+<p><code>create_fraiseql_app</code> takes no security profile. Apply the profile's settings
+  yourself: its introspection policy through <code>FraiseQLConfig</code>, and its body-size and
+  rate limits with the middleware (see the note under STANDARD Profile in
+  <a href="../../specs/security-compliance/#standard-profile-default">Security &amp; Compliance</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BodySizeLimiterMiddleware</span><span class="p">,</span>
+    <span class="n">InMemoryRateLimiter</span><span class="p">,</span>
+    <span class="n">RateLimiterMiddleware</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security.profiles</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileEnforcer</span><span class="p">,</span> <span class="n">get_profile</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
-    <span class="n">security_profile</span><span class="o">=</span><span class="n">SecurityProfile</span><span class="o">.</span><span class="n">____</span><span class="p">,</span>  <span class="c1"># STANDARD/REGULATED/RESTRICTED</span>
-    <span class="o">...</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">get_profile</span><span class="p">(</span><span class="s2">"regulated"</span><span class="p">)</span>  <span class="c1"># "standard" / "regulated" / "restricted"</span>
+<span class="n">enforcer</span> <span class="o">=</span> <span class="n">ProfileEnforcer</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">BodySizeLimiterMiddleware</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">enforcer</span><span class="o">.</span><span class="n">get_body_size_config</span><span class="p">())</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+    <span class="n">RateLimiterMiddleware</span><span class="p">,</span>
+    <span class="n">rate_limiter</span><span class="o">=</span><span class="n">InMemoryRateLimiter</span><span class="p">(</span><span class="n">enforcer</span><span class="o">.</span><span class="n">get_rate_limit_config</span><span class="p">()),</span>
 <span class="p">)</span>
 </code></pre></div>
 <ul class="task-list">
@@ -5728,16 +5739,22 @@ curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com/gr
 <li>
 <p>RESTRICTED: 10 requests/minute</p>
 </li>
+<li>
+<p>Off by default: <code>rate_limit_enabled=True</code> (<code>FRAISEQL_RATE_LIMIT_ENABLED=true</code>),
+    <code>setup_rate_limiting(app)</code>, or the profile's middleware as in 2.1 (see
+    <a href="../../configuration/rate-limiting/">Rate Limiting</a>)</p>
+</li>
 <li class="task-list-item">
 <p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 🟢 <strong>Rate Limit Storage Configured</strong></p>
 </li>
-<li>Redis or in-memory store configured</li>
-<li>Rate limit keys expiring correctly</li>
+<li>In-memory counts are per process: N workers allow N times the limit</li>
+<li>Redis (<code>setup_rate_limiting(app, redis_client=...)</code>) for one count across instances</li>
 </ul>
 <p><strong>Verification:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Test rate limiting</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Test rate limiting (/health is never limited, so test /graphql)</span>
 <span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..101<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"%{http_code}\n"</span><span class="w"> </span>https://api.yourapp.com/health
+<span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"%{http_code}\n"</span><span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"query": "{ __typename }"}'</span>
 <span class="k">done</span>
 <span class="c1"># Last requests should return 429 (Too Many Requests)</span>
 </code></pre></div>
@@ -5758,6 +5775,8 @@ curl<span class="w"> </span>-I<span class="w"> </span>https://api.yourapp.com/gr
 <p><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> 🟢 <strong>Request Body Size Limited</strong></p>
 </li>
 <li>Max size: 1 MB (STANDARD/REGULATED), 512 KB (RESTRICTED)</li>
+<li><code>create_fraiseql_app</code> sets no limit: add <code>BodySizeLimiterMiddleware</code> (as in 2.1)
+    or limit the body at the proxy (<code>client_max_body_size</code> in nginx)</li>
 </ul>
 <p><strong>Verification:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Test query depth limit</span>
@@ -6149,8 +6168,11 @@ curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </spa
 <span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ user { id } }"}'</span>
 <span class="c1"># Expected: 200 OK with user data</span>
 
-<span class="c1"># Test rate limiting</span>
-<span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..101<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span><span class="w"> </span>curl<span class="w"> </span>https://api.yourapp.com/health<span class="p">;</span><span class="w"> </span><span class="k">done</span>
+<span class="c1"># Test rate limiting (/health is never limited)</span>
+<span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="o">{</span><span class="m">1</span>..101<span class="o">}</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>-o<span class="w"> </span>/dev/null<span class="w"> </span>-w<span class="w"> </span><span class="s2">"%{http_code}\n"</span><span class="w"> </span>https://api.yourapp.com/graphql<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"query": "{ __typename }"}'</span>
+<span class="k">done</span>
 <span class="c1"># Expected: Last requests return 429</span>
 </code></pre></div>
 <h3 id="92-monitoring-validation">9.2 Monitoring Validation<a class="headerlink" href="#92-monitoring-validation" title="Permanent link">&para;</a></h3>
@@ -6424,10 +6446,10 @@ pandoc<span class="w"> </span>deployment-checklist.md<span class="w"> </span>-o<
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

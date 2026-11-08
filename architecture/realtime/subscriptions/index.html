@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5117,11 +5117,24 @@ view (<code>v_*</code>), and yields it.</p>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">EACH</span><span class="w"> </span><span class="k">ROW</span>
 <span class="w">    </span><span class="k">EXECUTE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_notify_task_change</span><span class="p">();</span>
 </code></pre></div>
-<p>Resolver side — listen on the channel and yield matching tasks:</p>
+<p>Resolver side — listen on the channel and yield matching tasks. <code>LISTEN</code> needs a
+connection of its own, in autocommit mode, outside the pool the repository uses; the
+repository has no <code>listen()</code> method. Rows are re-read with <code>db.run()</code>, which returns
+plain rows (<code>find()</code> / <code>find_one()</code> return a ready-made GraphQL response, which a
+subscription can't yield):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">psycopg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
+
+<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="s2">"postgresql://localhost/mydb"</span>
+
+<span class="n">TASK_BY_ID</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT data FROM v_task WHERE id = </span><span class="si">%(id)s</span><span class="s2">"</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
@@ -5129,27 +5142,35 @@ view (<code>v_*</code>), and yields it.</p>
 <span class="w">    </span><span class="sd">"""Stream task changes for one project via LISTEN/NOTIFY."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="k">async</span> <span class="k">for</span> <span class="n">payload</span> <span class="ow">in</span> <span class="n">db</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">"task_changes"</span><span class="p">):</span>
-        <span class="n">event</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">"project_id"</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
-            <span class="k">continue</span>  <span class="c1"># not our project — skip</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="k">await</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">AsyncConnection</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">DATABASE_URL</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"LISTEN task_changes"</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">notify</span> <span class="ow">in</span> <span class="n">conn</span><span class="o">.</span><span class="n">notifies</span><span class="p">():</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">notify</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">"project_id"</span><span class="p">]</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">):</span>
+                <span class="k">continue</span>  <span class="c1"># not our project — skip</span>
 
-        <span class="n">task</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_task"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">event</span><span class="p">[</span><span class="s2">"task_id"</span><span class="p">])</span>
-        <span class="k">if</span> <span class="n">task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">task</span>
+            <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">TASK_BY_ID</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">event</span><span class="p">[</span><span class="s2">"task_id"</span><span class="p">]}))</span>
+            <span class="k">if</span> <span class="n">rows</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"data"</span><span class="p">]</span>
 </code></pre></div>
-<p>The exact API for consuming notifications depends on how your connection/pool is
-wired (for example, a <code>LISTEN</code> on a dedicated connection that exposes an async
-iterator of notification payloads). The important pattern is: subscribe to a
-channel, and on each notification re-read the affected row from your <code>v_</code>/<code>tv_</code>
-view and <code>yield</code> it.</p>
+<p>One connection per subscription is simple; with many subscribers, run one
+listener per process and fan the notifications out to the subscriptions (for
+example through an <code>asyncio.Queue</code> per subscription). The important pattern is:
+subscribe to a channel, and on each notification re-read the affected row from
+your <code>v_</code>/<code>tv_</code> view and <code>yield</code> it.</p>
 <h3 id="32-polling-a-view">3.2 Polling a view<a class="headerlink" href="#32-polling-a-view" title="Permanent link">&para;</a></h3>
 <p>When you cannot add triggers, or the source is a periodically refreshed
 projection (<code>tv_*</code>), poll a read view on an interval and yield only what changed.</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
+
+<span class="n">PROJECT_TASKS</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT id::text AS id, data FROM v_task WHERE data-&gt;&gt;'project_id' = </span><span class="si">%(project_id)s</span><span class="s2">"</span><span class="p">)</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
@@ -5159,11 +5180,12 @@ projection (<code>tv_*</code>), poll a read view on an interval and yield only w
     <span class="n">seen</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># task id -&gt; last-seen updated_at</span>
 
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">tasks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_task"</span><span class="p">,</span> <span class="n">fk_project</span><span class="o">=</span><span class="n">project_id</span><span class="p">)</span>
-        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">seen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">!=</span> <span class="n">task</span><span class="o">.</span><span class="n">updated_at</span><span class="p">:</span>
-                <span class="n">seen</span><span class="p">[</span><span class="n">task</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">updated_at</span>
-                <span class="k">yield</span> <span class="n">task</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">PROJECT_TASKS</span><span class="p">,</span> <span class="p">{</span><span class="s2">"project_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">)}))</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="n">updated_at</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"updated_at"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">seen</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span> <span class="o">!=</span> <span class="n">updated_at</span><span class="p">:</span>
+                <span class="n">seen</span><span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">updated_at</span>
+                <span class="k">yield</span> <span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span>
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
 </code></pre></div>
 <p>Polling trades latency and database load for simplicity. Prefer <code>LISTEN/NOTIFY</code>
@@ -5421,10 +5443,10 @@ client library on one side and by FraiseQL's <code>WebSocketConnection</code> /
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5053,7 +5053,7 @@
 
 
 <h1 id="fraiseql-operational-runbooks">FraiseQL Operational Runbooks<a class="headerlink" href="#fraiseql-operational-runbooks" title="Permanent link">&para;</a></h1>
-<p><strong>Last Updated</strong>: 2025-12-29
+<p><strong>Last Updated</strong>: 2026-10-25
 <strong>Status</strong>: Production-Ready</p>
 <hr />
 <h2 id="overview">📋 Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
@@ -5078,10 +5078,10 @@
 <li>High database CPU usage</li>
 </ul>
 <p><strong>Key Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Query duration</span>
-<span class="nv">fraiseql_db_query_duration_seconds</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Request latency, p95</span>
+<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">le</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)))</span>
 
-<span class="c1"># Connection pool utilization</span>
+<span class="c1"># Pool use (only if the app feeds the pool gauges, see Metrics below)</span>
 <span class="nv">fraiseql_db_connections_active</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">fraiseql_db_connections_total</span>
 </code></pre></div>
 <p><strong>Quick Actions</strong>:</p>
@@ -5102,11 +5102,11 @@
 <li>Application slowness</li>
 </ul>
 <p><strong>Key Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Memory usage percentage</span>
-<span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nv">node_memory_MemTotal_bytes</span><span class="o">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Resident memory (only if the app registers a ProcessCollector, see Metrics below)</span>
+<span class="nv">process_resident_memory_bytes</span>
 
 <span class="c1"># Memory growth rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span>
+<span class="kr">deriv</span><span class="o">(</span><span class="nv">process_resident_memory_bytes</span><span class="p">[</span><span class="s">10m</span><span class="p">]</span><span class="o">)</span>
 </code></pre></div>
 <p><strong>Quick Actions</strong>:</p>
 <ol>
@@ -5127,11 +5127,10 @@
 <li>Suspected abuse patterns</li>
 </ul>
 <p><strong>Key Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Rate limit violations</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_rate_limit_exceeded_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Rate-limited requests (FraiseQL has no rate-limit metric; count the 429s)</span>
+<span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">endpoint</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">429</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
-<span class="c1"># Top violators</span>
-<span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">user_id</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_rate_limit_exceeded_total</span><span class="o">))</span>
+<span class="c1"># Top rejected clients: from the "rate_limit.exceeded" security log entries</span>
 </code></pre></div>
 <p><strong>Quick Actions</strong>:</p>
 <ol>
@@ -5151,11 +5150,10 @@
 <li>Suspected brute force attack</li>
 </ul>
 <p><strong>Key Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Auth failure rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Rejected requests (FraiseQL has no auth metric; count the 401s)</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
-<span class="c1"># Failures by reason</span>
-<span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">failure_reason</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="c1"># Failure reasons: from the "auth.*" security log entries</span>
 </code></pre></div>
 <p><strong>Quick Actions</strong>:</p>
 <ol>
@@ -5176,11 +5174,12 @@
 <li>Database overload</li>
 </ul>
 <p><strong>Key Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Query duration spike</span>
-<span class="k">avg</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_duration_seconds_sum</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Average request duration on /graphql</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_sum</span><span class="p">{</span><span class="nl">endpoint</span><span class="o">=</span><span class="p">"</span><span class="s">/graphql</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_request_duration_seconds_count</span><span class="p">{</span><span class="nl">endpoint</span><span class="o">=</span><span class="p">"</span><span class="s">/graphql</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
-<span class="c1"># Query complexity violations</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_graphql_query_complexity_exceeded_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="c1"># Rejected queries: from the "query.depth_exceeded" / "query.complexity_exceeded"</span>
+<span class="c1"># security log entries (there is no metric for them)</span>
 </code></pre></div>
 <p><strong>Quick Actions</strong>:</p>
 <ol>
@@ -5241,75 +5240,148 @@
 <tr>
 <td>Queries timing out</td>
 <td><a href="database-performance-degradation/">Database Performance</a></td>
-<td>Check <code>fraiseql_db_query_duration_seconds</code></td>
+<td>Check <code>fraiseql_http_request_duration_seconds</code>, <code>pg_stat_activity</code></td>
 </tr>
 <tr>
 <td>429 errors</td>
 <td><a href="rate-limiting-triggered/">Rate Limiting</a></td>
-<td>Check <code>fraiseql_rate_limit_exceeded_total</code></td>
+<td>Check <code>fraiseql_http_requests_total{status="429"}</code></td>
 </tr>
 <tr>
 <td>401/403 errors</td>
 <td><a href="authentication-failures/">Authentication</a></td>
-<td>Check <code>fraiseql_auth_failures_total</code></td>
+<td>Check <code>fraiseql_http_requests_total{status="401"}</code></td>
 </tr>
 <tr>
 <td>OOMKilled</td>
 <td><a href="high-memory-usage/">Memory Usage</a></td>
-<td>Check <code>process_resident_memory_bytes</code></td>
+<td>Check the container's memory metrics</td>
 </tr>
 <tr>
 <td>CPU spike</td>
 <td><a href="graphql-query-dos/">GraphQL DoS</a></td>
-<td>Check <code>fraiseql_graphql_query_duration_seconds</code></td>
+<td>Check <code>fraiseql_http_request_duration_seconds{endpoint="/graphql"}</code></td>
 </tr>
 </tbody>
 </table>
 <h3 id="metrics-quick-reference">Metrics Quick Reference<a class="headerlink" href="#metrics-quick-reference" title="Permanent link">&para;</a></h3>
-<p><strong>Core Health Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Overall request rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<p>These are the Prometheus metrics FraiseQL has; the queries in every runbook use
+only them. <code>create_fraiseql_app</code> doesn't turn them on: call <code>setup_metrics(app)</code>
+(it needs <code>prometheus_client</code>), which adds <code>MetricsMiddleware</code> and a <code>GET /metrics</code>
+endpoint.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span>
 
-<span class="c1"># Error rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_errors_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">])</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Recorded on every request</strong> (except <code>/metrics</code>, <code>/health</code>, <code>/ready</code>, <code>/startup</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Labels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fraiseql_http_requests_total</code></td>
+<td>counter</td>
+<td><code>method</code>, <code>endpoint</code> (the path), <code>status</code></td>
+</tr>
+<tr>
+<td><code>fraiseql_http_request_duration_seconds</code></td>
+<td>histogram</td>
+<td><code>method</code>, <code>endpoint</code></td>
+</tr>
+<tr>
+<td><code>fraiseql_response_time_seconds</code></td>
+<td>histogram</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>fraiseql_errors_total</code></td>
+<td>counter</td>
+<td><code>error_type</code>, <code>error_code</code>, <code>operation</code>: an exception that escaped the app (<code>error_code="HTTP_ERROR"</code>, counted as status <code>500</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>A GraphQL error in the response body (a failed resolver, a query over the depth
+or complexity limit) doesn't change the HTTP status, so it shows up in none of
+these.</p>
+<p><strong>Recorded only when your code records them</strong> (nothing in FraiseQL does):</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>How it gets values</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>fraiseql_graphql_queries_total</code>, <code>fraiseql_graphql_queries_success_total</code>, <code>fraiseql_graphql_queries_errors_total</code>, <code>fraiseql_graphql_query_duration_seconds</code></td>
+<td>functions decorated with <code>@with_metrics("query")</code> or <code>@with_metrics("mutation")</code> (labels <code>operation_type</code>, <code>operation_name</code> = the function name), or <code>metrics.record_query(...)</code></td>
+</tr>
+<tr>
+<td><code>fraiseql_db_connections_active</code>, <code>_idle</code>, <code>_total</code></td>
+<td><code>metrics.update_db_connections(active, idle, total)</code>; they read 0 otherwise</td>
+</tr>
+<tr>
+<td><code>fraiseql_db_queries_total</code>, <code>fraiseql_db_query_duration_seconds</code></td>
+<td><code>metrics.record_db_query(...)</code></td>
+</tr>
+<tr>
+<td><code>fraiseql_graphql_mutations_total</code>, <code>fraiseql_graphql_mutations_success_total</code>, <code>fraiseql_graphql_mutations_errors_total</code>, <code>fraiseql_graphql_mutation_duration_seconds</code></td>
+<td><code>metrics.record_mutation(...)</code></td>
+</tr>
+<tr>
+<td><code>fraiseql_cache_hits_total</code>, <code>fraiseql_cache_misses_total</code></td>
+<td><code>metrics.record_cache_hit(...)</code> / <code>record_cache_miss(...)</code></td>
+</tr>
+</tbody>
+</table>
+<p>To feed the pool gauges, sample the app's psycopg pool (<code>get_db_pool()</code> from
+<code>fraiseql.fastapi.dependencies</code>, once the app has started) from a background task:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">report_pool</span><span class="p">(</span><span class="n">pool</span><span class="p">,</span> <span class="n">metrics</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">pool</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>
+        <span class="n">size</span><span class="p">,</span> <span class="n">idle</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pool_size"</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="n">stats</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pool_available"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">metrics</span><span class="o">.</span><span class="n">update_db_connections</span><span class="p">(</span><span class="n">active</span><span class="o">=</span><span class="n">size</span> <span class="o">-</span> <span class="n">idle</span><span class="p">,</span> <span class="n">idle</span><span class="o">=</span><span class="n">idle</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Not exported</strong>: there are no metrics for authentication, rate limiting, query
+complexity or memory. <code>/metrics</code> serves FraiseQL's own registry, without the
+<code>process_*</code> metrics of <code>prometheus_client</code>'s default registry; add them with
+<code>ProcessCollector(registry=metrics.registry)</code> (from <code>prometheus_client</code>), or use
+your platform's container metrics. Database metrics come from PostgreSQL itself
+(<code>pg_stat_activity</code>, <code>pg_stat_statements</code>) or an exporter of your own.</p>
+<p><strong>Core health queries</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Request rate</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+
+<span class="c1"># 5xx rate</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=~</span><span class="p">"</span><span class="s">5..</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+
+<span class="c1"># Unhandled exceptions, by type</span>
+<span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">error_type</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_errors_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
 <span class="c1"># Response time p95</span>
-<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_response_time_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
-</code></pre></div>
-<p><strong>Database Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Query duration</span>
-<span class="nv">fraiseql_db_query_duration_seconds</span>
+<span class="kr">histogram_quantile</span><span class="o">(</span><span class="mf">0.95</span><span class="p">,</span><span class="w"> </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">le</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_response_time_seconds_bucket</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)))</span>
 
-<span class="c1"># Connection pool</span>
-<span class="nv">fraiseql_db_connections_active</span>
-<span class="nv">fraiseql_db_connections_idle</span>
-<span class="nv">fraiseql_db_connections_total</span>
-</code></pre></div>
-<p><strong>Security Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Auth failures</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-
-<span class="c1"># Rate limit violations</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_rate_limit_exceeded_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-</code></pre></div>
-<p><strong>Performance Metrics</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Memory usage</span>
-<span class="nv">process_resident_memory_bytes</span>
-
-<span class="c1"># CPU usage</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">process_cpu_seconds_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-
-<span class="c1"># GraphQL query duration</span>
-<span class="nv">fraiseql_graphql_query_duration_seconds</span>
+<span class="c1"># Rejected requests: 401 (authentication), 429 (rate limiting)</span>
+<span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">status</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=~</span><span class="p">"</span><span class="s">401|429</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </code></pre></div>
 <hr />
 <h2 id="general-troubleshooting-workflow">🔧 General Troubleshooting Workflow<a class="headerlink" href="#general-troubleshooting-workflow" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-identify-the-incident-2-minutes">Step 1: Identify the Incident (2 minutes)<a class="headerlink" href="#step-1-identify-the-incident-2-minutes" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Check Monitoring Dashboards</strong>:</li>
-<li>Grafana: http://grafana.example.com/d/fraiseql</li>
 <li>
-<p>Prometheus: http://prometheus.example.com</p>
+<p>Your Prometheus (and the Grafana panels you built on the metrics above)</p>
 </li>
 <li>
 <p><strong>Check Alert Notifications</strong>:</p>
@@ -5386,41 +5458,56 @@ kubectl<span class="w"> </span>get<span class="w"> </span>events<span class="w">
 <hr />
 <h2 id="monitoring-setup">📊 Monitoring Setup<a class="headerlink" href="#monitoring-setup" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-alerts">Prometheus Alerts<a class="headerlink" href="#prometheus-alerts" title="Permanent link">&para;</a></h3>
-<p>All runbooks include Prometheus alert rules. To import:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Copy alert files to Prometheus</span>
-cp<span class="w"> </span>docs/production/runbooks/alerts/*.yml<span class="w"> </span>/etc/prometheus/alerts/
-
-<span class="c1"># Reload Prometheus</span>
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://prometheus:9090/-/reload
+<p>Each runbook lists alert rules in a <code>groups:</code> block. FraiseQL ships no alert files:
+copy the rules you want into a rules file of your own, list it under <code>rule_files</code>
+in <code>prometheus.yml</code>, and reload Prometheus:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://prometheus:9090/-/reload<span class="w">  </span><span class="c1"># needs --web.enable-lifecycle</span>
 </code></pre></div>
 <h3 id="grafana-dashboards">Grafana Dashboards<a class="headerlink" href="#grafana-dashboards" title="Permanent link">&para;</a></h3>
-<p>Import the FraiseQL operational dashboard:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Import dashboard JSON</span>
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://grafana:3000/api/dashboards/db<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span>@docs/production/runbooks/grafana/fraiseql-ops.json
-</code></pre></div>
+<p>There is no FraiseQL operational dashboard to import. Build panels from the
+queries in each runbook's "Grafana Dashboard Panels" section, with your Prometheus
+as the data source.</p>
 <h3 id="structured-logging">Structured Logging<a class="headerlink" href="#structured-logging" title="Permanent link">&para;</a></h3>
-<p>Ensure structured logging is enabled:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span>
+<p>fraiseql logs through the standard <code>logging</code> module, on loggers named <code>fraiseql.*</code>
+(security events on <code>fraiseql.security</code>); it doesn't install handlers or choose a
+format. Write them as JSON lines with a formatter of your own (or a library such as
+python-json-logger):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 
-<span class="c1"># Enable JSON structured logging</span>
-<span class="n">setup_logging</span><span class="p">(</span>
-    <span class="nb">format</span><span class="o">=</span><span class="s2">"json"</span><span class="p">,</span>
-    <span class="n">level</span><span class="o">=</span><span class="s2">"INFO"</span><span class="p">,</span>
-    <span class="n">output</span><span class="o">=</span><span class="s2">"/var/log/fraiseql/app.log"</span>
-<span class="p">)</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">JSONFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"timestamp"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">formatTime</span><span class="p">(</span><span class="n">record</span><span class="p">),</span>
+                <span class="s2">"level"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">levelname</span><span class="p">,</span>
+                <span class="s2">"logger"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="s2">"event"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">getMessage</span><span class="p">(),</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+
+
+<span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s2">"/var/log/fraiseql/app.log"</span><span class="p">)</span>
+<span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">JSONFormatter</span><span class="p">())</span>
+<span class="n">fraiseql_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"fraiseql"</span><span class="p">)</span>
+<span class="n">fraiseql_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<span class="n">fraiseql_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
 </code></pre></div>
 <p>Query logs with <code>jq</code>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Find errors</span>
 jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.level == "ERROR")'</span><span class="w"> </span>/var/log/fraiseql/app.log
 
-<span class="c1"># Find specific events</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "database.slow_query")'</span><span class="w"> </span>/var/log/fraiseql/app.log
-
-<span class="c1"># Count events by type</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.event'</span><span class="w"> </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
+<span class="c1"># Security events: the message is the event as JSON</span>
+jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.logger == "fraiseql.security") | .event | fromjson | .event_type'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
 </code></pre></div>
+<p>The security events FraiseQL logs are <code>auth.success</code>, <code>auth.failure</code>,
+<code>auth.token_expired</code>, <code>auth.token_invalid</code> (from <code>Auth0Provider</code>),
+<code>rate_limit.exceeded</code>, <code>query.depth_exceeded</code>, <code>query.complexity_exceeded</code> and
+<code>query.timeout</code>. The <code>fraiseql.security</code> logger also writes them to
+<code>security_events.log</code> in the working directory (<code>FRAISEQL_SECURITY_LOG_PATH</code>) and
+to stderr, as <code>&lt;time&gt; - fraiseql.security - &lt;LEVEL&gt; - &lt;event JSON&gt;</code> lines.</p>
 <hr />
 <h2 id="escalation-paths">🆘 Escalation Paths<a class="headerlink" href="#escalation-paths" title="Permanent link">&para;</a></h2>
 <h3 id="level-1-on-call-engineer-you">Level 1: On-Call Engineer (You)<a class="headerlink" href="#level-1-on-call-engineer-you" title="Permanent link">&para;</a></h3>
@@ -5530,7 +5617,7 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.event'</s
 <hr />
 <p><strong>Runbooks Status</strong>: ✅ Production-Ready
 <strong>Coverage</strong>: 5 critical scenarios
-<strong>Last Updated</strong>: 2025-12-29
+<strong>Last Updated</strong>: 2026-10-25
 <strong>Total Documentation</strong>: ~4,000 lines
 <strong>MTTR Targets</strong>: 10-20 minutes</p>
 
@@ -5608,10 +5695,10 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'.event'</s
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

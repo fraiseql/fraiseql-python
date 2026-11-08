@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -6182,7 +6182,9 @@ connections behind proxies and load balancers.</p>
 <p><strong>Type</strong>: <code>bool</code>
 <strong>Default</strong>: <code>false</code>
 <strong>Environment</strong>: <code>FRAISEQL_DATABASE_ECHO</code></p>
-<p>Log generated SQL. Useful in development; keep off in production.</p>
+<p>Deprecated, and has no effect: nothing reads it, and no SQL is echoed. Setting it
+emits a <code>DeprecationWarning</code>; it will be removed. To see the SQL, see
+<a href="#inspecting-generated-sql">Inspecting generated SQL</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://app:pass@localhost:5432/myapp"</span><span class="p">,</span>
     <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
@@ -6242,9 +6244,13 @@ is disabled (unless explicitly set) and the GraphQL playground is turned off.</p
 <p>Which GraphQL IDE to serve.</p>
 <h3 id="max_query_depth"><code>max_query_depth</code><a class="headerlink" href="#max_query_depth" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>int | None</code>
-<strong>Default</strong>: <code>None</code> (no depth limit)
+<strong>Default</strong>: <code>15</code> (since 1.31.1; <code>None</code>, no limit, before)
 <strong>Environment</strong>: <code>FRAISEQL_MAX_QUERY_DEPTH</code></p>
-<p>Maximum nesting depth allowed in a query.</p>
+<p>Reject a query nested deeper than this. <code>{ users { id } }</code> has depth 1,
+<code>{ users { posts { id } } }</code> depth 2; fragments add no depth of their own. A deeper
+query gets a <code>QUERY_TOO_DEEP</code> GraphQL error before any resolver or SQL runs (<code>POST</code>
+and <code>GET /graphql</code>, APQ persisted queries included). Introspection (<code>__schema</code>,
+<code>__type</code>) is not counted: <code>introspection_policy</code> governs it.</p>
 <h3 id="auto_camel_case"><code>auto_camel_case</code><a class="headerlink" href="#auto_camel_case" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>bool</code>
 <strong>Default</strong>: <code>true</code>
@@ -6254,6 +6260,9 @@ is disabled (unless explicitly set) and the GraphQL playground is turned off.</p
 <p><strong>Type</strong>: <code>int</code> (seconds)
 <strong>Default</strong>: <code>30</code>
 <strong>Environment</strong>: <code>FRAISEQL_QUERY_TIMEOUT</code></p>
+<p>The statement timeout of every database read (<code>find</code>, <code>find_one</code>, <code>count</code>, <code>sum</code>, ...),
+<code>db.run()</code> and <code>execute_function</code>, set as a transaction-local <code>statement_timeout</code>
+before the query. <code>0</code> sets none.</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://app:pass@localhost/myapp"</span><span class="p">,</span>
     <span class="n">enable_playground</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -6267,24 +6276,27 @@ is disabled (unless explicitly set) and the GraphQL playground is turned off.</p
 <p><strong>Type</strong>: <code>int</code> (seconds)
 <strong>Default</strong>: <code>300</code>
 <strong>Environment</strong>: <code>FRAISEQL_CACHE_TTL</code></p>
-<p>Default time-to-live for cached query results.</p>
+<p>Deprecated, and has no effect: nothing reads it. APQ responses have
+<code>apq_response_cache_ttl</code>, and <code>CachedRepository.find</code> takes <code>cache_ttl=</code> per call.</p>
 <h3 id="execution_timeout_ms"><code>execution_timeout_ms</code><a class="headerlink" href="#execution_timeout_ms" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>int</code> (milliseconds)
 <strong>Default</strong>: <code>30000</code>
 <strong>Environment</strong>: <code>FRAISEQL_EXECUTION_TIMEOUT_MS</code></p>
-<p>Maximum time a query may execute before being cancelled.</p>
+<p>Deprecated, and has no effect: nothing reads it. The statement timeout of each
+query is <code>query_timeout</code> (seconds).</p>
 <h3 id="include_execution_metadata"><code>include_execution_metadata</code><a class="headerlink" href="#include_execution_metadata" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>bool</code>
 <strong>Default</strong>: <code>false</code>
 <strong>Environment</strong>: <code>FRAISEQL_INCLUDE_EXECUTION_METADATA</code></p>
-<p>Include timing/diagnostic metadata in GraphQL responses. Useful during
-development and profiling.</p>
+<p>Add <code>extensions.execution</code> (<code>mode</code>, <code>time_ms</code>) to GraphQL responses in production.
+Outside production it is always added. Responses served as raw Rust bytes (the
+zero-copy paths) carry no extensions either way.</p>
 <h3 id="jsonb_field_limit_threshold"><code>jsonb_field_limit_threshold</code><a class="headerlink" href="#jsonb_field_limit_threshold" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>int</code>
 <strong>Default</strong>: <code>20</code>
 <strong>Environment</strong>: <code>FRAISEQL_JSONB_FIELD_LIMIT_THRESHOLD</code></p>
-<p>When a query selects more than this many fields, FraiseQL switches to returning
-the full <code>data</code> JSONB column instead of projecting individual paths.</p>
+<p>Copied into the request context as <code>info.context["jsonb_field_limit_threshold"]</code>,
+for resolvers that want it. FraiseQL's own queries don't read it.</p>
 <h3 id="turbo_router_cache_size"><code>turbo_router_cache_size</code><a class="headerlink" href="#turbo_router_cache_size" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>int</code>
 <strong>Default</strong>: <code>1000</code>
@@ -6292,8 +6304,7 @@ the full <code>data</code> JSONB column instead of projecting individual paths.<
 <p>Maximum number of prepared queries to cache for the fast-path router.</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://app:pass@localhost/myapp"</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-    <span class="n">execution_timeout_ms</span><span class="o">=</span><span class="mi">30000</span><span class="p">,</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
     <span class="n">include_execution_metadata</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="n">jsonb_field_limit_threshold</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
 <span class="p">)</span>
@@ -6314,7 +6325,7 @@ the full <code>data</code> JSONB column instead of projecting individual paths.<
 <tr>
 <td><code>complexity_enabled</code></td>
 <td>bool</td>
-<td><code>true</code></td>
+<td><code>false</code></td>
 <td><code>FRAISEQL_COMPLEXITY_ENABLED</code></td>
 </tr>
 <tr>
@@ -6336,17 +6347,30 @@ the full <code>data</code> JSONB column instead of projecting individual paths.<
 <td><code>FRAISEQL_COMPLEXITY_DEFAULT_LIST_SIZE</code></td>
 </tr>
 <tr>
+<td><code>complexity_field_multipliers</code></td>
+<td>dict</td>
+<td><code>{}</code></td>
+<td><code>FRAISEQL_COMPLEXITY_FIELD_MULTIPLIERS</code></td>
+</tr>
+<tr>
 <td><code>complexity_include_in_response</code></td>
 <td>bool</td>
 <td><code>false</code></td>
-<td><code>FRAISEQL_COMPLEXITY_INCLUDE_IN_RESPONSE</code></td>
+<td>deprecated, no effect</td>
 </tr>
 </tbody>
 </table>
+<p>With <code>complexity_enabled</code>, a query whose score is over <code>complexity_max_score</code> gets a
+<code>QUERY_TOO_COMPLEX</code> GraphQL error, and one nested deeper than <code>complexity_max_depth</code> a
+<code>QUERY_TOO_DEEP</code> error; neither runs. Setting <code>complexity_max_score</code> or
+<code>complexity_max_depth</code> turns <code>complexity_enabled</code> on unless you set it too. The score
+comes from the schema: a scalar costs 1, an object field 1 plus its selections, and a
+list field 1 plus its selections times its <code>limit</code> / <code>first</code> argument (else
+<code>complexity_default_list_size</code>). <code>complexity_field_multipliers</code> sets a field's cost by
+name or <code>"Type.field"</code>. Introspection is not counted.</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://app:pass@localhost/myapp"</span><span class="p">,</span>
-    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>  <span class="c1"># turns complexity_enabled on</span>
     <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -6364,7 +6388,7 @@ the full <code>data</code> JSONB column instead of projecting individual paths.<
 <tr>
 <td><code>rate_limit_enabled</code></td>
 <td>bool</td>
-<td><code>true</code></td>
+<td><code>false</code></td>
 <td><code>FRAISEQL_RATE_LIMIT_ENABLED</code></td>
 </tr>
 <tr>
@@ -6389,15 +6413,28 @@ the full <code>data</code> JSONB column instead of projecting individual paths.<
 <td><code>rate_limit_window_type</code></td>
 <td>str</td>
 <td><code>"sliding"</code></td>
-<td><code>FRAISEQL_RATE_LIMIT_WINDOW_TYPE</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_WINDOW_TYPE</code> (only <code>"sliding"</code> is implemented)</td>
+</tr>
+<tr>
+<td><code>rate_limit_whitelist</code></td>
+<td>list[str]</td>
+<td><code>[]</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_WHITELIST</code> (JSON list of client IPs)</td>
+</tr>
+<tr>
+<td><code>rate_limit_blacklist</code></td>
+<td>list[str]</td>
+<td><code>[]</code></td>
+<td><code>FRAISEQL_RATE_LIMIT_BLACKLIST</code> (JSON list of client IPs)</td>
 </tr>
 </tbody>
 </table>
+<p>With <code>rate_limit_enabled</code>, <code>create_fraiseql_app</code> limits each client IP, counted in
+each process's memory; see <a href="../../configuration/rate-limiting/">Rate Limiting</a>.</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://app:pass@localhost/myapp"</span><span class="p">,</span>
     <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
-    <span class="n">rate_limit_window_type</span><span class="o">=</span><span class="s2">"sliding"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="cors">CORS<a class="headerlink" href="#cors" title="Permanent link">&para;</a></h3>
@@ -6607,8 +6644,9 @@ revocation store is also available programmatically via
 </table>
 <p>In <code>apq_mode="required"</code>, only persisted query hashes are accepted; arbitrary
 queries are rejected. Set <code>apq_queries_dir</code> to a directory of <code>.graphql</code>/<code>.gql</code>
-files to auto-register them at startup — useful for security-hardened
-deployments.</p>
+files to register their operations as persisted queries (the directory must exist at
+startup; it is read when the first APQ request creates the APQ backend) — the way to
+approve queries in <code>required</code> mode, where clients cannot register them.</p>
 <hr />
 <h2 id="schema-and-session-settings">Schema and Session Settings<a class="headerlink" href="#schema-and-session-settings" title="Permanent link">&para;</a></h2>
 <h3 id="default-schemas">Default schemas<a class="headerlink" href="#default-schemas" title="Permanent link">&para;</a></h3>
@@ -6623,12 +6661,6 @@ deployments.</p>
 </thead>
 <tbody>
 <tr>
-<td><code>default_query_schema</code></td>
-<td>str</td>
-<td><code>"public"</code></td>
-<td><code>FRAISEQL_DEFAULT_QUERY_SCHEMA</code></td>
-</tr>
-<tr>
 <td><code>default_mutation_schema</code></td>
 <td>str</td>
 <td><code>"public"</code></td>
@@ -6642,14 +6674,18 @@ deployments.</p>
 </tr>
 </tbody>
 </table>
-<p>PostgreSQL schemas to use for query views, mutation functions, and <code>tb_*</code> entity
-tables when not specified on the decorator.</p>
+<p>PostgreSQL schemas to use for mutation functions and <code>tb_*</code> entity tables when not
+specified on the decorator. <code>default_query_schema</code> is deprecated and has no effect: a
+query reads the view its <code>sql_source</code> names, so qualify it (<code>sql_source="api.v_user"</code>)
+to pick a schema.</p>
 <h3 id="coordinate_distance_method"><code>coordinate_distance_method</code><a class="headerlink" href="#coordinate_distance_method" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>"postgis" | "haversine" | "earthdistance"</code>
 <strong>Default</strong>: <code>"haversine"</code>
 <strong>Environment</strong>: <code>FRAISEQL_COORDINATE_DISTANCE_METHOD</code></p>
 <p>How coordinate-distance filters are computed. <code>"haversine"</code> works without
-extensions; <code>"postgis"</code> is the most accurate but requires the PostGIS extension.</p>
+extensions; <code>"postgis"</code> is the most accurate but requires the PostGIS extension.
+The app's config wins when it sets the method; without one, the environment
+variable is read when the filter is built.</p>
 <h3 id="default_string_collation"><code>default_string_collation</code><a class="headerlink" href="#default_string_collation" title="Permanent link">&para;</a></h3>
 <p><strong>Type</strong>: <code>str | None</code>
 <strong>Default</strong>: <code>None</code> (use the database default)
@@ -6794,7 +6830,6 @@ app:</p>
     <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
     <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
     <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
     <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
 <span class="p">)</span>
@@ -6805,8 +6840,6 @@ app:</p>
     <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">,</span>
     <span class="n">database_pool_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 <span class="p">)</span>
@@ -6819,9 +6852,7 @@ app:</p>
     <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">database_pool_timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>        <span class="c1"># fail fast under load</span>
     <span class="n">database_pool_recycle</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
-    <span class="n">execution_timeout_ms</span><span class="o">=</span><span class="mi">15000</span><span class="p">,</span>
-    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
     <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
@@ -6885,11 +6916,9 @@ database URL or a missing <code>auth0_domain</code> when <code>auth_provider="au
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="inspecting-generated-sql">Inspecting generated SQL<a class="headerlink" href="#inspecting-generated-sql" title="Permanent link">&para;</a></h3>
-<p>Turn on SQL echo in development to see what FraiseQL sends to PostgreSQL:</p>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://app:pass@localhost/myapp"</span><span class="p">,</span>
-    <span class="n">database_echo</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<p>FraiseQL has no SQL echo setting (<code>database_echo</code> has no effect). To see what it
+sends to PostgreSQL, turn on statement logging in a development database:</p>
+<div class="highlight"><pre><span></span><code><span class="k">ALTER</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">myapp</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">log_statement</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'all'</span><span class="p">;</span>
 </code></pre></div>
 <p>For application logs, use standard Python logging (e.g. <code>LOG_LEVEL</code> in your own
 process configuration) and uvicorn's <code>--log-level</code> flag.</p>
@@ -6980,10 +7009,10 @@ process configuration) and uvicorn's <code>--log-level</code> flag.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

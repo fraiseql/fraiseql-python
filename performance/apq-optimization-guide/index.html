@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5046,10 +5046,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#strategy-ttl-tuning" class="md-nav__link">
+  <a href="#strategy-clearing-cached-responses" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Strategy: TTL Tuning
+        Strategy: Clearing Cached Responses
       
     </span>
   </a>
@@ -5473,11 +5473,17 @@
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/db"</span><span class="p">,</span>
     <span class="n">apq_mode</span><span class="o">=</span><span class="s2">"required"</span><span class="p">,</span>              <span class="c1"># Only allow persisted queries</span>
-    <span class="n">apq_queries_dir</span><span class="o">=</span><span class="s2">"./graphql/"</span><span class="p">,</span>     <span class="c1"># Auto-register queries from directory</span>
 <span class="p">)</span>
+<span class="c1"># Register the allowed queries at startup: see Query Registration Methods</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">])</span>
 </code></pre></div>
+<p>In <code>required</code> mode a client cannot get a query approved: a hash the server doesn't
+know is refused even when the request carries the query text (<code>PERSISTED_QUERY_NOT_IN_LIST</code>,
+nothing is stored). A query sent with a hash must hash to it in every mode that
+processes APQ (else HTTP 400 <code>provided sha does not match query</code>), so a known hash
+always runs the text the server stored. The queries that run are the ones you register (below) and, with the
+<code>postgresql</code> backend, whatever is already in its table.</p>
 <p><strong>Benefits of <code>required</code> mode:</strong></p>
 <ul>
 <li>✅ <strong>Prevent arbitrary queries</strong> - Block query exploration/introspection attacks</li>
@@ -5489,10 +5495,16 @@
 <h4 id="method-1-auto-register-from-directory">Method 1: Auto-register from Directory<a class="headerlink" href="#method-1-auto-register-from-directory" title="Permanent link">&para;</a></h4>
 <p>Load all <code>.graphql</code> and <code>.gql</code> files at startup:</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/db"</span><span class="p">,</span>
     <span class="n">apq_mode</span><span class="o">=</span><span class="s2">"required"</span><span class="p">,</span>
-    <span class="n">apq_queries_dir</span><span class="o">=</span><span class="s2">"./graphql/queries/"</span><span class="p">,</span>  <span class="c1"># Recursively loads all .graphql files</span>
+    <span class="n">apq_queries_dir</span><span class="o">=</span><span class="s2">"./graphql/queries/"</span><span class="p">,</span>  <span class="c1"># Registers the operations of every .graphql file</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>The operations are registered when the first APQ request creates the APQ backend;
+a missing directory makes the app fail at startup. Each operation is stored under the
+SHA-256 of its text as written in the file (stripped), which must be the text the
+client hashes. A fragment is kept with the operation written before it in the same
+file, so put each operation in its own file, followed by its fragments.</p>
 <p><strong>Directory structure example:</strong></p>
 <div class="highlight"><pre><span></span><code>graphql/
 ├── users/
@@ -5505,10 +5517,11 @@
 </code></pre></div>
 <h4 id="method-2-programmatic-registration">Method 2: Programmatic Registration<a class="headerlink" href="#method-2-programmatic-registration" title="Permanent link">&para;</a></h4>
 <p>Register queries at startup using the backend API:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.storage.backends.factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_apq_backend</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware.apq_caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_apq_backend</span>
 
-<span class="c1"># Get the APQ backend</span>
-<span class="n">backend</span> <span class="o">=</span> <span class="n">create_apq_backend</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="c1"># Get the APQ backend the /graphql route uses for this config</span>
+<span class="c1"># (create_apq_backend(config) builds a separate one the route never reads)</span>
+<span class="n">backend</span> <span class="o">=</span> <span class="n">get_apq_backend</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
 <span class="c1"># Register allowed queries</span>
 <span class="n">queries</span> <span class="o">=</span> <span class="p">[</span>
@@ -5522,15 +5535,14 @@
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Registered </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">registered</span><span class="p">)</span><span class="si">}</span><span class="s2"> queries"</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="method-3-load-from-files-programmatically">Method 3: Load from Files Programmatically<a class="headerlink" href="#method-3-load-from-files-programmatically" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.storage.query_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_queries_from_directory</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.storage.backends.factory</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_apq_backend</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware.apq_caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_apq_backend</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.storage.query_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_queries_from_directory</span>
 
 <span class="c1"># Load queries from directory</span>
 <span class="n">queries</span> <span class="o">=</span> <span class="n">load_queries_from_directory</span><span class="p">(</span><span class="s2">"./graphql/"</span><span class="p">)</span>
 
-<span class="c1"># Register with backend</span>
-<span class="n">backend</span> <span class="o">=</span> <span class="n">create_apq_backend</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<span class="n">backend</span><span class="o">.</span><span class="n">register_queries</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span>
+<span class="c1"># Register with the backend the /graphql route uses</span>
+<span class="n">get_apq_backend</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">register_queries</span><span class="p">(</span><span class="n">queries</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="error-response-for-rejected-queries">Error Response for Rejected Queries<a class="headerlink" href="#error-response-for-rejected-queries" title="Permanent link">&para;</a></h3>
 <p>When <code>apq_mode="required"</code> and an arbitrary query is sent:</p>
@@ -5608,21 +5620,28 @@
 
 <span class="c1"># Query cache only (recommended starting point)</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">db_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>  <span class="c1"># or "postgresql"</span>
     <span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>     <span class="c1"># Response caching disabled</span>
 <span class="p">)</span>
 
 <span class="c1"># Full APQ with response caching</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">db_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"memory"</span><span class="p">,</span>
     <span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>      <span class="c1"># Enable response caching</span>
-    <span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>        <span class="c1"># 5 minutes</span>
-    <span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>A cached response is served for <code>apq_response_cache_ttl</code> seconds after it was stored
+(default 600; 0 means it does not expire), then the query runs again and its new
+response is stored.</p>
+<p>A response is cached when an APQ request runs a query (never a mutation or a
+subscription) without errors, whichever execution path built it. The key is the
+query's hash, its variables, the tenant (<code>tenant_id</code> in the request context) and, for
+an authenticated request, the user's id (<code>user_id</code>, <code>id</code> or <code>sub</code> of
+<code>context["user"]</code>): a user is only served their own cached responses. An authenticated
+request whose user has no such id is not cached. Anonymous requests share entries
+(hash, variables and tenant).</p>
 <h3 id="storage-backend-options">Storage Backend Options<a class="headerlink" href="#storage-backend-options" title="Permanent link">&para;</a></h3>
 <h4 id="1-memory-backend-default">1. Memory Backend (Default)<a class="headerlink" href="#1-memory-backend-default" title="Permanent link">&para;</a></h4>
 <p><strong>Best for:</strong> Development, small deployments, single-instance apps</p>
@@ -5646,20 +5665,26 @@
 <h4 id="2-postgresql-backend">2. PostgreSQL Backend<a class="headerlink" href="#2-postgresql-backend" title="Permanent link">&para;</a></h4>
 <p><strong>Best for:</strong> Production, multi-instance deployments, persistence</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
     <span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"db_url"</span><span class="p">:</span> <span class="s2">"postgresql://..."</span><span class="p">,</span>
-        <span class="s2">"table_name"</span><span class="p">:</span> <span class="s2">"apq_cache"</span><span class="p">,</span>
-        <span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>  <span class="c1"># 5 minutes</span>
+        <span class="s2">"table_prefix"</span><span class="p">:</span> <span class="s2">"apq_"</span><span class="p">,</span>  <span class="c1"># Tables apq_queries and apq_responses (the default)</span>
     <span class="p">}</span>
 <span class="p">)</span>
 </code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> the <code>postgresql</code> backend opens its own small connection pool to
+<code>database_url</code> (or <code>apq_backend_config["database_url"]</code>) on the first APQ request,
+and creates its tables if they don't exist (<code>auto_create_tables</code>, default on).
+Persisted queries survive a restart and are shared by every instance using that
+database. Its lookups are synchronous: each holds the event loop for one indexed
+query (a persisted query's text is kept in process once read).</p>
+</blockquote>
 <p><strong>Pros:</strong></p>
 <ul>
 <li>Shared across instances</li>
 <li>Survives restarts</li>
 <li>Leverages existing PostgreSQL infrastructure</li>
-<li>Automatic cleanup via TTL</li>
 </ul>
 <p><strong>Cons:</strong></p>
 <ul>
@@ -5780,16 +5805,12 @@
     <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">,</span>  <span class="c1"># Tenant-specific caching</span>
 <span class="p">)</span>
 </code></pre></div>
-<h4 id="strategy-ttl-tuning">Strategy: TTL Tuning<a class="headerlink" href="#strategy-ttl-tuning" title="Permanent link">&para;</a></h4>
-<p>Adjust response TTL based on data freshness requirements:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Aggressive caching (5-15 minutes)</span>
-<span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">900</span><span class="p">}</span>  <span class="c1"># 15 minutes</span>
+<h4 id="strategy-clearing-cached-responses">Strategy: Clearing Cached Responses<a class="headerlink" href="#strategy-clearing-cached-responses" title="Permanent link">&para;</a></h4>
+<p>There is no response TTL to tune. A cached response stays until you clear the
+backend's cached responses:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware.apq_caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_apq_backend</span>
 
-<span class="c1"># Moderate caching (1-5 minutes)</span>
-<span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">300</span><span class="p">}</span>  <span class="c1"># 5 minutes</span>
-
-<span class="c1"># Short-term caching (30-60 seconds)</span>
-<span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">60</span><span class="p">}</span>  <span class="c1"># 1 minute</span>
+<span class="n">get_apq_backend</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">clear_storage</span><span class="p">()</span>  <span class="c1"># memory backend</span>
 </code></pre></div>
 <h4 id="strategy-selective-caching">Strategy: Selective Caching<a class="headerlink" href="#strategy-selective-caching" title="Permanent link">&para;</a></h4>
 <p>Cache only specific query types:</p>
@@ -5886,14 +5907,7 @@
 <p><strong>User-specific queries</strong></p>
 </li>
 <li>Different users get different responses</li>
-<li>
-<p>Solution: Implement tenant isolation with context</p>
-</li>
-<li>
-<p><strong>Cache expired</strong></p>
-</li>
-<li>TTL too short for query patterns</li>
-<li>Solution: Increase <code>response_ttl</code> in config</li>
+<li>Solution: Implement tenant isolation with context</li>
 </ol>
 <h3 id="problem-high-memory-usage">Problem: High Memory Usage<a class="headerlink" href="#problem-high-memory-usage" title="Permanent link">&para;</a></h3>
 <p><strong>Diagnosis:</strong></p>
@@ -5901,14 +5915,9 @@
 </code></pre></div>
 <p><strong>Solutions:</strong></p>
 <ol>
-<li><strong>Switch to PostgreSQL backend:</strong></li>
+<li><strong>Turn response caching off</strong> if responses dominate:</li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">)</span>
-</code></pre></div>
-<ol>
-<li><strong>Reduce response TTL:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">60</span><span class="p">}</span>  <span class="c1"># Shorter expiration</span>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span> <span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <ol>
 <li><strong>Implement cache size limits:</strong></li>
@@ -5929,17 +5938,11 @@ Response cache serving outdated data after mutations</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span><span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <ol>
-<li><strong>Reduce TTL for volatile data:</strong></li>
+<li><strong>Clear the cached responses after a mutation:</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="n">apq_backend_config</span><span class="o">=</span><span class="p">{</span><span class="s2">"response_ttl"</span><span class="p">:</span> <span class="mi">30</span><span class="p">}</span>  <span class="c1"># 30 seconds</span>
-</code></pre></div>
-<ol>
-<li><strong>Implement cache invalidation:</strong></li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.storage</span><span class="w"> </span><span class="kn">import</span> <span class="n">apq_store</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.middleware.apq_caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_apq_backend</span>
 
-<span class="c1"># After mutation</span>
-<span class="n">apq_store</span><span class="o">.</span><span class="n">clear_storage</span><span class="p">()</span>  <span class="c1"># Clear all caches</span>
+<span class="n">get_apq_backend</span><span class="p">(</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">clear_storage</span><span class="p">()</span>  <span class="c1"># Drops the cached responses</span>
 </code></pre></div>
 <ol>
 <li><strong>Use materialized views instead:</strong></li>
@@ -6004,8 +6007,8 @@ Response cache serving outdated data after mutations</p>
 <ol>
 <li><strong>Baseline without APQ:</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Disable APQ</span>
-<span class="nv">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>FraiseQLConfig<span class="o">(</span><span class="nv">apq_storage_backend</span><span class="o">=</span>None<span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Disable APQ (hashes are ignored, every request sends its query)</span>
+<span class="nv">config</span><span class="w"> </span><span class="o">=</span><span class="w"> </span>FraiseQLConfig<span class="o">(</span><span class="nv">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span>,<span class="w"> </span><span class="nv">apq_mode</span><span class="o">=</span><span class="s2">"disabled"</span><span class="o">)</span>
 
 <span class="c1"># Run load test</span>
 ab<span class="w"> </span>-n<span class="w"> </span><span class="m">10000</span><span class="w"> </span>-c<span class="w"> </span><span class="m">100</span><span class="w"> </span>http://localhost:8000/graphql
@@ -6051,9 +6054,8 @@ ab<span class="w"> </span>-n<span class="w"> </span><span class="m">10000</span>
 <p><strong>Phase 3: Response Caching</strong> (if applicable)</p>
 <ol>
 <li>Enable for read-only, public queries only</li>
-<li>Start with short TTL (60s)</li>
+<li>Clear the backend after the mutations that change those queries' data</li>
 <li>Monitor for stale data issues</li>
-<li>Gradually increase TTL if no issues</li>
 <li>Rollback plan: Set <code>apq_cache_responses=False</code></li>
 </ol>
 <h3 id="5-maintenance">5. Maintenance<a class="headerlink" href="#5-maintenance" title="Permanent link">&para;</a></h3>
@@ -6073,7 +6075,6 @@ ab<span class="w"> </span>-n<span class="w"> </span><span class="m">10000</span>
 <ul>
 <li>Review and optimize top queries</li>
 <li>Audit cache effectiveness</li>
-<li>Update TTL configuration if needed</li>
 </ul>
 <p><strong>Quarterly:</strong></p>
 <ul>
@@ -6129,8 +6130,8 @@ ab<span class="w"> </span>-n<span class="w"> </span><span class="m">10000</span>
                   ↓
 ┌────────────────────────────────────────────────────┐
 │ APQ Response Cache                                 │
-│ • FraiseQL in-process or Redis                     │
-│ • 1-5 minute TTL                                   │
+│ • FraiseQL in-process                              │
+│ • No TTL: cleared explicitly                       │
 │ • All cacheable queries                            │
 └─────────────────┬──────────────────────────────────┘
                   │ Response cache miss
@@ -6241,10 +6242,10 @@ ab<span class="w"> </span>-n<span class="w"> </span><span class="m">10000</span>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

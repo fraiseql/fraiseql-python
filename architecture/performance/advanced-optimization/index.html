@@ -21,7 +21,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5873,8 +5873,19 @@ statistics:</p>
 <span class="s2">    """</span>
 </code></pre></div>
 <h3 id="24-query-statistics">2.4 Query Statistics<a class="headerlink" href="#24-query-statistics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">QueryStatisticsManager</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg</span><span class="w"> </span><span class="kn">import</span> <span class="n">sql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">QueryStatisticsManager</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Maintain statistics for query optimization"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pool</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Update table statistics for query planner</span>
@@ -5882,12 +5893,18 @@ statistics:</p>
 <span class="sd">        Without stats, planner guesses row counts (inefficient)</span>
 <span class="sd">        With stats, planner makes optimal decisions</span>
 <span class="sd">        """</span>
-        <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
-            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ANALYZE </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">tables</span><span class="p">:</span>
+                <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"ANALYZE </span><span class="si">{}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">sql</span><span class="o">.</span><span class="n">Identifier</span><span class="p">(</span><span class="n">table</span><span class="p">)))</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">table</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">column</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Analyze specific column (e.g., after data update)"""</span>
-        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">"ANALYZE </span><span class="si">{</span><span class="n">table</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">column</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"ANALYZE </span><span class="si">{}</span><span class="s2"> (</span><span class="si">{}</span><span class="s2">)"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">sql</span><span class="o">.</span><span class="n">Identifier</span><span class="p">(</span><span class="n">table</span><span class="p">),</span> <span class="n">sql</span><span class="o">.</span><span class="n">Identifier</span><span class="p">(</span><span class="n">column</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">view_column_statistics</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5895,16 +5912,21 @@ statistics:</p>
         <span class="n">column</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Inspect column statistics for debugging"""</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">            SELECT</span>
-<span class="s2">                attname,</span>
-<span class="s2">                n_distinct,</span>
-<span class="s2">                n_distinct_inherited,</span>
-<span class="s2">                avg_width,</span>
-<span class="s2">                correlation</span>
-<span class="s2">            FROM pg_stats</span>
-<span class="s2">            WHERE tablename = $1 AND attname = $2</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">table</span><span class="p">,</span> <span class="n">column</span><span class="p">)</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">,</span>
+            <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span> <span class="k">as</span> <span class="n">cur</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">                SELECT</span>
+<span class="s2">                    attname,</span>
+<span class="s2">                    n_distinct,</span>
+<span class="s2">                    inherited,</span>
+<span class="s2">                    avg_width,</span>
+<span class="s2">                    correlation</span>
+<span class="s2">                FROM pg_stats</span>
+<span class="s2">                WHERE tablename = </span><span class="si">%s</span><span class="s2"> AND attname = </span><span class="si">%s</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">column</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
 
         <span class="k">return</span> <span class="p">{</span>
             <span class="s2">"column"</span><span class="p">:</span> <span class="n">column</span><span class="p">,</span>
@@ -6440,8 +6462,14 @@ statistics:</p>
 <hr />
 <h2 id="6-monitoring-profiling">6. Monitoring &amp; Profiling<a class="headerlink" href="#6-monitoring-profiling" title="Permanent link">&para;</a></h2>
 <h3 id="61-query-profiling">6.1 Query Profiling<a class="headerlink" href="#61-query-profiling" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">QueryProfiler</span><span class="p">:</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLRepository</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">QueryProfiler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Profile query execution for optimization"""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">FraiseQLRepository</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pool</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">profile_query</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -6455,12 +6483,17 @@ statistics:</p>
 <span class="sd">        - Row count at each step</span>
 <span class="sd">        - Index usage</span>
 <span class="sd">        - Memory allocated</span>
+
+<span class="sd">        `query` is trusted SQL with psycopg `%s` placeholders for `params`.</span>
+<span class="sd">        EXPLAIN ANALYZE runs the statement: profile reads, or roll back.</span>
 <span class="sd">        """</span>
-        <span class="c1"># Get execution plan</span>
-        <span class="n">plan</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">query_one</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"EXPLAIN (ANALYZE, BUFFERS, TIMING) </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-            <span class="n">params</span> <span class="ow">or</span> <span class="p">[]</span>
-        <span class="p">)</span>
+        <span class="c1"># Get execution plan (FORMAT JSON: one row, one column, a one-element list)</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"EXPLAIN (ANALYZE, BUFFERS, TIMING, FORMAT JSON) </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">params</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="p">)</span>
+            <span class="n">plan</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">())[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="c1"># Parse plan into profile</span>
         <span class="n">profile</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_plan</span><span class="p">(</span><span class="n">plan</span><span class="p">)</span>
@@ -6472,15 +6505,18 @@ statistics:</p>
 
         <span class="n">profile</span> <span class="o">=</span> <span class="n">QueryProfile</span><span class="p">()</span>
 
-        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">plan</span><span class="p">[</span><span class="s2">"Plan"</span><span class="p">]:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">profile</span><span class="o">.</span><span class="n">add_step</span><span class="p">(</span>
-                <span class="n">name</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">"Node Type"</span><span class="p">],</span>
-                <span class="n">rows_output</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">"Actual Rows"</span><span class="p">],</span>
-                <span class="n">execution_time_ms</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">"Actual Time"</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">step</span><span class="p">[</span><span class="s2">"Actual Time"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
-                <span class="n">buffers_hit</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">"Shared Hit Blocks"</span><span class="p">],</span>
-                <span class="n">buffers_read</span><span class="o">=</span><span class="n">step</span><span class="p">[</span><span class="s2">"Shared Read Blocks"</span><span class="p">],</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">node</span><span class="p">[</span><span class="s2">"Node Type"</span><span class="p">],</span>
+                <span class="n">rows_output</span><span class="o">=</span><span class="n">node</span><span class="p">[</span><span class="s2">"Actual Rows"</span><span class="p">],</span>
+                <span class="n">execution_time_ms</span><span class="o">=</span><span class="n">node</span><span class="p">[</span><span class="s2">"Actual Total Time"</span><span class="p">]</span> <span class="o">-</span> <span class="n">node</span><span class="p">[</span><span class="s2">"Actual Startup Time"</span><span class="p">],</span>
+                <span class="n">buffers_hit</span><span class="o">=</span><span class="n">node</span><span class="p">[</span><span class="s2">"Shared Hit Blocks"</span><span class="p">],</span>
+                <span class="n">buffers_read</span><span class="o">=</span><span class="n">node</span><span class="p">[</span><span class="s2">"Shared Read Blocks"</span><span class="p">],</span>
             <span class="p">)</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">node</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"Plans"</span><span class="p">,</span> <span class="p">[]):</span>
+                <span class="n">walk</span><span class="p">(</span><span class="n">child</span><span class="p">)</span>
 
+        <span class="n">walk</span><span class="p">(</span><span class="n">plan</span><span class="p">[</span><span class="s2">"Plan"</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">profile</span>
 
 
@@ -6865,10 +6901,10 @@ scaling patterns above as your workload grows.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

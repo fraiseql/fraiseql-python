@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4895,28 +4895,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#subpath-extract-subpath" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        subpath - Extract Subpath
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#index-find-label-index" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        index - Find Label Index
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#index_eq-label-at-position" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4938,39 +4916,22 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#path-manipulation-operators" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Path Manipulation Operators
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Path Manipulation Operators">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#concat-concatenate-paths" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        concat - Concatenate Paths
-      
-    </span>
-  </a>
-  
-</li>
-        
           <li class="md-nav__item">
   <a href="#lca-lowest-common-ancestor" class="md-nav__link">
     <span class="md-ellipsis">
       
         lca - Lowest Common Ancestor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#subpath-index-concat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        subpath, index, concat
       
     </span>
   </a>
@@ -5249,13 +5210,8 @@
 </tr>
 <tr>
 <td><strong>Path Analysis</strong></td>
-<td><code>subpath</code>, <code>index</code>, <code>index_eq</code>, <code>index_gte</code></td>
-<td>Extract and find path components</td>
-</tr>
-<tr>
-<td><strong>Path Manipulation</strong></td>
-<td><code>concat</code>, <code>lca</code></td>
-<td>Combine paths or find common ancestor</td>
+<td><code>index_eq</code>, <code>index_gte</code>, <code>lca</code></td>
+<td>Find a label's position; match a common ancestor</td>
 </tr>
 <tr>
 <td><strong>Array Operations</strong></td>
@@ -5266,7 +5222,11 @@
 </table>
 <hr />
 <h2 id="path-comparison-operators">Path Comparison Operators<a class="headerlink" href="#path-comparison-operators" title="Permanent link">&para;</a></h2>
-<p>Path comparison operators use <strong>lexicographic ordering</strong> to compare paths as strings, where each label in the path is compared in order.</p>
+<p>Path comparison operators compare paths <strong>label by label</strong>, as <code>ltree</code> values, not as
+strings: <code>top.science.zoology &lt; top.sciences</code>, since <code>science &lt; sciences</code>. A JSONB
+field compares this way when the type declares it <code>LTree</code>; a native <code>ltree</code> column
+always does. Every operator on this page casts the JSONB text (<code>data -&gt;&gt; 'path'</code>) to
+<code>ltree</code> and types its value (<code>::ltree</code>, <code>::lquery</code>, <code>::ltxtquery</code>).</p>
 <h3 id="equality-operators">Equality Operators<a class="headerlink" href="#equality-operators" title="Permanent link">&para;</a></h3>
 <h4 id="eq-path-equals"><code>eq</code> - Path Equals<a class="headerlink" href="#eq-path-equals" title="Permanent link">&para;</a></h4>
 <p><strong>Use when:</strong> Exact path match</p>
@@ -5453,7 +5413,7 @@
 <li><code>"astronomy | geology"</code> → either "astronomy" OR "geology" present</li>
 <li><code>"!archive"</code> → does NOT contain "archive"</li>
 </ul>
-<p><strong>PostgreSQL:</strong> <code>(path)::ltree ? 'science &amp; astronomy'::ltxtquery</code></p>
+<p><strong>PostgreSQL:</strong> <code>(path)::ltree @ 'science &amp; astronomy'::ltxtquery</code></p>
 <hr />
 <h2 id="path-depth-operators">Path Depth Operators<a class="headerlink" href="#path-depth-operators" title="Permanent link">&para;</a></h2>
 <h3 id="nlevel-get-path-depth"><code>nlevel</code> - Get Path Depth<a class="headerlink" href="#nlevel-get-path-depth" title="Permanent link">&para;</a></h3>
@@ -5547,96 +5507,41 @@
 <p><strong>Returns paths that don't have exactly 2 labels</strong></p>
 <hr />
 <h2 id="path-analysis-operators">Path Analysis Operators<a class="headerlink" href="#path-analysis-operators" title="Permanent link">&para;</a></h2>
-<h3 id="subpath-extract-subpath"><code>subpath</code> - Extract Subpath<a class="headerlink" href="#subpath-extract-subpath" title="Permanent link">&para;</a></h3>
-<p><strong>Use when:</strong> Extract a portion of a path</p>
-<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">subpath</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
-<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">path</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p><strong>Parameters:</strong> <code>[offset, length]</code></p>
-<ul>
-<li><code>offset</code> - starting position (0-indexed)</li>
-<li><code>length</code> - number of labels to extract</li>
-</ul>
-<p><strong>Examples:</strong></p>
-<ul>
-<li><code>path: "science.astronomy.planets"</code> with <code>[0, 2]</code> → <code>"science.astronomy"</code></li>
-<li><code>path: "science.astronomy.planets"</code> with <code>[1, 2]</code> → <code>"astronomy.planets"</code></li>
-<li><code>path: "a.b.c.d"</code> with <code>[2, 1]</code> → <code>"c"</code></li>
-</ul>
-<p><strong>PostgreSQL:</strong> <code>subpath((path)::ltree, 0, 2)</code></p>
-<hr />
-<h3 id="index-find-label-index"><code>index</code> - Find Label Index<a class="headerlink" href="#index-find-label-index" title="Permanent link">&para;</a></h3>
-<p><strong>Use when:</strong> Locate a specific label in a path</p>
-<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">index</span><span class="p">:</span><span class="w"> </span><span class="s">"astronomy"</span><span class="w"> </span><span class="p">}</span>
-<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">path</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p><strong>Returns:</strong> Position of label (0-indexed, or -1 if not found)</p>
-<p><strong>Example:</strong></p>
-<ul>
-<li><code>path: "science.astronomy.planets"</code> → index of <code>"astronomy"</code> is 1</li>
-<li><code>path: "science.astronomy.planets"</code> → index of <code>"nonexistent"</code> is -1</li>
-</ul>
-<hr />
 <h3 id="index_eq-label-at-position"><code>index_eq</code> - Label at Position<a class="headerlink" href="#index_eq-label-at-position" title="Permanent link">&para;</a></h3>
-<p><strong>Use when:</strong> Check if a specific label is at a position</p>
+<p><strong>Use when:</strong> Check that a label first appears at a given position</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">indexEq</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"astronomy"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">indexEq</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">label</span><span class="p">:</span><span class="w"> </span><span class="s">"astronomy"</span><span class="p">,</span><span class="w"> </span><span class="n">position</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">path</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><strong>Parameters:</strong> <code>[label, position]</code></p>
-<p>Returns paths where <code>label</code> is at <code>position</code>.</p>
+<p><strong>Parameters:</strong> <code>{ label, position }</code> (in Python, <code>{"index_eq": ("astronomy", 1)}</code>
+or <code>{"index_eq": {"label": "astronomy", "position": 1}}</code>)</p>
+<p>Returns paths where the first <code>label</code> is at <code>position</code> (0-indexed).
+<code>label</code> may itself be a path (<code>"astronomy.planets"</code>).</p>
+<p><strong>PostgreSQL:</strong> <code>index(path, 'astronomy'::ltree) = 1</code></p>
 <hr />
 <h3 id="index_gte-label-at-or-after-position"><code>index_gte</code> - Label at or After Position<a class="headerlink" href="#index_gte-label-at-or-after-position" title="Permanent link">&para;</a></h3>
 <p><strong>Use when:</strong> Label appears at or after a position</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">indexGte</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s">"planets"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">indexGte</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">label</span><span class="p">:</span><span class="w"> </span><span class="s">"planets"</span><span class="p">,</span><span class="w"> </span><span class="n">position</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">id</span>
 <span class="w">    </span><span class="n">path</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>Returns paths where <code>"planets"</code> first appears at position 1 or later.</p>
-<hr />
-<h2 id="path-manipulation-operators">Path Manipulation Operators<a class="headerlink" href="#path-manipulation-operators" title="Permanent link">&para;</a></h2>
-<h3 id="concat-concatenate-paths"><code>concat</code> - Concatenate Paths<a class="headerlink" href="#concat-concatenate-paths" title="Permanent link">&para;</a></h3>
-<p><strong>Use when:</strong> Combine two paths</p>
-<div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">concat</span><span class="p">:</span><span class="w"> </span><span class="s">"planets.terrestrial"</span><span class="w"> </span><span class="p">}</span>
-<span class="w">  </span><span class="p">})</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">id</span>
-<span class="w">    </span><span class="n">path</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p><strong>Example:</strong></p>
-<ul>
-<li><code>path: "science.astronomy"</code> concatenated with <code>"planets.terrestrial"</code></li>
-<li>Result: <code>"science.astronomy.planets.terrestrial"</code></li>
-</ul>
-<p><strong>PostgreSQL:</strong> <code>(path)::ltree || 'planets.terrestrial'::ltree</code></p>
+<p>Returns paths where <code>"planets"</code> first appears at position 1 or later. <code>index()</code>
+is -1 for a path without the label, so <code>position: 0</code> keeps every path that
+contains it.</p>
+<p><strong>PostgreSQL:</strong> <code>index(path, 'planets'::ltree) &gt;= 1</code></p>
 <hr />
 <h3 id="lca-lowest-common-ancestor"><code>lca</code> - Lowest Common Ancestor<a class="headerlink" href="#lca-lowest-common-ancestor" title="Permanent link">&para;</a></h3>
-<p><strong>Use when:</strong> Find common ancestor path</p>
+<p><strong>Use when:</strong> Find the row whose path is the common ancestor of some paths</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -5652,16 +5557,21 @@
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><strong>Returns:</strong> The lowest (deepest) common ancestor</p>
-<p><strong>Example:</strong></p>
-<ul>
-<li>Input paths: <code>"science.astronomy.planets"</code>, <code>"science.astronomy.stars"</code></li>
-<li>LCA result: <code>"science.astronomy"</code></li>
-</ul>
+<p><strong>Returns:</strong> The rows whose path equals the lowest (deepest) common ancestor of
+the paths: here <code>science.astronomy</code>.</p>
+<p><strong>PostgreSQL:</strong> <code>path = lca(ARRAY['science.astronomy.planets'::ltree, ...])</code></p>
+<hr />
+<h3 id="subpath-index-concat"><code>subpath</code>, <code>index</code>, <code>concat</code><a class="headerlink" href="#subpath-index-concat" title="Permanent link">&para;</a></h3>
+<p>These compute a path or a number (<code>subpath(path, offset, len)</code>, <code>index(path,
+label)</code>, <code>path || other</code>), not a condition, so they aren't filters: a <code>where</code>
+using them is rejected with <code>ltree operator '&lt;name&gt;' is not a filter</code>. Filter on
+a label's position with <code>index_eq</code> / <code>index_gte</code>, and on a prefix with
+<code>ancestor_of</code> / <code>descendant_of</code>.</p>
 <hr />
 <h2 id="array-operations">Array Operations<a class="headerlink" href="#array-operations" title="Permanent link">&para;</a></h2>
 <h3 id="in_array-path-in-array"><code>in_array</code> - Path in Array<a class="headerlink" href="#in_array-path-in-array" title="Permanent link">&para;</a></h3>
-<p><strong>Use when:</strong> Check if path is in a list</p>
+<p><strong>Use when:</strong> Check if path is one of the paths in a list, or below one of them
+(ltree's <code>ltree &lt;@ ltree[]</code>; for an exact match, use <code>in</code>)</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">categories</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">path</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -5712,7 +5622,8 @@
 <hr />
 <h2 id="in-python">In Python<a class="headerlink" href="#in-python" title="Permanent link">&para;</a></h2>
 <p>All operators work identically in Python dict-based queries:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_graphql_where_input</span><span class="p">,</span> <span class="n">LTreeFilter</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_graphql_where_input</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.sql.graphql_where_generator</span><span class="w"> </span><span class="kn">import</span> <span class="n">LTreeFilter</span>
 
 <span class="c1"># Using WhereInput (type-safe)</span>
 <span class="n">where</span> <span class="o">=</span> <span class="n">CategoryWhereInput</span><span class="p">(</span>
@@ -5793,9 +5704,9 @@
 <td>Index on <code>nlevel(path)</code> for optimization</td>
 </tr>
 <tr>
-<td><code>subpath</code>, <code>index</code></td>
+<td><code>index_eq</code>, <code>index_gte</code>, <code>lca</code></td>
 <td>⚠️ Function-based</td>
-<td>Consider B-tree index on result</td>
+<td>Not index-assisted; combine with a hierarchy filter</td>
 </tr>
 </tbody>
 </table>
@@ -5974,10 +5885,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

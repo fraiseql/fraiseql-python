@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5005,9 +5005,6 @@
 <span class="w">      </span><span class="nt">DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}</span>
 <span class="w">      </span><span class="nt">ENV</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">production</span>
 <span class="w">      </span><span class="nt">LOG_LEVEL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">info</span>
-<span class="w">      </span><span class="nt">RUST_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
-<span class="w">      </span><span class="nt">APQ_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
-<span class="w">      </span><span class="nt">APQ_STORAGE_BACKEND</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql</span>
 <span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"8000:8000"</span>
 <span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
@@ -5097,71 +5094,57 @@
 </code></pre></div>
 <h2 id="step-4-application-configuration">Step 4: Application Configuration<a class="headerlink" href="#step-4-application-configuration" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># src/app.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span><span class="p">,</span> <span class="n">FraiseQLConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_sentry</span><span class="p">,</span> <span class="n">setup_prometheus</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.monitoring</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_metrics</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Comment</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">User</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.mutations</span><span class="w"> </span><span class="kn">import</span> <span class="n">CreateComment</span><span class="p">,</span> <span class="n">CreatePost</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src.queries</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_post</span><span class="p">,</span> <span class="n">get_posts</span>
 
 <span class="c1"># Load environment</span>
 <span class="n">ENV</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"ENV"</span><span class="p">,</span> <span class="s2">"development"</span><span class="p">)</span>
-<span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"DATABASE_URL"</span><span class="p">)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"info"</span><span class="p">)</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
 
 <span class="c1"># Configuration</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"DATABASE_URL"</span><span class="p">],</span>
+    <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span> <span class="k">if</span> <span class="n">ENV</span> <span class="o">==</span> <span class="s2">"production"</span> <span class="k">else</span> <span class="s2">"development"</span><span class="p">,</span>
 
-    <span class="c1"># Performance</span>
-    <span class="n">rust_enabled</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"RUST_ENABLED"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"true"</span><span class="p">,</span>
-    <span class="n">apq_enabled</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"APQ_ENABLED"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"true"</span><span class="p">,</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"APQ_STORAGE_BACKEND"</span><span class="p">,</span> <span class="s2">"postgresql"</span><span class="p">),</span>
-    <span class="n">enable_turbo_router</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">json_passthrough_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># The connection pool is opened and closed by the app's lifespan; its size</span>
+    <span class="c1"># comes from FRAISEQL_DATABASE_POOL_SIZE (default 20)</span>
 
-    <span class="c1"># Security</span>
+    <span class="c1"># Security: environment="production" also turns the playground off and</span>
+    <span class="c1"># sets introspection_policy to "disabled"</span>
     <span class="n">enable_playground</span><span class="o">=</span><span class="p">(</span><span class="n">ENV</span> <span class="o">!=</span> <span class="s2">"production"</span><span class="p">),</span>
-    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">query_depth_limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-
-    <span class="c1"># Monitoring</span>
-    <span class="n">enable_logging</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">log_level</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"LOG_LEVEL"</span><span class="p">,</span> <span class="s2">"info"</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="c1"># Initialize app</span>
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-
-<span class="c1"># Connection pool</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span>
-    <span class="n">conninfo</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
-    <span class="n">min_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span>
+<span class="c1"># Initialize app (the Rust pipeline is always on; there is nothing to enable)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">get_post</span><span class="p">,</span> <span class="n">get_posts</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">CreatePost</span><span class="p">,</span> <span class="n">CreateComment</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="c1"># Monitoring setup</span>
-<span class="k">if</span> <span class="n">ENV</span> <span class="o">==</span> <span class="s2">"production"</span><span class="p">:</span>
-    <span class="n">setup_sentry</span><span class="p">(</span>
-        <span class="n">dsn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"SENTRY_DSN"</span><span class="p">),</span>
+<span class="c1"># Prometheus metrics at /metrics</span>
+<span class="n">setup_metrics</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="c1"># Error reporting (sentry-sdk's own FastAPI integration)</span>
+<span class="k">if</span> <span class="n">ENV</span> <span class="o">==</span> <span class="s2">"production"</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"SENTRY_DSN"</span><span class="p">):</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">sentry_sdk</span>
+
+    <span class="n">sentry_sdk</span><span class="o">.</span><span class="n">init</span><span class="p">(</span>
+        <span class="n">dsn</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"SENTRY_DSN"</span><span class="p">],</span>
         <span class="n">environment</span><span class="o">=</span><span class="n">ENV</span><span class="p">,</span>
-        <span class="n">traces_sample_rate</span><span class="o">=</span><span class="mf">0.1</span>
+        <span class="n">traces_sample_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
     <span class="p">)</span>
-
-    <span class="n">setup_prometheus</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
-
-<span class="c1"># Health check endpoint</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health_check</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">"""Health check for load balancer."""</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT 1"</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"healthy"</span><span class="p">}</span>
-
-<span class="c1"># Graceful shutdown</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"shutdown"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">shutdown</span><span class="p">():</span>
-    <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div>
+<p>The app already serves <code>GET /health</code> (liveness: the process is up) and
+<code>GET /ready</code> (readiness: the pool answers a query and the schema is loaded), so
+the Dockerfile, nginx and Kubernetes probes below need no handler of your own.</p>
 <h2 id="step-5-environment-variables">Step 5: Environment Variables<a class="headerlink" href="#step-5-environment-variables" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># .env.example</span>
 <span class="c1"># Database</span>
@@ -5174,11 +5157,6 @@
 <span class="nv">ENV</span><span class="o">=</span>production
 <span class="nv">LOG_LEVEL</span><span class="o">=</span>info
 <span class="nv">SECRET_KEY</span><span class="o">=</span>&lt;generate-with-openssl-rand-hex-32&gt;
-
-<span class="c1"># Performance</span>
-<span class="nv">RUST_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">APQ_ENABLED</span><span class="o">=</span><span class="nb">true</span>
-<span class="nv">APQ_STORAGE_BACKEND</span><span class="o">=</span>postgresql
 
 <span class="c1"># Monitoring</span>
 <span class="nv">SENTRY_DSN</span><span class="o">=</span>https://...@sentry.io/...
@@ -5390,33 +5368,28 @@ docker-compose<span class="w"> </span>-f<span class="w"> </span>deploy/docker-co
 </code></pre></div>
 <h3 id="application-tuning">Application Tuning<a class="headerlink" href="#application-tuning" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="c1"># Layer 0: Rust (10-80x faster)</span>
-    <span class="n">rust_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"DATABASE_URL"</span><span class="p">],</span>
 
-    <span class="c1"># Layer 1: APQ (5-10x faster)</span>
-    <span class="n">apq_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
-
-    <span class="c1"># Layer 2: TurboRouter (3-5x faster)</span>
-    <span class="n">enable_turbo_router</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="c1"># The Rust pipeline and TurboRouter are always on; this sizes the</span>
+    <span class="c1"># TurboRouter's registry of prepared queries</span>
     <span class="n">turbo_router_cache_size</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
 
-    <span class="c1"># Layer 3: JSON Passthrough (2-3x faster)</span>
-    <span class="n">json_passthrough_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-
-    <span class="c1"># Combined: 0.5-2ms cached responses</span>
+    <span class="c1"># APQ: "optional" (the default) accepts query hashes and full queries</span>
+    <span class="n">apq_mode</span><span class="o">=</span><span class="s2">"optional"</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="high-memory-usage">High Memory Usage<a class="headerlink" href="#high-memory-usage" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Check connection pool</span>
-docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>api<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
-<span class="s2">from src.app import pool</span>
-<span class="s2">print(f'Pool size: {pool.get_stats()}')</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check that the pool answers (503 with the failing check otherwise)</span>
+docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>api<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"</span>
+<span class="s2">import urllib.request</span>
+<span class="s2">print(urllib.request.urlopen('http://localhost:8000/ready').read().decode())</span>
 <span class="s2">"</span>
 
-<span class="c1"># Adjust pool size</span>
-<span class="nv">MAX_POOL_SIZE</span><span class="o">=</span><span class="m">10</span><span class="w"> </span>docker-compose<span class="w"> </span>restart<span class="w"> </span>api
+<span class="c1"># Lower the pool size (FraiseQLConfig reads FRAISEQL_-prefixed variables)</span>
+<span class="c1"># and restart: set it in the api service's environment, e.g.</span>
+<span class="c1">#   FRAISEQL_DATABASE_POOL_SIZE: "10"</span>
+docker-compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>api
 </code></pre></div>
 <h3 id="slow-queries">Slow Queries<a class="headerlink" href="#slow-queries" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Enable query logging</span>
@@ -5536,10 +5509,10 @@ docker-compose<span class="w"> </span><span class="nb">exec</span><span class="w
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

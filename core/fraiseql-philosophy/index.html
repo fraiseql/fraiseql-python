@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5389,61 +5389,64 @@ After:  FastAPI + PostgreSQL + Grafana = 3 services
 
 <span class="n">tracker</span> <span class="o">=</span> <span class="n">init_error_tracker</span><span class="p">(</span><span class="n">db_pool</span><span class="p">,</span> <span class="n">environment</span><span class="o">=</span><span class="s2">"production"</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">tracker</span><span class="o">.</span><span class="n">capture_exception</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span>
-    <span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
-    <span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
-    <span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"create_order"</span>
+    <span class="s2">"user"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">id</span><span class="p">)},</span>
+    <span class="s2">"request"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"request_id"</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span> <span class="s2">"operation"</span><span class="p">:</span> <span class="s2">"create_order"</span><span class="p">},</span>
 <span class="p">})</span>
 
 <span class="c1"># Features:</span>
-<span class="c1"># - Automatic error fingerprinting and grouping (like Sentry)</span>
+<span class="c1"># - Error fingerprinting and grouping (like Sentry)</span>
 <span class="c1"># - Full stack trace capture</span>
 <span class="c1"># - Request/user context preservation</span>
-<span class="c1"># - OpenTelemetry trace correlation</span>
+<span class="c1"># - OpenTelemetry trace ids (trace_id=, span_id=) stored with each error</span>
 <span class="c1"># - Issue management (resolve, ignore, assign)</span>
-<span class="c1"># - Notification triggers (Email, Slack, Webhook)</span>
+<span class="c1"># - Notification rules (email, Slack, webhook)</span>
 </code></pre></div>
-<p><strong>Observability:</strong> All errors stored in PostgreSQL with automatic grouping. Query directly for debugging:</p>
+<p><strong>Observability:</strong> Errors are rows in PostgreSQL (<code>tb_error_log</code>, one per fingerprint,
+and <code>tb_error_occurrence</code>, one per capture), created by the <code>schema.sql</code> of
+<code>fraiseql.monitoring</code>. Query them directly for debugging:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Find all errors for a user</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">context</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'123'</span>
-<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">error_type</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">occurred_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_error_occurrence</span><span class="w"> </span><span class="n">o</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_error_log</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">error_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">error_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">user_context</span><span class="o">-&gt;&gt;</span><span class="s1">'user_id'</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'123'</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span><span class="p">;</span>
 
-<span class="c1">-- Correlate errors with traces</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="o">*</span>
-<span class="k">FROM</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">errors</span><span class="w"> </span><span class="n">e</span>
-<span class="k">JOIN</span><span class="w"> </span><span class="n">monitoring</span><span class="p">.</span><span class="n">traces</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">trace_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">t</span><span class="p">.</span><span class="n">trace_id</span>
-<span class="k">WHERE</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fingerprint</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'order_creation_failed'</span><span class="p">;</span>
+<span class="c1">-- Most frequent unresolved errors</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">error_type</span><span class="p">,</span><span class="w"> </span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="n">occurrence_count</span><span class="p">,</span><span class="w"> </span><span class="n">last_seen</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_top_errors</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
 </code></pre></div>
 <h3 id="integrated-observability-stack">Integrated Observability Stack<a class="headerlink" href="#integrated-observability-stack" title="Permanent link">&para;</a></h3>
-<p><strong>OpenTelemetry Integration:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Traces and metrics automatically stored in PostgreSQL</span>
-<span class="c1"># Full correlation with errors and business events</span>
-
-<span class="n">SELECT</span>
-    <span class="n">e</span><span class="o">.</span><span class="n">message</span> <span class="k">as</span> <span class="n">error</span><span class="p">,</span>
-    <span class="n">t</span><span class="o">.</span><span class="n">duration_ms</span> <span class="k">as</span> <span class="n">trace_duration</span><span class="p">,</span>
-    <span class="n">c</span><span class="o">.</span><span class="n">entity_name</span> <span class="k">as</span> <span class="n">affected_entity</span>
-<span class="n">FROM</span> <span class="n">monitoring</span><span class="o">.</span><span class="n">errors</span> <span class="n">e</span>
-<span class="n">JOIN</span> <span class="n">monitoring</span><span class="o">.</span><span class="n">traces</span> <span class="n">t</span> <span class="n">ON</span> <span class="n">e</span><span class="o">.</span><span class="n">trace_id</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">trace_id</span>
-<span class="n">JOIN</span> <span class="n">tb_entity_change_log</span> <span class="n">c</span> <span class="n">ON</span> <span class="n">t</span><span class="o">.</span><span class="n">trace_id</span> <span class="o">=</span> <span class="n">c</span><span class="o">.</span><span class="n">trace_id</span><span class="p">::</span><span class="n">text</span>
-<span class="n">WHERE</span> <span class="n">e</span><span class="o">.</span><span class="n">fingerprint</span> <span class="o">=</span> <span class="s1">'payment_processing_error'</span>
-<span class="n">ORDER</span> <span class="n">BY</span> <span class="n">e</span><span class="o">.</span><span class="n">occurred_at</span> <span class="n">DESC</span>
-<span class="n">LIMIT</span> <span class="mi">10</span><span class="p">;</span>
+<p><strong>OpenTelemetry Integration:</strong> <code>fraiseql.tracing.setup_tracing</code> opens a span per HTTP
+request and sends spans to an exporter (OTLP, Jaeger, Zipkin or the console), not to
+PostgreSQL. Pass a span's <code>trace_id</code> to <code>capture_exception</code> and an error row links to
+its trace in your tracing backend:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- Errors of the last hour, with the trace to open in your tracing backend</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">error_type</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">error_message</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">occurred_at</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">trace_id</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_error_occurrence</span><span class="w"> </span><span class="n">o</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">tb_error_log</span><span class="w"> </span><span class="n">e</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">error_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">error_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">occurred_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'1 hour'</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">trace_id</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">occurred_at</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
 </code></pre></div>
+<p><strong>Metrics:</strong> <code>fraiseql.monitoring.setup_metrics</code> exports Prometheus metrics
+(<code>fraiseql_http_requests_total</code>, <code>fraiseql_http_request_duration_seconds</code>,
+<code>fraiseql_errors_total</code>, ...) on <code>/metrics</code>.</p>
 <p><strong>Grafana Dashboards:</strong>
 Pre-built dashboards in <code>grafana/</code>:</p>
 <ul>
-<li>Error monitoring (grouping, rates, trends)</li>
-<li>OpenTelemetry traces (spans, performance)</li>
-<li>Performance metrics (latency, throughput)</li>
-<li>All querying PostgreSQL directly (no exporters needed)</li>
+<li>Error monitoring (grouping, rates, trends), from <code>tb_error_log</code> / <code>tb_error_occurrence</code></li>
+<li>Database (connections, slow queries), from PostgreSQL's statistics views</li>
+<li>APQ storage, from the PostgreSQL APQ backend's tables</li>
+<li>Performance metrics (latency, throughput), from the Prometheus metrics of <code>setup_metrics</code></li>
 </ul>
 <h3 id="why-in-postgresql-everything">Why "In PostgreSQL Everything"?<a class="headerlink" href="#why-in-postgresql-everything" title="Permanent link">&para;</a></h3>
 <p><strong>1. Cost-Effective</strong>: Save $300-3,000/month by eliminating SaaS services
 <strong>2. Operational Simplicity</strong>: One database to manage, backup, and monitor
 <strong>3. Consistent Performance</strong>: No external network calls for caching or error tracking
 <strong>4. Full Control</strong>: Self-hosted, no vendor lock-in, complete data ownership
-<strong>5. Correlation</strong>: Errors + traces + metrics + business events in one query
+<strong>5. Correlation</strong>: Errors and business events in one query, each error carrying its trace id
 <strong>6. ACID Guarantees</strong>: All observability data benefits from PostgreSQL transactions</p>
 <h2 id="composable-over-opinionated">Composable Over Opinionated<a class="headerlink" href="#composable-over-opinionated" title="Permanent link">&para;</a></h2>
 <h3 id="framework-provides-tools">Framework Provides Tools<a class="headerlink" href="#framework-provides-tools" title="Permanent link">&para;</a></h3>
@@ -5601,10 +5604,10 @@ Pre-built dashboards in <code>grafana/</code>:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

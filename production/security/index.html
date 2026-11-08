@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4630,17 +4630,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#complexity-analysis" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Complexity Analysis
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#depth-limiting" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4652,10 +4641,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cost-analysis" class="md-nav__link">
+  <a href="#complexity-analysis" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Cost Analysis
+        Complexity Analysis
       
     </span>
   </a>
@@ -4951,19 +4940,27 @@
 <h3 id="parameterized-queries">Parameterized Queries<a class="headerlink" href="#parameterized-queries" title="Permanent link">&para;</a></h3>
 <p>FraiseQL uses parameterized queries exclusively:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="c1"># SAFE: Parameterized query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+<span class="c1"># SAFE: repository filters are always bound parameters</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
+
+<span class="c1"># SAFE: raw SQL with psycopg placeholders</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_email</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM users WHERE id = $1"</span><span class="p">,</span>
-            <span class="n">user_id</span>  <span class="c1"># Automatically escaped</span>
+            <span class="s2">"SELECT email FROM tb_user WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">user_id</span><span class="p">,)</span>  <span class="c1"># Sent as a parameter, never spliced into the SQL</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span>
 
 <span class="c1"># UNSAFE: String interpolation (never do this!)</span>
-<span class="c1"># async def get_user_unsafe(user_id: str) -&gt; User:</span>
-<span class="c1">#     query = f"SELECT * FROM users WHERE id = '{user_id}'"</span>
+<span class="c1"># async def get_user_unsafe(db, user_id: str):</span>
+<span class="c1">#     query = f"SELECT * FROM tb_user WHERE id = '{user_id}'"</span>
 <span class="c1">#     result = await conn.execute(query)  # VULNERABLE</span>
 </code></pre></div>
 <h3 id="input-validation">Input Validation<a class="headerlink" href="#input-validation" title="Permanent link">&para;</a></h3>
@@ -5037,74 +5034,46 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Query validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="query-complexity-limits">Query Complexity Limits<a class="headerlink" href="#query-complexity-limits" title="Permanent link">&para;</a></h2>
-<h3 id="complexity-analysis">Complexity Analysis<a class="headerlink" href="#complexity-analysis" title="Permanent link">&para;</a></h3>
+<p>FraiseQL checks a query's depth and complexity before it runs, on <code>POST</code> and
+<code>GET /graphql</code> (APQ persisted queries included). A query over a limit gets a GraphQL
+error and runs no resolver or SQL. No limit is on by default.</p>
+<h3 id="depth-limiting">Depth Limiting<a class="headerlink" href="#depth-limiting" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
-    <span class="c1"># Query complexity limits</span>
-    <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">max_query_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>  <span class="c1"># or FRAISEQL_MAX_QUERY_DEPTH=10</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>{ users { id } }</code> has depth 1, <code>{ users { posts { id } } }</code> depth 2; fragments add no
+depth of their own. A deeper query gets:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"errors"</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Query depth 12 exceeds the maximum depth of 10"</span><span class="p">,</span>
+<span class="w">             </span><span class="nt">"extensions"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"QUERY_TOO_DEEP"</span><span class="p">,</span><span class="w"> </span><span class="nt">"depth"</span><span class="p">:</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="nt">"maxDepth"</span><span class="p">:</span><span class="w"> </span><span class="mi">10</span><span class="p">}}]}</span>
+</code></pre></div>
+<p>Introspection (<code>__schema</code>, <code>__type</code>) is not counted: <code>introspection_policy</code> decides who
+may run it (it is disabled in production by default).</p>
+<h3 id="complexity-analysis">Complexity Analysis<a class="headerlink" href="#complexity-analysis" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
+    <span class="c1"># Setting a limit turns complexity_enabled on</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
     <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">complexity_default_list_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
-    <span class="c1"># Field-specific multipliers</span>
+    <span class="c1"># Cost of a field instead of 1, by name or "Type.field"</span>
     <span class="n">complexity_field_multipliers</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"users"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>  <span class="c1"># Expensive field</span>
-        <span class="s2">"orders"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-        <span class="s2">"analytics"</span><span class="p">:</span> <span class="mi">10</span>
-    <span class="p">}</span>
+        <span class="s2">"search"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+        <span class="s2">"Order.lines"</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="depth-limiting">Depth Limiting<a class="headerlink" href="#depth-limiting" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLError</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">enforce_max_depth</span><span class="p">(</span><span class="n">document</span><span class="p">,</span> <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Prevent excessively nested queries."""</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">visit</span>
-
-    <span class="n">current_depth</span> <span class="o">=</span> <span class="mi">0</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">enter_field</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">ancestors</span><span class="p">):</span>
-        <span class="k">nonlocal</span> <span class="n">current_depth</span>
-        <span class="n">depth</span> <span class="o">=</span> <span class="nb">len</span><span class="p">([</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">ancestors</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">a</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"field"</span><span class="p">])</span>
-
-        <span class="k">if</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="n">max_depth</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"Query depth </span><span class="si">{</span><span class="n">depth</span><span class="si">}</span><span class="s2"> exceeds maximum </span><span class="si">{</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                <span class="n">extensions</span><span class="o">=</span><span class="p">{</span><span class="s2">"code"</span><span class="p">:</span> <span class="s2">"MAX_DEPTH_EXCEEDED"</span><span class="p">}</span>
-            <span class="p">)</span>
-
-    <span class="n">visit</span><span class="p">(</span><span class="n">document</span><span class="p">,</span> <span class="p">{</span><span class="s2">"Field"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"enter"</span><span class="p">:</span> <span class="n">enter_field</span><span class="p">}})</span>
-</code></pre></div>
-<h3 id="cost-analysis">Cost Analysis<a class="headerlink" href="#cost-analysis" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.analysis.complexity</span><span class="w"> </span><span class="kn">import</span> <span class="n">calculate_query_cost</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_cost_middleware</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">url</span><span class="o">.</span><span class="n">path</span> <span class="o">!=</span> <span class="s2">"/graphql"</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-
-    <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-    <span class="n">query</span> <span class="o">=</span> <span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"query"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
-
-    <span class="c1"># Calculate cost</span>
-    <span class="n">cost</span> <span class="o">=</span> <span class="n">calculate_query_cost</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
-
-    <span class="c1"># Reject expensive queries</span>
-    <span class="k">if</span> <span class="n">cost</span> <span class="o">&gt;</span> <span class="mi">1000</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span>
-            <span class="n">content</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span>
-                <span class="s2">"errors"</span><span class="p">:</span> <span class="p">[{</span>
-                    <span class="s2">"message"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Query cost </span><span class="si">{</span><span class="n">cost</span><span class="si">}</span><span class="s2"> exceeds limit 1000"</span><span class="p">,</span>
-                    <span class="s2">"extensions"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"code"</span><span class="p">:</span> <span class="s2">"QUERY_TOO_EXPENSIVE"</span><span class="p">}</span>
-                <span class="p">}]</span>
-            <span class="p">}),</span>
-            <span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span>
-            <span class="n">media_type</span><span class="o">=</span><span class="s2">"application/json"</span>
-        <span class="p">)</span>
-
-    <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-</code></pre></div>
+<p>The score is computed from the schema: a scalar costs 1, an object field 1 plus its
+selections, and a list field 1 plus its selections times its <code>limit</code> / <code>first</code> argument
+(literal or variable), else <code>complexity_default_list_size</code>. <code>{ users { posts { id } } }</code>
+without limits scores <code>1 + 10 * (1 + 10 * 1) = 111</code>; with <code>users(limit: 2)</code> it scores
+<code>1 + 2 * 11 = 23</code>. A query over <code>complexity_max_score</code> gets a <code>QUERY_TOO_COMPLEX</code> error
+(<code>extensions.complexity</code>, <code>extensions.maxComplexity</code>), one deeper than
+<code>complexity_max_depth</code> a <code>QUERY_TOO_DEEP</code> error. <code>complexity_enabled=False</code> keeps these
+two limits off; <code>max_query_depth</code> always applies.</p>
 <h2 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h2>
 <h3 id="redis-based-rate-limiting">Redis-Based Rate Limiting<a class="headerlink" href="#redis-based-rate-limiting" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -5248,54 +5217,49 @@
 </code></pre></div>
 <h2 id="authentication-security">Authentication Security<a class="headerlink" href="#authentication-security" title="Permanent link">&para;</a></h2>
 <h3 id="token-security">Token Security<a class="headerlink" href="#token-security" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timedelta</span>
 
-<span class="c1"># JWT configuration</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">CustomJWTProvider</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">TokenManager</span>
 
-<span class="n">auth_provider</span> <span class="o">=</span> <span class="n">CustomJWTProvider</span><span class="p">(</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"JWT_SECRET_KEY"</span><span class="p">),</span>  <span class="c1"># NEVER hardcode</span>
-    <span class="n">algorithm</span><span class="o">=</span><span class="s2">"HS256"</span><span class="p">,</span>
-    <span class="n">issuer</span><span class="o">=</span><span class="s2">"https://yourapp.com"</span><span class="p">,</span>
-    <span class="n">audience</span><span class="o">=</span><span class="s2">"https://api.yourapp.com"</span>
+<span class="c1"># JWT configuration (HS256 access and refresh tokens)</span>
+<span class="n">token_manager</span> <span class="o">=</span> <span class="n">TokenManager</span><span class="p">(</span>
+    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"JWT_SECRET_KEY"</span><span class="p">],</span>  <span class="c1"># NEVER hardcode</span>
+    <span class="n">access_token_ttl</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">refresh_token_ttl</span><span class="o">=</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="c1"># Token expiration</span>
-<span class="n">ACCESS_TOKEN_TTL</span> <span class="o">=</span> <span class="mi">3600</span>  <span class="c1"># 1 hour</span>
-<span class="n">REFRESH_TOKEN_TTL</span> <span class="o">=</span> <span class="mi">2592000</span>  <span class="c1"># 30 days</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TokenPair</span><span class="p">:</span>
+    <span class="n">access_token</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">refresh_token</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">token_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"bearer"</span>
+
 
 <span class="c1"># Token rotation</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_access_token</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_access_token</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">refresh_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenPair</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Rotate access token using refresh token."""</span>
-    <span class="c1"># Validate refresh token</span>
-    <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="n">auth_provider</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">refresh_token</span><span class="p">)</span>
+    <span class="c1"># Checks the signature, the expiry and that it is a refresh token</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">token_manager</span><span class="o">.</span><span class="n">verify_refresh_token</span><span class="p">(</span><span class="n">refresh_token</span><span class="p">)</span>
 
-    <span class="c1"># Check token type</span>
-    <span class="k">if</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"token_type"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"refresh"</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid token type"</span><span class="p">)</span>
-
-    <span class="c1"># Generate new access token</span>
-    <span class="n">new_access_token</span> <span class="o">=</span> <span class="n">generate_access_token</span><span class="p">(</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
-        <span class="n">ttl</span><span class="o">=</span><span class="n">ACCESS_TOKEN_TTL</span>
-    <span class="p">)</span>
-
-    <span class="c1"># Optionally rotate refresh token too</span>
-    <span class="n">new_refresh_token</span> <span class="o">=</span> <span class="n">generate_refresh_token</span><span class="p">(</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
-        <span class="n">ttl</span><span class="o">=</span><span class="n">REFRESH_TOKEN_TTL</span>
-    <span class="p">)</span>
+    <span class="c1"># New access and refresh tokens, in the same token family</span>
+    <span class="n">tokens</span> <span class="o">=</span> <span class="n">token_manager</span><span class="o">.</span><span class="n">generate_tokens</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span> <span class="n">family_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"family"</span><span class="p">])</span>
 
     <span class="c1"># Revoke old refresh token</span>
     <span class="k">await</span> <span class="n">revocation_service</span><span class="o">.</span><span class="n">revoke_token</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"access_token"</span><span class="p">:</span> <span class="n">new_access_token</span><span class="p">,</span>
-        <span class="s2">"refresh_token"</span><span class="p">:</span> <span class="n">new_refresh_token</span><span class="p">,</span>
-        <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span>
-    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">TokenPair</span><span class="p">(</span>
+        <span class="n">access_token</span><span class="o">=</span><span class="n">tokens</span><span class="p">[</span><span class="s2">"access_token"</span><span class="p">],</span>
+        <span class="n">refresh_token</span><span class="o">=</span><span class="n">tokens</span><span class="p">[</span><span class="s2">"refresh_token"</span><span class="p">],</span>
+    <span class="p">)</span>
 </code></pre></div>
+<p><code>verify_refresh_token</code> raises <code>TokenExpiredError</code> or <code>InvalidTokenError</code> (from
+<code>fraiseql.auth.native</code>). For tokens from an identity provider (Auth0, or your own
+issuer with <code>iss</code> / <code>aud</code> claims), validate them in an <code>AuthProvider</code> instead: see
+<a href="../../advanced/authentication/#custom-jwt-provider">Authentication</a>.</p>
 <h3 id="password-security">Password Security<a class="headerlink" href="#password-security" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">bcrypt</span>
 
@@ -5331,49 +5295,39 @@
 </code></pre></div>
 <h2 id="sensitive-data-handling">Sensitive Data Handling<a class="headerlink" href="#sensitive-data-handling" title="Permanent link">&para;</a></h2>
 <h3 id="pii-protection">PII Protection<a class="headerlink" href="#pii-protection" title="Permanent link">&para;</a></h3>
+<p>Keep the sensitive values in private fields (a name starting with <code>_</code>: not in the
+schema, nor in the <code>where</code> and <code>orderBy</code> inputs), and expose them through field
+resolvers that check who asks:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">authorize_field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
 
-<span class="nd">@dataclass</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""User with PII protection."""</span>
-    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">_ssn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># Private field</span>
-    <span class="n">_credit_card</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">ssn_masked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Return masked SSN."""</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">"***-**-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">"</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">credit_card_masked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Return masked credit card."""</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_credit_card</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">"****-****-****-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_credit_card</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">"</span>
-
-<span class="c1"># GraphQL type</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type_</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UserGQL</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">_ssn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># private: not in the schema</span>
 
-    <span class="c1"># Only admins can see full SSN</span>
-    <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">obj</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">))</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ssn</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="c1"># Only admins can see the full SSN</span>
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
+    <span class="nd">@authorize_field</span><span class="p">(</span><span class="k">lambda</span> <span class="n">info</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">has_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">))</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ssn</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span>
 
-    <span class="c1"># Everyone sees masked version</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ssn_masked</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ssn_masked</span>
+    <span class="c1"># Everyone sees the masked version</span>
+    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ssn_masked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"***-**-</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">:]</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ssn</span> <span class="k">else</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">to_graphql</span><span class="p">(</span><span class="n">row</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserGQL</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">UserGQL</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">email</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"email"</span><span class="p">],</span> <span class="n">name</span><span class="o">=</span><span class="n">row</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">_ssn</span><span class="o">=</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ssn"</span><span class="p">))</span>
 </code></pre></div>
+<p>A denied <code>ssn</code> is <code>null</code>, with the error <code>Not authorized to access field 'ssn'</code>
+(code <code>FIELD_AUTHORIZATION_ERROR</code>). These resolvers run when graphql-core resolves the
+object, as for a resolver that returns <code>UserGQL</code> instances.</p>
 <h3 id="data-encryption">Data Encryption<a class="headerlink" href="#data-encryption" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">cryptography.fernet</span><span class="w"> </span><span class="kn">import</span> <span class="n">Fernet</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -5396,16 +5350,16 @@
 <span class="c1"># Usage</span>
 <span class="n">encryptor</span> <span class="o">=</span> <span class="n">FieldEncryption</span><span class="p">()</span>
 
-<span class="c1"># Store encrypted</span>
+<span class="c1"># Store encrypted (conn: a psycopg connection, e.g. from db.get_pool().connection())</span>
 <span class="n">encrypted_ssn</span> <span class="o">=</span> <span class="n">encryptor</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="s2">"123-45-6789"</span><span class="p">)</span>
 <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-    <span class="s2">"INSERT INTO users (id, ssn_encrypted) VALUES ($1, $2)"</span><span class="p">,</span>
-    <span class="n">user_id</span><span class="p">,</span> <span class="n">encrypted_ssn</span>
+    <span class="s2">"INSERT INTO users (id, ssn_encrypted) VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)"</span><span class="p">,</span>
+    <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">encrypted_ssn</span><span class="p">)</span>
 <span class="p">)</span>
 
 <span class="c1"># Retrieve and decrypt</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT ssn_encrypted FROM users WHERE id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
-<span class="n">encrypted</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()[</span><span class="s2">"ssn_encrypted"</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT ssn_encrypted FROM users WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,))</span>
+<span class="n">encrypted</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
 <span class="n">ssn</span> <span class="o">=</span> <span class="n">encryptor</span><span class="o">.</span><span class="n">decrypt</span><span class="p">(</span><span class="n">encrypted</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="audit-logging">Audit Logging<a class="headerlink" href="#audit-logging" title="Permanent link">&para;</a></h2>
@@ -5470,21 +5424,25 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_order_status</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Update order status - automatically logged."""</span>
     <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="c1"># Set user context for trigger</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="c1"># Set user context for trigger (transaction-local, like SET LOCAL)</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SET LOCAL app.current_user_id = $1"</span><span class="p">,</span>
-            <span class="n">user_id</span>
+            <span class="s2">"SELECT set_config('app.current_user_id', </span><span class="si">%s</span><span class="s2">, true)"</span><span class="p">,</span>
+            <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">),)</span>
         <span class="p">)</span>
 
         <span class="c1"># Update (trigger logs before/after state)</span>
         <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"UPDATE orders SET status = $1 WHERE id = $2"</span><span class="p">,</span>
-            <span class="n">status</span><span class="p">,</span> <span class="n">order_id</span>
+            <span class="s2">"UPDATE orders SET status = </span><span class="si">%s</span><span class="s2"> WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">order_id</span><span class="p">)</span>
         <span class="p">)</span>
+    <span class="c1"># The pool commits when the block exits</span>
 
-    <span class="k">return</span> <span class="k">await</span> <span class="n">fetch_order</span><span class="p">(</span><span class="n">order_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_order"</span><span class="p">,</span> <span class="s2">"updateOrderStatus"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">}</span>
+    <span class="p">)</span>
 </code></pre></div>
 <h2 id="compliance">Compliance<a class="headerlink" href="#compliance" title="Permanent link">&para;</a></h2>
 <h3 id="gdpr-compliance">GDPR Compliance<a class="headerlink" href="#gdpr-compliance" title="Permanent link">&para;</a></h3>
@@ -5521,19 +5479,19 @@
 <span class="w">    </span><span class="sd">"""GDPR: Right to be forgotten."""</span>
     <span class="n">user_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span><span class="o">.</span><span class="n">user_id</span>
 
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-            <span class="c1"># Anonymize or delete data</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="s2">"UPDATE users SET email = $1, name = $2, deleted_at = NOW() WHERE id = $3"</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">"deleted-</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">@deleted.com"</span><span class="p">,</span>
-                <span class="s2">"Deleted User"</span><span class="p">,</span>
-                <span class="n">user_id</span>
-            <span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">forget_user</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+        <span class="c1"># Anonymize or delete data</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">"UPDATE users SET email = </span><span class="si">%s</span><span class="s2">, name = </span><span class="si">%s</span><span class="s2">, deleted_at = NOW() WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">(</span><span class="sa">f</span><span class="s2">"deleted-</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">@deleted.com"</span><span class="p">,</span> <span class="s2">"Deleted User"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+        <span class="p">)</span>
 
-            <span class="c1"># Delete related data</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM user_sessions WHERE user_id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM user_consents WHERE user_id = $1"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">)</span>
+        <span class="c1"># Delete related data</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM user_sessions WHERE user_id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,))</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DELETE FROM user_consents WHERE user_id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,))</span>
+
+    <span class="c1"># One transaction: everything or nothing</span>
+    <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">forget_user</span><span class="p">)</span>
 
     <span class="c1"># Log deletion</span>
     <span class="n">security_logger</span><span class="o">.</span><span class="n">log_event</span><span class="p">(</span>
@@ -5673,10 +5631,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

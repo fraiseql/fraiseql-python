@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4965,9 +4965,12 @@
 <span class="sd">- Run the SQL setup below first</span>
 <span class="sd">"""</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="c1"># SQL Setup (run this first in your database):</span>
 <span class="n">SQL_SETUP</span> <span class="o">=</span> <span class="s2">"""</span>
@@ -4991,7 +4994,12 @@
 <span class="s2">    created_at TIMESTAMPTZ DEFAULT NOW()</span>
 <span class="s2">);</span>
 
-<span class="s2">-- 3. Create mutation function</span>
+<span class="s2">-- 3. Create the read view (FraiseQL reads JSONB `data` from views)</span>
+<span class="s2">CREATE OR REPLACE VIEW v_user AS</span>
+<span class="s2">SELECT id, jsonb_build_object('id', id, 'name', name, 'email', email) AS data</span>
+<span class="s2">FROM users;</span>
+
+<span class="s2">-- 4. Create mutation function</span>
 <span class="s2">CREATE OR REPLACE FUNCTION create_user(input_payload jsonb)</span>
 <span class="s2">RETURNS mutation_response AS $$</span>
 <span class="s2">DECLARE</span>
@@ -5027,64 +5035,84 @@
 
 <span class="c1"># Python Integration:</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"users"</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">MutationResponse</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Create a new user."""</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="c1"># Call PostgreSQL function</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-        <span class="s2">"SELECT * FROM create_user($1::jsonb)"</span><span class="p">,</span>
-        <span class="n">fraiseql</span><span class="o">.</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">})</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>  <span class="c1"># filled from mutation_response.entity</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="k">pass</span>  <span class="c1"># status, message and errors are added automatically</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"create_user"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a new user: calls create_user(input jsonb)."""</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
+
+<span class="n">MUTATION</span> <span class="o">=</span> <span class="s2">"""</span>
+<span class="s2">mutation CreateUser($input: CreateUserInput!) {</span>
+<span class="s2">  createUser(input: $input) {</span>
+<span class="s2">    ... on CreateUserSuccess {</span>
+<span class="s2">      status</span>
+<span class="s2">      message</span>
+<span class="s2">      user { id name email }</span>
+<span class="s2">    }</span>
+<span class="s2">    ... on CreateUserError {</span>
+<span class="s2">      status</span>
+<span class="s2">      message</span>
+<span class="s2">      errors { code identifier message }</span>
+<span class="s2">    }</span>
+<span class="s2">  }</span>
+<span class="s2">}</span>
+<span class="s2">"""</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+        <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+        <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+        <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">],</span>
+        <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">CreateUser</span><span class="p">],</span>
     <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">MutationResponse</span><span class="o">.</span><span class="n">from_db</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="k">with</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">user_input</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Alice Johnson"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"alice@example.com"</span><span class="p">},</span>
+            <span class="p">{</span><span class="s2">"email"</span><span class="p">:</span> <span class="s2">"nobody@example.com"</span><span class="p">},</span>  <span class="c1"># no name: validation error</span>
+        <span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                <span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="n">MUTATION</span><span class="p">,</span> <span class="s2">"variables"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="n">user_input</span><span class="p">}}</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="n">schema</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">Schema</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">)</span>
-
-    <span class="c1"># Execute mutation</span>
-    <span class="n">mutation</span> <span class="o">=</span> <span class="s2">"""</span>
-<span class="s2">    mutation {</span>
-<span class="s2">      createUser(name: "Alice Johnson", email: "alice@example.com") {</span>
-<span class="s2">        status</span>
-<span class="s2">        message</span>
-<span class="s2">        entity {</span>
-<span class="s2">          id</span>
-<span class="s2">          name</span>
-<span class="s2">          email</span>
-<span class="s2">        }</span>
-<span class="s2">        errors {</span>
-<span class="s2">          code</span>
-<span class="s2">          identifier</span>
-<span class="s2">          message</span>
-<span class="s2">        }</span>
-<span class="s2">      }</span>
-<span class="s2">    }</span>
-<span class="s2">    """</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">mutation</span><span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ GraphQL Errors: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">response</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'createUser'</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'created'</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ </span><span class="si">{</span><span class="n">response</span><span class="p">[</span><span class="s1">'message'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   User ID: </span><span class="si">{</span><span class="n">response</span><span class="p">[</span><span class="s1">'entity'</span><span class="p">][</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"⚠️  </span><span class="si">{</span><span class="n">response</span><span class="p">[</span><span class="s1">'message'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">response</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'errors'</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   - </span><span class="si">{</span><span class="n">error</span><span class="p">[</span><span class="s1">'identifier'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="p">[</span><span class="s1">'message'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s2">"errors"</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"❌ GraphQL Errors: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">'errors'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"createUser"</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">response</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"created"</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"✅ </span><span class="si">{</span><span class="n">response</span><span class="p">[</span><span class="s1">'message'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   User ID: </span><span class="si">{</span><span class="n">response</span><span class="p">[</span><span class="s1">'user'</span><span class="p">][</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"⚠️  </span><span class="si">{</span><span class="n">response</span><span class="p">[</span><span class="s1">'message'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">error</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s2">"errors"</span><span class="p">]:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"   - </span><span class="si">{</span><span class="n">error</span><span class="p">[</span><span class="s1">'identifier'</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="p">[</span><span class="s1">'message'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
-    <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+    <span class="n">main</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>Expected Output (Success):</strong></p>
 <div class="highlight"><pre><span></span><code>✅ User created successfully
@@ -5535,7 +5563,7 @@ GraphQL Error Response (root fields + errors array)
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">failure</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
     <span class="c1"># errors array auto-populated</span>
@@ -5544,7 +5572,7 @@ GraphQL Error Response (root fields + errors array)
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateUserError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
 </code></pre></div>
 <h3 id="example-2-update-with-validation">Example 2: Update with Validation<a class="headerlink" href="#example-2-update-with-validation" title="Permanent link">&para;</a></h3>
 <p><strong>PostgreSQL Function:</strong></p>
@@ -5645,12 +5673,12 @@ GraphQL Error Response (root fields + errors array)
 <h2 id="migration-guide">Migration Guide<a class="headerlink" href="#migration-guide" title="Permanent link">&para;</a></h2>
 <h3 id="from-ad-hoc-field_errors">From ad-hoc field_errors<a class="headerlink" href="#from-ad-hoc-field_errors" title="Permanent link">&para;</a></h3>
 <p><strong>Before:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">failure</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">(</span><span class="n">MutationResultBase</span><span class="p">):</span>
     <span class="n">field_errors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
 <p><strong>After:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">failure</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
     <span class="c1"># errors array auto-populated from status strings</span>
@@ -5661,7 +5689,7 @@ GraphQL Error Response (root fields + errors array)
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">(</span><span class="n">MutationResultBase</span><span class="p">):</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">failure</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">(</span><span class="n">MutationResultBase</span><span class="p">):</span>
     <span class="k">pass</span>
 </code></pre></div>
@@ -5671,7 +5699,7 @@ GraphQL Error Response (root fields + errors array)
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">failure</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
     <span class="c1"># errors auto-populated</span>
@@ -5767,10 +5795,10 @@ GraphQL Error Response (root fields + errors array)
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

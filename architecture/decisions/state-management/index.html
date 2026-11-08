@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5344,7 +5344,7 @@ run the function, store the result, and return it.</p>
     <span class="n">key</span> <span class="o">=</span> <span class="n">cache</span><span class="o">.</span><span class="n">key_builder</span><span class="o">.</span><span class="n">build_key</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch</span><span class="p">():</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
 
     <span class="k">return</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_or_set</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">fetch</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
 </code></pre></div>
@@ -5382,7 +5382,7 @@ the affected entries automatically — no changes to your resolvers:</p>
 <span class="n">cached_db</span> <span class="o">=</span> <span class="n">CachedRepository</span><span class="p">(</span><span class="n">base_repository</span><span class="o">=</span><span class="n">db</span><span class="p">,</span> <span class="n">cache</span><span class="o">=</span><span class="n">ResultCache</span><span class="p">(</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">pool</span><span class="p">)))</span>
 
 <span class="c1"># Reads go through the cache (tenant-isolated key, cache-aside)</span>
-<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"published"</span><span class="p">)</span>
+<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="s2">"published"</span><span class="p">})</span>
 
 <span class="c1"># Per-call overrides</span>
 <span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cached_db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>          <span class="c1"># bypass cache</span>
@@ -5470,7 +5470,7 @@ TTL, and cascade behaviour come for free regardless of backend.</p>
 
 <span class="nd">@cached_query</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">trending_posts</span><span class="p">(</span><span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">):</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"score"</span><span class="p">,</span> <span class="s2">"desc"</span><span class="p">)],</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"score"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}],</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 
 <span class="c1"># Bypass on demand</span>
 <span class="n">fresh</span> <span class="o">=</span> <span class="k">await</span> <span class="n">trending_posts</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">skip_cache</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -5597,10 +5597,10 @@ counts, expiry). Watch:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

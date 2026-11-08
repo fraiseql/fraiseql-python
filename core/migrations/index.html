@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4608,6 +4608,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#install" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Install
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#initialize-migrations" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4623,17 +4634,6 @@
     <span class="md-ellipsis">
       
         Create Your First Migration
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-the-migration" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Write the Migration
       
     </span>
   </a>
@@ -4669,10 +4669,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fraiseql-migrate-init" class="md-nav__link">
+  <a href="#fraiseql-migrate-init-path" class="md-nav__link">
     <span class="md-ellipsis">
       
-        fraiseql migrate init
+        fraiseql migrate init [PATH]
       
     </span>
   </a>
@@ -4858,10 +4858,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#migration-already-applied" class="md-nav__link">
+  <a href="#migration-modified-after-being-applied" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration Already Applied
+        Migration Modified After Being Applied
       
     </span>
   </a>
@@ -4869,10 +4869,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#migration-failed-midway" class="md-nav__link">
+  <a href="#migration-failed" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Migration Failed Midway
+        Migration Failed
       
     </span>
   </a>
@@ -5023,34 +5023,62 @@
 <h3 id="fraiseqls-approach">FraiseQL's Approach<a class="headerlink" href="#fraiseqls-approach" title="Permanent link">&para;</a></h3>
 <p>FraiseQL's migration system is powered by <strong>confiture</strong> (https://github.com/fraiseql/confiture):</p>
 <ul>
-<li><strong>Simple</strong>: SQL-based migrations (no complex DSL to learn)</li>
+<li><strong>Simple</strong>: plain SQL migrations (<code>.up.sql</code> / <code>.down.sql</code>), or Python when you need it</li>
 <li><strong>Integrated</strong>: Built into the <code>fraiseql</code> CLI</li>
-<li><strong>Safe</strong>: Track applied migrations to prevent duplicates</li>
+<li><strong>Safe</strong>: each migration runs in a transaction, applied migrations are tracked so
+  they never run twice, and concurrent <code>migrate up</code> runs are serialized by a lock</li>
 <li><strong>Flexible</strong>: Works with any PostgreSQL schema</li>
 </ul>
 <hr />
 <h2 id="quick-start">Quick Start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<h3 id="install">Install<a class="headerlink" href="#install" title="Permanent link">&para;</a></h3>
+<p><code>fraiseql migrate</code> needs the <code>migrate</code> extra:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"fraiseql[migrate]&lt;2"</span>
+</code></pre></div>
+<p>It is optional because confiture depends on
+<a href="https://github.com/lelit/pglast">pglast</a>, which is licensed GPL-3.0-or-later.</p>
 <h3 id="initialize-migrations">Initialize Migrations<a class="headerlink" href="#initialize-migrations" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Navigate to your project</span>
 <span class="nb">cd</span><span class="w"> </span>my-fraiseql-project
 
 <span class="c1"># Initialize migration system</span>
 fraiseql<span class="w"> </span>migrate<span class="w"> </span>init
-
-<span class="c1"># This creates:</span>
-<span class="c1"># - migrations/ directory</span>
-<span class="c1"># - migrations/README.md with instructions</span>
 </code></pre></div>
+<p>This creates a <code>db/</code> directory:</p>
+<div class="highlight"><pre><span></span><code>db/
+├── README.md
+├── environments/
+│   └── local.yaml        # database connection for `migrate up/down/status`
+├── migrations/           # migration files
+├── schema/
+│   ├── 00_common/extensions.sql
+│   └── 10_tables/example.sql
+└── seeds/
+    ├── common/
+    ├── development/
+    └── test/
+</code></pre></div>
+<p><code>db/environments/local.yaml</code> holds the database connection:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">local</span>
+<span class="nt">include_dirs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db/schema/00_common</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">db/schema/10_tables</span>
+<span class="nt">exclude_dirs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+
+<span class="nt">database_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://postgres:postgres@localhost:5432/fraiseql_local</span>
+</code></pre></div>
+<p>Edit <code>database_url</code> to point at your database. Older projects have a <code>database:</code>
+mapping (<code>host</code>, <code>port</code>, <code>database</code>, <code>user</code>, <code>password</code>) instead; it still works,
+and FraiseQL turns it into a URL for you.</p>
 <h3 id="create-your-first-migration">Create Your First Migration<a class="headerlink" href="#create-your-first-migration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Create a new migration</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>create<span class="w"> </span>initial_schema
-
-<span class="c1"># This creates:</span>
-<span class="c1"># - migrations/001_initial_schema.sql</span>
+<p>A migration is either a pair of SQL files or a Python file. Both kinds can live in
+the same directory and are applied in version order.</p>
+<p><strong>SQL migration.</strong> Write two files that share a version and a name, the version
+being a timestamp:</p>
+<div class="highlight"><pre><span></span><code>db/migrations/20260115103000_initial_schema.up.sql
+db/migrations/20260115103000_initial_schema.down.sql
 </code></pre></div>
-<h3 id="write-the-migration">Write the Migration<a class="headerlink" href="#write-the-migration" title="Permanent link">&para;</a></h3>
-<p>Edit <code>migrations/001_initial_schema.sql</code>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 001: Initial schema</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260115103000_initial_schema.up.sql</span>
 
 <span class="c1">-- Users table</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span>
@@ -5071,33 +5099,52 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>create<span class
 <span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
 <span class="p">);</span>
 </code></pre></div>
-<h3 id="apply-the-migration">Apply the Migration<a class="headerlink" href="#apply-the-migration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Apply pending migrations</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260115103000_initial_schema.down.sql</span>
+<span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="p">;</span>
+<span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="p">;</span>
+</code></pre></div>
+<p>Every <code>.up.sql</code> needs its <code>.down.sql</code>: <code>migrate up</code> refuses to run without it.</p>
+<p><strong>Python migration.</strong> <code>fraiseql migrate create</code> writes one for you:</p>
+<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>create<span class="w"> </span>initial_schema
+<span class="c1"># Creates db/migrations/20260115103000_initial_schema.py</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">confiture.models.migration</span><span class="w"> </span><span class="kn">import</span> <span class="n">Migration</span>
 
-<span class="c1"># Output:</span>
-<span class="c1"># ✓ Running migration: 001_initial_schema.sql</span>
-<span class="c1"># ✓ Migration completed successfully</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">InitialSchema</span><span class="p">(</span><span class="n">Migration</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Migration: initial_schema."""</span>
+
+    <span class="n">version</span> <span class="o">=</span> <span class="s2">"20260115103000"</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"initial_schema"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">up</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"CREATE TABLE tb_user (...)"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">down</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DROP TABLE tb_user"</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="apply-the-migration">Apply the Migration<a class="headerlink" href="#apply-the-migration" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
+
+<span class="c1"># ⚡ Applied 20260115103000_initial_schema ✅</span>
+<span class="c1">#</span>
+<span class="c1"># ✅ Successfully applied 1 migration(s)!</span>
 </code></pre></div>
 <hr />
 <h2 id="migration-commands">Migration Commands<a class="headerlink" href="#migration-commands" title="Permanent link">&para;</a></h2>
-<h3 id="fraiseql-migrate-init"><code>fraiseql migrate init</code><a class="headerlink" href="#fraiseql-migrate-init" title="Permanent link">&para;</a></h3>
-<p>Initialize the migration system in your project.</p>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>init
-
-<span class="c1"># Creates:</span>
-<span class="c1"># - migrations/ directory</span>
-<span class="c1"># - migrations/README.md</span>
+<p><code>up</code>, <code>down</code> and <code>status</code> read the connection from <code>--config</code>
+(default <code>db/environments/local.yaml</code>), and every command except <code>init</code> takes
+<code>--migrations-dir</code> (default <code>db/migrations</code>). Use another environment file to
+target another database:</p>
+<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--config<span class="w"> </span>db/environments/production.yaml
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<ul>
-<li><code>--path PATH</code>: Custom migrations directory (default: <code>./migrations</code>)</li>
-</ul>
+<h3 id="fraiseql-migrate-init-path"><code>fraiseql migrate init [PATH]</code><a class="headerlink" href="#fraiseql-migrate-init-path" title="Permanent link">&para;</a></h3>
+<p>Create the <code>db/</code> layout shown above in <code>PATH</code> (default: the current directory).
+If <code>db/</code> already exists, it asks before overwriting files.</p>
 <h3 id="fraiseql-migrate-create-name"><code>fraiseql migrate create &lt;name&gt;</code><a class="headerlink" href="#fraiseql-migrate-create-name" title="Permanent link">&para;</a></h3>
-<p>Create a new migration file.</p>
+<p>Create a Python migration named <code>&lt;timestamp&gt;_&lt;name&gt;.py</code>, with a <code>Migration</code>
+subclass whose <code>up()</code> and <code>down()</code> you fill in.</p>
 <div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>create<span class="w"> </span>add_comments_table
-
-<span class="c1"># Creates: migrations/002_add_comments_table.sql</span>
 </code></pre></div>
 <p><strong>Naming conventions:</strong></p>
 <ul>
@@ -5106,59 +5153,45 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
 <li>Be specific: <code>add_user_bio_column</code> not <code>update_users</code></li>
 </ul>
 <h3 id="fraiseql-migrate-up"><code>fraiseql migrate up</code><a class="headerlink" href="#fraiseql-migrate-up" title="Permanent link">&para;</a></h3>
-<p>Apply all pending migrations.</p>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
+<p>Apply pending migrations, oldest first.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Apply every pending migration</span>
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
 
-<span class="c1"># Apply all pending migrations</span>
+<span class="c1"># Apply pending migrations up to and including this version</span>
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--target<span class="w"> </span><span class="m">20260116142000</span>
 </code></pre></div>
-<p><strong>Options:</strong></p>
-<ul>
-<li><code>--steps N</code>: Apply only N migrations</li>
-<li><code>--dry-run</code>: Show what would be applied without running</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="c1"># Apply next 2 migrations only</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--steps<span class="w"> </span><span class="m">2</span>
-
-<span class="c1"># Preview migrations without applying</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--dry-run
-</code></pre></div>
+<p>If a migration fails, its transaction is rolled back, the command stops and exits
+non-zero, and migrations applied before it in the same run stay applied.</p>
 <h3 id="fraiseql-migrate-down"><code>fraiseql migrate down</code><a class="headerlink" href="#fraiseql-migrate-down" title="Permanent link">&para;</a></h3>
-<p>Roll back the last migration.</p>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>down
+<p>Roll back applied migrations, newest first, after asking for confirmation.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Roll back the most recent migration</span>
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>down
 
-<span class="c1"># Rolls back the most recent migration</span>
-</code></pre></div>
-<p><strong>Options:</strong></p>
-<ul>
-<li><code>--steps N</code>: Roll back N migrations</li>
-<li><code>--force</code>: Skip confirmation prompt</li>
-</ul>
-<div class="highlight"><pre><span></span><code><span class="c1"># Roll back last 2 migrations</span>
+<span class="c1"># Roll back the last 2 migrations</span>
 fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="w"> </span>--steps<span class="w"> </span><span class="m">2</span>
-
-<span class="c1"># Roll back without confirmation (dangerous!)</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="w"> </span>--force
 </code></pre></div>
 <p><strong>⚠️ Warning</strong>: Only use <code>down</code> in development. In production, prefer forward-only migrations.</p>
 <h3 id="fraiseql-migrate-status"><code>fraiseql migrate status</code><a class="headerlink" href="#fraiseql-migrate-status" title="Permanent link">&para;</a></h3>
-<p>Show migration status.</p>
+<p>List every migration file and whether it is applied.</p>
 <div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
-
-<span class="c1"># Output:</span>
-<span class="c1"># Migration Status:</span>
-<span class="c1">#   ✓ 001_initial_schema.sql (applied 2024-01-15 10:30:00)</span>
-<span class="c1">#   ✓ 002_add_comments_table.sql (applied 2024-01-16 14:20:00)</span>
-<span class="c1">#   ○ 003_add_indexes.sql (pending)</span>
 </code></pre></div>
+<div class="highlight"><pre><span></span><code>                 FraiseQL Migrations
+┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Version        ┃ Name               ┃ Status     ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ 20260115103000 │ initial_schema     │ ✅ applied │
+│ 20260116142000 │ add_comments_table │ ⏳ pending │
+└────────────────┴────────────────────┴────────────┘
+
+📊 Total: 2 migrations (1 applied, 1 pending)
+</code></pre></div>
+<p>If the database can't be reached, it still lists the files, with status <code>unknown</code>.</p>
 <hr />
 <h2 id="migration-file-structure">Migration File Structure<a class="headerlink" href="#migration-file-structure" title="Permanent link">&para;</a></h2>
 <h3 id="basic-structure">Basic Structure<a class="headerlink" href="#basic-structure" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 001: Description of what this migration does</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260115103000_add_user_profile.up.sql</span>
 <span class="c1">--</span>
-<span class="c1">-- Author: Your Name</span>
-<span class="c1">-- Date: 2024-01-15</span>
-<span class="c1">--</span>
-<span class="c1">-- This migration adds support for user profiles with bio and avatar.</span>
+<span class="c1">-- Adds support for user profiles with bio and avatar.</span>
 
 <span class="c1">-- Create table</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user_profile</span><span class="w"> </span><span class="p">(</span>
@@ -5177,40 +5210,35 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">created_at</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">'1 day'</span><span class="p">;</span>
 </code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260115103000_add_user_profile.down.sql</span>
+<span class="k">DROP</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user_profile</span><span class="p">;</span>
+</code></pre></div>
 <h3 id="migration-best-practices">Migration Best Practices<a class="headerlink" href="#migration-best-practices" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>One purpose per migration</strong></li>
 </ol>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ✅ Good: Focused on one change</span>
-<span class="c1">-- Migration 005: Add email verification</span>
+<span class="c1">-- 20260120090000_add_email_verification.up.sql</span>
 
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">email_verified</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">FALSE</span><span class="p">;</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_email_verified</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">email_verified</span><span class="p">);</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><span class="c1">-- ❌ Bad: Multiple unrelated changes</span>
-<span class="c1">-- Migration 005: Various updates</span>
+<span class="c1">-- 20260120090000_various_updates.up.sql</span>
 
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">email_verified</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="p">;</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_settings</span><span class="w"> </span><span class="p">(...);</span><span class="w">  </span><span class="c1">-- Unrelated!</span>
 <span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">views</span><span class="w"> </span><span class="nb">INTEGER</span><span class="p">;</span><span class="w">  </span><span class="c1">-- Also unrelated!</span>
 </code></pre></div>
 <ol>
-<li><strong>Include rollback comments</strong></li>
+<li><strong>Write a real <code>down</code></strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 010: Add post categories</span>
-
-<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_category</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">uuid_generate_v4</span><span class="p">(),</span>
-<span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">UNIQUE</span>
-<span class="p">);</span>
-
-<span class="c1">-- Rollback:</span>
-<span class="c1">-- DROP TABLE tb_category;</span>
-</code></pre></div>
+<p>The <code>.down.sql</code> file (or <code>down()</code> method) should undo exactly what <code>up</code> did,
+   so <code>fraiseql migrate down</code> leaves the schema as it was.</p>
 <ol>
 <li><strong>Handle existing data</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 015: Make email required</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260125110000_make_email_required.up.sql</span>
 
 <span class="c1">-- First, ensure all existing users have emails</span>
 <span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">username</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="s1">'@example.com'</span>
@@ -5223,7 +5251,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="
 <h2 id="cqrs-migrations">CQRS Migrations<a class="headerlink" href="#cqrs-migrations" title="Permanent link">&para;</a></h2>
 <p>When using FraiseQL's CQRS pattern, your migrations will include both command (<code>tb_*</code>) and query (<code>tv_*</code>) tables.</p>
 <h3 id="example-adding-a-cqrs-entity">Example: Adding a CQRS Entity<a class="headerlink" href="#example-adding-a-cqrs-entity" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 020: Add comments with CQRS pattern</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260201100000_add_comments.up.sql</span>
 
 <span class="c1">-- ============================================================================</span>
 <span class="c1">-- COMMAND SIDE: Normalized table for writes</span>
@@ -5287,40 +5315,38 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>down<span class="
 <ol>
 <li><strong>Always test migrations first</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Test in development</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--dry-run
-
-<span class="c1"># Apply in development</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
+<div class="highlight"><pre><span></span><code><span class="c1"># Apply against a development or staging database</span>
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--config<span class="w"> </span>db/environments/staging.yaml
 
 <span class="c1"># Verify application works</span>
 ./test_suite.sh
 </code></pre></div>
 <ol>
-<li><strong>Use transactions</strong></li>
+<li><strong>Don't add <code>BEGIN</code> / <code>COMMIT</code></strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 030: Update post status</span>
-
-<span class="k">BEGIN</span><span class="p">;</span>
-
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="s1">'draft'</span><span class="p">;</span>
-<span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">SET</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">CASE</span>
-<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">published</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">'published'</span>
-<span class="w">    </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">'draft'</span>
-<span class="k">END</span><span class="p">;</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">DROP</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">published</span><span class="p">;</span>
-
-<span class="k">COMMIT</span><span class="p">;</span>
-</code></pre></div>
+<p>Each migration already runs in its own transaction, and a failure rolls back
+   everything that migration did. A <code>COMMIT</code> inside the file would end that
+   transaction early.</p>
 <ol>
-<li><strong>Avoid long-running migrations during peak hours</strong></li>
+<li><strong>Run what can't be in a transaction from a Python migration</strong></li>
 </ol>
-<div class="highlight"><pre><span></span><code><span class="c1">-- ❌ Bad: Locks table during heavy read load</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_post_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+<p><code>CREATE INDEX CONCURRENTLY</code> doesn't lock writes, but PostgreSQL refuses to run
+   it inside a transaction. Set <code>transactional = False</code> on a Python migration:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AddPostCreatedIndex</span><span class="p">(</span><span class="n">Migration</span><span class="p">):</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s2">"20260301120000"</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"add_post_created_index"</span>
+    <span class="n">transactional</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># required for CONCURRENTLY</span>
 
-<span class="c1">-- ✅ Better: Create index concurrently (doesn't lock)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">CONCURRENTLY</span><span class="w"> </span><span class="n">idx_post_created</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_post</span><span class="p">(</span><span class="n">created_at</span><span class="p">);</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">up</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">"CREATE INDEX CONCURRENTLY idx_post_created ON tb_post(created_at)"</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">down</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"DROP INDEX CONCURRENTLY idx_post_created"</span><span class="p">)</span>
 </code></pre></div>
+<p>A non-transactional migration that fails midway is not rolled back, so keep it
+   to one statement.</p>
 <ol>
 <li><strong>Have a rollback plan</strong></li>
 </ol>
@@ -5328,7 +5354,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
 pg_dump<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </span>-d<span class="w"> </span>database<span class="w"> </span>&gt;<span class="w"> </span>backup_before_migration.sql
 
 <span class="c1"># Apply migration</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--config<span class="w"> </span>db/environments/production.yaml
 
 <span class="c1"># If something goes wrong</span>
 psql<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </span>-d<span class="w"> </span>database<span class="w"> </span>&lt;<span class="w"> </span>backup_before_migration.sql
@@ -5339,14 +5365,16 @@ psql<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </spa
 
 <span class="nb">set</span><span class="w"> </span>-e<span class="w">  </span><span class="c1"># Exit on error</span>
 
+<span class="nv">CONFIG</span><span class="o">=</span>db/environments/production.yaml
+
 <span class="nb">echo</span><span class="w"> </span><span class="s2">"1. Creating database backup..."</span>
 pg_dump<span class="w"> </span>-U<span class="w"> </span><span class="nv">$DB_USER</span><span class="w"> </span>-d<span class="w"> </span><span class="nv">$DB_NAME</span><span class="w"> </span>&gt;<span class="w"> </span>backup_<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d_%H%M%S<span class="k">)</span>.sql
 
 <span class="nb">echo</span><span class="w"> </span><span class="s2">"2. Running migrations..."</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>up<span class="w"> </span>--config<span class="w"> </span><span class="nv">$CONFIG</span>
 
 <span class="nb">echo</span><span class="w"> </span><span class="s2">"3. Verifying database state..."</span>
-fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
+fraiseql<span class="w"> </span>migrate<span class="w"> </span>status<span class="w"> </span>--config<span class="w"> </span><span class="nv">$CONFIG</span>
 
 <span class="nb">echo</span><span class="w"> </span><span class="s2">"4. Running application tests..."</span>
 ./test_suite.sh
@@ -5355,55 +5383,37 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 </code></pre></div>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="migration-already-applied">Migration Already Applied<a class="headerlink" href="#migration-already-applied" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Migration file modified after being applied.</p>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
-<span class="c1"># Error: Migration 003_add_indexes.sql checksum mismatch</span>
+<h3 id="migration-modified-after-being-applied">Migration Modified After Being Applied<a class="headerlink" href="#migration-modified-after-being-applied" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: An applied migration file was edited. Recent confiture releases
+compare each applied file with the checksum recorded when it ran, and refuse to
+continue:</p>
+<div class="highlight"><pre><span></span><code>Error: Checksum verification failed for 1 migration(s): 20260115103000.
+Migration files have been modified after application.
 </code></pre></div>
-<p><strong>Solution</strong>: Don't modify applied migrations. Create a new migration instead:</p>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>create<span class="w"> </span>fix_indexes
+<p><strong>Solution</strong>: Restore the applied file, and make the change in a new migration
+instead.</p>
+<h3 id="migration-failed">Migration Failed<a class="headerlink" href="#migration-failed" title="Permanent link">&para;</a></h3>
+<p><strong>Problem</strong>: <code>fraiseql migrate up</code> stopped with an error.</p>
+<div class="highlight"><pre><span></span><code>Error: Failed to apply migration 20260201100000 (add_comments): SQL execution failed | ...
 </code></pre></div>
-<h3 id="migration-failed-midway">Migration Failed Midway<a class="headerlink" href="#migration-failed-midway" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Migration partially applied then failed.</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 040: Multiple operations</span>
-
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">phone</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">;</span><span class="w">  </span><span class="c1">-- ✓ Applied</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_phone</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">phone</span><span class="p">);</span><span class="w">  </span><span class="c1">-- ✓ Applied</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">ADD</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">invalid_column</span><span class="w"> </span><span class="n">INVALID_TYPE</span><span class="p">;</span><span class="w">  </span><span class="c1">-- ✗ Failed</span>
-</code></pre></div>
-<p><strong>Solution</strong>:</p>
-<ol>
-<li>Check what was applied:</li>
-</ol>
-<div class="highlight"><pre><span></span><code>psql<span class="w"> </span>-U<span class="w"> </span>user<span class="w"> </span>-d<span class="w"> </span>database<span class="w"> </span>-c<span class="w"> </span><span class="s2">"\d tb_user"</span>
-</code></pre></div>
-<ol>
-<li>Manually fix:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Remove partially applied changes</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">DROP</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">phone</span><span class="p">;</span>
-<span class="k">DROP</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_user_phone</span><span class="p">;</span>
-</code></pre></div>
-<ol>
-<li>Fix migration file and reapply:</li>
-</ol>
-<div class="highlight"><pre><span></span><code>fraiseql<span class="w"> </span>migrate<span class="w"> </span>up
-</code></pre></div>
+<p><strong>Solution</strong>: The failed migration's transaction was rolled back, so nothing it
+did remains, and it isn't recorded as applied. Fix the file and run
+<code>fraiseql migrate up</code> again. Migrations applied before it in the same run stay
+applied.</p>
+<p>(A migration with <code>transactional = False</code> is the exception: check by hand what it
+left behind before re-running it.)</p>
 <h3 id="migration-tracking-out-of-sync">Migration Tracking Out of Sync<a class="headerlink" href="#migration-tracking-out-of-sync" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: Migration tracking table and actual schema don't match.</p>
-<p><strong>Solution</strong>: Reset migration tracking (⚠️ dangerous):</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Check what migrations are tracked</span>
-<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fraiseql_migrations</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">applied_at</span><span class="p">;</span>
-
-<span class="c1">-- If needed, manually mark migration as applied</span>
-<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">fraiseql_migrations</span><span class="w"> </span><span class="p">(</span><span class="k">version</span><span class="p">,</span><span class="w"> </span><span class="n">applied_at</span><span class="p">)</span>
-<span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="s1">'003_add_indexes'</span><span class="p">,</span><span class="w"> </span><span class="n">NOW</span><span class="p">());</span>
+<p><strong>Problem</strong>: The recorded migrations and the actual schema don't match.</p>
+<p><strong>Solution</strong>: Applied migrations are recorded in the <code>tb_confiture</code> table. Inspect it
+before changing anything:</p>
+<div class="highlight"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_confiture</span><span class="p">;</span>
 </code></pre></div>
+<p>Prefer fixing the schema with a new migration over editing this table by hand.</p>
 <hr />
 <h2 id="advanced-patterns">Advanced Patterns<a class="headerlink" href="#advanced-patterns" title="Permanent link">&para;</a></h2>
 <h3 id="data-migrations">Data Migrations<a class="headerlink" href="#data-migrations" title="Permanent link">&para;</a></h3>
 <p>When you need to migrate large amounts of data:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 050: Migrate user preferences</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260310090000_migrate_user_preferences.up.sql</span>
 
 <span class="c1">-- Create new table</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user_preferences</span><span class="w"> </span><span class="p">(</span>
@@ -5451,7 +5461,7 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <h2 id="integration-with-fraiseql-features">Integration with FraiseQL Features<a class="headerlink" href="#integration-with-fraiseql-features" title="Permanent link">&para;</a></h2>
 <h3 id="cascade-rules">CASCADE Rules<a class="headerlink" href="#cascade-rules" title="Permanent link">&para;</a></h3>
 <p>When you create foreign keys, consider CASCADE implications:</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Migration 060: Add comments with CASCADE</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- 20260320100000_add_comments.up.sql</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span>
 <span class="w">    </span><span class="n">id</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
@@ -5479,15 +5489,14 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Complete CQRS Example (../../examples/complete_cqrs_blog/)</li>
 <li><a href="../../guides/cascade-best-practices/">CASCADE Best Practices</a></li>
 <li><a href="../explicit-sync/">Explicit Sync Guide</a></li>
 <li><a href="../../advanced/database-patterns/">Database Patterns</a></li>
 <li><a href="https://github.com/fraiseql/confiture">confiture on GitHub</a> - Migration library</li>
 </ul>
 <hr />
-<p><strong>Last Updated</strong>: 2025-10-11
-<strong>FraiseQL Version</strong>: 0.1.0+</p>
+<p><strong>Last Updated</strong>: 2026-10-17
+<strong>FraiseQL Version</strong>: 1.27.0+</p>
 
 
 
@@ -5566,10 +5575,10 @@ fraiseql<span class="w"> </span>migrate<span class="w"> </span>status
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

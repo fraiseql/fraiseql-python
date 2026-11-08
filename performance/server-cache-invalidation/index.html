@@ -17,18 +17,18 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
-        <title>CASCADE Cache Invalidation - FraiseQL Documentation</title>
+        <title>Server-Side Cache Invalidation - FraiseQL Documentation</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -72,7 +72,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#cascade-cache-invalidation" class="md-skip">
+        <a href="#server-side-cache-invalidation" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CASCADE Cache Invalidation
+              Server-Side Cache Invalidation
             
           </span>
         </div>
@@ -4548,6 +4548,97 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-invalidates-what" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What Invalidates What
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#invalidating-after-a-write" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Invalidating After a Write
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cascade-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CASCADE Rules
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CASCADE Rules">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#relationship-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Relationship Detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#registering-rules-at-startup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registering Rules at Startup
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        See Also
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -4566,476 +4657,194 @@
   
 
 
-<h1 id="cascade-cache-invalidation">CASCADE Cache Invalidation<a class="headerlink" href="#cascade-cache-invalidation" title="Permanent link">&para;</a></h1>
 <h1 id="server-side-cache-invalidation">Server-Side Cache Invalidation<a class="headerlink" href="#server-side-cache-invalidation" title="Permanent link">&para;</a></h1>
 <blockquote>
 <p><strong>Note</strong>: This document describes server-side cache invalidation, not the <a href="../../features/graphql-cascade/">GraphQL Cascade</a> client-side update feature.</p>
-<p><strong>Intelligent cache invalidation that automatically propagates when related data changes</strong></p>
 </blockquote>
-<p>FraiseQL's CASCADE invalidation system automatically detects relationships in your GraphQL schema and sets up intelligent cache invalidation rules. When a <code>User</code> changes, all related <code>Post</code> caches are automatically invalidated—no manual configuration required.</p>
+<p>FraiseQL's result cache (<code>fraiseql.caching</code>, see the
+<a href="../../specs/caching/">Caching Specification</a>) expires entries by TTL and deletes
+them when you call <code>invalidate</code> / <code>invalidate_pattern</code>. It can also derive
+<strong>CASCADE rules</strong> from your GraphQL schema ("when a <code>User</code> changes, cached <code>Post</code>s
+are stale") and register them with the <code>pg_fraiseql_cache</code> PostgreSQL extension.
+This page covers both, and what each one invalidates.</p>
 <hr />
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<h3 id="the-cache-invalidation-problem">The Cache Invalidation Problem<a class="headerlink" href="#the-cache-invalidation-problem" title="Permanent link">&para;</a></h3>
-<p>Traditional caching faces a fundamental challenge:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># User changes</span>
-<span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">new_name</span><span class="o">=</span><span class="s2">"Alice Smith"</span><span class="p">)</span>
-
-<span class="c1"># But cached posts still show old user name!</span>
-<span class="n">posts</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">:posts"</span><span class="p">)</span>
-<span class="c1"># Returns: Posts with "Alice Johnson" (stale!)</span>
-</code></pre></div>
-<p><strong>Common solutions</strong>:</p>
-<ul>
-<li>❌ <strong>Time-based expiry</strong>: Wasteful, can still serve stale data</li>
-<li>❌ <strong>Manual invalidation</strong>: Error-prone, easy to forget</li>
-<li>❌ <strong>Invalidate everything</strong>: Too aggressive, kills performance</li>
-</ul>
-<h3 id="fraiseqls-solution-cascade-invalidation">FraiseQL's Solution: CASCADE Invalidation<a class="headerlink" href="#fraiseqls-solution-cascade-invalidation" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Setup CASCADE rules (once, at startup)</span>
-<span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-
-<span class="c1"># User changes</span>
-<span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">new_name</span><span class="o">=</span><span class="s2">"Alice Smith"</span><span class="p">)</span>
-
-<span class="c1"># CASCADE automatically invalidates:</span>
-<span class="c1"># - user:{user_id}</span>
-<span class="c1"># - user:{user_id}:posts</span>
-<span class="c1"># - post:* where author_id = user_id</span>
-<span class="c1"># - Any other dependent caches</span>
-</code></pre></div>
-<p><strong>Result</strong>: Cache stays consistent automatically, no manual work needed.</p>
+<h2 id="what-invalidates-what">What Invalidates What<a class="headerlink" href="#what-invalidates-what" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Invalidates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TTL (<code>CacheConfig.default_ttl</code>, <code>ttl=</code>)</td>
+<td>Every entry, when it expires</td>
+</tr>
+<tr>
+<td><code>cache.invalidate(key)</code> / <code>cache.invalidate_pattern("prefix:*")</code></td>
+<td>The entries you name, when you call it</td>
+</tr>
+<tr>
+<td>CASCADE rules (<code>setup_auto_cascade_rules</code>)</td>
+<td>Nothing in <code>ResultCache</code>: they are stored in the <code>pg_fraiseql_cache</code> extension, whose domain versions only the RBAC permission cache (<code>fraiseql.enterprise.rbac</code>) checks</td>
+</tr>
+</tbody>
+</table>
+<p>So for cached query results: pick TTLs that match how stale the data may be, and
+invalidate explicitly where your code writes.</p>
 <hr />
-<h2 id="how-cascade-works">How CASCADE Works<a class="headerlink" href="#how-cascade-works" title="Permanent link">&para;</a></h2>
+<h2 id="invalidating-after-a-write">Invalidating After a Write<a class="headerlink" href="#invalidating-after-a-write" title="Permanent link">&para;</a></h2>
+<p>Key your entries so one pattern covers what a write makes stale, and invalidate
+that pattern after the write:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheConfig</span><span class="p">,</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">ResultCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
+
+<span class="n">cache</span><span class="p">:</span> <span class="n">ResultCache</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_user"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_names</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="n">cur</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT data-&gt;&gt;'name' FROM v_user ORDER BY id"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+
+    <span class="k">return</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_or_set</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fraiseql:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:user:names"</span><span class="p">,</span> <span class="n">load</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">names</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">user_names</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">)))</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">rename_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_rename_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
+    <span class="n">tenant_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"tenant_id"</span><span class="p">,</span> <span class="s2">"public"</span><span class="p">))</span>
+    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_pattern</span><span class="p">(</span><span class="sa">f</span><span class="s2">"fraiseql:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:user:*"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="k">global</span> <span class="n">cache</span>
+    <span class="n">cache</span> <span class="o">=</span> <span class="n">ResultCache</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">get_db_pool</span><span class="p">()),</span> <span class="n">config</span><span class="o">=</span><span class="n">CacheConfig</span><span class="p">())</span>
+    <span class="k">yield</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">names</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">rename_user</span><span class="p">],</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>  <span class="c1"># runs once fraiseql has opened the pool</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Writes that don't go through your code (another service, a migration, <code>psql</code>)
+invalidate nothing: their entries stay until they expire.</p>
+<hr />
+<h2 id="cascade-rules">CASCADE Rules<a class="headerlink" href="#cascade-rules" title="Permanent link">&para;</a></h2>
 <h3 id="relationship-detection">Relationship Detection<a class="headerlink" href="#relationship-detection" title="Permanent link">&para;</a></h3>
-<p>FraiseQL analyzes your GraphQL schema to detect relationships:</p>
+<p><code>SchemaAnalyzer</code> walks the schema's object types and makes one rule per field that
+references another object type, from the referenced type to the referencing one:</p>
 <div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
 <span class="w">  </span><span class="nl">name</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<span class="w">  </span><span class="nl">posts</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Post</span><span class="err">!]!</span><span class="w">  </span><span class="c"># ← CASCADE detects this relationship</span>
 <span class="p">}</span>
 
 <span class="k">type</span><span class="w"> </span><span class="err">Post</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<span class="w">  </span><span class="nl">title</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w">  </span><span class="c"># ← CASCADE detects this too</span>
-<span class="w">  </span><span class="nl">comments</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Comment</span><span class="err">!]!</span><span class="w">  </span><span class="c"># ← And this</span>
+<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w">        </span><span class="c"># rule: user → post</span>
+<span class="w">  </span><span class="nl">comments</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Comment</span><span class="err">!]!</span><span class="w">  </span><span class="c"># rule: comment → post (confidence 0.9, a list)</span>
 <span class="p">}</span>
 
 <span class="k">type</span><span class="w"> </span><span class="err">Comment</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<span class="w">  </span><span class="nl">content</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w">  </span><span class="c"># ← This creates User → Comment CASCADE</span>
-<span class="w">  </span><span class="nl">post</span><span class="p">:</span><span class="w"> </span><span class="n">Post</span><span class="err">!</span><span class="w">  </span><span class="c"># ← And Post → Comment CASCADE</span>
+<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w">        </span><span class="c"># rule: user → comment</span>
 <span class="p">}</span>
 </code></pre></div>
-<p><strong>CASCADE graph</strong>:</p>
-<div class="highlight"><pre><span></span><code>User
- ├─&gt; Post (author relationship)
- └─&gt; Comment (author relationship)
+<p>Type names become snake_case domains (<code>BlogPost</code> → <code>blog_post</code>). Self-references
+(<code>parent: User</code> on <code>User</code>), <code>Query</code>, <code>Mutation</code>, <code>Subscription</code> and introspection
+types are skipped. A field that only holds an id (<code>author_id: ID!</code>) isn't a
+relationship.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">SchemaAnalyzer</span>
 
-Post
- └─&gt; Comment (post relationship)
+<span class="n">analyzer</span> <span class="o">=</span> <span class="n">SchemaAnalyzer</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">graphql_schema</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">rule</span> <span class="ow">in</span> <span class="n">analyzer</span><span class="o">.</span><span class="n">analyze_relationships</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span>                         <span class="c1"># user → post</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">analyzer</span><span class="o">.</span><span class="n">get_domain_dependencies</span><span class="p">())</span>  <span class="c1"># {'post': {'user', 'comment'}, 'comment': {'user'}}</span>
 </code></pre></div>
-<h3 id="automatic-rule-creation">Automatic Rule Creation<a class="headerlink" href="#automatic-rule-creation" title="Permanent link">&para;</a></h3>
-<p>Based on the schema above, CASCADE creates these rules:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># When User changes</span>
-<span class="n">CASCADE</span><span class="p">:</span> <span class="n">user</span><span class="p">:{</span><span class="nb">id</span><span class="p">}</span> <span class="err">→</span> <span class="n">invalidate</span><span class="p">:</span>
-  <span class="o">-</span> <span class="n">user</span><span class="p">:{</span><span class="nb">id</span><span class="p">}:</span><span class="n">posts</span>
-  <span class="o">-</span> <span class="n">post</span><span class="p">:</span><span class="o">*</span> <span class="n">where</span> <span class="n">author_id</span><span class="o">=</span><span class="p">{</span><span class="nb">id</span><span class="p">}</span>
-  <span class="o">-</span> <span class="n">comment</span><span class="p">:</span><span class="o">*</span> <span class="n">where</span> <span class="n">author_id</span><span class="o">=</span><span class="p">{</span><span class="nb">id</span><span class="p">}</span>
+<p><code>SchemaAnalyzer(schema, type_to_domain_fn=..., exclude_types=...)</code> takes your own
+type-to-domain mapping and types to leave out (the default excludes the root and
+introspection types; a set you pass replaces it).</p>
+<h3 id="registering-rules-at-startup">Registering Rules at Startup<a class="headerlink" href="#registering-rules-at-startup" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
 
-<span class="c1"># When Post changes</span>
-<span class="n">CASCADE</span><span class="p">:</span> <span class="n">post</span><span class="p">:{</span><span class="nb">id</span><span class="p">}</span> <span class="err">→</span> <span class="n">invalidate</span><span class="p">:</span>
-  <span class="o">-</span> <span class="n">post</span><span class="p">:{</span><span class="nb">id</span><span class="p">}:</span><span class="n">comments</span>
-  <span class="o">-</span> <span class="n">comment</span><span class="p">:</span><span class="o">*</span> <span class="n">where</span> <span class="n">post_id</span><span class="o">=</span><span class="p">{</span><span class="nb">id</span><span class="p">}</span>
-  <span class="o">-</span> <span class="n">user</span><span class="p">:{</span><span class="n">author_id</span><span class="p">}:</span><span class="n">posts</span>  <span class="c1"># Parent relationship</span>
-</code></pre></div>
-<hr />
-<h2 id="auto-detection-from-schema">Auto-Detection from Schema<a class="headerlink" href="#auto-detection-from-schema" title="Permanent link">&para;</a></h2>
-<h3 id="setup-at-application-startup">Setup at Application Startup<a class="headerlink" href="#setup-at-application-startup" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_app</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_auto_cascade_rules</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span><span class="p">,</span> <span class="n">setup_auto_cascade_rules</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 
-<span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">()</span>
 
-<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">"startup"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">setup_cascade</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">"""Setup CASCADE invalidation rules from GraphQL schema."""</span>
+<span class="nd">@asynccontextmanager</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">lifespan</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+    <span class="n">backend</span> <span class="o">=</span> <span class="n">PostgresCache</span><span class="p">(</span><span class="n">connection_pool</span><span class="o">=</span><span class="n">get_db_pool</span><span class="p">())</span>
+    <span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">get_stats</span><span class="p">()</span>  <span class="c1"># first use: creates the cache table, detects the extension</span>
+    <span class="n">count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">graphql_schema</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">yield</span>
 
-    <span class="c1"># Auto-detect and setup CASCADE rules</span>
-    <span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span>
-        <span class="n">cache</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">cache</span><span class="p">,</span>
-        <span class="n">schema</span><span class="o">=</span><span class="n">app</span><span class="o">.</span><span class="n">schema</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Log detected rules</span>
-    <span class="p">)</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">"CASCADE rules configured"</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Output</strong> (when <code>verbose=True</code>):</p>
-<div class="highlight"><pre><span></span><code>CASCADE: Analyzing GraphQL schema...
-CASCADE: Detected relationship: User -&gt; Post (field: posts)
-CASCADE: Detected relationship: User -&gt; Comment (field: comments)
-CASCADE: Detected relationship: Post -&gt; Comment (field: comments)
-CASCADE: Created 3 CASCADE rules
-CASCADE: Rule 1: user:{id} cascades to post:author:{id}
-CASCADE: Rule 2: user:{id} cascades to comment:author:{id}
-CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
-✓ CASCADE rules configured
-</code></pre></div>
-<h3 id="schema-requirements">Schema Requirements<a class="headerlink" href="#schema-requirements" title="Permanent link">&para;</a></h3>
-<p>For CASCADE to work, your schema needs relationship fields:</p>
-<div class="highlight"><pre><span></span><code><span class="c"># ✅ Good: Clear relationships</span>
-<span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">posts</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Post</span><span class="err">!]!</span><span class="w">  </span><span class="c"># CASCADE can detect this</span>
-<span class="p">}</span>
-
-<span class="k">type</span><span class="w"> </span><span class="err">Post</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">author</span><span class="p">:</span><span class="w"> </span><span class="n">User</span><span class="err">!</span><span class="w">  </span><span class="c"># CASCADE can detect this</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="c"># ❌ Bad: No explicit relationships</span>
-<span class="k">type</span><span class="w"> </span><span class="err">User</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span>
-<span class="w">  </span><span class="c"># No posts field - CASCADE can't detect relationship</span>
-<span class="p">}</span>
-
-<span class="k">type</span><span class="w"> </span><span class="err">Post</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">author_id</span><span class="p">:</span><span class="w"> </span><span class="n">ID</span><span class="err">!</span><span class="w">  </span><span class="c"># Just an ID, not a relationship</span>
-<span class="p">}</span>
-</code></pre></div>
-<hr />
-<h2 id="manual-cascade-rules">Manual CASCADE Rules<a class="headerlink" href="#manual-cascade-rules" title="Permanent link">&para;</a></h2>
-<h3 id="when-auto-detection-isnt-enough">When Auto-Detection Isn't Enough<a class="headerlink" href="#when-auto-detection-isnt-enough" title="Permanent link">&para;</a></h3>
-<p>Sometimes you need custom CASCADE rules:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">CacheInvalidationRule</span>
-
-<span class="c1"># Define custom CASCADE rule</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>      <span class="c1"># Invalidate all posts by this user</span>
-        <span class="s2">"user:</span><span class="si">{id}</span><span class="s2">:followers"</span><span class="p">,</span>   <span class="c1"># Invalidate follower list</span>
-        <span class="s2">"feed:follower:*"</span>        <span class="c1"># Invalidate feeds for all followers</span>
-    <span class="p">]</span>
-<span class="p">)</span>
-
-<span class="c1"># Register the rule</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="n">rule</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="complex-cascade-patterns">Complex CASCADE Patterns<a class="headerlink" href="#complex-cascade-patterns" title="Permanent link">&para;</a></h3>
-<h4 id="pattern-1-multi-level-cascade">Pattern 1: Multi-Level CASCADE<a class="headerlink" href="#pattern-1-multi-level-cascade" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># User → Post → Comment (2 levels deep)</span>
-<span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>           <span class="c1"># Direct: User's posts</span>
-        <span class="s2">"comment:post_author:</span><span class="si">{id}</span><span class="s2">"</span>    <span class="c1"># Indirect: Comments on user's posts</span>
-    <span class="p">]</span>
-<span class="p">)</span>
-
-<span class="c1"># When user changes:</span>
-<span class="c1"># 1. Invalidate user's posts</span>
-<span class="c1"># 2. Invalidate comments on those posts</span>
-<span class="c1"># Result: Full cascade through 2 levels</span>
-</code></pre></div>
-<h4 id="pattern-2-bidirectional-cascade">Pattern 2: Bidirectional CASCADE<a class="headerlink" href="#pattern-2-bidirectional-cascade" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># User ↔ Post (both directions)</span>
-
-<span class="c1"># Forward: User → Post</span>
-<span class="n">user_to_post</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">]</span>
-<span class="p">)</span>
-
-<span class="c1"># Backward: Post → User</span>
-<span class="n">post_to_user</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"post"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"user:</span><span class="si">{author_id}</span><span class="s2">"</span><span class="p">]</span>  <span class="c1"># Invalidate author's cache</span>
-<span class="p">)</span>
-
-<span class="c1"># When post changes, author's cache is invalidated</span>
-<span class="c1"># When user changes, their posts are invalidated</span>
-</code></pre></div>
-<h4 id="pattern-3-conditional-cascade">Pattern 3: Conditional CASCADE<a class="headerlink" href="#pattern-3-conditional-cascade" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># Only cascade published posts</span>
-<span class="n">published_posts_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">],</span>
-    <span class="n">condition</span><span class="o">=</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"published"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
-<span class="p">)</span>
-
-<span class="c1"># CASCADE only triggers for published posts</span>
-</code></pre></div>
-<hr />
-<h2 id="performance-considerations">Performance Considerations<a class="headerlink" href="#performance-considerations" title="Permanent link">&para;</a></h2>
-<h3 id="cascade-overhead">CASCADE Overhead<a class="headerlink" href="#cascade-overhead" title="Permanent link">&para;</a></h3>
-<p><strong>Cost of CASCADE</strong>:</p>
-<ul>
-<li>Rule evaluation: <strong>&lt;1ms</strong> per invalidation</li>
-<li>Pattern matching: <strong>~0.1ms</strong> per pattern</li>
-<li>Actual invalidation: <strong>~0.5ms</strong> per cache key</li>
-</ul>
-<p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># User changes → cascades to 10 posts</span>
-<span class="c1"># Cost: 1ms + (10 × 0.5ms) = 6ms total</span>
-
-<span class="c1"># Still much faster than cache miss!</span>
-<span class="c1"># Cache miss would cost: ~50ms database query</span>
-</code></pre></div>
-<h3 id="optimizing-cascade">Optimizing CASCADE<a class="headerlink" href="#optimizing-cascade" title="Permanent link">&para;</a></h3>
-<h4 id="1-limit-cascade-depth">1. Limit CASCADE Depth<a class="headerlink" href="#1-limit-cascade-depth" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ Good: 1-2 levels deep</span>
-<span class="n">User</span> <span class="err">→</span> <span class="n">Post</span> <span class="err">→</span> <span class="n">Comment</span>  <span class="c1"># 2 levels, reasonable</span>
-
-<span class="c1"># ⚠️ Careful: 3+ levels deep</span>
-<span class="n">User</span> <span class="err">→</span> <span class="n">Post</span> <span class="err">→</span> <span class="n">Comment</span> <span class="err">→</span> <span class="n">Reply</span> <span class="err">→</span> <span class="n">Reaction</span>  <span class="c1"># 4 levels, may be expensive</span>
-</code></pre></div>
-<h4 id="2-use-selective-cascade">2. Use Selective CASCADE<a class="headerlink" href="#2-use-selective-cascade" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># ❌ Bad: Cascade everything</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">]</span>  <span class="c1"># Invalidates EVERYTHING!</span>
-<span class="p">)</span>
-
-<span class="c1"># ✅ Good: Cascade specific patterns</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="n">entity_type</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>
-        <span class="s2">"comment:author:</span><span class="si">{id}</span><span class="s2">"</span>
-    <span class="p">]</span>  <span class="c1"># Only what's needed</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">posts</span><span class="p">],</span>
+    <span class="n">lifespan</span><span class="o">=</span><span class="n">lifespan</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
-<h4 id="3-batch-cascade-operations">3. Batch CASCADE Operations<a class="headerlink" href="#3-batch-cascade-operations" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ Batch invalidations</span>
-<span class="n">user_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">user1</span><span class="p">,</span> <span class="n">user2</span><span class="p">,</span> <span class="n">user3</span><span class="p">]</span>
-
-<span class="c1"># Single CASCADE operation for all users</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_batch</span><span class="p">([</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">uid</span> <span class="ow">in</span> <span class="n">user_ids</span><span class="p">])</span>
-
-<span class="c1"># CASCADE propagates efficiently</span>
+<p><code>verbose=True</code> logs the rules and the dependency graph on the
+<code>fraiseql.caching.schema_analyzer</code> logger at <code>INFO</code>. Each rule goes to
+<code>PostgresCache.register_cascade_rule(source_domain, target_domain, rule_type="invalidate")</code>,
+which inserts it into the extension's <code>fraiseql_cache.cascade_rules</code> table. Call it
+yourself for a rule the schema doesn't show:</p>
+<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">register_cascade_rule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="s2">"feed"</span><span class="p">)</span>
+<span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">setup_table_trigger</span><span class="p">(</span><span class="s2">"tb_user"</span><span class="p">,</span> <span class="n">domain_name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">)</span>  <span class="c1"># the extension's trigger</span>
+<span class="k">await</span> <span class="n">backend</span><span class="o">.</span><span class="n">clear_cascade_rules</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="monitoring-cascade-performance">Monitoring CASCADE Performance<a class="headerlink" href="#monitoring-cascade-performance" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Track CASCADE metrics</span>
-<span class="nd">@app</span><span class="o">.</span><span class="n">middleware</span><span class="p">(</span><span class="s2">"http"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">track_cascade_metrics</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
-    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
-
-    <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-
-    <span class="n">cascade_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span>
-    <span class="k">if</span> <span class="n">cascade_time</span> <span class="o">&gt;</span> <span class="mf">0.01</span><span class="p">:</span>  <span class="c1"># &gt;10ms</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Slow CASCADE: </span><span class="si">{</span><span class="n">cascade_time</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">ms"</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">response</span>
-</code></pre></div>
-<hr />
-<h2 id="advanced-patterns">Advanced Patterns<a class="headerlink" href="#advanced-patterns" title="Permanent link">&para;</a></h2>
-<h3 id="pattern-1-lazy-cascade">Pattern 1: Lazy CASCADE<a class="headerlink" href="#pattern-1-lazy-cascade" title="Permanent link">&para;</a></h3>
-<p>Instead of immediate invalidation, defer to background task:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Immediate: Invalidate now (default)</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">)</span>
-
-<span class="c1"># Lazy: Queue for later invalidation</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_lazy</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
-
-<span class="c1"># Useful for:</span>
-<span class="c1"># - Non-critical caches</span>
-<span class="c1"># - Batch processing</span>
-<span class="c1"># - Reducing mutation latency</span>
-</code></pre></div>
-<h3 id="pattern-2-partial-cascade">Pattern 2: Partial CASCADE<a class="headerlink" href="#pattern-2-partial-cascade" title="Permanent link">&para;</a></h3>
-<p>Invalidate only specific fields, not entire cache:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Invalidate entire post</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"post:123"</span><span class="p">)</span>
-
-<span class="c1"># Or: Invalidate only post title</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_field</span><span class="p">(</span><span class="s2">"post:123"</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"title"</span><span class="p">)</span>
-
-<span class="c1"># Author name changed? Only invalidate author field</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate_field</span><span class="p">(</span><span class="s2">"post:*"</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s2">"author.name"</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="pattern-3-smart-cascade">Pattern 3: Smart CASCADE<a class="headerlink" href="#pattern-3-smart-cascade" title="Permanent link">&para;</a></h3>
-<p>CASCADE based on data changes:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Only cascade if email changed (not password)</span>
-<span class="k">if</span> <span class="n">old_user</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">!=</span> <span class="n">new_user</span><span class="p">[</span><span class="s2">"email"</span><span class="p">]:</span>
-    <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="sa">f</span><span class="s2">"user:</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-    <span class="c1"># Cascade: user's posts need new email</span>
-
-<span class="c1"># If only password changed, no cascade needed</span>
-<span class="c1"># (posts don't show password)</span>
-</code></pre></div>
-<hr />
-<h2 id="monitoring-cascade">Monitoring CASCADE<a class="headerlink" href="#monitoring-cascade" title="Permanent link">&para;</a></h2>
-<h3 id="cascade-metrics">CASCADE Metrics<a class="headerlink" href="#cascade-metrics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Get CASCADE statistics</span>
-<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cascade_stats</span><span class="p">()</span>
-
-<span class="nb">print</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
-<span class="c1"># {</span>
-<span class="c1">#     "total_invalidations_24h": 15234,</span>
-<span class="c1">#     "cascade_triggered": 8521,</span>
-<span class="c1">#     "avg_cascade_depth": 1.8,</span>
-<span class="c1">#     "avg_cascade_time_ms": 4.2,</span>
-<span class="c1">#     "most_frequent_cascades": [</span>
-<span class="c1">#         {"pattern": "user -&gt; post", "count": 4521},</span>
-<span class="c1">#         {"pattern": "post -&gt; comment", "count": 2134}</span>
-<span class="c1">#     ]</span>
-<span class="c1"># }</span>
-</code></pre></div>
-<h3 id="cascade-visualization">CASCADE Visualization<a class="headerlink" href="#cascade-visualization" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Visualize CASCADE graph</span>
-<span class="n">cascade_graph</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cascade_graph</span><span class="p">()</span>
-
-<span class="c1"># Output:</span>
-<span class="c1"># user:123</span>
-<span class="c1">#  ├─&gt; post:author:123 (12 keys invalidated)</span>
-<span class="c1">#  ├─&gt; comment:author:123 (45 keys invalidated)</span>
-<span class="c1">#  └─&gt; follower:following:123 (234 keys invalidated)</span>
-</code></pre></div>
-<h3 id="debugging-cascade">Debugging CASCADE<a class="headerlink" href="#debugging-cascade" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Enable CASCADE logging</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_cascade_logging</span><span class="p">(</span><span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"DEBUG"</span><span class="p">)</span>
-
-<span class="c1"># Then monitor logs:</span>
-<span class="c1"># [CASCADE] user:123 changed</span>
-<span class="c1"># [CASCADE] → Evaluating rule: user -&gt; post:author:{id}</span>
-<span class="c1"># [CASCADE] → Matched 12 keys: post:author:123:*</span>
-<span class="c1"># [CASCADE] → Invalidating: post:author:123:page:1</span>
-<span class="c1"># [CASCADE] → Invalidating: post:author:123:page:2</span>
-<span class="c1"># [CASCADE] → ... (10 more)</span>
-<span class="c1"># [CASCADE] ✓ CASCADE complete in 5.2ms</span>
-</code></pre></div>
-<hr />
-<h2 id="integration-with-cqrs">Integration with CQRS<a class="headerlink" href="#integration-with-cqrs" title="Permanent link">&para;</a></h2>
-<h3 id="cascade-in-cqrs-pattern">CASCADE in CQRS Pattern<a class="headerlink" href="#cascade-in-cqrs-pattern" title="Permanent link">&para;</a></h3>
-<p>When using explicit sync, CASCADE happens at the <strong>query side</strong> (tv_*):</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Command side: Update tb_user</span>
-<span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-    <span class="s2">"UPDATE tb_user SET name = $1 WHERE id = $2"</span><span class="p">,</span>
-    <span class="s2">"Alice Smith"</span><span class="p">,</span> <span class="n">user_id</span>
-<span class="p">)</span>
-
-<span class="c1"># Explicit sync to query side</span>
-<span class="k">await</span> <span class="n">sync</span><span class="o">.</span><span class="n">sync_user</span><span class="p">([</span><span class="n">user_id</span><span class="p">])</span>
-
-<span class="c1"># CASCADE: tv_user changed → invalidate related caches</span>
-<span class="c1"># - user:{user_id}:posts</span>
-<span class="c1"># - post:* where author_id = {user_id}</span>
-
-<span class="c1"># Next query will re-read from tv_post (which has updated author name)</span>
-</code></pre></div>
-<p><strong>Key insight</strong>: CASCADE works on denormalized <code>tv_*</code> tables, ensuring consistent reads.</p>
+<p>The backend detects the extension on its first use (a <code>get</code>, <code>set</code> or
+<code>get_stats</code>), not when it's created: before that, and without the
+<code>pg_fraiseql_cache</code> extension (<code>backend.has_domain_versioning</code> is <code>False</code>), these
+methods log a warning and do nothing, and <code>setup_auto_cascade_rules</code>
+still returns the number of rules it tried. The extension is a separate project:
+see <a href="../../core/postgresql-extensions/">PostgreSQL Extensions</a>.</p>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
-<h3 id="cascade-not-triggering">CASCADE Not Triggering<a class="headerlink" href="#cascade-not-triggering" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: User changes but posts still show old data.</p>
-<p><strong>Solution</strong>:</p>
-<ol>
-<li>Check CASCADE rules are set up:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="n">rules</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cascade_rules</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">rules</span><span class="p">)</span>  <span class="c1"># Should show user -&gt; post rule</span>
-</code></pre></div>
-<ol>
-<li>Verify entity type matches:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ Correct</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"user:123"</span><span class="p">)</span>  <span class="c1"># Matches "user" entity</span>
-
-<span class="c1"># ❌ Wrong</span>
-<span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">invalidate</span><span class="p">(</span><span class="s2">"users:123"</span><span class="p">)</span>  <span class="c1"># "users" != "user"</span>
-</code></pre></div>
-<ol>
-<li>Enable CASCADE logging:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">set_cascade_logging</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="s2">"DEBUG"</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="too-many-invalidations">Too Many Invalidations<a class="headerlink" href="#too-many-invalidations" title="Permanent link">&para;</a></h3>
-<p><strong>Problem</strong>: CASCADE is invalidating too much, killing performance.</p>
-<p><strong>Solution</strong>:</p>
-<ol>
-<li>Review CASCADE rules:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># ❌ Too broad</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])</span>
-
-<span class="c1"># ✅ Specific</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">])</span>
-</code></pre></div>
-<ol>
-<li>Limit CASCADE depth:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">],</span>
-    <span class="n">max_depth</span><span class="o">=</span><span class="mi">2</span>  <span class="c1"># Don't cascade more than 2 levels</span>
-<span class="p">)</span>
-</code></pre></div>
-<ol>
-<li>Use conditional CASCADE:</li>
-</ol>
-<div class="highlight"><pre><span></span><code><span class="c1"># Only cascade if published</span>
-<span class="n">rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="s2">"post"</span><span class="p">,</span>
-    <span class="n">condition</span><span class="o">=</span><span class="k">lambda</span> <span class="n">data</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"published"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">True</span>
-<span class="p">)</span>
-</code></pre></div>
-<hr />
-<h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="1-start-with-auto-detection">1. Start with Auto-Detection<a class="headerlink" href="#1-start-with-auto-detection" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ Let FraiseQL detect relationships</span>
-<span class="k">await</span> <span class="n">setup_auto_cascade_rules</span><span class="p">(</span><span class="n">cache</span><span class="p">,</span> <span class="n">schema</span><span class="p">)</span>
-
-<span class="c1"># Then add custom rules as needed</span>
-</code></pre></div>
-<h3 id="2-monitor-cascade-performance">2. Monitor CASCADE Performance<a class="headerlink" href="#2-monitor-cascade-performance" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Track CASCADE overhead</span>
-<span class="n">stats</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get_cascade_stats</span><span class="p">()</span>
-
-<span class="k">if</span> <span class="n">stats</span><span class="p">[</span><span class="s2">"avg_cascade_time_ms"</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
-    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"CASCADE is slow, review rules"</span><span class="p">)</span>
-</code></pre></div>
-<h3 id="3-use-selective-cascade">3. Use Selective CASCADE<a class="headerlink" href="#3-use-selective-cascade" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># ✅ CASCADE only what's needed</span>
-<span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span>
-    <span class="s2">"user"</span><span class="p">,</span>
-    <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span>
-        <span class="s2">"post:author:</span><span class="si">{id}</span><span class="s2">"</span><span class="p">,</span>
-        <span class="s2">"comment:author:</span><span class="si">{id}</span><span class="s2">"</span>
-    <span class="p">]</span>
-<span class="p">)</span>
-
-<span class="c1"># ❌ Don't cascade everything</span>
-<span class="n">user_rule</span> <span class="o">=</span> <span class="n">CacheInvalidationRule</span><span class="p">(</span><span class="s2">"user"</span><span class="p">,</span> <span class="n">cascade_to</span><span class="o">=</span><span class="p">[</span><span class="s2">"*"</span><span class="p">])</span>
-</code></pre></div>
-<h3 id="4-test-cascade-rules">4. Test CASCADE Rules<a class="headerlink" href="#4-test-cascade-rules" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Test CASCADE in your test suite</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_cascade</span><span class="p">():</span>
-    <span class="c1"># Create user and post</span>
-    <span class="n">user_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_user</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-    <span class="n">post_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_post</span><span class="p">(</span><span class="n">author_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
-
-    <span class="c1"># Cache the post</span>
-    <span class="n">post</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-
-    <span class="c1"># Update user</span>
-    <span class="k">await</span> <span class="n">update_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"New Name"</span><span class="p">)</span>
-
-    <span class="c1"># Verify CASCADE invalidated post cache</span>
-    <span class="k">assert</span> <span class="k">await</span> <span class="n">cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">"post:</span><span class="si">{</span><span class="n">post_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
-</code></pre></div>
+<p><strong>Stale data after a mutation</strong>: the write didn't invalidate a pattern matching the
+entries' keys. Print the keys (<code>SELECT cache_key FROM fraiseql_cache</code>) and the
+pattern; <code>*</code> becomes SQL <code>LIKE</code>'s <code>%</code>, and <code>_</code> matches any one character.</p>
+<p><strong>"CASCADE rules require pg_fraiseql_cache extension" warnings</strong>: the extension
+isn't installed in this database; the rules weren't registered.</p>
+<p><strong>Too much invalidated</strong>: the pattern is too broad (<code>fraiseql:*</code> clears every
+entry); put the tenant and the domain in the key so the pattern can name them.</p>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li>Complete CQRS Example (../../examples/complete_cqrs_blog/) - See CASCADE in action</li>
+<li><a href="../../specs/caching/">Caching Specification</a> - <code>ResultCache</code>, <code>PostgresCache</code>, keys and TTLs</li>
 <li><a href="../caching/">Caching Guide</a> - General caching documentation</li>
-<li><a href="../../core/explicit-sync/">Explicit Sync Guide</a> - How sync works with CASCADE</li>
-<li><a href="../">Performance Tuning</a> - Optimize CASCADE performance</li>
+<li><a href="../../features/graphql-cascade/">GraphQL Cascade</a> - Client-side cache updates from mutations</li>
 </ul>
 <hr />
-<p><strong>Last Updated</strong>: 2025-10-11
-<strong>FraiseQL Version</strong>: 0.1.0+</p>
+<p><strong>Last Updated</strong>: 2026-10-25
+<strong>FraiseQL Version</strong>: 1.31.0</p>
 
 
 
@@ -5111,10 +4920,10 @@ CASCADE: Rule 3: post:{id} cascades to comment:post:{id}
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

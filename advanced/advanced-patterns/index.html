@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4740,10 +4740,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#cli-codegen-support" class="md-nav__link">
+  <a href="#writing-the-functions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        CLI Codegen Support
+        Writing the Functions
       
     </span>
   </a>
@@ -4829,10 +4829,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#updated-configuration-final" class="md-nav__link">
+  <a href="#configuration_2" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Updated Configuration (Final)
+        Configuration
       
     </span>
   </a>
@@ -4840,10 +4840,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#updated-queryrepository" class="md-nav__link">
+  <a href="#reading-by-uuid-or-identifier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Updated QueryRepository
+        Reading by UUID or identifier
       
     </span>
   </a>
@@ -5137,7 +5137,7 @@
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organisation</span><span class="w"> </span><span class="n">o</span>
 <span class="w">                </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_organisation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">fk_organisation</span><span class="w">  </span><span class="c1">-- Fast INT join!</span>
 <span class="w">            </span><span class="p">),</span>
-<span class="w">            </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">        </span><span class="p">),</span>
 <span class="w">        </span><span class="n">NOW</span><span class="p">()</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -5160,7 +5160,7 @@
 <span class="w">            </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
@@ -5214,12 +5214,12 @@
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get user by UUID or identifier"""</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">])</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
     <span class="k">if</span> <span class="nb">id</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">elif</span> <span class="n">identifier</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_by_identifier</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="n">identifier</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">})</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Must provide id or identifier"</span><span class="p">)</span>
 
@@ -5235,35 +5235,31 @@
 <span class="w">    </span><span class="sd">"""Create user with human-friendly identifiers"""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="c1"># ✅ Just call the function - that's it!</span>
+    <span class="c1"># ✅ Just call the function - that's it! It gets the arguments as one jsonb,</span>
+    <span class="c1"># and its OUT parameters come back as a dict.</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-            <span class="s2">"SELECT fn_create_user($1, $2, $3, $4)"</span><span class="p">,</span>
-            <span class="n">organisation</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+            <span class="s2">"fn_create_user"</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">"organisation_identifier"</span><span class="p">:</span> <span class="n">organisation</span><span class="p">,</span>
+                <span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span>
+            <span class="p">},</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="c1"># Database raises meaningful errors</span>
         <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
     <span class="c1"># Read from query side</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"createUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]})</span>
 </code></pre></div>
 <hr />
 <h3 id="configuration"><strong>Configuration</strong><a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="c1"># Trinity identifier pattern (DEFAULT in v1)</span>
-    <span class="n">trinity_identifiers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-
-    <span class="c1"># Naming conventions</span>
-    <span class="n">primary_key_prefix</span><span class="o">=</span><span class="s2">"pk_"</span><span class="p">,</span>       <span class="c1"># pk_user, pk_post</span>
-    <span class="n">foreign_key_prefix</span><span class="o">=</span><span class="s2">"fk_"</span><span class="p">,</span>       <span class="c1"># fk_organisation, fk_user</span>
-    <span class="n">public_id_column</span><span class="o">=</span><span class="s2">"id"</span><span class="p">,</span>          <span class="c1"># UUID column</span>
-    <span class="n">identifier_column</span><span class="o">=</span><span class="s2">"identifier"</span>  <span class="c1"># Human-readable column</span>
-<span class="p">)</span>
-</code></pre></div>
+<p>None: trinity identifiers are a naming convention, not a setting. <code>FraiseQLConfig</code> has no
+option for them (it ignores unknown ones). Name the columns <code>pk_*</code>, <code>fk_*</code>, <code>id</code> and
+<code>identifier</code> in your tables, expose <code>id</code> and <code>identifier</code> in the <code>tv_*</code> view, and declare
+them on the type like any other field.</p>
 <hr />
 <h3 id="why-this-naming-is-better"><strong>Why This Naming is Better</strong><a class="headerlink" href="#why-this-naming-is-better" title="Permanent link">&para;</a></h3>
 <p><strong>1. Intuitive Database Schema</strong></p>
@@ -5325,17 +5321,20 @@
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Invalid email"</span><span class="p">)</span>
 
     <span class="c1"># ❌ Manual transaction management</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-        <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-            <span class="s2">"INSERT INTO tb_user (name, email) VALUES ($1, $2) RETURNING id"</span><span class="p">,</span>
-            <span class="n">name</span><span class="p">,</span> <span class="n">email</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">insert</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">"INSERT INTO tb_user (name, email) VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">) RETURNING id"</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">),</span>
         <span class="p">)</span>
+        <span class="p">(</span><span class="nb">id</span><span class="p">,)</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
 
         <span class="c1"># ❌ Manual sync (can forget!)</span>
-        <span class="k">await</span> <span class="n">sync_tv_user</span><span class="p">(</span><span class="n">db</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">sync_tv_user</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">id</span>
 
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">insert</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"createUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Problems</strong>:</p>
 <ul>
@@ -5348,13 +5347,7 @@
 <hr />
 <h3 id="better-database-functions-default"><strong>Better: Database Functions (DEFAULT)</strong><a class="headerlink" href="#better-database-functions-default" title="Permanent link">&para;</a></h3>
 <p><strong>All business logic in PostgreSQL</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_organisation_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_email</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_organisation</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
@@ -5362,31 +5355,31 @@
 <span class="w">    </span><span class="c1">-- Resolve organisation by identifier (human-friendly!)</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_organisation</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_organisation</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organisation</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_organisation_identifier</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'organisation_identifier'</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Organisation not found: %'</span><span class="p">,</span><span class="w"> </span><span class="n">p_organisation_identifier</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Organisation not found: %'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'organisation_identifier'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Validation (in database)</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Invalid email format'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_identifier</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'identifier'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Identifier already taken'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert (transaction is automatic)</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">fk_organisation</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_organisation</span><span class="p">,</span><span class="w"> </span><span class="n">p_identifier</span><span class="p">,</span><span class="w"> </span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_organisation</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Sync to query side (explicit, same transaction)</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="n">v_id</span><span class="p">);</span>
 
 <span class="w">    </span><span class="c1">-- Return public UUID</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="k">EXCEPTION</span>
 <span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">unique_violation</span><span class="w"> </span><span class="k">THEN</span>
@@ -5408,19 +5401,24 @@
 <span class="w">    </span><span class="sd">"""Create user (business logic in database)"""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="c1"># ✅ Just call the function - that's it!</span>
+    <span class="c1"># ✅ Just call the function - that's it! It gets the arguments as one jsonb,</span>
+    <span class="c1"># and its OUT parameters come back as a dict.</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-            <span class="s2">"SELECT fn_create_user($1, $2, $3, $4)"</span><span class="p">,</span>
-            <span class="n">organisation</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+            <span class="s2">"fn_create_user"</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">"organisation_identifier"</span><span class="p">:</span> <span class="n">organisation</span><span class="p">,</span>
+                <span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+                <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span>
+            <span class="p">},</span>
         <span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="c1"># Database raises meaningful errors</span>
         <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
     <span class="c1"># Read from query side</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"createUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]})</span>
 </code></pre></div>
 <hr />
 <h3 id="benefits_1"><strong>Benefits</strong><a class="headerlink" href="#benefits_1" title="Permanent link">&para;</a></h3>
@@ -5488,20 +5486,15 @@
 <hr />
 <h3 id="pattern-structure"><strong>Pattern Structure</strong><a class="headerlink" href="#pattern-structure" title="Permanent link">&para;</a></h3>
 <p><strong>Naming Convention</strong>:</p>
-<div class="highlight"><pre><span></span><code>fn_create_*     Create entity (INSERT + sync) → returns UUID
-fn_update_*     Update entity (UPDATE + sync) → returns UUID
-fn_delete_*     Delete entity (DELETE + cascade) → returns BOOLEAN
+<div class="highlight"><pre><span></span><code>fn_create_*     Create entity (INSERT + sync) → OUT &lt;entity&gt;_id UUID
+fn_update_*     Update entity (UPDATE + sync) → OUT &lt;entity&gt;_id UUID
+fn_delete_*     Delete entity (DELETE + cascade) → OUT deleted BOOLEAN
 fn_sync_tv_*    Sync command → query side
 fn_*            Custom business logic
 </code></pre></div>
 <p><strong>Example: Complete CRUD</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- CREATE</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_user_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">  </span><span class="c1">-- Look up user by identifier!</span>
-<span class="w">    </span><span class="n">p_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_title</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_content</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">post_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_user</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
@@ -5509,52 +5502,47 @@ fn_*            Custom business logic
 <span class="w">    </span><span class="c1">-- Resolve user by identifier (human-friendly API!)</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_user</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_user_identifier</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_identifier'</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'User not found: %'</span><span class="p">,</span><span class="w"> </span><span class="n">p_user_identifier</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'User not found: %'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_identifier'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">p_identifier</span><span class="p">,</span><span class="w"> </span><span class="n">p_title</span><span class="p">,</span><span class="w"> </span><span class="n">p_content</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_post</span><span class="p">(</span><span class="n">v_id</span><span class="p">);</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
+<span class="w">    </span><span class="n">post_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- UPDATE</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_post</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_title</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_content</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">post_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_post</span>
-<span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_content</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Post not found'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_post</span><span class="p">(</span><span class="n">p_id</span><span class="p">);</span>
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">p_id</span><span class="p">;</span>
+<span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_post</span><span class="p">((</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">);</span>
+<span class="w">    </span><span class="n">post_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
 <span class="c1">-- DELETE</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_delete_post</span><span class="p">(</span><span class="n">p_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_delete_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">deleted</span><span class="w"> </span><span class="nb">BOOLEAN</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Delete from query side first</span>
-<span class="w">    </span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tv_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Then from command side</span>
-<span class="w">    </span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_id</span><span class="p">;</span>
+<span class="w">    </span><span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'id'</span><span class="p">)::</span><span class="n">uuid</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">FOUND</span><span class="p">;</span>
+<span class="w">    </span><span class="n">deleted</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="k">FOUND</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5570,22 +5558,25 @@ fn_*            Custom business logic
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-        <span class="s2">"SELECT fn_create_post($1, $2, $3, $4)"</span><span class="p">,</span>
-        <span class="n">author</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">content</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_create_post"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"user_identifier"</span><span class="p">:</span> <span class="n">author</span><span class="p">,</span> <span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">content</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="s2">"createPost"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"post_id"</span><span class="p">]})</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">update_post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">"SELECT fn_update_post($1, $2, $3)"</span><span class="p">,</span> <span class="nb">id</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_update_post"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">),</span> <span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">content</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="s2">"updatePost"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"post_id"</span><span class="p">]})</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_post</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span><span class="s2">"SELECT fn_delete_post($1)"</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_post"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">)})</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s2">"deleted"</span><span class="p">]</span>
 </code></pre></div>
 <p><strong>Pattern</strong>: Python is thin wrapper. Database has all logic.</p>
 <hr />
@@ -5635,70 +5626,36 @@ fn_*            Custom business logic
 <p>Run with: <code>psql -f tests/test_mutations.sql</code></p>
 <hr />
 <h3 id="configuration_1"><strong>Configuration</strong><a class="headerlink" href="#configuration_1" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="c1"># Use database functions for all mutations (DEFAULT)</span>
-    <span class="n">mutations_as_functions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-
-    <span class="c1"># Function naming convention</span>
-    <span class="n">mutation_function_prefix</span><span class="o">=</span><span class="s2">"fn_"</span><span class="p">,</span>
-    <span class="n">sync_function_prefix</span><span class="o">=</span><span class="s2">"fn_sync_tv_"</span><span class="p">,</span>
-
-    <span class="c1"># Auto-generate missing functions? (v1.1 feature)</span>
-    <span class="n">auto_generate_functions</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span>
-</code></pre></div>
+<p>None: a class mutation names its SQL function with <code>function=</code> (<code>function="fn_create_user"</code>),
+and FraiseQL calls that function. There is no prefix setting and nothing generates
+missing functions.</p>
 <hr />
-<h3 id="cli-codegen-support"><strong>CLI Codegen Support</strong><a class="headerlink" href="#cli-codegen-support" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Analyze existing functions</span>
-fraiseql<span class="w"> </span>analyze<span class="w"> </span>--functions
-
-<span class="c1"># Output:</span>
-<span class="c1"># ✓ Found 6 mutation functions</span>
-<span class="c1">#   - fn_create_user(org, identifier, name, email) → UUID</span>
-<span class="c1">#   - fn_update_user(id, name) → UUID</span>
-<span class="c1">#   - fn_delete_user(id) → BOOLEAN</span>
-<span class="c1">#   - fn_create_post(user, identifier, title, content) → UUID</span>
-<span class="c1">#   - fn_update_post(id, title, content) → UUID</span>
-<span class="c1">#   - fn_delete_post(id) → BOOLEAN</span>
-<span class="c1">#</span>
-<span class="c1"># ✓ All mutation functions follow naming convention</span>
-<span class="c1"># ✓ All functions include sync calls</span>
-
-<span class="c1"># Generate missing functions for new table</span>
-fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span class="w"> </span>--table<span class="w"> </span>tb_comment
-
-<span class="c1"># Output: migrations/004_comment_functions.sql</span>
-</code></pre></div>
-<p><strong>Generated function</strong> (following pattern):</p>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Generated by fraiseql codegen</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_comment</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_post_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_user_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_content</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<h3 id="writing-the-functions"><strong>Writing the Functions</strong><a class="headerlink" href="#writing-the-functions" title="Permanent link">&para;</a></h3>
+<p>FraiseQL has no command that lists or generates these functions: write each one by hand.
+For a new <code>tb_comment</code>, the pattern gives:</p>
+<div class="highlight"><pre><span></span><code><span class="c1">-- fn_create_comment, following the pattern</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_comment</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">comment_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_post</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_fk_user</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="c1">-- Resolve foreign keys by identifier</span>
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_post</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_post_identifier</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_post</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_post</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'post_identifier'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Post not found'</span><span class="p">;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_user_identifier</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_user</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_identifier'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'User not found'</span><span class="p">;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_comment</span><span class="w"> </span><span class="p">(</span><span class="n">fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">v_fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">p_content</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_post</span><span class="p">,</span><span class="w"> </span><span class="n">v_fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Sync</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_comment</span><span class="p">(</span><span class="n">v_id</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
+<span class="w">    </span><span class="n">comment_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5752,7 +5709,8 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 <span class="w">    </span><span class="n">identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">UNIQUE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">title</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
 <span class="w">    </span><span class="n">content</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w"> </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
 <span class="p">);</span>
 
 <span class="c1">-- ============================================</span>
@@ -5797,7 +5755,7 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 <span class="w">                </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organisation</span><span class="w"> </span><span class="n">o</span>
 <span class="w">                </span><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">pk_organisation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">fk_organisation</span>
 <span class="w">            </span><span class="p">),</span>
-<span class="w">            </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">created_at</span>
 <span class="w">        </span><span class="p">),</span>
 <span class="w">        </span><span class="n">NOW</span><span class="p">()</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
@@ -5818,7 +5776,7 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 <span class="w">            </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">title</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'content'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">content</span><span class="p">,</span>
-<span class="w">            </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">created_at</span><span class="p">,</span>
 <span class="w">            </span><span class="s1">'author'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span>
 <span class="w">                </span><span class="k">SELECT</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">                    </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span>
@@ -5841,12 +5799,7 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 <span class="c1">-- MUTATION FUNCTIONS with trinity IDs</span>
 <span class="c1">-- ============================================</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_organisation_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_name</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_email</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_organisation</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
@@ -5854,35 +5807,30 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 <span class="w">    </span><span class="c1">-- Resolve by identifier (human-friendly!)</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_organisation</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_organisation</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_organisation</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_organisation_identifier</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'organisation_identifier'</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Organisation not found: %'</span><span class="p">,</span><span class="w"> </span><span class="n">p_organisation_identifier</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Organisation not found: %'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'organisation_identifier'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Validation</span>
-<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="n">p_email</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="w"> </span><span class="o">!~</span><span class="w"> </span><span class="s1">'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}$'</span><span class="w"> </span><span class="k">THEN</span>
 <span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'Invalid email format'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">fk_organisation</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_organisation</span><span class="p">,</span><span class="w"> </span><span class="n">p_identifier</span><span class="p">,</span><span class="w"> </span><span class="n">p_name</span><span class="p">,</span><span class="w"> </span><span class="n">p_email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_organisation</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Sync</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_user</span><span class="p">(</span><span class="n">v_id</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span>
-<span class="w">    </span><span class="n">p_user_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_identifier</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_title</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_content</span><span class="w"> </span><span class="nb">TEXT</span>
-<span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">UUID</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_post</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span><span class="p">,</span><span class="w"> </span><span class="k">OUT</span><span class="w"> </span><span class="n">post_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">v_fk_user</span><span class="w"> </span><span class="nb">INT</span><span class="p">;</span>
 <span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">;</span>
@@ -5890,21 +5838,21 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 <span class="w">    </span><span class="c1">-- Resolve user by identifier</span>
 <span class="w">    </span><span class="k">SELECT</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_fk_user</span>
 <span class="w">    </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_user_identifier</span><span class="p">;</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">identifier</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_identifier'</span><span class="p">;</span>
 
 <span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">FOUND</span><span class="w"> </span><span class="k">THEN</span>
-<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'User not found: %'</span><span class="p">,</span><span class="w"> </span><span class="n">p_user_identifier</span><span class="p">;</span>
+<span class="w">        </span><span class="n">RAISE</span><span class="w"> </span><span class="k">EXCEPTION</span><span class="w"> </span><span class="s1">'User not found: %'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'user_identifier'</span><span class="p">;</span>
 <span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Insert</span>
 <span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_post</span><span class="w"> </span><span class="p">(</span><span class="n">fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span><span class="w"> </span><span class="n">content</span><span class="p">)</span>
-<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_user</span><span class="p">,</span><span class="w"> </span><span class="n">p_identifier</span><span class="p">,</span><span class="w"> </span><span class="n">p_title</span><span class="p">,</span><span class="w"> </span><span class="n">p_content</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="n">v_fk_user</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Sync</span>
 <span class="w">    </span><span class="n">PERFORM</span><span class="w"> </span><span class="n">fn_sync_tv_post</span><span class="p">(</span><span class="n">v_id</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
+<span class="w">    </span><span class="n">post_id</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
@@ -5941,11 +5889,11 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">repo</span> <span class="o">=</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">])</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">if</span> <span class="nb">id</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">elif</span> <span class="n">identifier</span><span class="p">:</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find_by_identifier</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="n">identifier</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">})</span>
     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Must provide id or identifier"</span><span class="p">)</span>
 
 <span class="c1"># MUTATIONS (trivial - logic in database)</span>
@@ -5958,11 +5906,16 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-        <span class="s2">"SELECT fn_create_user($1, $2, $3, $4)"</span><span class="p">,</span>
-        <span class="n">organisation</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">email</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_create_user"</span><span class="p">,</span>
+        <span class="p">{</span>
+            <span class="s2">"organisation_identifier"</span><span class="p">:</span> <span class="n">organisation</span><span class="p">,</span>
+            <span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+            <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span>
+        <span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"createUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">]})</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_post</span><span class="p">(</span>
@@ -5973,11 +5926,11 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Post</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="nb">id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetchval</span><span class="p">(</span>
-        <span class="s2">"SELECT fn_create_post($1, $2, $3, $4)"</span><span class="p">,</span>
-        <span class="n">author</span><span class="p">,</span> <span class="n">identifier</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">content</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
+        <span class="s2">"fn_create_post"</span><span class="p">,</span>
+        <span class="p">{</span><span class="s2">"user_identifier"</span><span class="p">:</span> <span class="n">author</span><span class="p">,</span> <span class="s2">"identifier"</span><span class="p">:</span> <span class="n">identifier</span><span class="p">,</span> <span class="s2">"title"</span><span class="p">:</span> <span class="n">title</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">:</span> <span class="n">content</span><span class="p">},</span>
     <span class="p">)</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">QueryRepository</span><span class="p">(</span><span class="n">db</span><span class="p">)</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_post"</span><span class="p">,</span> <span class="s2">"createPost"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"post_id"</span><span class="p">]})</span>
 </code></pre></div>
 <h3 id="graphql-usage"><strong>GraphQL Usage</strong><a class="headerlink" href="#graphql-usage" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c"># Create post with human-friendly identifiers!</span>
@@ -6015,56 +5968,19 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
 </code></pre></div>
 <hr />
 <h2 id="integration-with-fraiseql-v1">Integration with FraiseQL v1<a class="headerlink" href="#integration-with-fraiseql-v1" title="Permanent link">&para;</a></h2>
-<h3 id="updated-configuration-final"><strong>Updated Configuration (Final)</strong><a class="headerlink" href="#updated-configuration-final" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
-
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="c1"># Trinity identifier pattern (DEFAULT in v1)</span>
-    <span class="n">trinity_identifiers</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">primary_key_prefix</span><span class="o">=</span><span class="s2">"pk_"</span><span class="p">,</span>          <span class="c1"># pk_user, pk_post</span>
-    <span class="n">foreign_key_prefix</span><span class="o">=</span><span class="s2">"fk_"</span><span class="p">,</span>          <span class="c1"># fk_organisation, fk_user</span>
-    <span class="n">public_id_column</span><span class="o">=</span><span class="s2">"id"</span><span class="p">,</span>             <span class="c1"># UUID (exposed in GraphQL)</span>
-    <span class="n">identifier_column</span><span class="o">=</span><span class="s2">"identifier"</span><span class="p">,</span>    <span class="c1"># Human-readable</span>
-
-    <span class="c1"># Mutations as functions (DEFAULT in v1)</span>
-    <span class="n">mutations_as_functions</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">mutation_function_prefix</span><span class="o">=</span><span class="s2">"fn_"</span><span class="p">,</span>
-    <span class="n">sync_function_prefix</span><span class="o">=</span><span class="s2">"fn_sync_tv_"</span><span class="p">,</span>
-
-    <span class="c1"># Query side</span>
-    <span class="n">query_view_prefix</span><span class="o">=</span><span class="s2">"tv_"</span><span class="p">,</span>
-    <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span>
-<span class="p">)</span>
-</code></pre></div>
-<h3 id="updated-queryrepository"><strong>Updated QueryRepository</strong><a class="headerlink" href="#updated-queryrepository" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">QueryRepository</span><span class="p">:</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">find_one</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">view</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>            <span class="c1"># By public UUID</span>
-        <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>       <span class="c1"># By human identifier</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Find by UUID or identifier"""</span>
-        <span class="k">if</span> <span class="nb">id</span><span class="p">:</span>
-            <span class="n">where</span> <span class="o">=</span> <span class="s2">"id = $1"</span>
-            <span class="n">param</span> <span class="o">=</span> <span class="nb">id</span>
-        <span class="k">elif</span> <span class="n">identifier</span><span class="p">:</span>
-            <span class="n">where</span> <span class="o">=</span> <span class="s2">"identifier = $1"</span>
-            <span class="n">param</span> <span class="o">=</span> <span class="n">identifier</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Must provide id or identifier"</span><span class="p">)</span>
-
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">fetchrow</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"SELECT data FROM </span><span class="si">{</span><span class="n">view</span><span class="si">}</span><span class="s2"> WHERE </span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-            <span class="n">param</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="k">if</span> <span class="n">result</span> <span class="k">else</span> <span class="kc">None</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">find_by_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">view</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">identifier</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Convenience method"""</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="n">identifier</span><span class="o">=</span><span class="n">identifier</span><span class="p">)</span>
+<h3 id="configuration_2"><strong>Configuration</strong><a class="headerlink" href="#configuration_2" title="Permanent link">&para;</a></h3>
+<p>These patterns need no configuration: <code>FraiseQLConfig</code> has no options for them. A type names
+its view with <code>sql_source=</code> (<code>tv_user</code>) and its JSONB column with <code>jsonb_column=</code> (<code>data</code> is
+the default), and a class mutation names its function with <code>function=</code>.</p>
+<h3 id="reading-by-uuid-or-identifier"><strong>Reading by UUID or identifier</strong><a class="headerlink" href="#reading-by-uuid-or-identifier" title="Permanent link">&para;</a></h3>
+<p>There is no separate query repository: the repository in <code>info.context["db"]</code> reads
+a view by any of its columns, so a projection table with <code>id</code> and <code>identifier</code>
+columns can be read by either:</p>
+<div class="highlight"><pre><span></span><code><span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+<span class="c1"># By public UUID</span>
+<span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">})</span>
+<span class="c1"># By human identifier</span>
+<span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"tv_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"identifier"</span><span class="p">:</span> <span class="s2">"alice"</span><span class="p">})</span>
 </code></pre></div>
 <hr />
 <h2 id="summary-why-these-patterns-are-default">Summary: Why These Patterns are DEFAULT<a class="headerlink" href="#summary-why-these-patterns-are-default" title="Permanent link">&para;</a></h2>
@@ -6184,10 +6100,10 @@ fraiseql<span class="w"> </span>codegen<span class="w"> </span>functions<span cl
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

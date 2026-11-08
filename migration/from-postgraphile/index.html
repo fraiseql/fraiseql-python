@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5234,25 +5234,21 @@
 <span class="p">}</span>
 </code></pre></div>
 <p><strong>After (FraiseQL - Same auto-generation + customization):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="c1"># If you need custom query logic</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">Query</span><span class="p">:</span>
-    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Get user by ID"""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+<p>FraiseQL doesn't generate queries from the schema: each one is an <code>async</code> function.
+A query returning <code>list[User]</code> gets <code>where</code>, <code>orderBy</code>, <code>limit</code> and <code>offset</code>
+arguments, applied by <code>find</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Get user by ID"""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
-    <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span>
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">info</span><span class="p">,</span>
-        <span class="n">where</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""List users with filtering"""</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">fraiseql</span><span class="o">.</span><span class="n">get_db</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">)</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""List users"""</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"users"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>GraphQL Query:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
@@ -5265,6 +5261,9 @@
 </code></pre></div>
 <hr />
 <h2 id="step-4-mutations-1-day">Step 4: Mutations (1 day)<a class="headerlink" href="#step-4-mutations-1-day" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p><strong>Field names:</strong> these examples pass <code>name=</code> so each mutation is served under its class name (<code>CreatePost</code> → <code>createPost</code>). Without it, fraiseql 1.x serves a class whose <code>function=</code> differs from its name, such as <code>fn_create_post</code>, under the function's name (<code>fnCreatePost</code>) and the schema build emits a <code>FutureWarning</code>; from fraiseql 2.0 the class name is used. See <a href="../../reference/decorators/#mutation-field-names">Mutation field names</a>.</p>
+</blockquote>
 <h3 id="41-database-function-mutations">4.1 Database Function Mutations<a class="headerlink" href="#41-database-function-mutations" title="Permanent link">&para;</a></h3>
 <p><strong>Before (PostGraphile):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">-- Database function (same in both!)</span>
@@ -5290,13 +5289,34 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- Same PostgreSQL function!</span>
 <span class="c1">-- (Or rename to fn_create_user for consistency)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"create_user"</span><span class="p">)</span>  <span class="c1"># or "fn_create_user"</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Create a new user"""</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
     <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""status, message, errors and code are added by @fraiseql.error"""</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"createUser"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a new user"""</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
 </code></pre></div>
-<p><strong>Key Insight:</strong> Your PostgreSQL functions work as-is! Just point FraiseQL to them.</p>
+<p><strong>Key Insight:</strong> your logic stays in PostgreSQL functions. FraiseQL calls a
+mutation's function with the input as one <code>jsonb</code> argument and reads a
+<code>mutation_response</code> back (<code>migrations/trinity/005_add_mutation_response.sql</code> has the
+type and the <code>mutation_*</code> helpers), so a PostGraphile function taking separate
+arguments needs a thin <code>fn_create_user(input jsonb)</code> wrapper.</p>
 <h3 id="42-mutations-with-cascade">4.2 Mutations with CASCADE<a class="headerlink" href="#42-mutations-with-cascade" title="Permanent link">&para;</a></h3>
 <p><strong>Before (PostGraphile):</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1">// Custom mutation with manual cache invalidation</span>
@@ -5335,16 +5355,36 @@
 <span class="p">});</span>
 </code></pre></div>
 <p><strong>After (FraiseQL with CASCADE):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
-    <span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_post"</span><span class="p">,</span>
-    <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Automatic cache invalidation!</span>
-<span class="p">)</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Create a new post"""</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostInput</span><span class="p">:</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">author_id</span><span class="p">:</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostSuccess</span><span class="p">:</span>
+    <span class="n">post</span><span class="p">:</span> <span class="n">Post</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePostError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""status, message, errors and code are added by @fraiseql.error"""</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span>
+    <span class="n">function</span><span class="o">=</span><span class="s2">"fn_create_post"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"createPost"</span><span class="p">,</span>
+    <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># the response carries the function's cascade</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreatePost</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a new post"""</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreatePostInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreatePostSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreatePostError</span>
 </code></pre></div>
+<p><code>fn_create_post</code> returns the cascade with the <code>cascade_*</code> helpers; see the
+<a href="../from-graphene/#42-complex-mutations-with-cascade">Graphene guide</a> for the function.</p>
 <p><strong>CASCADE Benefits:</strong></p>
 <ul>
 <li>Automatically returns updated User with new post</li>
@@ -5369,12 +5409,28 @@
 <div class="highlight"><pre><span></span><code><span class="c1">-- Same RLS policies!</span>
 <span class="c1">-- No changes needed</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="c1"># FraiseQL handles session variables automatically</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Request</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="c1"># In production, take the tenant from the verified token, never from the client</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"X-Tenant-ID"</span><span class="p">)}</span>
+
+
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
-    <span class="n">tenant_id_header</span><span class="o">=</span><span class="s2">"X-Tenant-ID"</span><span class="p">,</span>  <span class="c1"># Auto-set session variable</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="p">,</span> <span class="n">users</span><span class="p">],</span>
+    <span class="n">context_getter</span><span class="o">=</span><span class="n">get_context</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>Before each query and mutation, FraiseQL runs <code>SET LOCAL app.tenant_id</code> (and
+<code>app.user_id</code>, <code>app.contact_id</code>) from the request context, so the policy's
+<code>current_setting('app.tenant_id')</code> sees the request's tenant. Map other context keys
+with <code>FraiseQLConfig(session_variables=...)</code>. See
+<a href="../../patterns/saas-multi-tenant/">Multi-tenant SaaS</a>.</p>
 <p><strong>Key Insight:</strong> Your RLS policies work identically in FraiseQL!</p>
 <hr />
 <h2 id="step-6-schema-setup-1-hour">Step 6: Schema Setup (1 hour)<a class="headerlink" href="#step-6-schema-setup-1-hour" title="Permanent link">&para;</a></h2>
@@ -5411,18 +5467,21 @@
 <span class="nx">app</span><span class="p">.</span><span class="nx">listen</span><span class="p">(</span><span class="mf">5000</span><span class="p">);</span>
 </code></pre></div>
 <p><strong>After (FraiseQL):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
-    <span class="n">enable_rust_pipeline</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># 7-10x JSON performance</span>
-    <span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Automatic cache invalidation</span>
-    <span class="n">allow_introspection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># GraphiQL</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">user</span><span class="p">,</span> <span class="n">users</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">CreateUser</span><span class="p">,</span> <span class="n">CreatePost</span><span class="p">],</span>
 <span class="p">)</span>
 
 <span class="c1"># Run with:</span>
 <span class="c1"># uvicorn app:app --port 5000</span>
 </code></pre></div>
+<p>The Rust pipeline is always on, cascades are turned on per mutation
+(<code>enable_cascade=True</code>), and GraphiQL is served in development
+(<code>enable_playground</code>, <code>introspection_policy</code> on <code>FraiseQLConfig</code>).</p>
 <p><strong>Simpler:</strong> No plugin system, just Python configuration.</p>
 <hr />
 <h2 id="step-7-testing-1-day">Step 7: Testing (1 day)<a class="headerlink" href="#step-7-testing-1-day" title="Permanent link">&para;</a></h2>
@@ -5445,22 +5504,18 @@
 <span class="p">});</span>
 </code></pre></div>
 <p><strong>After (FraiseQL + pytest):</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLClient</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
 
-<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">asyncio</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">test_user_by_id</span><span class="p">(</span><span class="n">graphql_client</span><span class="p">:</span> <span class="n">GraphQLClient</span><span class="p">):</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graphql_client</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s1">'''</span>
-<span class="s1">        query </span><span class="se">{{</span>
-<span class="s1">            user(id: "</span><span class="si">{</span><span class="n">user_id</span><span class="si">}</span><span class="s1">") </span><span class="se">{{</span>
-<span class="s1">                id</span>
-<span class="s1">                email</span>
-<span class="s1">            </span><span class="se">}}</span>
-<span class="s1">        </span><span class="se">}}</span>
-<span class="s1">    '''</span><span class="p">)</span>
 
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">errors</span> <span class="ow">is</span> <span class="kc">None</span>
-    <span class="k">assert</span> <span class="n">result</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="s1">'user'</span><span class="p">][</span><span class="s1">'email'</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test@example.com"</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_user_by_id</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">user_id</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""`app` is your create_fraiseql_app(...) app, against a test database"""</span>
+    <span class="k">with</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>  <span class="c1"># runs the app's lifespan, which opens the pool</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"query"</span><span class="p">:</span> <span class="s2">"query ($id: ID!) { user(id: $id) { id email } }"</span><span class="p">,</span>
+            <span class="s2">"variables"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">},</span>
+        <span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="s2">"errors"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">body</span>
+    <span class="k">assert</span> <span class="n">body</span><span class="p">[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"user"</span><span class="p">][</span><span class="s2">"email"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"test@example.com"</span>
 </code></pre></div>
 <p><strong>Similar complexity, different language.</strong></p>
 <hr />
@@ -5469,8 +5524,9 @@
 <p>PostGraphile uses promises, FraiseQL uses async/await.</p>
 <p><strong>Fix:</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># ✅ Correct</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <h3 id="2-smart-commentstags">2. Smart Comments/Tags<a class="headerlink" href="#2-smart-commentstags" title="Permanent link">&para;</a></h3>
 <p>PostGraphile uses smart comments (<code>@omit create,update</code>).
@@ -5655,10 +5711,10 @@ FraiseQL uses explicit mutations.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

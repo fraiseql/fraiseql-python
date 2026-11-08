@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4730,10 +4730,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#automatic-tenant-filtering" class="md-nav__link">
+  <a href="#tenant-filtering-in-queries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Automatic Tenant Filtering
+        Tenant Filtering in Queries
       
     </span>
   </a>
@@ -5267,18 +5267,18 @@
 <span class="p">);</span>
 
 <span class="c1">-- Indexes for tenant filtering</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_users_tenant_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">);</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_orders_tenant_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_users_tenant_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">idx_orders_tenant_id</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">);</span>
 
-<span class="c1">-- RLS policies</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">users</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
-<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
+<span class="c1">-- RLS policies (app.tenant_id is set by FraiseQL from the request context)</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_order</span><span class="w"> </span><span class="n">ENABLE</span><span class="w"> </span><span class="k">ROW</span><span class="w"> </span><span class="k">LEVEL</span><span class="w"> </span><span class="k">SECURITY</span><span class="p">;</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation_users</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">users</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation_users</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_user</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation_orders</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation_orders</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 </code></pre></div>
 <p><strong>Pros:</strong></p>
 <ul>
@@ -5295,21 +5295,23 @@
 </ul>
 <h3 id="pattern-2-database-per-tenant">Pattern 2: Database Per Tenant<a class="headerlink" href="#pattern-2-database-per-tenant" title="Permanent link">&para;</a></h3>
 <p>Separate database for each tenant:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">TenantDatabaseManager</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Manage separate database per tenant."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="n">base_url</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatabasePool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AsyncConnectionPool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabasePool</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncConnectionPool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Get database pool for specific tenant."""</span>
         <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">:</span>
             <span class="c1"># Create tenant-specific connection</span>
             <span class="n">db_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s1">'/'</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">/tenant_</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">"</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span><span class="n">db_url</span><span class="p">)</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">db_url</span><span class="p">,</span> <span class="nb">open</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pool</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span>
 
@@ -5351,20 +5353,33 @@
 <span class="w">    </span><span class="n">name</span><span class="w"> </span><span class="nb">TEXT</span>
 <span class="p">);</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">asynccontextmanager</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg</span><span class="w"> </span><span class="kn">import</span> <span class="n">sql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">SchemaPerTenantManager</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Manage schema-per-tenant pattern."""</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_pool</span><span class="p">:</span> <span class="n">DatabasePool</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_pool</span><span class="p">:</span> <span class="n">AsyncConnectionPool</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span> <span class="o">=</span> <span class="n">db_pool</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_search_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Set PostgreSQL search_path to tenant schema."""</span>
+    <span class="nd">@asynccontextmanager</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">tenant_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""A pool connection whose search_path is the tenant's schema."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db_pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+            <span class="c1"># SET LOCAL: reset when the transaction ends, before the</span>
+            <span class="c1"># connection goes back to the pool</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"SET search_path TO tenant_</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">, public"</span>
+                <span class="n">sql</span><span class="o">.</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"SET LOCAL search_path TO </span><span class="si">{}</span><span class="s2">, public"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">sql</span><span class="o">.</span><span class="n">Identifier</span><span class="p">(</span><span class="sa">f</span><span class="s2">"tenant_</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+                <span class="p">)</span>
             <span class="p">)</span>
+            <span class="k">yield</span> <span class="n">conn</span>
+
+<span class="c1"># Usage</span>
+<span class="c1"># async with manager.tenant_connection("acme") as conn:</span>
+<span class="c1">#     rows = await (await conn.execute("SELECT * FROM users")).fetchall()</span>
 </code></pre></div>
 <p><strong>Pros:</strong></p>
 <ul>
@@ -5381,111 +5396,104 @@
 </ul>
 <h2 id="row-level-security">Row-Level Security<a class="headerlink" href="#row-level-security" title="Permanent link">&para;</a></h2>
 <h3 id="tenant-context-propagation">Tenant Context Propagation<a class="headerlink" href="#tenant-context-propagation" title="Permanent link">&para;</a></h3>
-<p>Set tenant context in PostgreSQL session:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLResolveInfo</span>
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_tenant_context</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""Set tenant_id in PostgreSQL session variable."""</span>
-    <span class="n">pool</span> <span class="o">=</span> <span class="n">get_db_pool</span><span class="p">()</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SET LOCAL app.current_tenant_id = $1"</span><span class="p">,</span>
-            <span class="n">tenant_id</span>
-        <span class="p">)</span>
-
-<span class="c1"># Middleware to set tenant context</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseHTTPMiddleware</span>
+<p>Put <code>tenant_id</code> in the GraphQL context; the repository in <code>info.context["db"]</code> then
+sets <code>app.tenant_id</code> (with <code>set_config(..., true)</code>, i.e. <code>SET LOCAL</code>) in the
+transaction of every query it runs. A session variable set on some other pool
+connection would not reach those queries.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">starlette.middleware.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseHTTPMiddleware</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">TenantContextMiddleware</span><span class="p">(</span><span class="n">BaseHTTPMiddleware</span><span class="p">):</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">dispatch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">call_next</span><span class="p">):</span>
         <span class="c1"># Extract tenant from request (subdomain, header, JWT)</span>
-        <span class="n">tenant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolve_tenant_id</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span> <span class="o">=</span> <span class="k">await</span> <span class="n">resolve_tenant_id</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
 
-        <span class="c1"># Store in request state</span>
-        <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span> <span class="o">=</span> <span class="n">tenant_id</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_graphql_context</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="c1"># FraiseQL sets app.tenant_id from this for each query</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">}</span>
 
-        <span class="c1"># Set in database session</span>
-        <span class="k">await</span> <span class="n">set_tenant_context</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span>
-
-        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">response</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Order</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">get_orders</span><span class="p">,</span> <span class="n">get_order</span><span class="p">],</span>
+    <span class="n">context_getter</span><span class="o">=</span><span class="n">get_graphql_context</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span><span class="n">TenantContextMiddleware</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="automatic-tenant-filtering">Automatic Tenant Filtering<a class="headerlink" href="#automatic-tenant-filtering" title="Permanent link">&para;</a></h3>
-<p>FraiseQL automatically adds tenant_id filters when context is set:</p>
+<h3 id="tenant-filtering-in-queries">Tenant Filtering in Queries<a class="headerlink" href="#tenant-filtering-in-queries" title="Permanent link">&para;</a></h3>
+<p>With the RLS policies above, <code>app.tenant_id</code> already restricts the rows. Filtering on
+the view's <code>tenant_id</code> column as well makes the isolation visible in the code and
+holds even where RLS is not enabled; <code>mandatory_filters</code> adds a condition the
+client's <code>where</code> can't remove:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type_</span>
+<span class="c1"># v_order: SELECT id, tenant_id, jsonb_build_object(...) AS data FROM tb_order</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_order"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span>  <span class="c1"># Automatically filtered</span>
+    <span class="n">tenant_id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">total</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">status</span><span class="p">:</span> <span class="nb">str</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_orders</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_orders</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Get orders for current tenant."""</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
-
-    <span class="c1"># Explicit tenant filtering (recommended for clarity)</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM orders WHERE tenant_id = $1"</span><span class="p">,</span>
-            <span class="n">tenant_id</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
+        <span class="s2">"v_order"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]}</span>
+    <span class="p">)</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_order</span><span class="p">(</span><span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_order</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Order</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get specific order - tenant isolation enforced."""</span>
-    <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
-
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM orders WHERE id = $1 AND tenant_id = $2"</span><span class="p">,</span>
-            <span class="n">order_id</span><span class="p">,</span> <span class="n">tenant_id</span>
-        <span class="p">)</span>
-        <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
-        <span class="k">return</span> <span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_order"</span><span class="p">,</span>
+        <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">,</span> <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]},</span>
+    <span class="p">)</span>
 </code></pre></div>
 <h3 id="rls-policy-examples">RLS Policy Examples<a class="headerlink" href="#rls-policy-examples" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1">-- Basic tenant isolation</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- The session variables FraiseQL sets: app.tenant_id, app.user_id,</span>
+<span class="c1">-- app.is_super_admin ('true' / 'false'). NULLIF: an unset variable on a pooled</span>
+<span class="c1">-- connection reads as '', not NULL.</span>
 
-<span class="c1">-- Allow tenant admins to see all data</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_admin_all</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
+<span class="c1">-- Basic tenant isolation</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_isolation</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+
+<span class="c1">-- Allow super admins to see all data</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_admin_all</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
 <span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span>
-<span class="w">        </span><span class="k">OR</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.user_role'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'admin'</span>
+<span class="w">        </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span>
+<span class="w">        </span><span class="k">OR</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.is_super_admin'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">'true'</span>
 <span class="w">    </span><span class="p">);</span>
 
 <span class="c1">-- User can only see own orders</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">user_own_orders</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">user_own_orders</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
 <span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span>
-<span class="w">        </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span>
-<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_user_id'</span><span class="p">)::</span><span class="n">UUID</span>
+<span class="w">        </span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span>
+<span class="w">        </span><span class="k">AND</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.user_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span>
 <span class="w">    </span><span class="p">);</span>
 
 <span class="c1">-- Separate policies for SELECT vs INSERT/UPDATE/DELETE</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_select</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_select</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">SELECT</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_insert</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_insert</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">INSERT</span>
-<span class="w">    </span><span class="k">WITH</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="w">    </span><span class="k">WITH</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_update</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_update</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">UPDATE</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">)</span>
-<span class="w">    </span><span class="k">WITH</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">)</span>
+<span class="w">    </span><span class="k">WITH</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 
-<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_delete</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">orders</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="n">POLICY</span><span class="w"> </span><span class="n">tenant_delete</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">tb_order</span>
 <span class="w">    </span><span class="k">FOR</span><span class="w"> </span><span class="k">DELETE</span>
-<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.current_tenant_id'</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
+<span class="w">    </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">tenant_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="n">current_setting</span><span class="p">(</span><span class="s1">'app.tenant_id'</span><span class="p">,</span><span class="w"> </span><span class="k">TRUE</span><span class="p">),</span><span class="w"> </span><span class="s1">''</span><span class="p">)::</span><span class="n">UUID</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="tenant-context">Tenant Context<a class="headerlink" href="#tenant-context" title="Permanent link">&para;</a></h2>
 <h3 id="tenant-resolution-strategies">Tenant Resolution Strategies<a class="headerlink" href="#tenant-resolution-strategies" title="Permanent link">&para;</a></h3>
@@ -5504,16 +5512,18 @@
     <span class="k">return</span> <span class="n">subdomain</span>
 
 <span class="c1"># Look up tenant ID from subdomain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
+
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve_tenant_id</span><span class="p">(</span><span class="n">subdomain</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT id FROM organizations WHERE subdomain = $1"</span><span class="p">,</span>
-            <span class="n">subdomain</span>
+            <span class="s2">"SELECT id FROM organizations WHERE subdomain = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">subdomain</span><span class="p">,)</span>
         <span class="p">)</span>
         <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Unknown tenant: </span><span class="si">{</span><span class="n">subdomain</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </code></pre></div>
 <h4 id="2-header-based">2. Header-Based<a class="headerlink" href="#2-header-based" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_tenant_from_header</span><span class="p">(</span><span class="n">request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -5571,13 +5581,11 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="n">tenant_id</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"Tenant not identified"</span><span class="p">)</span>
 
-        <span class="c1"># 2. Store in request state</span>
+        <span class="c1"># 2. Store in request state; the GraphQL context below hands it to the</span>
+        <span class="c1">#    repository, which sets app.tenant_id for each query</span>
         <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span> <span class="o">=</span> <span class="n">tenant_id</span>
 
-        <span class="c1"># 3. Set in database session</span>
-        <span class="k">await</span> <span class="n">set_tenant_context</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span>
-
-        <span class="c1"># 4. Continue request</span>
+        <span class="c1"># 3. Continue request</span>
         <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">call_next</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">response</span>
 
@@ -5589,15 +5597,15 @@
 <h3 id="graphql-context-integration">GraphQL Context Integration<a class="headerlink" href="#graphql-context-integration" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_graphql_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_graphql_context</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Build GraphQL context with tenant."""</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">"request"</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
-        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">,</span>
-        <span class="s2">"user"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">user</span><span class="p">,</span>  <span class="c1"># From auth middleware</span>
+        <span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">request</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">tenant_id</span><span class="p">,</span>  <span class="c1"># -&gt; app.tenant_id</span>
     <span class="p">}</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="n">DATABASE_URL</span><span class="p">,</span>
     <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Order</span><span class="p">,</span> <span class="n">Product</span><span class="p">],</span>
     <span class="n">context_getter</span><span class="o">=</span><span class="n">get_graphql_context</span>
 <span class="p">)</span>
@@ -5605,8 +5613,9 @@
 <h2 id="database-pool-strategies">Database Pool Strategies<a class="headerlink" href="#database-pool-strategies" title="Permanent link">&para;</a></h2>
 <h3 id="strategy-1-shared-pool-with-rls">Strategy 1: Shared Pool with RLS<a class="headerlink" href="#strategy-1-shared-pool-with-rls" title="Permanent link">&para;</a></h3>
 <p>Single connection pool, tenant isolation via RLS:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabasePool</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg_pool</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncConnectionPool</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://user:pass@localhost/app"</span><span class="p">,</span>
@@ -5614,18 +5623,23 @@
     <span class="n">database_max_overflow</span><span class="o">=</span><span class="mi">10</span>
 <span class="p">)</span>
 
-<span class="c1"># Single pool shared by all tenants</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span>
+<span class="c1"># Single pool shared by all tenants (create_fraiseql_app builds one like it)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span>
     <span class="n">config</span><span class="o">.</span><span class="n">database_url</span><span class="p">,</span>
     <span class="n">min_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">database_pool_size</span><span class="p">,</span>
-    <span class="n">max_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">database_pool_size</span> <span class="o">+</span> <span class="n">config</span><span class="o">.</span><span class="n">database_max_overflow</span>
+    <span class="n">max_size</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">database_pool_size</span> <span class="o">+</span> <span class="n">config</span><span class="o">.</span><span class="n">database_max_overflow</span><span class="p">,</span>
+    <span class="nb">open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
 
-<span class="c1"># Use set_tenant_context before queries</span>
+<span class="c1"># Raw SQL on a pool connection: set the variable in the same transaction</span>
 <span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SET LOCAL app.current_tenant_id = $1"</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
-    <span class="c1"># All queries now filtered by tenant_id via RLS</span>
+    <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT set_config('app.tenant_id', </span><span class="si">%s</span><span class="s2">, true)"</span><span class="p">,</span> <span class="p">(</span><span class="n">tenant_id</span><span class="p">,))</span>
+    <span class="c1"># Queries on this connection are now filtered by tenant_id via RLS,</span>
+    <span class="c1"># until the transaction ends when the block exits</span>
 </code></pre></div>
+<p>Repository queries (<code>db.find</code>, <code>db.run</code>, ...) do this themselves from the context's
+<code>tenant_id</code>.</p>
 <p><strong>Characteristics:</strong></p>
 <ul>
 <li>Cost-effective (single pool)</li>
@@ -5640,9 +5654,9 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">base_db_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pool_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">base_db_url</span> <span class="o">=</span> <span class="n">base_db_url</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span> <span class="o">=</span> <span class="n">pool_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatabasePool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AsyncConnectionPool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabasePool</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncConnectionPool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Get or create pool for tenant."""</span>
         <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">:</span>
             <span class="c1"># Option 1: Different database per tenant</span>
@@ -5652,11 +5666,14 @@
             <span class="c1"># db_url = self.base_db_url</span>
             <span class="c1"># Set search_path after connection</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span>
+            <span class="n">pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span>
                 <span class="n">db_url</span><span class="p">,</span>
                 <span class="n">min_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span><span class="p">,</span>
-                <span class="n">max_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span> <span class="o">*</span> <span class="mi">2</span>
+                <span class="n">max_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pool_size</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span>
+                <span class="nb">open</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
+            <span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">open</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">pool</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span>
 
@@ -5695,11 +5712,11 @@
 <span class="w">    </span><span class="sd">"""Hybrid pool management based on tenant size."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">shared_db_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">shared_pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span><span class="n">shared_db_url</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">dedicated_pools</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">DatabasePool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shared_pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">shared_db_url</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dedicated_pools</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">AsyncConnectionPool</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">large_tenants</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>  <span class="c1"># Tenants with dedicated pools</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabasePool</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_pool</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncConnectionPool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Get pool for tenant based on size."""</span>
         <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">large_tenants</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dedicated_pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span>
@@ -5709,7 +5726,7 @@
 <span class="w">        </span><span class="sd">"""Promote tenant to dedicated pool."""</span>
         <span class="k">if</span> <span class="n">tenant_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">large_tenants</span><span class="p">:</span>
             <span class="n">db_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"postgresql://user:pass@localhost/tenant_</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">"</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dedicated_pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span><span class="n">db_url</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">dedicated_pools</span><span class="p">[</span><span class="n">tenant_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span><span class="n">db_url</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">large_tenants</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="cross-tenant-queries">Cross-Tenant Queries<a class="headerlink" href="#cross-tenant-queries" title="Permanent link">&para;</a></h2>
@@ -5725,60 +5742,52 @@
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Order</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Admin query: Get orders across tenants."""</span>
-    <span class="c1"># Bypass RLS by using superuser connection or disabling RLS</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="c1"># Disable RLS for this query (requires appropriate permissions)</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SET LOCAL row_security = off"</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">tenant_id</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="s2">"SELECT * FROM orders WHERE tenant_id = $1 LIMIT $2"</span><span class="p">,</span>
-                <span class="n">tenant_id</span><span class="p">,</span> <span class="n">limit</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-                <span class="s2">"SELECT * FROM orders LIMIT $1"</span><span class="p">,</span>
-                <span class="n">limit</span>
-            <span class="p">)</span>
-
-        <span class="k">return</span> <span class="p">[</span><span class="n">Order</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+    <span class="c1"># With `roles` in the context, FraiseQL sets app.is_super_admin = 'true',</span>
+    <span class="c1"># which the tenant_admin_all policy above lets through</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">}</span> <span class="k">if</span> <span class="n">tenant_id</span> <span class="k">else</span> <span class="p">{}</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_order"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="aggregated-analytics">Aggregated Analytics<a class="headerlink" href="#aggregated-analytics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"super_admin"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_tenant_statistics</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">TenantStats</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Get statistics across all tenants."""</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SET LOCAL row_security = off"</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># db.run sets the session variables (app.is_super_admin) like db.find</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">        SELECT</span>
+<span class="s2">            t.id as tenant_id,</span>
+<span class="s2">            t.name as tenant_name,</span>
+<span class="s2">            COUNT(DISTINCT u.id) as user_count,</span>
+<span class="s2">            COUNT(DISTINCT o.id) as order_count,</span>
+<span class="s2">            COALESCE(SUM(o.total), 0) as total_revenue</span>
+<span class="s2">        FROM organizations t</span>
+<span class="s2">        LEFT JOIN tb_user u ON u.tenant_id = t.id</span>
+<span class="s2">        LEFT JOIN tb_order o ON o.tenant_id = t.id</span>
+<span class="s2">        GROUP BY t.id, t.name</span>
+<span class="s2">        ORDER BY total_revenue DESC</span>
+<span class="s2">    """</span><span class="p">),</span> <span class="p">{}))</span>
 
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">            SELECT</span>
-<span class="s2">                t.id as tenant_id,</span>
-<span class="s2">                t.name as tenant_name,</span>
-<span class="s2">                COUNT(DISTINCT u.id) as user_count,</span>
-<span class="s2">                COUNT(DISTINCT o.id) as order_count,</span>
-<span class="s2">                COALESCE(SUM(o.total), 0) as total_revenue</span>
-<span class="s2">            FROM organizations t</span>
-<span class="s2">            LEFT JOIN users u ON u.tenant_id = t.id</span>
-<span class="s2">            LEFT JOIN orders o ON o.tenant_id = t.id</span>
-<span class="s2">            GROUP BY t.id, t.name</span>
-<span class="s2">            ORDER BY total_revenue DESC</span>
-<span class="s2">        """</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="p">[</span><span class="n">TenantStats</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">TenantStats</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="tenant-aware-caching">Tenant-Aware Caching<a class="headerlink" href="#tenant-aware-caching" title="Permanent link">&para;</a></h2>
 <p>Cache data per tenant to avoid leakage:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">Cache</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.caching</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresCache</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">TenantCache</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Tenant-aware caching wrapper."""</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">Cache</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cache</span><span class="p">:</span> <span class="n">PostgresCache</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cache</span> <span class="o">=</span> <span class="n">cache</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_tenant_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -5806,8 +5815,8 @@
         <span class="n">pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"tenant:</span><span class="si">{</span><span class="n">tenant_id</span><span class="si">}</span><span class="s2">:*"</span>
         <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">delete_pattern</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
 
-<span class="c1"># Usage</span>
-<span class="n">tenant_cache</span> <span class="o">=</span> <span class="n">TenantCache</span><span class="p">(</span><span class="n">cache</span><span class="p">)</span>
+<span class="c1"># Usage (PostgresCache(pool) stores JSON values in an UNLOGGED table)</span>
+<span class="n">tenant_cache</span> <span class="o">=</span> <span class="n">TenantCache</span><span class="p">(</span><span class="n">PostgresCache</span><span class="p">(</span><span class="n">cache_pool</span><span class="p">))</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_products</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Product</span><span class="p">]:</span>
@@ -5815,28 +5824,32 @@
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
 
     <span class="c1"># Check cache</span>
-    <span class="n">cached</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tenant_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="s2">"products"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="n">cached</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">cached</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">tenant_cache</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="s2">"products"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Fetch from database (JSON-serializable columns: the cache stores JSON)</span>
+        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
+            <span class="n">SQL</span><span class="p">(</span>
+                <span class="s2">"SELECT id::text AS id, name, price::float AS price"</span>
+                <span class="s2">" FROM tb_product WHERE tenant_id = </span><span class="si">%(tenant_id)s</span><span class="s2">"</span>
+            <span class="p">),</span>
+            <span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">},</span>
+        <span class="p">))</span>
 
-    <span class="c1"># Fetch from database</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM products WHERE tenant_id = $1"</span><span class="p">,</span>
-            <span class="n">tenant_id</span>
-        <span class="p">)</span>
-        <span class="n">products</span> <span class="o">=</span> <span class="p">[</span><span class="n">Product</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+        <span class="c1"># Cache result</span>
+        <span class="k">await</span> <span class="n">tenant_cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="s2">"products"</span><span class="p">,</span> <span class="n">rows</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
 
-    <span class="c1"># Cache result</span>
-    <span class="k">await</span> <span class="n">tenant_cache</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="s2">"products"</span><span class="p">,</span> <span class="n">products</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">products</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">Product</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 </code></pre></div>
 <h2 id="data-export-import">Data Export &amp; Import<a class="headerlink" href="#data-export-import" title="Permanent link">&para;</a></h2>
 <h3 id="tenant-data-export">Tenant Data Export<a class="headerlink" href="#tenant-data-export" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span><span class="p">,</span> <span class="n">Identifier</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"tenant:export"</span><span class="p">)</span>
@@ -5852,27 +5865,16 @@
         <span class="s2">"products"</span><span class="p">:</span> <span class="p">[]</span>
     <span class="p">}</span>
 
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="c1"># Export users</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM users WHERE tenant_id = $1"</span><span class="p">,</span>
-            <span class="n">tenant_id</span>
-        <span class="p">)</span>
-        <span class="n">export_data</span><span class="p">[</span><span class="s2">"users"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
-
-        <span class="c1"># Export orders</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM orders WHERE tenant_id = $1"</span><span class="p">,</span>
-            <span class="n">tenant_id</span>
-        <span class="p">)</span>
-        <span class="n">export_data</span><span class="p">[</span><span class="s2">"orders"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
-
-        <span class="c1"># Export products</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-            <span class="s2">"SELECT * FROM products WHERE tenant_id = $1"</span><span class="p">,</span>
-            <span class="n">tenant_id</span>
-        <span class="p">)</span>
-        <span class="n">export_data</span><span class="p">[</span><span class="s2">"products"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">table</span> <span class="ow">in</span> <span class="p">((</span><span class="s2">"users"</span><span class="p">,</span> <span class="s2">"tb_user"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"orders"</span><span class="p">,</span> <span class="s2">"tb_order"</span><span class="p">),</span> <span class="p">(</span><span class="s2">"products"</span><span class="p">,</span> <span class="s2">"tb_product"</span><span class="p">)):</span>
+        <span class="c1"># to_jsonb: each row as a JSON object (timestamps as ISO strings)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">DatabaseQuery</span><span class="p">(</span>
+            <span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT to_jsonb(t) AS row FROM </span><span class="si">{}</span><span class="s2"> t WHERE tenant_id = </span><span class="si">%(tenant_id)s</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">Identifier</span><span class="p">(</span><span class="n">table</span><span class="p">)</span>
+            <span class="p">),</span>
+            <span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">},</span>
+        <span class="p">))</span>
+        <span class="n">export_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s2">"row"</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
 
     <span class="c1"># Save to file or return JSON</span>
     <span class="n">export_json</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">export_data</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
@@ -5888,39 +5890,45 @@
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span>
     <span class="n">import_data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-            <span class="c1"># Import users</span>
-            <span class="k">for</span> <span class="n">user_data</span> <span class="ow">in</span> <span class="n">import_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="n">user_data</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tenant_id</span>  <span class="c1"># Force current tenant</span>
-                <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">                    INSERT INTO users (id, tenant_id, email, name, created_at)</span>
-<span class="s2">                    VALUES ($1, $2, $3, $4, $5)</span>
-<span class="s2">                    ON CONFLICT (id) DO UPDATE SET</span>
-<span class="s2">                        email = EXCLUDED.email,</span>
-<span class="s2">                        name = EXCLUDED.name</span>
-<span class="s2">                """</span><span class="p">,</span> <span class="n">user_data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">user_data</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">],</span>
-                     <span class="n">user_data</span><span class="p">[</span><span class="s2">"email"</span><span class="p">],</span> <span class="n">user_data</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">user_data</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">import_rows</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+        <span class="c1"># run_in_transaction doesn't set session variables: set app.tenant_id</span>
+        <span class="c1"># for the RLS policies</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT set_config('app.tenant_id', </span><span class="si">%s</span><span class="s2">, true)"</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">tenant_id</span><span class="p">),))</span>
 
-            <span class="c1"># Import orders</span>
-            <span class="k">for</span> <span class="n">order_data</span> <span class="ow">in</span> <span class="n">import_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"orders"</span><span class="p">,</span> <span class="p">[]):</span>
-                <span class="n">order_data</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tenant_id</span>
-                <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">                    INSERT INTO orders (id, tenant_id, user_id, total, status, created_at)</span>
-<span class="s2">                    VALUES ($1, $2, $3, $4, $5, $6)</span>
-<span class="s2">                    ON CONFLICT (id) DO UPDATE SET</span>
-<span class="s2">                        total = EXCLUDED.total,</span>
-<span class="s2">                        status = EXCLUDED.status</span>
-<span class="s2">                """</span><span class="p">,</span> <span class="n">order_data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">order_data</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">],</span> <span class="n">order_data</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">],</span>
-                     <span class="n">order_data</span><span class="p">[</span><span class="s2">"total"</span><span class="p">],</span> <span class="n">order_data</span><span class="p">[</span><span class="s2">"status"</span><span class="p">],</span> <span class="n">order_data</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span>
+        <span class="c1"># Import users</span>
+        <span class="k">for</span> <span class="n">user_data</span> <span class="ow">in</span> <span class="n">import_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">user_data</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tenant_id</span>  <span class="c1"># Force current tenant</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">                INSERT INTO tb_user (id, tenant_id, email, name, created_at)</span>
+<span class="s2">                VALUES (</span><span class="si">%(id)s</span><span class="s2">, </span><span class="si">%(tenant_id)s</span><span class="s2">, </span><span class="si">%(email)s</span><span class="s2">, </span><span class="si">%(name)s</span><span class="s2">, </span><span class="si">%(created_at)s</span><span class="s2">)</span>
+<span class="s2">                ON CONFLICT (id) DO UPDATE SET</span>
+<span class="s2">                    email = EXCLUDED.email,</span>
+<span class="s2">                    name = EXCLUDED.name</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="n">user_data</span><span class="p">)</span>
 
+        <span class="c1"># Import orders</span>
+        <span class="k">for</span> <span class="n">order_data</span> <span class="ow">in</span> <span class="n">import_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"orders"</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="n">order_data</span><span class="p">[</span><span class="s2">"tenant_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">tenant_id</span>
+            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">                INSERT INTO tb_order (id, tenant_id, user_id, total, status, created_at)</span>
+<span class="s2">                VALUES (</span><span class="si">%(id)s</span><span class="s2">, </span><span class="si">%(tenant_id)s</span><span class="s2">, </span><span class="si">%(user_id)s</span><span class="s2">, </span><span class="si">%(total)s</span><span class="s2">, </span><span class="si">%(status)s</span><span class="s2">,</span>
+<span class="s2">                        </span><span class="si">%(created_at)s</span><span class="s2">)</span>
+<span class="s2">                ON CONFLICT (id) DO UPDATE SET</span>
+<span class="s2">                    total = EXCLUDED.total,</span>
+<span class="s2">                    status = EXCLUDED.status</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="n">order_data</span><span class="p">)</span>
+
+    <span class="c1"># One transaction: all rows or none</span>
+    <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">import_rows</span><span class="p">)</span>
     <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
 <h2 id="tenant-provisioning">Tenant Provisioning<a class="headerlink" href="#tenant-provisioning" title="Permanent link">&para;</a></h2>
 <h3 id="new-tenant-workflow">New Tenant Workflow<a class="headerlink" href="#new-tenant-workflow" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">uuid4</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">uuid4</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"super_admin"</span><span class="p">)</span>
@@ -5934,36 +5942,43 @@
 <span class="w">    </span><span class="sd">"""Provision new tenant with admin user."""</span>
     <span class="n">tenant_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">())</span>
 
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-            <span class="c1"># 1. Create organization</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">                INSERT INTO organizations (id, name, subdomain, plan, created_at)</span>
-<span class="s2">                VALUES ($1, $2, $3, $4, NOW())</span>
-<span class="s2">                RETURNING *</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">subdomain</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_tenant</span><span class="p">(</span><span class="n">conn</span><span class="p">):</span>
+        <span class="c1"># The new tenant's rows must pass the RLS policies</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT set_config('app.tenant_id', </span><span class="si">%s</span><span class="s2">, true)"</span><span class="p">,</span> <span class="p">(</span><span class="n">tenant_id</span><span class="p">,))</span>
 
-            <span class="n">org</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+        <span class="c1"># 1. Create organization</span>
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            INSERT INTO organizations (id, name, subdomain, plan, created_at)</span>
+<span class="s2">            VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, NOW())</span>
+<span class="s2">            RETURNING id, name, subdomain, plan</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="p">(</span><span class="n">tenant_id</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">subdomain</span><span class="p">,</span> <span class="n">plan</span><span class="p">))</span>
+        <span class="n">org</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
 
-            <span class="c1"># 2. Create admin user</span>
-            <span class="n">admin_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">())</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">                INSERT INTO users (id, tenant_id, email, name, roles, created_at)</span>
-<span class="s2">                VALUES ($1, $2, $3, $4, $5, NOW())</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">admin_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">,</span> <span class="n">admin_email</span><span class="p">,</span> <span class="s2">"Admin User"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"admin"</span><span class="p">])</span>
+        <span class="c1"># 2. Create admin user</span>
+        <span class="n">admin_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">())</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            INSERT INTO tb_user (id, tenant_id, email, name, created_at)</span>
+<span class="s2">            VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, NOW())</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="p">(</span><span class="n">admin_id</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">,</span> <span class="n">admin_email</span><span class="p">,</span> <span class="s2">"Admin User"</span><span class="p">))</span>
 
-            <span class="c1"># 3. Create default data (optional)</span>
-            <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">                INSERT INTO settings (tenant_id, key, value)</span>
-<span class="s2">                VALUES</span>
-<span class="s2">                    ($1, 'theme', 'default'),</span>
-<span class="s2">                    ($1, 'timezone', 'UTC'),</span>
-<span class="s2">                    ($1, 'locale', 'en-US')</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">tenant_id</span><span class="p">)</span>
+        <span class="c1"># 3. Create default data (optional)</span>
+        <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">            INSERT INTO settings (tenant_id, key, value)</span>
+<span class="s2">            VALUES</span>
+<span class="s2">                (</span><span class="si">%(tenant_id)s</span><span class="s2">, 'theme', 'default'),</span>
+<span class="s2">                (</span><span class="si">%(tenant_id)s</span><span class="s2">, 'timezone', 'UTC'),</span>
+<span class="s2">                (</span><span class="si">%(tenant_id)s</span><span class="s2">, 'locale', 'en-US')</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="p">{</span><span class="s2">"tenant_id"</span><span class="p">:</span> <span class="n">tenant_id</span><span class="p">})</span>
 
-            <span class="c1"># 4. Initialize schema (if using schema-per-tenant)</span>
-            <span class="c1"># await conn.execute(f"CREATE SCHEMA IF NOT EXISTS tenant_{tenant_id}")</span>
-            <span class="c1"># Run migrations for tenant schema</span>
+        <span class="c1"># 4. Initialize schema (if using schema-per-tenant)</span>
+        <span class="c1"># await conn.execute(sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(</span>
+        <span class="c1">#     sql.Identifier(f"tenant_{tenant_id}")))</span>
+        <span class="c1"># Run migrations for tenant schema</span>
+        <span class="k">return</span> <span class="n">org</span>
+
+    <span class="c1"># One transaction: rolled back if any step fails</span>
+    <span class="n">org</span> <span class="o">=</span> <span class="k">await</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">create_tenant</span><span class="p">)</span>
 
     <span class="c1"># 5. Send welcome email</span>
     <span class="k">await</span> <span class="n">send_welcome_email</span><span class="p">(</span><span class="n">admin_email</span><span class="p">,</span> <span class="n">subdomain</span><span class="p">)</span>
@@ -6006,7 +6021,7 @@
 <span class="p">)</span>
 
 <span class="c1"># Large tenant: Dedicated pool</span>
-<span class="n">large_tenant_pool</span> <span class="o">=</span> <span class="n">DatabasePool</span><span class="p">(</span>
+<span class="n">large_tenant_pool</span> <span class="o">=</span> <span class="n">AsyncConnectionPool</span><span class="p">(</span>
     <span class="s2">"postgresql://user:pass@localhost/tenant_large"</span><span class="p">,</span>
     <span class="n">min_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">max_size</span><span class="o">=</span><span class="mi">30</span>
@@ -6097,10 +6112,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

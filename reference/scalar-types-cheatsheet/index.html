@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5297,6 +5297,19 @@ directly from selected aggregate fields against your <code>v_</code>/<code>tv_</
 <span class="k">class</span><span class="w"> </span><span class="nc">Order</span><span class="p">:</span>
     <span class="n">total</span><span class="p">:</span> <span class="n">Decimal</span>  <span class="c1"># Exact precision (NUMERIC)</span>
 </code></pre></div>
+<p><code>Decimal</code> is the GraphQL <code>Decimal</code> scalar: serialized as a string (<code>"99.99"</code>),
+parsed to <code>decimal.Decimal</code> from a string or a number, and filtered with
+<code>DecimalFilter</code>. A <code>Decimal</code> input field reaches your SQL function as a JSON
+string; read it with <code>(input-&gt;&gt;'total')::numeric</code>.</p>
+<p>In HTTP mode a JSONB <em>number</em> reaches the client with every digit PostgreSQL
+wrote, as a JSON number; a client whose JSON parser makes floats (JavaScript's
+<code>JSON.parse</code>) rounds it to about 17 significant digits. To send the scalar's
+string form instead, emit the column as text in the view, <code>'total', total::text</code>.
+Where filters still compare it as a number:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_order</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="s1">'total'</span><span class="p">,</span><span class="w"> </span><span class="n">total</span><span class="p">::</span><span class="nb">text</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">tb_order</span><span class="p">;</span>
+</code></pre></div>
 <hr />
 <h3 id="using-str-for-boolean">❌ Using str for Boolean<a class="headerlink" href="#using-str-for-boolean" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># WRONG</span>
@@ -5401,10 +5414,10 @@ directly from selected aggregate fields against your <code>v_</code>/<code>tv_</
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

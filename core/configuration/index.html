@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4691,10 +4691,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#jsonb-extraction" class="md-nav__link">
+  <a href="#jsonb" class="md-nav__link">
     <span class="md-ellipsis">
       
-        JSONB Extraction
+        JSONB
       
     </span>
   </a>
@@ -4845,10 +4845,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#entity-routing" class="md-nav__link">
+  <a href="#entity-routing-deprecated" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Entity Routing
+        Entity Routing (deprecated)
       
     </span>
   </a>
@@ -5008,7 +5008,7 @@
 <td>database_echo</td>
 <td>bool</td>
 <td>False</td>
-<td>Enable SQL query logging (development only)</td>
+<td>Deprecated, no effect: nothing reads it</td>
 </tr>
 </tbody>
 </table>
@@ -5155,20 +5155,26 @@
 <tr>
 <td>max_query_depth</td>
 <td>int | None</td>
-<td>None</td>
-<td>Maximum allowed query depth (None = unlimited)</td>
+<td>15</td>
+<td>Reject queries nested deeper than this, with a <code>QUERY_TOO_DEEP</code> error (None = unlimited; introspection not counted)</td>
 </tr>
 <tr>
 <td>query_timeout</td>
 <td>int</td>
 <td>30</td>
-<td>Maximum query execution time in seconds</td>
+<td>Statement timeout, in seconds, of every database read (<code>find</code>, <code>find_one</code>, <code>count</code>, ...), <code>db.run()</code> and <code>execute_function</code>: set as a transaction-local <code>statement_timeout</code>; 0 sets none</td>
 </tr>
 <tr>
 <td>auto_camel_case</td>
 <td>bool</td>
 <td>True</td>
 <td>Auto-convert snake_case fields to camelCase</td>
+</tr>
+<tr>
+<td>include_execution_metadata</td>
+<td>bool</td>
+<td>False</td>
+<td>Add <code>extensions.execution</code> (<code>mode</code>, <code>time_ms</code>) to responses in production too (outside production it is always added); a response served as raw Rust bytes carries no extensions either way</td>
 </tr>
 </tbody>
 </table>
@@ -5215,7 +5221,6 @@
     <span class="n">introspection_policy</span><span class="o">=</span><span class="n">IntrospectionPolicy</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
     <span class="n">enable_playground</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">playground_tool</span><span class="o">=</span><span class="s2">"graphiql"</span><span class="p">,</span>
-    <span class="n">database_echo</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Log all SQL queries</span>
 <span class="p">)</span>
 </code></pre></div>
 <h2 id="performance-settings">Performance Settings<a class="headerlink" href="#performance-settings" title="Permanent link">&para;</a></h2>
@@ -5231,20 +5236,15 @@
 </thead>
 <tbody>
 <tr>
-<td>enable_query_caching</td>
-<td>bool</td>
-<td>True</td>
-<td>Enable query result caching</td>
-</tr>
-<tr>
 <td>cache_ttl</td>
 <td>int</td>
 <td>300</td>
-<td>Cache time-to-live in seconds</td>
+<td>Deprecated, and has no effect: nothing reads it (a non-default value warns). Per-call TTLs are <code>CachedRepository.find(..., cache_ttl=)</code></td>
 </tr>
 </tbody>
 </table>
 <h3 id="turborouter">TurboRouter<a class="headerlink" href="#turborouter" title="Permanent link">&para;</a></h3>
+<p>The TurboRouter is always on: no setting turns it off.</p>
 <table>
 <thead>
 <tr>
@@ -5255,56 +5255,31 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>enable_turbo_router</td>
-<td>bool</td>
-<td>True</td>
-<td>Enable TurboRouter for registered queries</td>
-</tr>
 <tr>
 <td>turbo_router_cache_size</td>
 <td>int</td>
 <td>1000</td>
-<td>Maximum number of queries to cache</td>
-</tr>
-<tr>
-<td>turbo_router_auto_register</td>
-<td>bool</td>
-<td>False</td>
-<td>Auto-register queries at startup</td>
-</tr>
-<tr>
-<td>turbo_max_complexity</td>
-<td>int</td>
-<td>100</td>
-<td>Max complexity score for turbo caching</td>
-</tr>
-<tr>
-<td>turbo_max_total_weight</td>
-<td>float</td>
-<td>2000.0</td>
-<td>Max total weight of cached queries</td>
-</tr>
-<tr>
-<td>turbo_enable_adaptive_caching</td>
-<td>bool</td>
-<td>True</td>
-<td>Enable complexity-based admission</td>
+<td>Maximum number of queries the registry holds</td>
 </tr>
 </tbody>
 </table>
+<p><code>enable_query_caching</code>, <code>enable_turbo_router</code>, <code>turbo_router_auto_register</code>,
+<code>turbo_max_complexity</code>, <code>turbo_max_total_weight</code> and <code>turbo_enable_adaptive_caching</code>
+aren't <code>FraiseQLConfig</code> fields, and <code>FraiseQLConfig</code> ignores them.</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># High-performance configuration</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">enable_query_caching</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>  <span class="c1"># 10 minutes</span>
-    <span class="n">enable_turbo_router</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">turbo_router_cache_size</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
-    <span class="n">turbo_max_complexity</span><span class="o">=</span><span class="mi">200</span>
 <span class="p">)</span>
 </code></pre></div>
 <h3 id="json-passthrough">JSON Passthrough<a class="headerlink" href="#json-passthrough" title="Permanent link">&para;</a></h3>
+<p>There are no passthrough settings: query results go from PostgreSQL through the Rust
+pipeline to the response on every query (see <a href="#rust-pipeline-v100">Rust Pipeline</a> below).
+<code>json_passthrough_enabled</code>, <code>json_passthrough_in_production</code>, <code>json_passthrough_cache_nested</code>
+and the <code>passthrough_*</code> options of earlier releases aren't <code>FraiseQLConfig</code> fields, and
+<code>FraiseQLConfig</code> ignores them.</p>
+<h3 id="jsonb">JSONB<a class="headerlink" href="#jsonb" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -5315,102 +5290,21 @@
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>json_passthrough_enabled</td>
-<td>bool</td>
-<td>True</td>
-<td>Enable JSON passthrough optimization</td>
-</tr>
-<tr>
-<td>json_passthrough_in_production</td>
-<td>bool</td>
-<td>True</td>
-<td>Auto-enable in production mode</td>
-</tr>
-<tr>
-<td>json_passthrough_cache_nested</td>
-<td>bool</td>
-<td>True</td>
-<td>Cache wrapped nested objects</td>
-</tr>
-<tr>
-<td>passthrough_complexity_limit</td>
-<td>int</td>
-<td>50</td>
-<td>Max complexity for passthrough mode</td>
-</tr>
-<tr>
-<td>passthrough_max_depth</td>
-<td>int</td>
-<td>3</td>
-<td>Max query depth for passthrough</td>
-</tr>
-<tr>
-<td>passthrough_auto_detect_views</td>
-<td>bool</td>
-<td>True</td>
-<td>Auto-detect database views</td>
-</tr>
-<tr>
-<td>passthrough_cache_view_metadata</td>
-<td>bool</td>
-<td>True</td>
-<td>Cache view metadata</td>
-</tr>
-<tr>
-<td>passthrough_view_metadata_ttl</td>
-<td>int</td>
-<td>3600</td>
-<td>Metadata cache TTL in seconds</td>
-</tr>
-</tbody>
-</table>
-<h3 id="jsonb-extraction">JSONB Extraction<a class="headerlink" href="#jsonb-extraction" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>jsonb_extraction_enabled</td>
-<td>bool</td>
-<td>True</td>
-<td>Enable automatic JSONB column extraction</td>
-</tr>
-<tr>
-<td>jsonb_default_columns</td>
-<td>list[str]</td>
-<td>["data", "json_data", "jsonb_data"]</td>
-<td>Default JSONB column names to search</td>
-</tr>
-<tr>
-<td>jsonb_auto_detect</td>
-<td>bool</td>
-<td>True</td>
-<td>Auto-detect JSONB columns by content analysis</td>
-</tr>
 <tr>
 <td>jsonb_field_limit_threshold</td>
 <td>int</td>
 <td>20</td>
-<td>Field count threshold for full data column</td>
+<td>Copied into the request context as <code>info.context["jsonb_field_limit_threshold"]</code>; FraiseQL's own queries don't read it</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Examples</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># JSONB-optimized configuration</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">jsonb_extraction_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">jsonb_default_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"data"</span><span class="p">,</span> <span class="s2">"metadata"</span><span class="p">,</span> <span class="s2">"json_data"</span><span class="p">],</span>
-    <span class="n">jsonb_auto_detect</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">jsonb_field_limit_threshold</span><span class="o">=</span><span class="mi">30</span>
-<span class="p">)</span>
+<p><code>jsonb_extraction_enabled</code>, <code>jsonb_default_columns</code> and <code>jsonb_auto_detect</code> aren't
+<code>FraiseQLConfig</code> fields, and <code>FraiseQLConfig</code> ignores them. A type reads its JSONB
+column from <code>jsonb_column=</code> on <code>@fraiseql.type</code> (<code>data</code> by default):</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"tv_machine"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"machine_data"</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Machine</span><span class="p">:</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
 <h3 id="rust-pipeline-v100">Rust Pipeline (v1.0.0+)<a class="headerlink" href="#rust-pipeline-v100" title="Permanent link">&para;</a></h3>
 <p><strong>v0.11.5 Architectural Change</strong>: FraiseQL now uses an exclusive Rust pipeline for all query execution. No mode detection or conditional logic.</p>
@@ -5420,7 +5314,7 @@
 <li>✅ <strong>7-10x faster JSON transformation</strong> - Zero Python overhead</li>
 <li>✅ <strong>Always active</strong> - No configuration needed</li>
 <li>✅ <strong>Automatic camelCase</strong> - snake_case → camelCase conversion</li>
-<li>✅ <strong>Built-in __typename</strong> - Automatic GraphQL type injection</li>
+<li>✅ <strong>Built-in <code>__typename</code></strong> - Written wherever the query selects it (and only there)</li>
 </ul>
 <p>All queries execute through the Rust pipeline automatically. The old multi-mode execution system (NORMAL, PASSTHROUGH, TURBO) has been removed.</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># v1.0.0+ - Exclusive Rust pipeline</span>
@@ -5577,47 +5471,50 @@
 <tr>
 <td>rate_limit_enabled</td>
 <td>bool</td>
-<td>True</td>
-<td>Enable rate limiting</td>
+<td>False</td>
+<td><code>create_fraiseql_app</code> installs <code>RateLimiterMiddleware</code>, counting requests per client IP in each process's memory</td>
 </tr>
 <tr>
 <td>rate_limit_requests_per_minute</td>
 <td>int</td>
 <td>60</td>
-<td>Max requests per minute</td>
+<td>Requests a client may make in any 60 seconds</td>
 </tr>
 <tr>
 <td>rate_limit_requests_per_hour</td>
 <td>int</td>
 <td>1000</td>
-<td>Max requests per hour</td>
+<td>Requests a client may make in any hour</td>
 </tr>
 <tr>
 <td>rate_limit_burst_size</td>
 <td>int</td>
 <td>10</td>
-<td>Burst size for rate limiting</td>
+<td>Requests a minute always allowed, even above the per-minute limit (the hour limit still applies)</td>
 </tr>
 <tr>
 <td>rate_limit_window_type</td>
 <td>str</td>
 <td>"sliding"</td>
-<td>Window type (sliding/fixed)</td>
+<td>Only <code>"sliding"</code> is implemented; another value logs a warning</td>
 </tr>
 <tr>
 <td>rate_limit_whitelist</td>
 <td>list[str]</td>
 <td>[]</td>
-<td>IP addresses to whitelist</td>
+<td>Client IPs never limited</td>
 </tr>
 <tr>
 <td>rate_limit_blacklist</td>
 <td>list[str]</td>
 <td>[]</td>
-<td>IP addresses to blacklist</td>
+<td>Client IPs always rejected with 403</td>
 </tr>
 </tbody>
 </table>
+<p>A request over the limit gets <code>429</code> with <code>Retry-After</code> and <code>X-RateLimit-*</code> headers.
+<code>/health</code>, <code>/ready</code>, <code>/metrics</code> and <code>/</code> are not counted. See
+<a href="../../configuration/rate-limiting/">Rate Limiting</a>, also for running behind a proxy.</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Strict rate limiting</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
@@ -5643,41 +5540,52 @@
 <tr>
 <td>complexity_enabled</td>
 <td>bool</td>
-<td>True</td>
-<td>Enable query complexity analysis</td>
+<td>False</td>
+<td>Enforce <code>complexity_max_score</code> and <code>complexity_max_depth</code>; turned on when either is set</td>
 </tr>
 <tr>
 <td>complexity_max_score</td>
 <td>int</td>
 <td>1000</td>
-<td>Maximum allowed complexity score</td>
+<td>Reject a query whose complexity score is higher (<code>QUERY_TOO_COMPLEX</code>)</td>
 </tr>
 <tr>
 <td>complexity_max_depth</td>
 <td>int</td>
 <td>10</td>
-<td>Maximum query depth</td>
+<td>Reject a query nested deeper (<code>QUERY_TOO_DEEP</code>); the lower of it and <code>max_query_depth</code> wins</td>
 </tr>
 <tr>
 <td>complexity_default_list_size</td>
 <td>int</td>
 <td>10</td>
-<td>Default list size for complexity calculation</td>
+<td>List size assumed for a list field without a <code>limit</code> / <code>first</code> argument</td>
 </tr>
 <tr>
 <td>complexity_include_in_response</td>
 <td>bool</td>
 <td>False</td>
-<td>Include complexity score in response</td>
+<td>Deprecated, no effect: no response carries the score</td>
 </tr>
 <tr>
 <td>complexity_field_multipliers</td>
 <td>dict[str, int]</td>
 <td>{}</td>
-<td>Custom field complexity multipliers</td>
+<td>Cost of a field instead of 1, by field name or <code>"Type.field"</code></td>
 </tr>
 </tbody>
 </table>
+<p>The score is computed from the schema before the query runs: a scalar costs 1, an
+object field 1 plus its selections, and a list field 1 plus its selections times its
+<code>limit</code> / <code>first</code> argument (or <code>complexity_default_list_size</code>). So
+<code>{ users { posts { id } } }</code> without limits scores <code>1 + 10 * (1 + 10 * 1) = 111</code>.
+Introspection (<code>__schema</code>, <code>__type</code>) is not counted; <code>introspection_policy</code> governs it.
+A rejected query gets a GraphQL error and runs no resolver or SQL.</p>
+<p>The FastAPI app reads these limits from its config. The other entry points take them
+too, from a config or as an explicit <code>QueryLimits</code> (<code>fraiseql.gql.query_limits</code>):
+<code>GraphNoteRouter(schema, config=config)</code> for the plain Starlette router, and
+<code>SubscriptionManager(config=config)</code> (or <code>WebSocketConnection(..., query_limits=...)</code>)
+for subscriptions over WebSocket. Without either, they apply no limit.</p>
 <p><strong>Examples</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Complexity limits</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
@@ -5708,31 +5616,31 @@
 <td>apq_mode</td>
 <td>APQMode</td>
 <td>OPTIONAL</td>
-<td>Query acceptance mode (OPTIONAL/REQUIRED/DISABLED)</td>
+<td><code>optional</code>: hashes and full queries; <code>required</code>: only hashes the server already knows (a client can't register one); <code>disabled</code>: APQ extensions ignored</td>
 </tr>
 <tr>
 <td>apq_queries_dir</td>
 <td>str | None</td>
 <td>None</td>
-<td>Directory for auto-registering .graphql files</td>
+<td>Directory whose <code>.graphql</code> / <code>.gql</code> operations are registered as persisted queries (must exist at startup; not read in <code>disabled</code> mode)</td>
 </tr>
 <tr>
 <td>apq_storage_backend</td>
 <td>Literal</td>
 <td>"memory"</td>
-<td>Storage backend (memory/postgresql/custom)</td>
+<td>Storage backend (memory/postgresql/custom); <code>postgresql</code> stores in <code>apq_queries</code> / <code>apq_responses</code>, created on first use</td>
 </tr>
 <tr>
 <td>apq_cache_responses</td>
 <td>bool</td>
 <td>False</td>
-<td>Enable JSON response caching for APQ queries</td>
+<td>Cache the response of APQ queries (not mutations, nor responses with errors), per variables, tenant and user</td>
 </tr>
 <tr>
 <td>apq_response_cache_ttl</td>
 <td>int</td>
 <td>600</td>
-<td>Cache TTL for APQ responses in seconds</td>
+<td>Seconds a cached APQ response is served; 0 keeps it</td>
 </tr>
 <tr>
 <td>apq_backend_config</td>
@@ -5750,7 +5658,19 @@
     <span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">apq_response_cache_ttl</span><span class="o">=</span><span class="mi">900</span>  <span class="c1"># 15 minutes</span>
 <span class="p">)</span>
+
+<span class="c1"># Only operations shipped with the app run</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">apq_mode</span><span class="o">=</span><span class="s2">"required"</span><span class="p">,</span>
+    <span class="n">apq_queries_dir</span><span class="o">=</span><span class="s2">"./graphql"</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
+<p>In <code>required</code> mode a request with a query text and no known hash is refused
+(<code>PERSISTED_QUERY_NOT_IN_LIST</code>, or <code>ARBITRARY_QUERY_NOT_ALLOWED</code> without APQ
+extensions), so <code>apq_queries_dir</code> is how queries get approved. A query whose text
+doesn't hash to its <code>sha256Hash</code> gets 400 in <code>optional</code> and <code>required</code> mode. See
+<a href="../../specs/persisted-queries/">Persisted Queries</a>.</p>
 <h2 id="token-revocation-settings">Token Revocation Settings<a class="headerlink" href="#token-revocation-settings" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -5798,16 +5718,17 @@
 <p>FraiseQL uses an exclusive Rust pipeline for all query execution.</p>
 <h3 id="configuration-options">Configuration Options<a class="headerlink" href="#configuration-options" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>field_projection: bool = True</code> - Enable Rust-based field filtering</li>
-<li><code>schema_registry: bool = True</code> - Enable schema-based transformation</li>
 <li><code>enable_rust_endpoint: bool = False</code> - Mount the <code>POST /graphql/rust</code> passthrough route</li>
 </ul>
+<p>Field selection always happens in Rust: <code>field_projection</code> and <code>schema_registry</code> aren't
+<code>FraiseQLConfig</code> fields, and <code>FraiseQLConfig</code> ignores them. The Rust schema registry is
+initialized by <code>create_fraiseql_app</code>, which takes <code>enable_schema_registry=False</code> to skip it.</p>
 <h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="c1"># Rust pipeline is always active</span>
-    <span class="n">field_projection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Optional: disable for debugging</span>
 <span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">enable_schema_registry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="enable_rust_endpoint-opt-in-issue-365"><code>enable_rust_endpoint</code> (opt-in, issue #365)<a class="headerlink" href="#enable_rust_endpoint-opt-in-issue-365" title="Permanent link">&para;</a></h3>
 <p><code>POST /graphql/rust</code> is a Rust passthrough that <strong>bypasses Python resolvers entirely</strong>. It is
@@ -5843,7 +5764,7 @@ flag.</p>
 <td>default_query_schema</td>
 <td>str</td>
 <td>"public"</td>
-<td>Default schema for queries</td>
+<td>Deprecated, no effect: a query reads the view its <code>sql_source</code> names (qualify it to pick a schema)</td>
 </tr>
 </tbody>
 </table>
@@ -5852,56 +5773,12 @@ flag.</p>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">default_mutation_schema</span><span class="o">=</span><span class="s2">"app"</span><span class="p">,</span>
-    <span class="n">default_query_schema</span><span class="o">=</span><span class="s2">"api"</span>
 <span class="p">)</span>
 </code></pre></div>
-<h2 id="entity-routing">Entity Routing<a class="headerlink" href="#entity-routing" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Option</th>
-<th>Type</th>
-<th>Default</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>entity_routing</td>
-<td>EntityRoutingConfig | dict | None</td>
-<td>None</td>
-<td>Entity-aware query routing configuration</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Examples</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.routing.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">EntityRoutingConfig</span>
-
-<span class="c1"># Entity routing configuration</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">entity_routing</span><span class="o">=</span><span class="n">EntityRoutingConfig</span><span class="p">(</span>
-        <span class="n">enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">default_schema</span><span class="o">=</span><span class="s2">"public"</span><span class="p">,</span>
-        <span class="n">entity_mapping</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">"User"</span><span class="p">:</span> <span class="s2">"users_schema"</span><span class="p">,</span>
-            <span class="s2">"Post"</span><span class="p">:</span> <span class="s2">"content_schema"</span>
-        <span class="p">}</span>
-    <span class="p">)</span>
-<span class="p">)</span>
-
-<span class="c1"># Or using dict</span>
-<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">entity_routing</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"enabled"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="s2">"default_schema"</span><span class="p">:</span> <span class="s2">"public"</span><span class="p">,</span>
-        <span class="s2">"entity_mapping"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"User"</span><span class="p">:</span> <span class="s2">"users_schema"</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">)</span>
-</code></pre></div>
+<h2 id="entity-routing-deprecated">Entity Routing (deprecated)<a class="headerlink" href="#entity-routing-deprecated" title="Permanent link">&para;</a></h2>
+<p><code>entity_routing</code> has no effect and will be removed. It is validated and stored, but no
+query is routed by entity: every query runs the same execution path. Setting it emits a
+<code>DeprecationWarning</code>; remove it from your configuration.</p>
 <h2 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h2>
 <p>All configuration options can be set via environment variables with the <code>FRAISEQL_</code> prefix:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Database</span>
@@ -5958,11 +5835,7 @@ flag.</p>
     <span class="n">auto_camel_case</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 
     <span class="c1"># Performance</span>
-    <span class="n">enable_query_caching</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
-    <span class="n">enable_turbo_router</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">turbo_router_cache_size</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>
-    <span class="n">jsonb_extraction_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 
     <span class="c1"># Auth</span>
     <span class="n">auth_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -6162,10 +6035,10 @@ flag.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

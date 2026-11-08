@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4757,22 +4757,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#schema" class="md-nav__link">
+  <a href="#application" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema
+        Application
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Schema">
+    <nav class="md-nav" aria-label="Application">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#schema_1" class="md-nav__link">
+  <a href="#create_fraiseql_app" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Schema
+        create_fraiseql_app
       
     </span>
   </a>
@@ -4808,10 +4808,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#query-complexity-analysis" class="md-nav__link">
+  <a href="#query-timeout" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Query Complexity Analysis
+        Query Timeout
       
     </span>
   </a>
@@ -4864,10 +4864,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#mutationresponset" class="md-nav__link">
+  <a href="#mutation-results-fraiseqlsuccess-fraiseqlerror" class="md-nav__link">
     <span class="md-ellipsis">
       
-        MutationResponse[T]
+        Mutation results: @fraiseql.success / @fraiseql.error
       
     </span>
   </a>
@@ -5079,7 +5079,7 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get user by ID."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <p><strong>Info Object:</strong></p>
 <ul>
@@ -5100,18 +5100,33 @@
 <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mutation</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span>
 </code></pre></div>
 <p><strong>Example:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutationResponse</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Create a new user."""</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserInput</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span>
-        <span class="s2">"fn_create_user"</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">}</span>
-    <span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">MutationResponse</span><span class="o">.</span><span class="n">from_db</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Create a new user: calls the SQL function create_user(input jsonb)."""</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
 </code></pre></div>
+<p>The SQL function returns a <code>mutation_response</code> row; fraiseql turns it into
+<code>CreateUserSuccess</code> or <code>CreateUserError</code> (see <a href="../guides/mutation-sql-requirements/">Mutation SQL Requirements</a>).
+A plain <code>async def</code> resolver decorated with <code>@fraiseql.mutation</code> works too, and can
+call any function with <code>db.execute_function(...)</code>.</p>
 <p><strong>See Also:</strong></p>
 <ul>
 <li><a href="../guides/mutation-sql-requirements/">Mutation SQL Requirements</a></li>
@@ -5139,7 +5154,10 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">current_user</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">user_context</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"user"</span><span class="p">]</span>
     <span class="c1"># user_context is guaranteed to exist</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">user_context</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
+        <span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"currentUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_context</span><span class="o">.</span><span class="n">user_id</span><span class="p">}</span>
+    <span class="p">)</span>
 </code></pre></div>
 <h4 id="requires_role"><code>@requires_role</code><a class="headerlink" href="#requires_role" title="Permanent link">&para;</a></h4>
 <p>Require specific role(s).</p>
@@ -5149,17 +5167,23 @@
 <span class="nd">@requires_role</span><span class="p">(</span><span class="s2">"admin"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">all_users</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="c1"># Only admin users can call this</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"allUsers"</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span>
 </code></pre></div>
 <h4 id="requires_permission"><code>@requires_permission</code><a class="headerlink" href="#requires_permission" title="Permanent link">&para;</a></h4>
 <p>Require specific permission(s).</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_permission</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">uuid</span><span class="w"> </span><span class="kn">import</span> <span class="n">UUID</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">requires_permission</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="nd">@requires_permission</span><span class="p">(</span><span class="s2">"user:delete"</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">delete_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
     <span class="c1"># Only users with "user:delete" permission</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="s2">"users"</span><span class="p">,</span> <span class="nb">id</span><span class="p">)</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="c1"># fn_delete_user(input jsonb, OUT deleted boolean)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_delete_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">id</span><span class="p">)})</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">[</span><span class="s2">"deleted"</span><span class="p">]</span>
 </code></pre></div>
 <p><strong>See Also:</strong></p>
 <ul>
@@ -5177,7 +5201,7 @@
     <span class="s2">"users"</span><span class="p">,</span>
     <span class="n">info</span><span class="p">,</span>
     <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"status"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="s2">"active"</span><span class="p">}},</span>
-    <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)],</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}],</span>
     <span class="n">limit</span><span class="o">=</span><span class="mi">10</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5187,7 +5211,7 @@
 <li><code>field_name</code>: GraphQL field name</li>
 <li><code>info</code>: GraphQL info object</li>
 <li><code>where</code>: Filter conditions (dict or WhereInput)</li>
-<li><code>order_by</code>: List of (field, direction) tuples</li>
+<li><code>order_by</code>: List of <code>{field: "ASC" | "DESC"}</code> dicts</li>
 <li><code>limit</code>: Maximum records to return</li>
 <li><code>offset</code>: Records to skip</li>
 </ul>
@@ -5199,7 +5223,7 @@
     <span class="s2">"v_user"</span><span class="p">,</span>
     <span class="s2">"user"</span><span class="p">,</span>
     <span class="n">info</span><span class="p">,</span>
-    <span class="nb">id</span><span class="o">=</span><span class="n">user_id</span>
+    <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Returns:</strong> <code>T | None</code></p>
@@ -5214,87 +5238,93 @@
 <p><strong>Returns:</strong> <code>dict[str, Any]</code></p>
 <hr />
 <h3 id="connection-management">Connection Management<a class="headerlink" href="#connection-management" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_database_pool</span>
+<p><code>create_fraiseql_app</code> creates and opens the pool. In a resolver, <code>db.get_pool()</code>
+returns it (a psycopg <code>AsyncConnectionPool</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">user_emails</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">get_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT email FROM tb_user ORDER BY email"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+</code></pre></div>
+<p>Outside the app, <code>create_db_pool</code> from <code>fraiseql.fastapi.app</code> builds the same kind of
+pool (it returns date and time values as text, as fraiseql expects):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.app</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_db_pool</span>
 
-<span class="c1"># Create connection pool</span>
-<span class="n">pool</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_database_pool</span><span class="p">(</span>
-    <span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">min_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span>
-<span class="p">)</span>
-
-<span class="c1"># Get connection from pool</span>
-<span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s2">"SELECT * FROM users"</span><span class="p">)</span>
+<span class="n">pool</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_db_pool</span><span class="p">(</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span> <span class="n">min_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">pool</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT email FROM tb_user"</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">await</span> <span class="n">pool</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </code></pre></div>
 <p><strong>See Also:</strong></p>
 <ul>
 <li><a href="../core/database-api/">Database API Guide</a></li>
 </ul>
 <hr />
-<h2 id="schema">Schema<a class="headerlink" href="#schema" title="Permanent link">&para;</a></h2>
-<h3 id="schema_1"><code>Schema</code><a class="headerlink" href="#schema_1" title="Permanent link">&para;</a></h3>
-<p>Main GraphQL schema class.</p>
-<p><strong>Signature:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Schema</span><span class="p">:</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">database_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">types</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">queries</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">mutations</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">auth_provider</span><span class="p">:</span> <span class="n">AuthProvider</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">max_query_complexity</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span>
-        <span class="n">query_timeout_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span>
-    <span class="p">)</span>
+<h2 id="application">Application<a class="headerlink" href="#application" title="Permanent link">&para;</a></h2>
+<h3 id="create_fraiseql_app"><code>create_fraiseql_app</code><a class="headerlink" href="#create_fraiseql_app" title="Permanent link">&para;</a></h3>
+<p>Build the FastAPI application that serves the GraphQL schema.</p>
+<p><strong>Signature</strong> (main parameters):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">create_fraiseql_app</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">database_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">types</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">mutations</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">queries</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">FraiseQLConfig</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">auth</span><span class="p">:</span> <span class="n">Auth0Config</span> <span class="o">|</span> <span class="n">AuthProvider</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">context_getter</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Request</span><span class="p">],</span> <span class="n">Awaitable</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">production</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="c1"># ... see the function's docstring for the rest</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FastAPI</span>
 </code></pre></div>
 <p><strong>Example:</strong></p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">Schema</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
 
-<span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
-    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">,</span> <span class="n">Post</span><span class="p">,</span> <span class="n">Comment</span><span class="p">],</span>
-    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">posts</span><span class="p">],</span>
-    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">create_user</span><span class="p">,</span> <span class="n">update_user</span><span class="p">],</span>
-    <span class="n">max_query_complexity</span><span class="o">=</span><span class="mi">1000</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span>
+    <span class="n">mutations</span><span class="o">=</span><span class="p">[</span><span class="n">CreateUser</span><span class="p">],</span>
 <span class="p">)</span>
 
-<span class="c1"># Execute query</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">schema</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
-<span class="s2">    {</span>
-<span class="s2">      users {</span>
-<span class="s2">        id</span>
-<span class="s2">        name</span>
-<span class="s2">      }</span>
-<span class="s2">    }</span>
-<span class="s2">"""</span><span class="p">)</span>
+<span class="c1"># Serve it with uvicorn, or execute a query in a test:</span>
+<span class="k">with</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/graphql"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="s2">"{ users { id name } }"</span><span class="p">})</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"data"</span><span class="p">][</span><span class="s2">"users"</span><span class="p">])</span>
 </code></pre></div>
 <p><strong>See Also:</strong></p>
 <ul>
 <li><a href="../reference/quick-reference/">Quick Reference</a></li>
+<li><a href="../core/configuration/">Configuration</a></li>
 </ul>
 <hr />
 <h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
 <h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">RateLimiter</span>
+<p><code>RateLimitMiddleware</code> (from <code>fraiseql.security</code>) limits requests per client; add it
+to the app like any Starlette middleware:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">RateLimit</span><span class="p">,</span> <span class="n">RateLimitMiddleware</span>
 
-<span class="n">rate_limiter</span> <span class="o">=</span> <span class="n">RateLimiter</span><span class="p">(</span>
-    <span class="n">requests_per_minute</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
-    <span class="n">burst</span><span class="o">=</span><span class="mi">10</span>
-<span class="p">)</span>
-
-<span class="c1"># Use in schema</span>
-<span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
-    <span class="n">rate_limiter</span><span class="o">=</span><span class="n">rate_limiter</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">database_url</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">])</span>
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+    <span class="n">RateLimitMiddleware</span><span class="p">,</span>
+    <span class="n">default_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">60</span><span class="p">),</span>  <span class="c1"># 60 requests per minute</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="query-complexity-analysis">Query Complexity Analysis<a class="headerlink" href="#query-complexity-analysis" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="n">schema</span> <span class="o">=</span> <span class="n">Schema</span><span class="p">(</span>
-    <span class="n">database_url</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
-    <span class="n">max_query_complexity</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>  <span class="c1"># Prevent DoS via complex queries</span>
-    <span class="n">query_timeout_seconds</span><span class="o">=</span><span class="mi">30</span>     <span class="c1"># Maximum query execution time</span>
+<p>A client over the limit gets HTTP 429.</p>
+<h3 id="query-timeout">Query Timeout<a class="headerlink" href="#query-timeout" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span><span class="p">,</span> <span class="n">create_fraiseql_app</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">query_timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># seconds: statement_timeout for db.run() and db.execute_function()</span>
 <span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span> <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">users</span><span class="p">])</span>
 </code></pre></div>
 <p><strong>See Also:</strong></p>
 <ul>
@@ -5348,22 +5378,23 @@
 </ul>
 <hr />
 <h2 id="types">Types<a class="headerlink" href="#types" title="Permanent link">&para;</a></h2>
-<h3 id="mutationresponset"><code>MutationResponse[T]</code><a class="headerlink" href="#mutationresponset" title="Permanent link">&para;</a></h3>
-<p>Standard mutation response type.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">MutationResponse</span>
+<h3 id="mutation-results-fraiseqlsuccess-fraiseqlerror">Mutation results: <code>@fraiseql.success</code> / <code>@fraiseql.error</code><a class="headerlink" href="#mutation-results-fraiseqlsuccess-fraiseqlerror" title="Permanent link">&para;</a></h3>
+<p>A class-based mutation names a success type and an error type; GraphQL exposes them
+as a union, and fraiseql picks one from the <code>status</code> of the SQL function's
+<code>mutation_response</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserSuccess</span><span class="p">:</span>
+    <span class="n">user</span><span class="p">:</span> <span class="n">User</span>  <span class="c1"># the function's entity, under the field named after its type</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutationResponse</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">MutationResponse</span><span class="o">.</span><span class="n">from_db</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateUserError</span><span class="p">:</span>
+    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
 </code></pre></div>
-<p><strong>Fields:</strong></p>
-<ul>
-<li><code>status</code>: Status code string (e.g., "created", "validation:error")</li>
-<li><code>message</code>: Human-readable message</li>
-<li><code>entity</code>: The created/updated entity (type <code>T</code>)</li>
-<li><code>errors</code>: List of error objects</li>
-</ul>
+<p><code>@fraiseql.success</code> adds <code>status</code>, <code>message</code>, <code>updated_fields</code> and <code>id</code>; <code>@fraiseql.error</code>
+adds <code>status</code>, <code>message</code>, <code>errors</code> and <code>code</code> (an HTTP-style number derived from the
+status, such as 409 for <code>conflict:</code>). A <code>status</code> with an error prefix (<code>failed:</code>,
+<code>validation:</code>, <code>not_found:</code>, <code>conflict:</code>, ...) selects the error type.</p>
 <hr />
 <h3 id="usercontext"><code>UserContext</code><a class="headerlink" href="#usercontext" title="Permanent link">&para;</a></h3>
 <p>User context available in authenticated requests.</p>
@@ -5400,7 +5431,7 @@
         <span class="n">info</span><span class="p">,</span>
         <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
         <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span>
-        <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)]</span>
+        <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}]</span>
     <span class="p">)</span>
 </code></pre></div>
 <h3 id="relationships">Relationships<a class="headerlink" href="#relationships" title="Permanent link">&para;</a></h3>
@@ -5417,17 +5448,27 @@
     <span class="n">author</span><span class="p">:</span> <span class="n">User</span>  <span class="c1"># Automatically resolved via v_post.author</span>
 </code></pre></div>
 <h3 id="error-handling">Error Handling<a class="headerlink" href="#error-handling" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutationResponse</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">})</span>
-        <span class="k">return</span> <span class="n">MutationResponse</span><span class="o">.</span><span class="n">from_db</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-    <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">MutationResponse</span><span class="p">(</span>
-            <span class="n">status</span><span class="o">=</span><span class="s2">"validation:error"</span><span class="p">,</span>
-            <span class="n">message</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
-            <span class="n">errors</span><span class="o">=</span><span class="p">[{</span><span class="s2">"code"</span><span class="p">:</span> <span class="mi">422</span><span class="p">,</span> <span class="s2">"message"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)}]</span>
-        <span class="p">)</span>
+<p>Validate in the SQL function and return a failure status; fraiseql returns the error
+type of the mutation instead of raising:</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">EXISTS</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">email</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'conflict:email'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email already registered'</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="s1">'User'</span><span class="p">,</span>
+<span class="w">                   </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">)</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'new'</span><span class="p">,</span><span class="w"> </span><span class="s1">'User created'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'User'</span><span class="p">,</span>
+<span class="w">               </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_id</span><span class="p">),</span>
+<span class="w">               </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <p><strong>See Also:</strong></p>
 <ul>
@@ -5526,10 +5567,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

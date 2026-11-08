@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5668,8 +5668,8 @@ resolver calls them via <code>db.execute_function("fn_...", {...})</code>.</p>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'userId'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'user_id'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5780,8 +5780,8 @@ resolver calls them via <code>db.execute_function("fn_...", {...})</code>.</p>
 <span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'updatedAt'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'updated_at'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -5790,16 +5790,19 @@ resolver calls them via <code>db.execute_function("fn_...", {...})</code>.</p>
 <ul>
 <li>The column must be named <code>data</code> (configurable via <code>jsonb_column</code>, default <code>"data"</code>)</li>
 <li>Type: <code>JSONB</code></li>
-<li>Contains the fully-formed projection in GraphQL field case</li>
+<li>Contains the fully-formed projection, keyed by Python field name (snake_case)</li>
 <li>Place it at the END of the SELECT (last column) by convention</li>
 <li>Never null (use <code>{}</code> for empty objects, <code>[]</code> for empty arrays)</li>
 <li>Never put <code>pk_*</code> or <code>fk_*</code> inside <code>data</code></li>
 </ul>
 <p><strong>Field naming in JSONB:</strong></p>
 <ul>
-<li>Convert snake_case to camelCase</li>
-<li><code>created_at</code> → <code>createdAt</code></li>
-<li><code>user_id</code> → <code>userId</code></li>
+<li>Use the Python field name, in snake_case: <code>'created_at', created_at</code>, <code>'user_id', ...</code></li>
+<li>Don't camelCase the keys. <code>where</code> and <code>orderBy</code> convert the GraphQL field name to snake_case
+  and look up <code>data -&gt;&gt; 'created_at'</code>; with a <code>'createdAt'</code> key, a filter on that field matches
+  nothing and a sort on it does nothing.</li>
+<li>The GraphQL response is camelCase anyway: FraiseQL converts the keys on output
+  (<code>created_at</code> → <code>createdAt</code>).</li>
 </ul>
 <p>At startup, FraiseQL maps each <code>@fraiseql.type</code> field to a key in this <code>data</code> JSONB. The hot
 path reads <code>data</code> and shapes it to the requested GraphQL fields (the optional <code>fraiseql_rs</code>
@@ -5831,7 +5834,7 @@ deleted_by   — Audit column
 <span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span><span class="w">                 </span><span class="c1">-- Soft delete</span>
@@ -5839,7 +5842,7 @@ deleted_by   — Audit column
 <p><strong>Must include:</strong></p>
 <ul>
 <li><code>id</code> for public identity (and <code>WHERE id = $1</code> lookups)</li>
-<li><code>data</code> JSONB with camelCase fields</li>
+<li><code>data</code> JSONB with snake_case keys</li>
 <li>A soft-delete filter</li>
 </ul>
 <h3 id="42-related-entity-view-with-foreign-key">4.2 Related Entity View with Foreign Key<a class="headerlink" href="#42-related-entity-view-with-foreign-key" title="Permanent link">&para;</a></h3>
@@ -5851,8 +5854,8 @@ deleted_by   — Audit column
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="n">title</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'userId'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">),</span>
-<span class="w">        </span><span class="s1">'createdAt'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
+<span class="w">        </span><span class="s1">'user_id'</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">pk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fk_user</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'created_at'</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_post</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="p">;</span>
@@ -6280,7 +6283,7 @@ type accordingly.</p>
 <span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'identifier'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">identifier</span><span class="p">,</span>
 <span class="w">        </span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">email</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'roleIds'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">ur</span><span class="p">.</span><span class="n">role_ids</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="n">UUID</span><span class="p">[])</span>
+<span class="w">        </span><span class="s1">'role_ids'</span><span class="p">,</span><span class="w"> </span><span class="k">COALESCE</span><span class="p">(</span><span class="n">ur</span><span class="p">.</span><span class="n">role_ids</span><span class="p">,</span><span class="w"> </span><span class="nb">ARRAY</span><span class="p">[]::</span><span class="n">UUID</span><span class="p">[])</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="n">u</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">v_user_role_ids_by_user</span><span class="w"> </span><span class="n">ur</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">ur</span><span class="p">.</span><span class="n">fk_user</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">u</span><span class="p">.</span><span class="n">pk_user</span>
@@ -6369,7 +6372,7 @@ the <a href="../../architecture/database/tv-table-pattern/">tv_ table pattern</a
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Pre-aggregated views named <code>v_{entities}_by_{parent}</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Mutation functions return the standard JSON response</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> Relevant columns are indexed</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> JSONB fields use camelCase</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> JSONB keys use snake_case (the Python field names)</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No <code>pk_*</code> / <code>fk_*</code> inside <code>data</code></li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> No nullable JSONB (use <code>{}</code> or <code>[]</code>)</li>
 </ul>
@@ -6462,10 +6465,10 @@ the <a href="../../architecture/database/tv-table-pattern/">tv_ table pattern</a
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

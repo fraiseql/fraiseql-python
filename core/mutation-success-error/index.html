@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4822,10 +4822,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#multiple-error-types" class="md-nav__link">
+  <a href="#several-kinds-of-error" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Multiple Error Types
+        Several Kinds of Error
       
     </span>
   </a>
@@ -4850,10 +4850,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-use-descriptive-error-codes" class="md-nav__link">
+  <a href="#1-use-descriptive-statuses" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Use Descriptive Error Codes
+        1. Use Descriptive Statuses
       
     </span>
   </a>
@@ -5011,11 +5011,11 @@
 <p>FraiseQL provides <code>@success</code> and <code>@error</code> decorators for defining mutation response types with automatic field injection.</p>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Mutations in FraiseQL return <strong>union types</strong> with success and error cases:</p>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">result_name</span><span class="o">=</span><span class="s2">"CreateUserResult"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">UserCreated</span>      <span class="c1"># Success case</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>  <span class="c1"># Error case (uses @error decorated class)</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ValidationError</span>  <span class="c1"># Error case (uses @error decorated class)</span>
 </code></pre></div>
 <p><strong>GraphQL Result</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="k">union</span><span class="w"> </span><span class="err">CreateUserResult</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">UserCreated</span><span class="w"> </span><span class="err">|</span><span class="w"> </span><span class="err">ValidationError</span>
@@ -5072,27 +5072,34 @@
 <hr />
 <h2 id="error-decorator">@error Decorator<a class="headerlink" href="#error-decorator" title="Permanent link">&para;</a></h2>
 <h3 id="basic-usage">Basic Usage<a class="headerlink" href="#basic-usage" title="Permanent link">&para;</a></h3>
-<p>Define error types with custom fields:</p>
+<p>Define error types with the fields of your own they carry:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
-    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># From the function's metadata</span>
 </code></pre></div>
-<p><strong>Note</strong>: <code>@error</code> does NOT auto-inject fields like <code>@success</code> does. You define all fields explicitly.</p>
+<p><code>@error</code> adds four fields, like <code>@success</code> adds its own: <code>status</code> (the
+function's status string), <code>message</code>, <code>errors</code> (a list of <code>Error</code>), and <code>code</code>,
+the HTTP-like code of the status prefix (<code>validation:</code> 422, <code>not_found:</code> 404,
+<code>conflict:</code> 409, <code>unauthorized:</code> 401, <code>forbidden:</code> 403, other failures 500). A
+field you declare with one of these names replaces the added one, so don't
+redeclare <code>code</code> as a string: fraiseql fills it with a number.</p>
 <h3 id="generated-graphql-type_1">Generated GraphQL Type<a class="headerlink" href="#generated-graphql-type_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">type</span><span class="w"> </span><span class="err">ValidationError</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="nl">message</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
-<span class="w">  </span><span class="nl">code</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
 <span class="w">  </span><span class="nl">field</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">status</span><span class="p">:</span><span class="w"> </span><span class="n">String</span><span class="err">!</span>
+<span class="w">  </span><span class="nl">message</span><span class="p">:</span><span class="w"> </span><span class="n">String</span>
+<span class="w">  </span><span class="nl">errors</span><span class="p">:</span><span class="w"> </span><span class="err">[</span><span class="n">Error</span><span class="err">]</span>
+<span class="w">  </span><span class="nl">code</span><span class="p">:</span><span class="w"> </span><span class="n">Int</span><span class="err">!</span>
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="example-response_1">Example Response<a class="headerlink" href="#example-response_1" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"data"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"createUser"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"__typename"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ValidationError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"status"</span><span class="p">:</span><span class="w"> </span><span class="s2">"validation:email"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Email is already taken"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="s2">"VALIDATION_ERROR"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"code"</span><span class="p">:</span><span class="w"> </span><span class="mi">422</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"field"</span><span class="p">:</span><span class="w"> </span><span class="s2">"email"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
@@ -5116,53 +5123,42 @@
     <span class="n">user</span><span class="p">:</span> <span class="n">User</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"User created successfully"</span>  <span class="c1"># Custom default</span>
 
-<span class="c1"># Error type (explicit fields only)</span>
+<span class="c1"># Error type (status, message, errors and code are added)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
     <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="c1"># Mutation definition</span>
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="c1"># Mutation definition: calls the SQL function create_user(input jsonb)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">result_name</span><span class="o">=</span><span class="s2">"CreateUserResult"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">UserCreated</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>  <span class="c1"># Note: 'failure' field, NOT '@failure' decorator</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ValidationError</span>
+</code></pre></div>
+<p>A class mutation reads only <code>input</code>, <code>success</code>, <code>error</code> and <code>prepare_input</code>;
+the schema build rejects anything else (<code>failure:</code>, a <code>resolve()</code> method). The
+logic lives in the SQL function, which returns a <code>mutation_response</code>: a success
+status becomes <code>UserCreated</code>, a <code>failed:*</code> status becomes <code>ValidationError</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_user</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="k">DECLARE</span>
+<span class="w">    </span><span class="n">v_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
+<span class="k">BEGIN</span>
+<span class="w">    </span><span class="k">IF</span><span class="w"> </span><span class="k">coalesce</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="s1">''</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">''</span><span class="w"> </span><span class="k">THEN</span>
+<span class="w">        </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_validation_error</span><span class="p">(</span><span class="s1">'Email is required'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">);</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">IF</span><span class="p">;</span>
 
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserCreated</span> <span class="o">|</span> <span class="n">ValidationError</span><span class="p">:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+<span class="w">    </span><span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">tb_user</span><span class="w"> </span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">email</span><span class="p">,</span><span class="w"> </span><span class="n">password_hash</span><span class="p">)</span>
+<span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'name'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'email'</span><span class="p">,</span><span class="w"> </span><span class="n">crypt</span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'password'</span><span class="p">,</span><span class="w"> </span><span class="n">gen_salt</span><span class="p">(</span><span class="s1">'bf'</span><span class="p">)))</span>
+<span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">v_id</span><span class="p">;</span>
 
-        <span class="c1"># Validate input</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="n">message</span><span class="o">=</span><span class="s2">"Email is required"</span><span class="p">,</span>
-                <span class="n">field</span><span class="o">=</span><span class="s2">"email"</span>
-            <span class="p">)</span>
-
-        <span class="c1"># Call PostgreSQL function</span>
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_user"</span><span class="p">,</span> <span class="p">{</span>
-                <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-                <span class="s2">"email"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
-                <span class="s2">"password"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">password</span>
-            <span class="p">})</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-                    <span class="n">message</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="s2">"Unknown error"</span><span class="p">)</span>
-                <span class="p">)</span>
-
-            <span class="c1"># Fetch created user</span>
-            <span class="n">user</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-
-            <span class="c1"># Return success (auto-injected fields included)</span>
-            <span class="k">return</span> <span class="n">UserCreated</span><span class="p">(</span><span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">)</span>
-
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-                <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Failed to create user: </span><span class="si">{</span><span class="n">e</span><span class="si">!s}</span><span class="s2">"</span>
-            <span class="p">)</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">mutation_created</span><span class="p">(</span>
+<span class="w">        </span><span class="s1">'User created successfully'</span><span class="p">,</span>
+<span class="w">        </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_user</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v_id</span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'User'</span>
+<span class="w">    </span><span class="p">);</span>
+<span class="k">END</span><span class="p">;</span>
+<span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 </code></pre></div>
 <hr />
 <h2 id="auto-injected-fields-deep-dive">Auto-Injected Fields Deep Dive<a class="headerlink" href="#auto-injected-fields-deep-dive" title="Permanent link">&para;</a></h2>
@@ -5298,46 +5294,44 @@
     <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Updated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">updated_fields</span><span class="p">)</span><span class="si">}</span><span class="s2"> fields"</span>
 <span class="p">)</span>
 </code></pre></div>
-<h3 id="multiple-error-types">Multiple Error Types<a class="headerlink" href="#multiple-error-types" title="Permanent link">&para;</a></h3>
+<h3 id="several-kinds-of-error">Several Kinds of Error<a class="headerlink" href="#several-kinds-of-error" title="Permanent link">&para;</a></h3>
+<p>A mutation has one error type. Clients tell kinds of failure apart by the
+fields <code>@fraiseql.error</code> adds: <code>status</code>, the status string your SQL function
+returned (<code>failed:validation</code>, <code>not_found:user</code>, <code>conflict:duplicate_email</code>,
+...), and <code>code</code>, computed from it (422, 404, 409, ...):</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserError</span><span class="p">:</span>
     <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>
     <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">AuthorizationError</span><span class="p">:</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"UNAUTHORIZED"</span>
-
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">result_name</span><span class="o">=</span><span class="s2">"UpdateUserResult"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UpdateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">UpdateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">UserUpdated</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span> <span class="o">|</span> <span class="n">AuthorizationError</span>  <span class="c1"># Union of error types</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">UpdateUserError</span>
 </code></pre></div>
 <hr />
 <h2 id="best-practices">Best Practices<a class="headerlink" href="#best-practices" title="Permanent link">&para;</a></h2>
-<h3 id="1-use-descriptive-error-codes">1. Use Descriptive Error Codes<a class="headerlink" href="#1-use-descriptive-error-codes" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
-    <span class="n">message</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"VALIDATION_ERROR"</span>  <span class="c1"># Clear, uppercase, specific</span>
-    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<h3 id="1-use-descriptive-statuses">1. Use Descriptive Statuses<a class="headerlink" href="#1-use-descriptive-statuses" title="Permanent link">&para;</a></h3>
+<p>The function's status names the error: its prefix picks the error type and the
+numeric <code>code</code>, the rest says which error it is.</p>
+<div class="highlight"><pre><span></span><code><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'validation:email_taken'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Email is already taken'</span><span class="p">,</span>
+<span class="w">           </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'field'</span><span class="p">,</span><span class="w"> </span><span class="s1">'email'</span><span class="p">))</span>
+<span class="w">    </span><span class="p">::</span><span class="n">mutation_response</span><span class="p">;</span>
 </code></pre></div>
-<p><strong>Error codes should be:</strong></p>
+<p><strong>Statuses should be:</strong></p>
 <ul>
-<li>UPPERCASE_SNAKE_CASE</li>
-<li>Descriptive (VALIDATION_ERROR, not ERR001)</li>
+<li>A known prefix: <code>validation:</code>, <code>not_found:</code>, <code>conflict:</code>, <code>unauthorized:</code>,
+  <code>forbidden:</code></li>
+<li>Descriptive after it (<code>validation:email_taken</code>, not <code>validation:e1</code>)</li>
 <li>Unique across your application</li>
 </ul>
 <h3 id="2-include-field-names-in-validation-errors">2. Include Field Names in Validation Errors<a class="headerlink" href="#2-include-field-names-in-validation-errors" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">email</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span>
-        <span class="n">message</span><span class="o">=</span><span class="s2">"Email is required"</span><span class="p">,</span>
-        <span class="n">field</span><span class="o">=</span><span class="s2">"email"</span><span class="p">,</span>  <span class="c1"># ✅ Helps client highlight the right field</span>
-        <span class="n">code</span><span class="o">=</span><span class="s2">"REQUIRED_FIELD"</span>
-    <span class="p">)</span>
+<p>Put the field in the function's <code>metadata</code> (as above) and declare it on the
+error type, so the client can highlight the right field:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">error</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValidationError</span><span class="p">:</span>
+    <span class="n">field</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># ✅ Helps client highlight the right field</span>
 </code></pre></div>
 <h3 id="3-leverage-auto-injected-message-for-user-feedback">3. Leverage Auto-Injected message for User Feedback<a class="headerlink" href="#3-leverage-auto-injected-message-for-user-feedback" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">success</span>
@@ -5513,10 +5507,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

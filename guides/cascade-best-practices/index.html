@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5298,7 +5298,7 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <p><strong>Single Entity Updates</strong></p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Simple preference update - no cascade needed</span>
 <span class="nd">@mutation</span>  <span class="c1"># Not enable_cascade=True</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserPreferences</span><span class="p">:</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdatePreferences</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">UpdatePreferencesInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">UpdatePreferencesSuccess</span>
     <span class="n">error</span><span class="p">:</span> <span class="n">UpdatePreferencesError</span>
@@ -5338,15 +5338,15 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <span class="p">}</span>
 </code></pre></div>
 <h3 id="sql-function-no-cascade-tracking">SQL Function (No CASCADE Tracking)<a class="headerlink" href="#sql-function-no-cascade-tracking" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_update_preference</span><span class="p">(</span>
+<div class="highlight"><pre><span></span><code><span class="c1">-- p_user_id comes from the GraphQL context (context_params), the rest from input</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">update_preference</span><span class="p">(</span>
 <span class="w">    </span><span class="n">p_user_id</span><span class="w"> </span><span class="n">UUID</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_key</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<span class="w">    </span><span class="n">p_value</span><span class="w"> </span><span class="nb">TEXT</span>
+<span class="w">    </span><span class="k">input</span><span class="w"> </span><span class="n">JSONB</span>
 <span class="p">)</span><span class="w"> </span><span class="k">RETURNS</span><span class="w"> </span><span class="n">JSONB</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">BEGIN</span>
 <span class="w">    </span><span class="k">UPDATE</span><span class="w"> </span><span class="n">tb_user_preferences</span>
-<span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_value</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
-<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_user_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_key</span><span class="p">;</span>
+<span class="w">    </span><span class="k">SET</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'value'</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span>
+<span class="w">    </span><span class="k">WHERE</span><span class="w"> </span><span class="n">user_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p_user_id</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">key</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'key'</span><span class="p">;</span>
 
 <span class="w">    </span><span class="c1">-- Simple success response (no _cascade object)</span>
 <span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
@@ -5360,8 +5360,8 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
 <h3 id="python-mutation-cascade-disabled">Python Mutation (CASCADE Disabled)<a class="headerlink" href="#python-mutation-cascade-disabled" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutation</span>
 
-<span class="nd">@mutation</span>  <span class="c1"># Note: enable_cascade=False by default</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserPreference</span><span class="p">:</span>
+<span class="nd">@mutation</span><span class="p">(</span><span class="n">context_params</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="s2">"p_user_id"</span><span class="p">})</span>  <span class="c1"># enable_cascade=False by default</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">UpdatePreference</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Simple preference update - no side effects"""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">UpdatePreferenceInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">UpdatePreferenceSuccess</span>
@@ -5979,10 +5979,10 @@ Mobile clients on slow connections should avoid CASCADE unless absolutely necess
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

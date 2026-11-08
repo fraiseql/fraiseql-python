@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4921,7 +4921,7 @@
 <h1 id="fraiseql-performance-guide">FraiseQL Performance Guide<a class="headerlink" href="#fraiseql-performance-guide" title="Permanent link">&para;</a></h1>
 <p>🟡 <strong>Production</strong> - Performance expectations, methodology, and optimization guidance.</p>
 <h2 id="executive-summary">Executive Summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
-<p>FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It delivers fast response times for typical GraphQL queries by pushing data shaping into PostgreSQL (views return a <code>data</code> JSONB column) and serving that JSON over FastAPI. An optional Rust extension (<code>fraiseql_rs</code>) accelerates JSON transformation on the hot path — field selection, camelCase conversion, and <code>__typename</code> injection — so most queries avoid heavy Python string work.</p>
+<p>FraiseQL is a Python runtime GraphQL framework for PostgreSQL. It delivers fast response times for typical GraphQL queries by pushing data shaping into PostgreSQL (views return a <code>data</code> JSONB column) and serving that JSON over FastAPI. An optional Rust extension (<code>fraiseql_rs</code>) accelerates JSON transformation on the hot path — field selection, camelCase conversion, and <code>__typename</code> where selected — so most queries avoid heavy Python string work.</p>
 <p>This guide provides realistic performance expectations, methodology details, and guidance on when performance optimizations matter.</p>
 <p><strong>Key Takeaways:</strong></p>
 <ul>
@@ -5011,7 +5011,7 @@
 <li><strong><code>tv_</code> lookup</strong>: 0.05-0.5ms (single indexed row read of pre-composed JSONB)</li>
 <li><strong>Traditional JOIN</strong>: 5-50ms (depends on data size)</li>
 <li><strong>Speedup</strong>: 10-100x faster for complex nested queries</li>
-<li><strong>JSON transformation</strong>: camelCase conversion and <code>__typename</code> injection handled on the hot path (accelerated by <code>fraiseql_rs</code>)</li>
+<li><strong>JSON transformation</strong>: camelCase conversion and <code>__typename</code> (where selected) handled on the hot path (accelerated by <code>fraiseql_rs</code>)</li>
 </ul>
 <p><strong>When this applies</strong>:</p>
 <ul>
@@ -5050,7 +5050,6 @@
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>    <span class="c1"># share APQ across instances</span>
     <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>                       <span class="c1"># result-cache TTL (seconds)</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Performance Characteristics</strong>:</p>
@@ -5077,7 +5076,6 @@
     <span class="n">apq_storage_backend</span><span class="o">=</span><span class="s2">"postgresql"</span><span class="p">,</span>
     <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">complexity_max_score</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>            <span class="c1"># reject expensive queries earlier</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 <p><strong>Performance Characteristics</strong>:</p>
@@ -5090,7 +5088,7 @@
 <hr />
 <h2 id="query-complexity-impact">Query Complexity Impact<a class="headerlink" href="#query-complexity-impact" title="Permanent link">&para;</a></h2>
 <h3 id="complexity-scoring">Complexity Scoring<a class="headerlink" href="#complexity-scoring" title="Permanent link">&para;</a></h3>
-<p>FraiseQL calculates query complexity to reject expensive operations before they hit PostgreSQL. The scorer combines field count, nesting depth, list sizes, and per-field multipliers; it is controlled by <code>complexity_*</code> settings on <code>FraiseQLConfig</code>:</p>
+<p>With <code>complexity_enabled</code> (or a <code>complexity_max_score</code> / <code>complexity_max_depth</code> set), FraiseQL scores each query from the schema and rejects one over the limit with a <code>QUERY_TOO_COMPLEX</code> GraphQL error before it hits PostgreSQL. A scalar costs 1, an object field 1 plus its selections, and a list field 1 plus its selections times its <code>limit</code> / <code>first</code> argument (else <code>complexity_default_list_size</code>); <code>complexity_field_multipliers</code> sets a field's cost by field name or <code>"Type.field"</code>. Introspection is not counted:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQLConfig</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
@@ -5099,9 +5097,8 @@
     <span class="n">complexity_max_depth</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">complexity_default_list_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
     <span class="n">complexity_field_multipliers</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"search"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>      <span class="c1"># text search operations</span>
-        <span class="s2">"aggregate"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>  <span class="c1"># COUNT, SUM, AVG operations</span>
-        <span class="s2">"sort"</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>        <span class="c1"># ORDER BY clauses</span>
+        <span class="s2">"search"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>               <span class="c1"># any field named search costs 5</span>
+        <span class="s2">"Query.salesReport"</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>   <span class="c1"># one root field</span>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -5246,7 +5243,7 @@
 <li><strong>Composition in the database.</strong> A read view (<code>v_</code>) builds the response shape with <code>jsonb_build_object(...)</code>, so the GraphQL response is essentially a single <code>data</code> JSONB column. No ORM hydration, no N+1 join walking in Python.</li>
 <li><strong>Projection tables for heavy reads.</strong> A <code>tv_</code> table holds pre-composed JSONB, refreshed by functions/triggers. Expensive nested reads collapse to one indexed row lookup.</li>
 <li><strong>JSONB + GIN.</strong> Filtering inside the JSONB payload is backed by PostgreSQL's native JSONB operators and GIN indexes (see Indexing below).</li>
-<li><strong>Minimal Python on the hot path.</strong> Field selection, camelCase conversion, and <code>__typename</code> injection are applied to the JSONB before it goes out; <code>fraiseql_rs</code> accelerates this transformation when the extension is installed, with a pure-Python fallback otherwise.</li>
+<li><strong>Minimal Python on the hot path.</strong> Field selection, camelCase conversion, and <code>__typename</code> (where selected) are applied to the JSONB before it goes out; <code>fraiseql_rs</code> accelerates this transformation when the extension is installed, with a pure-Python fallback otherwise.</li>
 <li><strong>Caching layers.</strong> APQ avoids re-parsing persisted queries, and the <code>fraiseql.caching</code> result cache returns prior results without touching PostgreSQL.</li>
 </ul>
 <p>There is no compile step and no separate query engine — the schema is assembled in memory at app startup and served by FastAPI.</p>
@@ -5486,10 +5483,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

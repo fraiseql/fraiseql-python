@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4906,6 +4906,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
+
 <span class="nd">@dataclass</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">EntityChange</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Entity change event."""</span>
@@ -4926,6 +4928,7 @@
 <span class="w">    </span><span class="sd">"""Repository for entity change logs."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db_pool</span><span class="p">):</span>
+        <span class="c1"># A psycopg AsyncConnectionPool, e.g. fraiseql.fastapi.dependencies.get_db_pool()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db_pool</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_entity_history</span><span class="p">(</span>
@@ -4936,12 +4939,12 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntityChange</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Get complete history for an entity."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                SELECT * FROM audit.entity_change_log</span>
-<span class="s2">                WHERE entity_type = $1 AND entity_id = $2</span>
+<span class="s2">                WHERE entity_type = </span><span class="si">%s</span><span class="s2"> AND entity_id = </span><span class="si">%s</span>
 <span class="s2">                ORDER BY changed_at DESC</span>
-<span class="s2">                LIMIT $3</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">entity_type</span><span class="p">,</span> <span class="n">entity_id</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+<span class="s2">                LIMIT </span><span class="si">%s</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">entity_type</span><span class="p">,</span> <span class="n">entity_id</span><span class="p">,</span> <span class="n">limit</span><span class="p">))</span>
 
             <span class="k">return</span> <span class="p">[</span>
                 <span class="n">EntityChange</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span>
@@ -4955,12 +4958,12 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntityChange</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Get all changes made by a user."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                SELECT * FROM audit.entity_change_log</span>
-<span class="s2">                WHERE changed_by = $1</span>
+<span class="s2">                WHERE changed_by = </span><span class="si">%s</span>
 <span class="s2">                ORDER BY changed_at DESC</span>
-<span class="s2">                LIMIT $2</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span>
+<span class="s2">                LIMIT </span><span class="si">%s</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">user_id</span><span class="p">,</span> <span class="n">limit</span><span class="p">))</span>
 
             <span class="k">return</span> <span class="p">[</span><span class="n">EntityChange</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
 
@@ -4970,11 +4973,11 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntityChange</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""Get all changes in a transaction."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                SELECT * FROM audit.entity_change_log</span>
-<span class="s2">                WHERE transaction_id = $1</span>
+<span class="s2">                WHERE transaction_id = </span><span class="si">%s</span>
 <span class="s2">                ORDER BY id</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">transaction_id</span><span class="p">)</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">transaction_id</span><span class="p">,))</span>
 
             <span class="k">return</span> <span class="p">[</span><span class="n">EntityChange</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
 
@@ -4986,16 +4989,16 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Get entity state at specific point in time."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                SELECT after_snapshot</span>
 <span class="s2">                FROM audit.entity_change_log</span>
-<span class="s2">                WHERE entity_type = $1</span>
-<span class="s2">                  AND entity_id = $2</span>
-<span class="s2">                  AND changed_at &lt;= $3</span>
+<span class="s2">                WHERE entity_type = </span><span class="si">%s</span>
+<span class="s2">                  AND entity_id = </span><span class="si">%s</span>
+<span class="s2">                  AND changed_at &lt;= </span><span class="si">%s</span>
 <span class="s2">                  AND operation != 'DELETE'</span>
 <span class="s2">                ORDER BY changed_at DESC</span>
 <span class="s2">                LIMIT 1</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">entity_type</span><span class="p">,</span> <span class="n">entity_id</span><span class="p">,</span> <span class="n">at_time</span><span class="p">)</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">entity_type</span><span class="p">,</span> <span class="n">entity_id</span><span class="p">,</span> <span class="n">at_time</span><span class="p">))</span>
 
             <span class="n">row</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
             <span class="k">return</span> <span class="n">row</span><span class="p">[</span><span class="s2">"after_snapshot"</span><span class="p">]</span> <span class="k">if</span> <span class="n">row</span> <span class="k">else</span> <span class="kc">None</span>
@@ -5004,8 +5007,9 @@
 <p>Debezium-style change data capture:</p>
 <h3 id="graphql-queries-for-audit">GraphQL Queries for Audit<a class="headerlink" href="#graphql-queries-for-audit" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type_</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">EntityChange</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">entity_type</span><span class="p">:</span> <span class="nb">str</span>
@@ -5016,6 +5020,9 @@
     <span class="n">before_snapshot</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">after_snapshot</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="n">changed_fields</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">transaction_id</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">correlation_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_order_history</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EntityChange</span><span class="p">]:</span>
@@ -5039,6 +5046,10 @@
 <p>Rebuild entity state from event log:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">decimal</span><span class="w"> </span><span class="kn">import</span> <span class="n">Decimal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderEventReplayer</span><span class="p">:</span>
@@ -5057,17 +5068,17 @@
 <span class="s2">                SELECT operation, after_snapshot, changed_at</span>
 <span class="s2">                FROM audit.entity_change_log</span>
 <span class="s2">                WHERE entity_type = 'orders.orders'</span>
-<span class="s2">                  AND entity_id = $1</span>
+<span class="s2">                  AND entity_id = </span><span class="si">%s</span>
 <span class="s2">            """</span>
             <span class="n">params</span> <span class="o">=</span> <span class="p">[</span><span class="n">entity_id</span><span class="p">]</span>
 
             <span class="k">if</span> <span class="n">up_to_time</span><span class="p">:</span>
-                <span class="n">query</span> <span class="o">+=</span> <span class="s2">" AND changed_at &lt;= $2"</span>
+                <span class="n">query</span> <span class="o">+=</span> <span class="s2">" AND changed_at &lt;= </span><span class="si">%s</span><span class="s2">"</span>
                 <span class="n">params</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">up_to_time</span><span class="p">)</span>
 
             <span class="n">query</span> <span class="o">+=</span> <span class="s2">" ORDER BY changed_at ASC"</span>
 
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="o">*</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
             <span class="n">events</span> <span class="o">=</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">events</span><span class="p">:</span>
@@ -5105,12 +5116,12 @@
         <span class="c1"># Rebuild order items from their change logs</span>
         <span class="n">items_repo</span> <span class="o">=</span> <span class="n">EntityChangeLogRepository</span><span class="p">(</span><span class="n">get_db_pool</span><span class="p">())</span>
         <span class="k">async</span> <span class="k">with</span> <span class="n">items_repo</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                SELECT DISTINCT entity_id</span>
 <span class="s2">                FROM audit.entity_change_log</span>
 <span class="s2">                WHERE entity_type = 'orders.order_items'</span>
-<span class="s2">                  AND (after_snapshot-&gt;&gt;'order_id')::UUID = $1</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">entity_id</span><span class="p">)</span>
+<span class="s2">                  AND (after_snapshot-&gt;&gt;'order_id')::UUID = </span><span class="si">%s</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">entity_id</span><span class="p">,))</span>
 
             <span class="n">item_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"entity_id"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
 
@@ -5123,7 +5134,10 @@
 </code></pre></div>
 <h2 id="temporal-queries">Temporal Queries<a class="headerlink" href="#temporal-queries" title="Permanent link">&para;</a></h2>
 <p>Query entity state at any point in time:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_order_timeline</span><span class="p">(</span>
@@ -5136,7 +5150,7 @@
     <span class="n">repo</span> <span class="o">=</span> <span class="n">EntityChangeLogRepository</span><span class="p">(</span><span class="n">get_db_pool</span><span class="p">())</span>
 
     <span class="k">async</span> <span class="k">with</span> <span class="n">repo</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            SELECT</span>
 <span class="s2">                changed_at,</span>
 <span class="s2">                operation,</span>
@@ -5144,10 +5158,10 @@
 <span class="s2">                changed_by</span>
 <span class="s2">            FROM audit.entity_change_log</span>
 <span class="s2">            WHERE entity_type = 'orders.orders'</span>
-<span class="s2">              AND entity_id = $1</span>
-<span class="s2">              AND changed_at BETWEEN $2 AND $3</span>
+<span class="s2">              AND entity_id = </span><span class="si">%s</span>
+<span class="s2">              AND changed_at BETWEEN </span><span class="si">%s</span><span class="s2"> AND </span><span class="si">%s</span>
 <span class="s2">            ORDER BY changed_at ASC</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">order_id</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">to_time</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="p">(</span><span class="n">order_id</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">to_time</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
 
@@ -5182,9 +5196,12 @@
 </code></pre></div>
 <h2 id="audit-trails">Audit Trails<a class="headerlink" href="#audit-trails" title="Permanent link">&para;</a></h2>
 <h3 id="complete-audit-dashboard">Complete Audit Dashboard<a class="headerlink" href="#complete-audit-dashboard" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type_</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">AuditSummary</span><span class="p">:</span>
     <span class="n">total_changes</span><span class="p">:</span> <span class="nb">int</span>
     <span class="n">changes_by_operation</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
@@ -5200,51 +5217,52 @@
     <span class="n">to_time</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AuditSummary</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get comprehensive audit summary."""</span>
+    <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"entity_type"</span><span class="p">:</span> <span class="n">entity_type</span><span class="p">,</span> <span class="s2">"from_time"</span><span class="p">:</span> <span class="n">from_time</span><span class="p">,</span> <span class="s2">"to_time"</span><span class="p">:</span> <span class="n">to_time</span><span class="p">}</span>
     <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
         <span class="c1"># Total changes</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            SELECT COUNT(*) as total</span>
 <span class="s2">            FROM audit.entity_change_log</span>
-<span class="s2">            WHERE ($1::TEXT IS NULL OR entity_type = $1)</span>
-<span class="s2">              AND ($2::TIMESTAMPTZ IS NULL OR changed_at &gt;= $2)</span>
-<span class="s2">              AND ($3::TIMESTAMPTZ IS NULL OR changed_at &lt;= $3)</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">entity_type</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">to_time</span><span class="p">)</span>
+<span class="s2">            WHERE (</span><span class="si">%(entity_type)s</span><span class="s2">::TEXT IS NULL OR entity_type = </span><span class="si">%(entity_type)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(from_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &gt;= </span><span class="si">%(from_time)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(to_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &lt;= </span><span class="si">%(to_time)s</span><span class="s2">)</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
         <span class="n">total</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">())[</span><span class="s2">"total"</span><span class="p">]</span>
 
         <span class="c1"># By operation</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            SELECT operation, COUNT(*) as count</span>
 <span class="s2">            FROM audit.entity_change_log</span>
-<span class="s2">            WHERE ($1::TEXT IS NULL OR entity_type = $1)</span>
-<span class="s2">              AND ($2::TIMESTAMPTZ IS NULL OR changed_at &gt;= $2)</span>
-<span class="s2">              AND ($3::TIMESTAMPTZ IS NULL OR changed_at &lt;= $3)</span>
+<span class="s2">            WHERE (</span><span class="si">%(entity_type)s</span><span class="s2">::TEXT IS NULL OR entity_type = </span><span class="si">%(entity_type)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(from_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &gt;= </span><span class="si">%(from_time)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(to_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &lt;= </span><span class="si">%(to_time)s</span><span class="s2">)</span>
 <span class="s2">            GROUP BY operation</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">entity_type</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">to_time</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
         <span class="n">by_operation</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="s2">"operation"</span><span class="p">]:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"count"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()}</span>
 
         <span class="c1"># By user</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            SELECT changed_by::TEXT, COUNT(*) as count</span>
 <span class="s2">            FROM audit.entity_change_log</span>
 <span class="s2">            WHERE changed_by IS NOT NULL</span>
-<span class="s2">              AND ($1::TEXT IS NULL OR entity_type = $1)</span>
-<span class="s2">              AND ($2::TIMESTAMPTZ IS NULL OR changed_at &gt;= $2)</span>
-<span class="s2">              AND ($3::TIMESTAMPTZ IS NULL OR changed_at &lt;= $3)</span>
+<span class="s2">              AND (</span><span class="si">%(entity_type)s</span><span class="s2">::TEXT IS NULL OR entity_type = </span><span class="si">%(entity_type)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(from_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &gt;= </span><span class="si">%(from_time)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(to_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &lt;= </span><span class="si">%(to_time)s</span><span class="s2">)</span>
 <span class="s2">            GROUP BY changed_by</span>
 <span class="s2">            ORDER BY count DESC</span>
 <span class="s2">            LIMIT 10</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">entity_type</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">to_time</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
         <span class="n">by_user</span> <span class="o">=</span> <span class="p">{</span><span class="n">row</span><span class="p">[</span><span class="s2">"changed_by"</span><span class="p">]:</span> <span class="n">row</span><span class="p">[</span><span class="s2">"count"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()}</span>
 
         <span class="c1"># Recent changes</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">            SELECT * FROM audit.entity_change_log</span>
-<span class="s2">            WHERE ($1::TEXT IS NULL OR entity_type = $1)</span>
-<span class="s2">              AND ($2::TIMESTAMPTZ IS NULL OR changed_at &gt;= $2)</span>
-<span class="s2">              AND ($3::TIMESTAMPTZ IS NULL OR changed_at &lt;= $3)</span>
+<span class="s2">            WHERE (</span><span class="si">%(entity_type)s</span><span class="s2">::TEXT IS NULL OR entity_type = </span><span class="si">%(entity_type)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(from_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &gt;= </span><span class="si">%(from_time)s</span><span class="s2">)</span>
+<span class="s2">              AND (</span><span class="si">%(to_time)s</span><span class="s2">::TIMESTAMPTZ IS NULL OR changed_at &lt;= </span><span class="si">%(to_time)s</span><span class="s2">)</span>
 <span class="s2">            ORDER BY changed_at DESC</span>
 <span class="s2">            LIMIT 50</span>
-<span class="s2">        """</span><span class="p">,</span> <span class="n">entity_type</span><span class="p">,</span> <span class="n">from_time</span><span class="p">,</span> <span class="n">to_time</span><span class="p">)</span>
+<span class="s2">        """</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
         <span class="n">recent</span> <span class="o">=</span> <span class="p">[</span><span class="n">EntityChange</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
 
     <span class="k">return</span> <span class="n">AuditSummary</span><span class="p">(</span>
@@ -5256,7 +5274,11 @@
 </code></pre></div>
 <h2 id="cqrs-pattern">CQRS Pattern<a class="headerlink" href="#cqrs-pattern" title="Permanent link">&para;</a></h2>
 <p><strong><a href="../../core/concepts-glossary/#cqrs-command-query-responsibility-segregation">CQRS (Command Query Responsibility Segregation)</a></strong> separates read and write models using event sourcing:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Write Model (Command Side)</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi.dependencies</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_db_pool</span>
+
+<span class="c1"># Write Model (Command Side)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderCommandHandler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Handle order commands, generate events."""</span>
 
@@ -5267,8 +5289,8 @@
         <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                INSERT INTO orders.orders (id, customer_id, total, status)</span>
-<span class="s2">                VALUES ($1, $2, 0, 'draft')</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">order_id</span><span class="p">,</span> <span class="n">customer_id</span><span class="p">)</span>
+<span class="s2">                VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, 0, 'draft')</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">order_id</span><span class="p">,</span> <span class="n">customer_id</span><span class="p">))</span>
 
         <span class="c1"># Event automatically logged via trigger</span>
         <span class="k">return</span> <span class="n">order_id</span>
@@ -5278,17 +5300,17 @@
         <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                INSERT INTO orders.order_items (id, order_id, product_id, quantity, price, total)</span>
-<span class="s2">                VALUES ($1, $2, $3, $4, $5, $6)</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()),</span> <span class="n">order_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">price</span> <span class="o">*</span> <span class="n">quantity</span><span class="p">)</span>
+<span class="s2">                VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">)</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid4</span><span class="p">()),</span> <span class="n">order_id</span><span class="p">,</span> <span class="n">product_id</span><span class="p">,</span> <span class="n">quantity</span><span class="p">,</span> <span class="n">price</span><span class="p">,</span> <span class="n">price</span> <span class="o">*</span> <span class="n">quantity</span><span class="p">))</span>
 
             <span class="c1"># Update order total</span>
             <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                UPDATE orders.orders</span>
 <span class="s2">                SET total = (</span>
-<span class="s2">                    SELECT SUM(total) FROM orders.order_items WHERE order_id = $1</span>
+<span class="s2">                    SELECT SUM(total) FROM orders.order_items WHERE order_id = </span><span class="si">%(order_id)s</span>
 <span class="s2">                )</span>
-<span class="s2">                WHERE id = $1</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">order_id</span><span class="p">)</span>
+<span class="s2">                WHERE id = </span><span class="si">%(order_id)s</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">{</span><span class="s2">"order_id"</span><span class="p">:</span> <span class="n">order_id</span><span class="p">})</span>
 
 <span class="c1"># Read Model (Query Side)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">OrderQueryModel</span><span class="p">:</span>
@@ -5297,7 +5319,7 @@
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_order_summary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Get denormalized order summary."""</span>
         <span class="k">async</span> <span class="k">with</span> <span class="n">get_db_pool</span><span class="p">()</span><span class="o">.</span><span class="n">connection</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"""</span>
 <span class="s2">                SELECT</span>
 <span class="s2">                    o.id,</span>
 <span class="s2">                    o.customer_id,</span>
@@ -5314,9 +5336,9 @@
 <span class="s2">                    ) as items</span>
 <span class="s2">                FROM orders.orders o</span>
 <span class="s2">                LEFT JOIN orders.order_items oi ON oi.order_id = o.id</span>
-<span class="s2">                WHERE o.id = $1</span>
+<span class="s2">                WHERE o.id = </span><span class="si">%s</span>
 <span class="s2">                GROUP BY o.id</span>
-<span class="s2">            """</span><span class="p">,</span> <span class="n">order_id</span><span class="p">)</span>
+<span class="s2">            """</span><span class="p">,</span> <span class="p">(</span><span class="n">order_id</span><span class="p">,))</span>
 
             <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="k">await</span> <span class="n">result</span><span class="o">.</span><span class="n">fetchone</span><span class="p">())</span>
 </code></pre></div>
@@ -5512,10 +5534,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

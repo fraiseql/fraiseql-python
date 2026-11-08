@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4769,7 +4769,7 @@
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">User</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Returns RustResponseBytes - automatically processed by exclusive Rust pipeline</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 </code></pre></div>
 <p>Query with multiple parameters:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -4781,11 +4781,9 @@
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">filters</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">if</span> <span class="n">name_filter</span><span class="p">:</span>
-        <span class="n">filters</span><span class="p">[</span><span class="s2">"name__icontains"</span><span class="p">]</span> <span class="o">=</span> <span class="n">name_filter</span>
-    <span class="c1"># Exclusive Rust pipeline handles camelCase conversion and __typename injection</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"icontains"</span><span class="p">:</span> <span class="n">name_filter</span><span class="p">}}</span> <span class="k">if</span> <span class="n">name_filter</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="c1"># The Rust pipeline converts to camelCase and writes __typename where it is selected</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">where</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p>Query with authentication:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -4800,7 +4798,7 @@
 
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># Exclusive Rust pipeline works with authentication automatically</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">user_context</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">user_context</span><span class="o">.</span><span class="n">user_id</span><span class="p">})</span>
 </code></pre></div>
 <p>Query with error handling:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -4815,12 +4813,13 @@
     <span class="k">try</span><span class="p">:</span>
         <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
         <span class="c1"># Exclusive Rust pipeline handles JSON processing automatically</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Failed to fetch post </span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 </code></pre></div>
-<p>Query using custom repository methods:</p>
+<p>Query using a repository aggregate helper (<code>count</code>, <code>sum</code>, <code>avg</code>, <code>min</code>, <code>max</code>,
+<code>aggregate</code>; they return plain Python values):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
@@ -4828,13 +4827,8 @@
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_stats</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserStats</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="c1"># Custom SQL query for complex aggregations</span>
-    <span class="c1"># Exclusive Rust pipeline handles result processing automatically</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-        <span class="s2">"SELECT count(*) as post_count FROM posts WHERE user_id = $1"</span><span class="p">,</span>
-        <span class="n">user_id</span>
-    <span class="p">)</span>
-    <span class="k">return</span> <span class="n">UserStats</span><span class="p">(</span><span class="n">post_count</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"post_count"</span><span class="p">])</span>
+    <span class="n">post_count</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"author_id"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"eq"</span><span class="p">:</span> <span class="n">user_id</span><span class="p">}})</span>
+    <span class="k">return</span> <span class="n">UserStats</span><span class="p">(</span><span class="n">post_count</span><span class="o">=</span><span class="n">post_count</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Notes</strong>:</p>
 <ul>
@@ -4844,7 +4838,7 @@
 <li>Use async/await for database operations</li>
 <li>Access repository via <code>info.context["db"]</code> (provides exclusive Rust pipeline integration)</li>
 <li>Access user context via <code>info.context["user"]</code> (if authentication enabled)</li>
-<li>Exclusive Rust pipeline automatically handles camelCase conversion and __typename injection</li>
+<li>The Rust pipeline converts keys to camelCase and writes <code>__typename</code> where the query selects it</li>
 </ul>
 <h2 id="auto-wired-query-parameters">Auto-Wired Query Parameters<a class="headerlink" href="#auto-wired-query-parameters" title="Permanent link">&para;</a></h2>
 <p>FraiseQL automatically adds common query parameters based on return type annotations. This reduces boilerplate and ensures consistent API patterns.</p>
@@ -4953,14 +4947,10 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Example</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types.generic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Connection</span>
-
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">users_connection</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Connection</span><span class="p">[</span><span class="n">User</span><span class="p">]:</span>
-    <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">paginate</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
-</code></pre></div>
+<p>The resolver receives these arguments and returns the <code>Connection</code>; the
+<a href="#connection-decorator"><code>@connection</code> decorator</a> builds such
+resolvers. For offset pages, return <code>list[User]</code> and use the <code>limit</code> / <code>offset</code>
+arguments above.</p>
 <h3 id="manual-parameter-override">Manual Parameter Override<a class="headerlink" href="#manual-parameter-override" title="Permanent link">&para;</a></h3>
 <p>If you declare a parameter manually, FraiseQL will use your declaration instead of auto-wiring:</p>
 <div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
@@ -5122,7 +5112,7 @@ resolved, falls straight through to step 4.</p>
     <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Posts authored by this user"</span><span class="p">)</span>
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Post</span><span class="p">]:</span>
         <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
 </code></pre></div>
 <p>Field with custom resolver function:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -5166,7 +5156,7 @@ resolved, falls straight through to step 4.</p>
         <span class="n">filters</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">published_only</span><span class="p">:</span>
             <span class="n">filters</span><span class="p">[</span><span class="s2">"status"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"published"</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="o">**</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_post"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="n">filters</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span>
 </code></pre></div>
 <p>Field with authentication/authorization:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -5183,10 +5173,13 @@ resolved, falls straight through to step 4.</p>
             <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># Don't expose private data</span>
 
         <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user_settings"</span><span class="p">,</span> <span class="n">user_id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user_settings"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"user_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
 </code></pre></div>
 <p>Field with caching:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
@@ -5206,11 +5199,13 @@ resolved, falls straight through to step 4.</p>
 
         <span class="c1"># Fallback to database</span>
         <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_raw</span><span class="p">(</span>
-            <span class="s2">"SELECT count(*) FROM likes WHERE post_id = $1"</span><span class="p">,</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">DatabaseQuery</span><span class="p">(</span>
+                <span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT count(*) AS n FROM tb_like WHERE post_id = </span><span class="si">%(post_id)s</span><span class="s2">"</span><span class="p">),</span>
+                <span class="p">{</span><span class="s2">"post_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">},</span>
+            <span class="p">)</span>
         <span class="p">)</span>
-        <span class="n">count</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"count"</span><span class="p">]</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"n"</span><span class="p">]</span>
 
         <span class="c1"># Cache for 5 minutes</span>
         <span class="k">if</span> <span class="n">cache</span><span class="p">:</span>
@@ -5303,13 +5298,13 @@ resolved, falls straight through to step 4.</p>
 <td>jsonb_extraction</td>
 <td>bool | None</td>
 <td>None</td>
-<td>Enable JSONB field extraction (inherits from global config if None)</td>
+<td>No effect: recorded in <code>__fraiseql_connection__</code> only; rows are read as <code>db.find</code> reads them</td>
 </tr>
 <tr>
 <td>jsonb_column</td>
 <td>str | None</td>
 <td>None</td>
-<td>JSONB column name (inherits from global config if None)</td>
+<td>No effect: recorded only; the JSONB column is the one registered for the view</td>
 </tr>
 </tbody>
 </table>
@@ -5341,8 +5336,6 @@ resolved, falls straight through to step 4.</p>
     <span class="n">default_page_size</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span>
     <span class="n">max_page_size</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">cursor_field</span><span class="o">=</span><span class="s2">"created_at"</span><span class="p">,</span>
-    <span class="n">jsonb_extraction</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span>
 <span class="p">)</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">posts_connection</span><span class="p">(</span>
@@ -5392,7 +5385,7 @@ resolved, falls straight through to step 4.</p>
 <ul>
 <li>Functions must be async and take 'info' as first parameter</li>
 <li>The decorator handles all pagination logic automatically</li>
-<li>Uses existing repository.paginate() method</li>
+<li>Pages with the repository's <code>paginate()</code> (<code>find</code> for the page, <code>count</code> for the total; see <a href="../../reference/database/#paginate">Database API</a>)</li>
 <li>Returns properly typed Connection[T] objects</li>
 <li>Supports all Relay connection specification features</li>
 <li>View name is inferred from function name (e.g., users_connection → v_users)</li>
@@ -5419,7 +5412,7 @@ resolved, falls straight through to step 4.</p>
 <span class="k">class</span><span class="w"> </span><span class="nc">MutationName</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">InputType</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">SuccessType</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">FailureType</span>  <span class="c1"># or error: ErrorType</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ErrorType</span>
 </code></pre></div>
 <p><strong>Parameters (Class-based)</strong>:</p>
 <table>
@@ -5469,7 +5462,7 @@ resolved, falls straight through to step 4.</p>
         <span class="s2">"name"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
         <span class="s2">"email"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span>
     <span class="p">})</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]})</span>
 </code></pre></div>
 <p>Basic class-based mutation:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -5494,7 +5487,7 @@ resolved, falls straight through to step 4.</p>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateUserInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateUserSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateUserError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateUserError</span>
 
 <span class="c1"># Automatically calls PostgreSQL function: public.create_user(input)</span>
 <span class="c1"># and parses result into CreateUserSuccess or CreateUserError</span>
@@ -5502,13 +5495,15 @@ resolved, falls straight through to step 4.</p>
 <p>Mutation with custom PostgreSQL function:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 
-<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"register_new_user"</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">)</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">function</span><span class="o">=</span><span class="s2">"register_new_user"</span><span class="p">,</span> <span class="n">schema</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"registerUser"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">RegisterUser</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">RegistrationInput</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">RegistrationSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">RegistrationError</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">RegisterUserSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">RegisterUserError</span>
 
 <span class="c1"># Calls: auth.register_new_user(input) instead of default name</span>
+<span class="c1"># (name= sets the GraphQL field to "registerUser"; without it, fraiseql 1.x names</span>
+<span class="c1"># the field after the function, "registerNewUser", and warns)</span>
 </code></pre></div>
 <p>Mutation with context parameters:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -5524,7 +5519,7 @@ resolved, falls straight through to step 4.</p>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateLocation</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateLocationInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateLocationSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">CreateLocationError</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateLocationError</span>
 
 <span class="c1"># Calls: app.create_location(tenant_id, user_id, input)</span>
 <span class="c1"># Where tenant_id comes from info.context["tenant_id"]</span>
@@ -5533,8 +5528,9 @@ resolved, falls straight through to step 4.</p>
 <p>Mutation with validation:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLError</span>
 
-<span class="nd">@input</span>
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">input</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">UpdateUserInput</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -5549,7 +5545,7 @@ resolved, falls straight through to step 4.</p>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">user_context</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Authentication required"</span><span class="p">)</span>
 
-    <span class="c1"># Validation</span>
+    <span class="c1"># Validation (is_valid_email is your own check)</span>
     <span class="k">if</span> <span class="nb">input</span><span class="o">.</span><span class="n">email</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_valid_email</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">email</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Invalid email format"</span><span class="p">)</span>
 
@@ -5563,10 +5559,15 @@ resolved, falls straight through to step 4.</p>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">updates</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"No fields to update"</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">},</span> <span class="n">updates</span><span class="o">=</span><span class="n">updates</span><span class="p">)</span>
+    <span class="c1"># The write runs in a PostgreSQL function; fn_update_user sets the keys it is given</span>
+    <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_update_user"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="o">**</span><span class="n">updates</span><span class="p">})</span>
+    <span class="c1"># Read the result back from the view</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">,</span> <span class="s2">"updateUser"</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">id</span><span class="p">})</span>
 </code></pre></div>
 <p>Multi-step mutation with transaction:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">graphql</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphQLError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.rows</span><span class="w"> </span><span class="kn">import</span> <span class="n">dict_row</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transfer_funds</span><span class="p">(</span>
@@ -5575,48 +5576,49 @@ resolved, falls straight through to step 4.</p>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransferResult</span><span class="p">:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
 
-    <span class="k">async</span> <span class="k">with</span> <span class="n">db</span><span class="o">.</span><span class="n">transaction</span><span class="p">():</span>
-        <span class="c1"># Validate source account</span>
-        <span class="n">source</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
-            <span class="s2">"v_account"</span><span class="p">,</span>
-            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">source_account_id</span><span class="p">}</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">balance</span> <span class="o">&lt;</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Insufficient funds"</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">transfer</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TransferResult</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">(</span><span class="n">row_factory</span><span class="o">=</span><span class="n">dict_row</span><span class="p">)</span> <span class="k">as</span> <span class="n">cur</span><span class="p">:</span>
+            <span class="c1"># Lock both accounts until the transaction ends</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"SELECT id, balance FROM tb_account WHERE id = ANY(</span><span class="si">%s</span><span class="s2">) FOR UPDATE"</span><span class="p">,</span>
+                <span class="p">([</span><span class="nb">input</span><span class="o">.</span><span class="n">source_account_id</span><span class="p">,</span> <span class="nb">input</span><span class="o">.</span><span class="n">destination_account_id</span><span class="p">],),</span>
+            <span class="p">)</span>
+            <span class="n">accounts</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]):</span> <span class="n">row</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()}</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">accounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">source_account_id</span><span class="p">))</span>
+            <span class="n">dest</span> <span class="o">=</span> <span class="n">accounts</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">destination_account_id</span><span class="p">))</span>
 
-        <span class="c1"># Validate destination account</span>
-        <span class="n">dest</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span>
-            <span class="s2">"v_account"</span><span class="p">,</span>
-            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">destination_account_id</span><span class="p">}</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">dest</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Destination account not found"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">source</span> <span class="ow">or</span> <span class="n">source</span><span class="p">[</span><span class="s2">"balance"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Insufficient funds"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">dest</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">GraphQLError</span><span class="p">(</span><span class="s2">"Destination account not found"</span><span class="p">)</span>
 
-        <span class="c1"># Perform transfer</span>
-        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
-            <span class="s2">"v_account"</span><span class="p">,</span>
-            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">id</span><span class="p">},</span>
-            <span class="n">updates</span><span class="o">=</span><span class="p">{</span><span class="s2">"balance"</span><span class="p">:</span> <span class="n">source</span><span class="o">.</span><span class="n">balance</span> <span class="o">-</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">}</span>
-        <span class="p">)</span>
-        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">update_one</span><span class="p">(</span>
-            <span class="s2">"v_account"</span><span class="p">,</span>
-            <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">dest</span><span class="o">.</span><span class="n">id</span><span class="p">},</span>
-            <span class="n">updates</span><span class="o">=</span><span class="p">{</span><span class="s2">"balance"</span><span class="p">:</span> <span class="n">dest</span><span class="o">.</span><span class="n">balance</span> <span class="o">+</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">}</span>
-        <span class="p">)</span>
+            <span class="c1"># Perform transfer</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"UPDATE tb_account SET balance = balance - </span><span class="si">%s</span><span class="s2"> WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span> <span class="n">source</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+            <span class="p">)</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"UPDATE tb_account SET balance = balance + </span><span class="si">%s</span><span class="s2"> WHERE id = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span>
+                <span class="p">(</span><span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span> <span class="n">dest</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]),</span>
+            <span class="p">)</span>
 
-        <span class="c1"># Log transaction</span>
-        <span class="n">transfer</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">create_one</span><span class="p">(</span><span class="s2">"v_transfer"</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span>
-            <span class="s2">"source_account_id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">source_account_id</span><span class="p">,</span>
-            <span class="s2">"destination_account_id"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">destination_account_id</span><span class="p">,</span>
-            <span class="s2">"amount"</span><span class="p">:</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span>
-            <span class="s2">"created_at"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
-        <span class="p">})</span>
+            <span class="c1"># Log transaction (tb_transfer.created_at defaults to now())</span>
+            <span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+                <span class="s2">"INSERT INTO tb_transfer (source_account_id, destination_account_id, amount) "</span>
+                <span class="s2">"VALUES (</span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">, </span><span class="si">%s</span><span class="s2">) RETURNING id"</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">source</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">dest</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">transfer_id</span> <span class="o">=</span> <span class="p">(</span><span class="k">await</span> <span class="n">cur</span><span class="o">.</span><span class="n">fetchone</span><span class="p">())[</span><span class="s2">"id"</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">TransferResult</span><span class="p">(</span>
-            <span class="n">transfer</span><span class="o">=</span><span class="n">transfer</span><span class="p">,</span>
-            <span class="n">new_source_balance</span><span class="o">=</span><span class="n">source</span><span class="o">.</span><span class="n">balance</span> <span class="o">-</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span>
-            <span class="n">new_dest_balance</span><span class="o">=</span><span class="n">dest</span><span class="o">.</span><span class="n">balance</span> <span class="o">+</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span>
+            <span class="n">transfer_id</span><span class="o">=</span><span class="n">transfer_id</span><span class="p">,</span>
+            <span class="n">new_source_balance</span><span class="o">=</span><span class="n">source</span><span class="p">[</span><span class="s2">"balance"</span><span class="p">]</span> <span class="o">-</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span>
+            <span class="n">new_dest_balance</span><span class="o">=</span><span class="n">dest</span><span class="p">[</span><span class="s2">"balance"</span><span class="p">]</span> <span class="o">+</span> <span class="nb">input</span><span class="o">.</span><span class="n">amount</span><span class="p">,</span>
         <span class="p">)</span>
+
+    <span class="c1"># One transaction: every statement commits together, and a raised error rolls</span>
+    <span class="c1"># them all back</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run_in_transaction</span><span class="p">(</span><span class="n">transfer</span><span class="p">)</span>
 </code></pre></div>
 <p>Mutation with input transformation (prepare_input hook):</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -5629,8 +5631,8 @@ resolved, falls straight through to step 4.</p>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateNetworkConfig</span><span class="p">:</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">NetworkConfigInput</span>
-    <span class="n">success</span><span class="p">:</span> <span class="n">NetworkConfigSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">NetworkConfigError</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateNetworkConfigSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateNetworkConfigError</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">prepare_input</span><span class="p">(</span><span class="n">input_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
@@ -5655,6 +5657,21 @@ resolved, falls straight through to step 4.</p>
 <span class="c1"># Frontend sends: { ipAddress: "192.168.1.1", subnetMask: "255.255.255.0" }</span>
 <span class="c1"># Database receives: { ip_address: "192.168.1.1/24" }</span>
 </code></pre></div>
+<p><code>prepare_input</code> can also be <code>async</code>, and it can take the resolver's <code>info</code> as a second argument, for example to call an outside service with a client from the GraphQL context:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span><span class="p">(</span><span class="n">enable_cascade</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CreateContract</span><span class="p">:</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="n">CreateContractInput</span>
+    <span class="n">success</span><span class="p">:</span> <span class="n">CreateContractSuccess</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">CreateContractError</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">prepare_input</span><span class="p">(</span><span class="n">input_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="n">GraphQLResolveInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Resolve the provider's company identifier before the SQL call."""</span>
+        <span class="n">registry</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"company_registry"</span><span class="p">]</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="k">await</span> <span class="n">registry</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="n">input_data</span><span class="p">[</span><span class="s2">"siret"</span><span class="p">])</span>
+        <span class="k">return</span> <span class="p">{</span><span class="o">**</span><span class="n">input_data</span><span class="p">,</span> <span class="s2">"provider"</span><span class="p">:</span> <span class="n">provider</span><span class="p">}</span>
+</code></pre></div>
+<p>The hook receives <code>info</code> when it takes a second positional parameter (or <code>*args</code>). It runs before a database connection is taken from the pool, so a slow call doesn't hold one. An exception it raises becomes a top-level GraphQL error.</p>
 <p><strong>PostgreSQL Function Requirements</strong>:</p>
 <p>For class-based mutations, the PostgreSQL function should:</p>
 <ol>
@@ -5718,6 +5735,7 @@ resolved, falls straight through to step 4.</p>
 <li>All mutations are automatically registered with GraphQL schema</li>
 <li>prepare_input hook allows transforming input data before database calls</li>
 <li>prepare_input is called after GraphQL validation but before PostgreSQL function</li>
+<li>prepare_input may be sync or async, and may take <code>info</code> as a second argument</li>
 </ul>
 <h2 id="subscription-decorator">@subscription Decorator<a class="headerlink" href="#subscription-decorator" title="Permanent link">&para;</a></h2>
 <p><strong>Purpose</strong>: Mark async generator functions as GraphQL subscriptions for real-time updates</p>
@@ -5764,6 +5782,13 @@ resolved, falls straight through to step 4.</p>
 </code></pre></div>
 <p>Subscription with database polling:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">UTC</span><span class="p">,</span> <span class="n">datetime</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">subscription</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 <span class="nd">@subscription</span>
@@ -5772,22 +5797,26 @@ resolved, falls straight through to step 4.</p>
     <span class="n">project_id</span><span class="p">:</span> <span class="n">ID</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="n">Task</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-    <span class="n">last_check</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+    <span class="n">last_check</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">SQL</span><span class="p">(</span>
+        <span class="s2">"SELECT data FROM v_task"</span>
+        <span class="s2">" WHERE data-&gt;&gt;'project_id' = </span><span class="si">%(project_id)s</span><span class="s2">"</span>
+        <span class="s2">" AND (data-&gt;&gt;'updated_at')::timestamptz &gt; </span><span class="si">%(since)s</span><span class="s2">"</span>
+        <span class="s2">" ORDER BY data-&gt;&gt;'updated_at'"</span>
+    <span class="p">)</span>
 
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="c1"># Poll for new/updated tasks</span>
-        <span class="n">updated_tasks</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
-            <span class="s2">"v_task"</span><span class="p">,</span>
-            <span class="n">where</span><span class="o">=</span><span class="p">{</span>
-                <span class="s2">"project_id"</span><span class="p">:</span> <span class="n">project_id</span><span class="p">,</span>
-                <span class="s2">"updated_at__gt"</span><span class="p">:</span> <span class="n">last_check</span>
-            <span class="p">}</span>
+        <span class="c1"># Poll for new/updated tasks: db.run returns plain rows (find() returns</span>
+        <span class="c1"># a ready-made GraphQL response, which a subscription can't yield)</span>
+        <span class="n">checked_at</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">UTC</span><span class="p">)</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="p">{</span><span class="s2">"project_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">project_id</span><span class="p">),</span> <span class="s2">"since"</span><span class="p">:</span> <span class="n">last_check</span><span class="p">})</span>
         <span class="p">)</span>
 
-        <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">updated_tasks</span><span class="p">:</span>
-            <span class="k">yield</span> <span class="n">task</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">Task</span><span class="p">(</span><span class="o">**</span><span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">])</span>  <span class="c1"># v_task's data keys are Task's fields</span>
 
-        <span class="n">last_check</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">utcnow</span><span class="p">()</span>
+        <span class="n">last_check</span> <span class="o">=</span> <span class="n">checked_at</span>
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># Poll every second</span>
 </code></pre></div>
 <p><strong>Notes</strong>:</p>
@@ -5886,10 +5915,10 @@ resolved, falls straight through to step 4.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

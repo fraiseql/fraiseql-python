@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5126,9 +5126,17 @@
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_note</span><span class="p">;</span>
 
-<span class="c1">-- SQL function for creating notes (CQRS pattern)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">fn_create_note</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
-<span class="k">RETURNS</span><span class="w"> </span><span class="n">jsonb</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
+<span class="c1">-- What a mutation function returns: fraiseql reads these 8 fields</span>
+<span class="c1">-- (migrations/trinity/005_add_mutation_response.sql defines it too, with helpers)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TYPE</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">status</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">message</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">entity_id</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="n">entity_type</span><span class="w"> </span><span class="nb">text</span><span class="p">,</span>
+<span class="w">    </span><span class="n">entity</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span><span class="w"> </span><span class="n">updated_fields</span><span class="w"> </span><span class="nb">text</span><span class="p">[],</span><span class="w"> </span><span class="k">cascade</span><span class="w"> </span><span class="n">jsonb</span><span class="p">,</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="n">jsonb</span>
+<span class="p">);</span>
+
+<span class="c1">-- SQL function for creating notes (CQRS pattern): the CreateNote mutation calls it</span>
+<span class="c1">-- with the input as one jsonb</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">FUNCTION</span><span class="w"> </span><span class="n">create_note</span><span class="p">(</span><span class="k">input</span><span class="w"> </span><span class="n">jsonb</span><span class="p">)</span>
+<span class="k">RETURNS</span><span class="w"> </span><span class="n">mutation_response</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="err">$$</span>
 <span class="k">DECLARE</span>
 <span class="w">    </span><span class="n">new_id</span><span class="w"> </span><span class="n">uuid</span><span class="p">;</span>
 <span class="k">BEGIN</span>
@@ -5136,7 +5144,9 @@
 <span class="w">    </span><span class="k">VALUES</span><span class="w"> </span><span class="p">(</span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'title'</span><span class="p">,</span><span class="w"> </span><span class="k">input</span><span class="o">-&gt;&gt;</span><span class="s1">'content'</span><span class="p">)</span>
 <span class="w">    </span><span class="n">RETURNING</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">new_id</span><span class="p">;</span>
 
-<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span><span class="s1">'success'</span><span class="p">,</span><span class="w"> </span><span class="k">true</span><span class="p">,</span><span class="w"> </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">);</span>
+<span class="w">    </span><span class="k">RETURN</span><span class="w"> </span><span class="k">ROW</span><span class="p">(</span><span class="s1">'new'</span><span class="p">,</span><span class="w"> </span><span class="s1">'Note created'</span><span class="p">,</span><span class="w"> </span><span class="n">new_id</span><span class="p">::</span><span class="nb">text</span><span class="p">,</span><span class="w"> </span><span class="s1">'Note'</span><span class="p">,</span>
+<span class="w">               </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">data</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">v_note</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_id</span><span class="p">),</span>
+<span class="w">               </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="k">NULL</span><span class="p">)::</span><span class="n">mutation_response</span><span class="p">;</span>
 <span class="k">END</span><span class="p">;</span>
 <span class="err">$$</span><span class="w"> </span><span class="k">LANGUAGE</span><span class="w"> </span><span class="n">plpgsql</span><span class="p">;</span>
 
@@ -5199,42 +5209,24 @@
 <span class="w">    </span><span class="sd">"""Get all notes."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># field_name auto-inferred from function name "notes"</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[(</span><span class="s2">"created_at"</span><span class="p">,</span> <span class="s2">"DESC"</span><span class="p">)])</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="n">order_by</span><span class="o">=</span><span class="p">[{</span><span class="s2">"created_at"</span><span class="p">:</span> <span class="s2">"DESC"</span><span class="p">}])</span>
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">note</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Note</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Get a single note by ID."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="c1"># field_name auto-inferred from function name "note"</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="n">mandatory_filters</span><span class="o">=</span><span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="nb">id</span><span class="p">})</span>
 
-<span class="c1"># Mutations</span>
+<span class="c1"># Mutations: fraiseql calls the SQL function create_note with the input as one</span>
+<span class="c1"># jsonb, and turns the mutation_response it returns into CreateNoteSuccess or</span>
+<span class="c1"># ValidationError</span>
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">mutation</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">CreateNote</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Create a new note."""</span>
     <span class="nb">input</span><span class="p">:</span> <span class="n">CreateNoteInput</span>
     <span class="n">success</span><span class="p">:</span> <span class="n">CreateNoteSuccess</span>
-    <span class="n">failure</span><span class="p">:</span> <span class="n">ValidationError</span>
-
-    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateNoteSuccess</span> <span class="o">|</span> <span class="n">ValidationError</span><span class="p">:</span>
-        <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="c1"># Call SQL function (CQRS pattern)</span>
-            <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute_function</span><span class="p">(</span><span class="s2">"fn_create_note"</span><span class="p">,</span> <span class="p">{</span>
-                <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
-                <span class="s2">"content"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">content</span><span class="p">,</span>
-            <span class="p">})</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"success"</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="s2">"Failed to create note"</span><span class="p">)</span>
-
-            <span class="c1"># Fetch the created note via Rust pipeline</span>
-            <span class="n">note</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find_one</span><span class="p">(</span><span class="s2">"v_note"</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
-            <span class="k">return</span> <span class="n">CreateNoteSuccess</span><span class="p">(</span><span class="n">note</span><span class="o">=</span><span class="n">note</span><span class="p">)</span>
-
-        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">ValidationError</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">"Failed to create note: </span><span class="si">{</span><span class="n">e</span><span class="si">!s}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">error</span><span class="p">:</span> <span class="n">ValidationError</span>
 
 <span class="c1"># Create the app</span>
 <span class="n">QUICKSTART_TYPES</span> <span class="o">=</span> <span class="p">[</span><span class="n">Note</span><span class="p">]</span>
@@ -5465,10 +5457,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

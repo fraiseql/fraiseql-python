@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5195,62 +5195,82 @@ The internal <code>pk_*</code>/<code>fk_*</code> BIGINT keys used for fast joins
 <hr />
 <h2 id="runtime-auto-aggregation">Runtime Auto-Aggregation<a class="headerlink" href="#runtime-auto-aggregation" title="Permanent link">&para;</a></h2>
 <p>This is the core OLAP capability. When a GraphQL query against a view-backed type
-selects aggregate fields, FraiseQL builds the <code>GROUP BY</code> and the aggregate
-expressions for you at runtime — no compiler, no plan artifacts, no special
-decorator. The supported PostgreSQL aggregates are:</p>
-<p><code>COUNT</code>, <code>SUM</code>, <code>AVG</code>, <code>MIN</code>, <code>MAX</code>, <code>STDDEV</code>, <code>VARIANCE</code></p>
-<p>You declare which measures a view-backed type can aggregate, and which fields act
-as group-by dimensions, when you register the type for its view:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">Date</span>
+selects dimension and measure fields (and not <code>id</code>), FraiseQL builds the <code>GROUP BY</code>
+and the aggregate expressions for you at runtime — no compiler, no plan artifacts,
+no special decorator.</p>
+<p>The type nests its dimensions and its measures in two objects, matching two nested
+objects in the view's <code>data</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventDimensions</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What an event can be grouped by."""</span>
+    <span class="n">event_date</span><span class="p">:</span> <span class="n">date</span>
+    <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">EventMeasures</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What an event group adds up."""</span>
+    <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">sessions</span><span class="p">:</span> <span class="nb">int</span>
+
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_event"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""A single analytics event, read from v_event."""</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">event_date</span><span class="p">:</span> <span class="n">Date</span>
-    <span class="n">product_id</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">category</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">region</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">device_type</span><span class="p">:</span> <span class="nb">str</span>
-    <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
-    <span class="n">quantity</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="n">sessions</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">dimensions</span><span class="p">:</span> <span class="n">EventDimensions</span>
+    <span class="n">measures</span><span class="p">:</span> <span class="n">EventMeasures</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_type_for_view</span>
+<p>You declare which object holds the dimensions, and the aggregate function of each
+measure (by its path in <code>data</code>), when you register the type for its view:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_type_for_view</span>
 
-<span class="c1"># Declare the aggregations FraiseQL may derive at runtime for this view.</span>
 <span class="n">register_type_for_view</span><span class="p">(</span>
+    <span class="s2">"v_event"</span><span class="p">,</span>
     <span class="n">Event</span><span class="p">,</span>
-    <span class="n">view_name</span><span class="o">=</span><span class="s2">"v_event"</span><span class="p">,</span>
+    <span class="n">has_jsonb_data</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">aggregation</span><span class="o">=</span><span class="p">{</span>
-        <span class="s2">"group_by"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"event_date"</span><span class="p">,</span> <span class="s2">"product_id"</span><span class="p">,</span> <span class="s2">"category"</span><span class="p">,</span> <span class="s2">"region"</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">],</span>
+        <span class="s2">"dimensions"</span><span class="p">:</span> <span class="s2">"dimensions"</span><span class="p">,</span>
         <span class="s2">"measures"</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s2">"revenue"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SUM"</span><span class="p">,</span> <span class="s2">"AVG"</span><span class="p">,</span> <span class="s2">"MIN"</span><span class="p">,</span> <span class="s2">"MAX"</span><span class="p">],</span>
-            <span class="s2">"quantity"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SUM"</span><span class="p">,</span> <span class="s2">"AVG"</span><span class="p">],</span>
-            <span class="s2">"sessions"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"SUM"</span><span class="p">],</span>
-            <span class="s2">"id"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"COUNT"</span><span class="p">],</span>
+            <span class="s2">"measures.revenue"</span><span class="p">:</span> <span class="s2">"SUM"</span><span class="p">,</span>
+            <span class="s2">"measures.quantity"</span><span class="p">:</span> <span class="s2">"SUM"</span><span class="p">,</span>
+            <span class="s2">"measures.sessions"</span><span class="p">:</span> <span class="s2">"SUM"</span><span class="p">,</span>
         <span class="p">},</span>
     <span class="p">},</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>A GraphQL query then picks the dimensions and measures it wants, and FraiseQL
-derives the SQL:</p>
+<p>Each measure has one function: <code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MIN</code>, <code>MAX</code>, <code>ARRAY_AGG</code>,
+<code>STRING_AGG</code>, <code>BOOL_AND</code>, <code>BOOL_OR</code>, <code>JSON_AGG</code> or <code>JSONB_AGG</code>. For two aggregates of
+the same value (a sum and an average of revenue), put the value in <code>data</code> twice under
+two measure names.</p>
+<p>A GraphQL query then picks the dimensions and measures it wants. The dimensions it
+selects become the <code>GROUP BY</code>, and each selected measure its aggregate:</p>
 <div class="highlight"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="nf">RevenueByProduct</span><span class="p">(</span><span class="nv">$start</span><span class="p">:</span><span class="w"> </span><span class="nc">Date</span><span class="p">!,</span><span class="w"> </span><span class="nv">$end</span><span class="p">:</span><span class="w"> </span><span class="nc">Date</span><span class="p">!)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">events</span><span class="p">(</span>
-<span class="w">    </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">eventDate</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">gte</span><span class="p">:</span><span class="w"> </span><span class="nv">$start</span><span class="p">,</span><span class="w"> </span><span class="n">lte</span><span class="p">:</span><span class="w"> </span><span class="nv">$end</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
-<span class="w">    </span><span class="n">groupBy</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="no">PRODUCT_ID</span><span class="p">,</span><span class="w"> </span><span class="no">CATEGORY</span><span class="p">]</span>
-<span class="w">  </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">productId</span>
-<span class="w">    </span><span class="n">category</span>
-<span class="w">    </span><span class="n">revenueSum</span>
-<span class="w">    </span><span class="n">revenueAvg</span>
-<span class="w">    </span><span class="n">quantitySum</span>
-<span class="w">    </span><span class="n">count</span>
+<span class="w">  </span><span class="n">revenueByProduct</span><span class="p">(</span><span class="n">start</span><span class="p">:</span><span class="w"> </span><span class="nv">$start</span><span class="p">,</span><span class="w"> </span><span class="n">end</span><span class="p">:</span><span class="w"> </span><span class="nv">$end</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">dimensions</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">productId</span>
+<span class="w">      </span><span class="n">category</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">measures</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">revenue</span>
+<span class="w">      </span><span class="n">quantity</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
+<p>returns one row per (<code>productId</code>, <code>category</code>), with <code>revenue</code> and <code>quantity</code> summed
+over the events of that group in the date range. Selecting <code>id</code> turns the
+aggregation off and returns the individual events.</p>
 <p>FraiseQL's repository (<code>_derive_auto_aggregation</code> / <code>_parse_aggregation_expr</code> in
 <code>db.py</code>) turns the selected dimensions into a <code>GROUP BY</code> clause and the selected
 measures into the matching aggregate expressions, then executes the query against
@@ -5270,7 +5290,7 @@ them through views.</p>
 <p>A fact table holds the numeric measures plus the foreign keys (or denormalized
 dimension values) needed to slice them.</p>
 <div class="highlight"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="n">pk_event</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pk_event</span><span class="w">       </span><span class="nb">BIGINT</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="p">,</span>
 <span class="w">    </span><span class="n">id</span><span class="w">             </span><span class="n">UUID</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">gen_random_uuid</span><span class="p">(),</span>
 
 <span class="w">    </span><span class="c1">-- Measures: numeric columns for fast aggregation</span>
@@ -5286,7 +5306,10 @@ dimension values) needed to slice them.</p>
 
 <span class="w">    </span><span class="c1">-- Filters: indexed columns for fast WHERE / time-range scans</span>
 <span class="w">    </span><span class="n">occurred_at</span><span class="w">    </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="n">event_date</span><span class="w">     </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">  </span><span class="c1">-- partition key</span>
+<span class="w">    </span><span class="n">event_date</span><span class="w">     </span><span class="nb">DATE</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">  </span><span class="c1">-- partition key</span>
+
+<span class="w">    </span><span class="c1">-- A partitioned table's primary key must include the partition key</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">pk_event</span><span class="p">,</span><span class="w"> </span><span class="n">event_date</span><span class="p">)</span>
 <span class="p">)</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">RANGE</span><span class="w"> </span><span class="p">(</span><span class="n">event_date</span><span class="p">);</span>
 
 <span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">tb_event_2026_01</span><span class="w"> </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">OF</span><span class="w"> </span><span class="n">tb_event</span>
@@ -5364,15 +5387,19 @@ runtime.</p>
 <span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
 <span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">sessions</span><span class="p">,</span>
 <span class="w">    </span><span class="n">jsonb_build_object</span><span class="p">(</span>
-<span class="w">        </span><span class="s1">'event_date'</span><span class="p">,</span><span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'product_id'</span><span class="p">,</span><span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'category'</span><span class="p">,</span><span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'region'</span><span class="p">,</span><span class="w">      </span><span class="n">p</span><span class="p">.</span><span class="n">region</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'source'</span><span class="p">,</span><span class="w">      </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'source'</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'device_type'</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'device_type'</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'revenue'</span><span class="p">,</span><span class="w">     </span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'quantity'</span><span class="p">,</span><span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
-<span class="w">        </span><span class="s1">'sessions'</span><span class="p">,</span><span class="w">    </span><span class="n">e</span><span class="p">.</span><span class="n">sessions</span>
+<span class="w">        </span><span class="s1">'id'</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">        </span><span class="s1">'dimensions'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'event_date'</span><span class="p">,</span><span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="n">event_date</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'product_id'</span><span class="p">,</span><span class="w">  </span><span class="n">p</span><span class="p">.</span><span class="n">id</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'category'</span><span class="p">,</span><span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">category</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'region'</span><span class="p">,</span><span class="w">      </span><span class="n">p</span><span class="p">.</span><span class="n">region</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'source'</span><span class="p">,</span><span class="w">      </span><span class="n">e</span><span class="p">.</span><span class="n">attributes</span><span class="w"> </span><span class="o">-&gt;&gt;</span><span class="w"> </span><span class="s1">'source'</span>
+<span class="w">        </span><span class="p">),</span>
+<span class="w">        </span><span class="s1">'measures'</span><span class="p">,</span><span class="w"> </span><span class="n">jsonb_build_object</span><span class="p">(</span>
+<span class="w">            </span><span class="s1">'revenue'</span><span class="p">,</span><span class="w">  </span><span class="n">e</span><span class="p">.</span><span class="n">revenue</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'quantity'</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">quantity</span><span class="p">,</span>
+<span class="w">            </span><span class="s1">'sessions'</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">sessions</span>
+<span class="w">        </span><span class="p">)</span>
 <span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">data</span>
 <span class="k">FROM</span><span class="w"> </span><span class="n">tb_event</span><span class="w"> </span><span class="n">e</span>
 <span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">tb_dim_product</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">pk_product</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">e</span><span class="p">.</span><span class="n">fk_product</span><span class="p">;</span>
@@ -5478,21 +5505,23 @@ table if it is expensive):</p>
 <hr />
 <h2 id="exposing-the-analytics-api">Exposing the Analytics API<a class="headerlink" href="#exposing-the-analytics-api" title="Permanent link">&para;</a></h2>
 <p>Define the view-backed types and the queries that read them, then build the app.</p>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span><span class="p">,</span> <span class="n">Date</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">ID</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">type</span><span class="p">(</span><span class="n">sql_source</span><span class="o">=</span><span class="s2">"v_daily_revenue_trend"</span><span class="p">,</span> <span class="n">jsonb_column</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">DailyRevenue</span><span class="p">:</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">ID</span>
-    <span class="n">event_date</span><span class="p">:</span> <span class="n">Date</span>
+    <span class="n">event_date</span><span class="p">:</span> <span class="n">date</span>
     <span class="n">revenue</span><span class="p">:</span> <span class="nb">float</span>
     <span class="n">revenue_delta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">daily_revenue</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">Date</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DailyRevenue</span><span class="p">]:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">daily_revenue</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">DailyRevenue</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Daily revenue trend over a date range."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
@@ -5502,18 +5531,18 @@ table if it is expensive):</p>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">query</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">revenue_by_product</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">Date</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">Date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Revenue segmented by product, aggregated at runtime."""</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">revenue_by_product</span><span class="p">(</span><span class="n">info</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="n">date</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="n">date</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Events in a date range, aggregated by the dimensions the query selects."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
     <span class="k">return</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span>
         <span class="s2">"v_event"</span><span class="p">,</span>
-        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"event_date"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="s2">"lte"</span><span class="p">:</span> <span class="n">end</span><span class="p">}},</span>
+        <span class="n">where</span><span class="o">=</span><span class="p">{</span><span class="s2">"dimensions"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"event_date"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"gte"</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="s2">"lte"</span><span class="p">:</span> <span class="n">end</span><span class="p">}}},</span>
     <span class="p">)</span>
 
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
     <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/analytics"</span><span class="p">,</span>
-    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Event</span><span class="p">,</span> <span class="n">DailyRevenue</span><span class="p">],</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">Event</span><span class="p">,</span> <span class="n">EventDimensions</span><span class="p">,</span> <span class="n">EventMeasures</span><span class="p">,</span> <span class="n">DailyRevenue</span><span class="p">],</span>
     <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">daily_revenue</span><span class="p">,</span> <span class="n">revenue_by_product</span><span class="p">],</span>
     <span class="n">production</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># False enables the GraphQL playground</span>
 <span class="p">)</span>
@@ -5591,16 +5620,20 @@ by PostgreSQL <code>LISTEN/NOTIFY</code>; FraiseQL streams whatever it yields ov
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncGenerator</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">psycopg.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SQL</span>
+
 <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatabaseQuery</span>
 
 
 <span class="nd">@fraiseql</span><span class="o">.</span><span class="n">subscription</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">realtime_metrics</span><span class="p">(</span><span class="n">info</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Stream rolling metrics for the last hour every 10 seconds."""</span>
     <span class="n">db</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s2">"db"</span><span class="p">]</span>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">DatabaseQuery</span><span class="p">(</span><span class="n">SQL</span><span class="p">(</span><span class="s2">"SELECT data FROM v_realtime_metrics"</span><span class="p">),</span> <span class="p">{})</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_realtime_metrics"</span><span class="p">)</span>
-        <span class="k">yield</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">rows</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="k">yield</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"data"</span><span class="p">]</span> <span class="k">if</span> <span class="n">rows</span> <span class="k">else</span> <span class="p">{}</span>
         <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
 </code></pre></div>
 <p>Back <code>v_realtime_metrics</code> with a view that aggregates the trailing window:</p>
@@ -5728,10 +5761,10 @@ need a <code>tv_</code> projection or an extra index:</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

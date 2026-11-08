@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -31,10 +31,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -6170,8 +6170,8 @@ build step and no generated artifact to ship.</p>
 <h2 id="configuration-management">Configuration Management<a class="headerlink" href="#configuration-management" title="Permanent link">&para;</a></h2>
 <h3 id="environment-variables">Environment Variables<a class="headerlink" href="#environment-variables" title="Permanent link">&para;</a></h3>
 <p><code>FraiseQLConfig</code> is a Pydantic settings object: every field can be set with a
-matching <code>FRAISEQL_</code>-prefixed environment variable, or passed directly as a keyword
-argument to <code>create_fraiseql_app(...)</code>.</p>
+matching <code>FRAISEQL_</code>-prefixed environment variable, read when the config is created
+(pass it as <code>create_fraiseql_app(config=...)</code>).</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Application</span>
 <span class="nv">FRAISEQL_ENVIRONMENT</span><span class="o">=</span>production
 
@@ -6189,15 +6189,20 @@ argument to <code>create_fraiseql_app(...)</code>.</p>
 <span class="nv">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="o">=</span><span class="m">100</span>
 <span class="nv">FRAISEQL_COMPLEXITY_MAX_SCORE</span><span class="o">=</span><span class="m">1000</span>
 
-<span class="c1"># APQ</span>
+<span class="c1"># APQ: in required mode only the operations of APQ_QUERIES_DIR run</span>
 <span class="nv">FRAISEQL_APQ_MODE</span><span class="o">=</span>required
+<span class="nv">FRAISEQL_APQ_QUERIES_DIR</span><span class="o">=</span>/app/graphql
 <span class="nv">FRAISEQL_APQ_STORAGE_BACKEND</span><span class="o">=</span>postgresql
+<span class="nv">FRAISEQL_APQ_CACHE_RESPONSES</span><span class="o">=</span><span class="nb">true</span>
 <span class="nv">FRAISEQL_APQ_RESPONSE_CACHE_TTL</span><span class="o">=</span><span class="m">600</span>
 
-<span class="c1"># Caching</span>
-<span class="nv">FRAISEQL_CACHE_TTL</span><span class="o">=</span><span class="m">300</span>
+<span class="c1"># TurboRouter</span>
 <span class="nv">FRAISEQL_TURBO_ROUTER_CACHE_SIZE</span><span class="o">=</span><span class="m">1000</span>
 </code></pre></div>
+<p><code>FRAISEQL_COMPLEXITY_MAX_SCORE</code> turns the complexity limit on by itself, and
+<code>FRAISEQL_RATE_LIMIT_ENABLED=true</code> installs the per-IP rate limiter (both are off by
+default). There is no cache TTL variable: <code>FRAISEQL_CACHE_TTL</code> is deprecated and has
+no effect.</p>
 <h3 id="kubernetes-configmap">Kubernetes ConfigMap<a class="headerlink" href="#kubernetes-configmap" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">v1</span>
 <span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ConfigMap</span>
@@ -6207,8 +6212,10 @@ argument to <code>create_fraiseql_app(...)</code>.</p>
 <span class="nt">data</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">FRAISEQL_ENVIRONMENT</span><span class="p">:</span><span class="w"> </span><span class="s">"production"</span>
 <span class="w">  </span><span class="nt">FRAISEQL_INTROSPECTION_POLICY</span><span class="p">:</span><span class="w"> </span><span class="s">"disabled"</span>
+<span class="w">  </span><span class="nt">FRAISEQL_RATE_LIMIT_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span>
 <span class="w">  </span><span class="nt">FRAISEQL_RATE_LIMIT_REQUESTS_PER_MINUTE</span><span class="p">:</span><span class="w"> </span><span class="s">"100"</span>
 <span class="w">  </span><span class="nt">FRAISEQL_APQ_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">"required"</span>
+<span class="w">  </span><span class="nt">FRAISEQL_APQ_QUERIES_DIR</span><span class="p">:</span><span class="w"> </span><span class="s">"/app/graphql"</span>
 <span class="w">  </span><span class="nt">FRAISEQL_APQ_STORAGE_BACKEND</span><span class="p">:</span><span class="w"> </span><span class="s">"postgresql"</span>
 </code></pre></div>
 <h3 id="kubernetes-secret">Kubernetes Secret<a class="headerlink" href="#kubernetes-secret" title="Permanent link">&para;</a></h3>
@@ -6653,16 +6660,21 @@ trivy<span class="w"> </span>image<span class="w"> </span>myregistry/fraiseql-ap
 <li><code>PUBLIC</code> - Anyone can introspect (development only)</li>
 </ul>
 <h3 id="rate-limiting">Rate Limiting<a class="headerlink" href="#rate-limiting" title="Permanent link">&para;</a></h3>
+<p>Rate limiting is off by default. With <code>rate_limit_enabled=True</code>,
+<code>create_fraiseql_app</code> limits each client IP, counted in each process's memory (see
+<a href="../../configuration/rate-limiting/">Rate Limiting</a>):</p>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
     <span class="n">rate_limit_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>      <span class="c1"># 100 req/min = ~1.67 req/sec</span>
-    <span class="n">rate_limit_requests_per_hour</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>       <span class="c1"># 5000 req/hour</span>
-    <span class="n">rate_limit_burst_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>                <span class="c1"># Allow 10 concurrent</span>
-    <span class="n">rate_limit_window_type</span><span class="o">=</span><span class="s2">"sliding"</span><span class="p">,</span>        <span class="c1"># More accurate</span>
-    <span class="n">rate_limit_whitelist</span><span class="o">=</span><span class="p">[</span><span class="s2">"internal.ips"</span><span class="p">],</span>
-    <span class="n">rate_limit_blacklist</span><span class="o">=</span><span class="p">[</span><span class="s2">"malicious.ips"</span><span class="p">]</span>
+    <span class="n">rate_limit_requests_per_minute</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>      <span class="c1"># in any 60 seconds</span>
+    <span class="n">rate_limit_requests_per_hour</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>       <span class="c1"># in any hour</span>
+    <span class="n">rate_limit_burst_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>                <span class="c1"># allowed a minute even above the per-minute limit</span>
+    <span class="n">rate_limit_whitelist</span><span class="o">=</span><span class="p">[</span><span class="s2">"10.0.0.5"</span><span class="p">],</span>       <span class="c1"># client IPs never limited</span>
+    <span class="n">rate_limit_blacklist</span><span class="o">=</span><span class="p">[</span><span class="s2">"203.0.113.9"</span><span class="p">],</span>    <span class="c1"># client IPs always rejected (403)</span>
 <span class="p">)</span>
 </code></pre></div>
+<p>Behind a reverse proxy, run uvicorn with <code>--proxy-headers
+--forwarded-allow-ips=&lt;proxy address&gt;</code>, or every client shares the proxy's limit.</p>
 <h3 id="query-complexity-limits">Query Complexity Limits<a class="headerlink" href="#query-complexity-limits" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
     <span class="n">complexity_enabled</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -6758,14 +6770,14 @@ trivy<span class="w"> </span>image<span class="w"> </span>myregistry/fraiseql-ap
 <h3 id="caching-strategy">Caching Strategy<a class="headerlink" href="#caching-strategy" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="c1"># Multi-level caching</span>
 <span class="n">config</span> <span class="o">=</span> <span class="n">FraiseQLConfig</span><span class="p">(</span>
-    <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>                           <span class="c1"># Query cache TTL: 5 minutes</span>
+    <span class="n">apq_cache_responses</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>                <span class="c1"># Cache responses of persisted queries</span>
     <span class="n">apq_response_cache_ttl</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>              <span class="c1"># APQ response cache: 10 minutes</span>
     <span class="n">turbo_router_cache_size</span><span class="o">=</span><span class="mi">1000</span>             <span class="c1"># TurboRouter cache size</span>
 <span class="p">)</span>
 </code></pre></div>
-<p>FraiseQL also ships a PostgreSQL-backed result cache with cascade invalidation
-(<code>PostgresCache</code>, <code>ResultCache</code>, <code>CachedRepository</code>) for caching query results
-directly in your database — see the caching reference for details.</p>
+<p>FraiseQL also ships a PostgreSQL-backed result cache (<code>PostgresCache</code>,
+<code>ResultCache</code>, <code>cached_query</code>) for data your resolvers compute, with TTL expiry and
+explicit invalidation; see the <a href="../../specs/caching/">Caching Specification</a>.</p>
 <p><strong>Expected hit rates</strong>:</p>
 <ul>
 <li>Stable APIs: 95%+</li>
@@ -7050,10 +7062,10 @@ Cross-region failover
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

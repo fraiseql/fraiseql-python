@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4600,10 +4600,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#structured-logs-examples" class="md-nav__link">
+  <a href="#log-entries" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Structured Logs Examples
+        Log Entries
       
     </span>
   </a>
@@ -4639,10 +4639,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-identify-affected-users" class="md-nav__link">
+  <a href="#step-2-identify-affected-clients" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Identify Affected Users
+        Step 2: Identify Affected Clients
       
     </span>
   </a>
@@ -4751,10 +4751,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-implement-token-refresh-endpoint" class="md-nav__link">
+  <a href="#2-make-sure-clients-refresh-tokens" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Implement Token Refresh Endpoint
+        2. Make Sure Clients Refresh Tokens
       
     </span>
   </a>
@@ -4762,10 +4762,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#3-implement-grace-period-for-token-expiry" class="md-nav__link">
+  <a href="#3-allow-a-little-clock-skew" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Implement Grace Period for Token Expiry
+        3. Allow a Little Clock Skew
       
     </span>
   </a>
@@ -4851,21 +4851,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-enable-account-lockout" class="md-nav__link">
+  <a href="#2-rate-limit-authentication-endpoints" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Enable Account Lockout
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-implement-captcha-for-failed-attempts" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Implement CAPTCHA for Failed Attempts
+        2. Rate Limit Authentication Endpoints
       
     </span>
   </a>
@@ -4901,21 +4890,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#2-implement-fallback-authentication" class="md-nav__link">
+  <a href="#2-ride-out-an-identity-provider-outage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Implement Fallback Authentication
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-implement-circuit-breaker" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Implement Circuit Breaker
+        2. Ride Out an Identity Provider Outage
       
     </span>
   </a>
@@ -5075,7 +5053,7 @@
 
 
 <h1 id="authentication-failures-runbook">Authentication Failures Runbook<a class="headerlink" href="#authentication-failures-runbook" title="Permanent link">&para;</a></h1>
-<p><strong>Last Updated</strong>: 2025-12-29
+<p><strong>Last Updated</strong>: 2026-10-25
 <strong>Severity</strong>: HIGH
 <strong>MTTR Target</strong>: 15 minutes</p>
 <hr />
@@ -5092,145 +5070,95 @@
 <li>Authentication service degradation</li>
 </ul>
 <h3 id="prometheus-metrics-to-monitor">Prometheus Metrics to Monitor<a class="headerlink" href="#prometheus-metrics-to-monitor" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Authentication failure rate</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<p>FraiseQL has no authentication metric. With the metrics middleware installed
+(<code>setup_metrics(app)</code>, see <a href="../#metrics-quick-reference">Metrics</a>), a
+request rejected for a missing or invalid token is counted with status <code>401</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Rejected requests per second</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 
-<span class="c1"># Failed logins by reason</span>
-<span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">failure_reason</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">)</span>
+<span class="c1"># Percentage of requests rejected</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
 
-<span class="c1"># Percentage of failed auth requests</span>
-<span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">/</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
-
-<span class="c1"># Failed attempts by user (brute force indicator)</span>
-<span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">user_id</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="o">)</span>
-<span class="o">)</span>
+<span class="c1"># 403s (permission checks that answer with HTTP 403)</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">403</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </code></pre></div>
-<h3 id="structured-logs-examples">Structured Logs Examples<a class="headerlink" href="#structured-logs-examples" title="Permanent link">&para;</a></h3>
+<p>The metric has no user, IP or reason label; use the logs for those.</p>
+<h3 id="log-entries">Log Entries<a class="headerlink" href="#log-entries" title="Permanent link">&para;</a></h3>
+<p><code>Auth0Provider</code> logs each token it rejects on the <code>fraiseql.security</code> logger at
+<code>WARNING</code>, as a JSON security event:</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T14:20:35.123Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"WARNING"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"security.auth_failure"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Authentication failed - invalid token"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"198.51.100.75"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"failure_reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"invalid_token"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"token_prefix"</span><span class="p">:</span><span class="w"> </span><span class="s2">"eyJhbG..."</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"/graphql"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"user_agent"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Mozilla/5.0"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_auth123"</span>
+<span class="w">  </span><span class="nt">"event_type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"auth.token_expired"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"severity"</span><span class="p">:</span><span class="w"> </span><span class="s2">"warning"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2026-10-25T14:22:05.789012+00:00"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_email"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"ip_address"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"user_agent"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"request_id"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"resource"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"result"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Token has expired"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
 <span class="p">}</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T14:21:10.456Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ERROR"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"security.brute_force_detected"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Possible brute force attack detected"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_target"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"203.0.113.88"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"failed_attempts"</span><span class="p">:</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"time_window_seconds"</span><span class="p">:</span><span class="w"> </span><span class="mi">300</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"action"</span><span class="p">:</span><span class="w"> </span><span class="s2">"account_locked"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_brute456"</span>
-<span class="p">}</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">"timestamp"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T14:22:05.789Z"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"level"</span><span class="p">:</span><span class="w"> </span><span class="s2">"WARNING"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"event"</span><span class="p">:</span><span class="w"> </span><span class="s2">"security.token_expired"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Token expired"</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">"user_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"user_123"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"ip_address"</span><span class="p">:</span><span class="w"> </span><span class="s2">"192.0.2.100"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"token_issued_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T12:22:05Z"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"token_expires_at"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T14:22:05Z"</span><span class="p">,</span>
-<span class="w">    </span><span class="nt">"current_time"</span><span class="p">:</span><span class="w"> </span><span class="s2">"2025-12-29T14:22:05Z"</span>
-<span class="w">  </span><span class="p">},</span>
-<span class="w">  </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace_expired789"</span>
-<span class="p">}</span>
-</code></pre></div>
+<p>The other event types are <code>auth.token_invalid</code> (<code>reason</code> is <code>"Invalid token: ..."</code>,
+e.g. a bad signature, audience or issuer), <code>auth.failure</code> (any other validation
+error; <code>metadata.error_type</code> names it) and <code>auth.success</code> (<code>user_id</code> is the token's
+<code>sub</code>). The events have no IP address. A provider of your own logs only what it
+logs itself.</p>
+<p>With an auth provider, a GraphQL request without a valid token gets a 401
+<code>{"detail": "Authentication required"}</code>.</p>
 <hr />
 <h2 id="diagnostic-steps">🔍 Diagnostic Steps<a class="headerlink" href="#diagnostic-steps" title="Permanent link">&para;</a></h2>
 <h3 id="step-1-classify-authentication-failures">Step 1: Classify Authentication Failures<a class="headerlink" href="#step-1-classify-authentication-failures" title="Permanent link">&para;</a></h3>
-<p><strong>Via Prometheus - Failure Reasons</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Group failures by reason</span>
-<span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">failure_reason</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">)</span>
+<p><strong>Via Prometheus</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </code></pre></div>
-<p><strong>Via Structured Logs</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Count failures by reason</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_failure") |</span>
-<span class="s1">  .context.failure_reason'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
+<p><strong>Via the security log</strong> (<code>security_events.log</code>, or wherever your handler writes
+the <code>fraiseql.security</code> logger):</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># Count rejections by event type</span>
+grep<span class="w"> </span>-o<span class="w"> </span><span class="s1">'"event_type": "auth\.[a-z_]*"'</span><span class="w"> </span>security_events.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
 
 <span class="c1"># Example output:</span>
-<span class="c1">#  450 invalid_token</span>
-<span class="c1">#  120 token_expired</span>
-<span class="c1">#   45 missing_token</span>
-<span class="c1">#   30 invalid_signature</span>
-<span class="c1">#   15 user_not_found</span>
+<span class="c1">#  450 "event_type": "auth.token_invalid"</span>
+<span class="c1">#  120 "event_type": "auth.token_expired"</span>
+<span class="c1">#   12 "event_type": "auth.failure"</span>
+
+<span class="c1"># Reasons of the invalid tokens</span>
+grep<span class="w"> </span><span class="s1">'"auth.token_invalid"'</span><span class="w"> </span>security_events.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-o<span class="w"> </span><span class="s1">'"reason": "[^"]*"'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn
 </code></pre></div>
-<p><strong>Common Failure Reasons</strong>:</p>
+<p><strong>Common causes, by event</strong>:</p>
 <ul>
-<li><code>invalid_token</code>: Malformed or tampered token</li>
-<li><code>token_expired</code>: Valid token but expired</li>
-<li><code>invalid_signature</code>: Token signature mismatch</li>
-<li><code>missing_token</code>: No auth header provided</li>
-<li><code>user_not_found</code>: Valid token but user doesn't exist</li>
-<li><code>user_disabled</code>: User account disabled</li>
-<li><code>insufficient_permissions</code>: Valid auth but lacks permissions (403)</li>
+<li><code>auth.token_expired</code>: a valid token past its <code>exp</code></li>
+<li><code>auth.token_invalid</code>: bad signature, wrong audience or issuer, malformed token</li>
+<li><code>auth.failure</code>: the JWKS couldn't be fetched, or another validation error</li>
+<li>no event, but a 401: the request had no <code>Authorization: Bearer</code> header</li>
+<li>403: authenticated, but a permission or role check refused it</li>
 </ul>
-<h3 id="step-2-identify-affected-users">Step 2: Identify Affected Users<a class="headerlink" href="#step-2-identify-affected-users" title="Permanent link">&para;</a></h3>
-<p><strong>Via Prometheus</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Top users with auth failures</span>
-<span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">user_id</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="o">)</span>
-<span class="o">)</span>
-
-<span class="c1"># Failures by IP address</span>
-<span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">ip_address</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="o">)</span>
-<span class="o">)</span>
-</code></pre></div>
-<p><strong>Via Structured Logs</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Failures by user</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_failure") |</span>
-<span class="s1">  .context.user_id // "anonymous"'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
-
-<span class="c1"># Failures by IP</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_failure") |</span>
-<span class="s1">  .context.ip_address'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
-
-<span class="c1"># Failures timeline</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_failure") |</span>
-<span class="s1">  "\(.timestamp) \(.context.failure_reason) \(.context.user_id // "anon")"'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-50
+<h3 id="step-2-identify-affected-clients">Step 2: Identify Affected Clients<a class="headerlink" href="#step-2-identify-affected-clients" title="Permanent link">&para;</a></h3>
+<p>The security events have no client address. Find the clients in your access logs
+(reverse proxy, load balancer, or uvicorn's access log), which have the status:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># uvicorn access log: client addresses of the 401s</span>
+grep<span class="w"> </span><span class="s1">'" 401'</span><span class="w"> </span>access.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $1}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
 </code></pre></div>
 <h3 id="step-3-determine-root-cause-category">Step 3: Determine Root Cause Category<a class="headerlink" href="#step-3-determine-root-cause-category" title="Permanent link">&para;</a></h3>
 <h4 id="a-token-expiration-issues">A. Token Expiration Issues<a class="headerlink" href="#a-token-expiration-issues" title="Permanent link">&para;</a></h4>
 <p><strong>Symptoms</strong>:</p>
 <ul>
-<li>Many <code>token_expired</code> failures</li>
+<li>Many <code>auth.token_expired</code> events</li>
 <li>Concentrated around specific time period</li>
 <li>Affects multiple users simultaneously</li>
 </ul>
 <p><strong>Check</strong>:</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Count expired tokens</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.token_expired")'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+grep<span class="w"> </span>-c<span class="w"> </span><span class="s1">'"auth.token_expired"'</span><span class="w"> </span>security_events.log
 
-<span class="c1"># Check token lifetime configuration</span>
-<span class="nb">echo</span><span class="w"> </span><span class="nv">$FRAISEQL_TOKEN_LIFETIME_SECONDS</span>
+<span class="c1"># Lifetime of a failing token, in seconds (exp - iat); the issuer sets it,</span>
+<span class="c1"># fraiseql only checks exp</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-d.<span class="w"> </span>-f2<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">'_-'</span><span class="w"> </span><span class="s1">'/+'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>base64<span class="w"> </span>-d<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.exp - .iat'</span>
 </code></pre></div>
 <p><strong>Likely Causes</strong>:</p>
 <ul>
@@ -5241,13 +5169,14 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <h4 id="b-token-signature-failures">B. Token Signature Failures<a class="headerlink" href="#b-token-signature-failures" title="Permanent link">&para;</a></h4>
 <p><strong>Symptoms</strong>:</p>
 <ul>
-<li>Many <code>invalid_signature</code> failures</li>
+<li>Many <code>auth.token_invalid</code> events with <code>"reason": "Invalid token: Signature verification failed"</code></li>
 <li>Started after deployment or config change</li>
 <li>All tokens failing validation</li>
 </ul>
 <p><strong>Check</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Check JWT signing key</span>
-<span class="nb">echo</span><span class="w"> </span><span class="nv">$FRAISEQL_JWT_SECRET</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-c<span class="w">  </span><span class="c1"># Should be 32+ characters</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Check the signing secret your auth provider validates with (here JWT_SECRET,</span>
+<span class="c1"># the variable the provider below reads; fraiseql reads none itself)</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$JWT_SECRET</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-c<span class="w">  </span><span class="c1"># Should be 32+ characters</span>
 
 <span class="c1"># Check if key changed recently</span>
 git<span class="w"> </span>log<span class="w"> </span>--since<span class="o">=</span><span class="s2">"24 hours ago"</span><span class="w"> </span>--grep<span class="o">=</span><span class="s2">"JWT_SECRET"</span><span class="w"> </span>--oneline
@@ -5269,14 +5198,11 @@ git<span class="w"> </span>log<span class="w"> </span>--since<span class="o">=</
 <li>Rapid succession of failures</li>
 </ul>
 <p><strong>Check</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Detect brute force patterns</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_failure") |</span>
-<span class="s1">  .context.ip_address + " " + (.context.user_id // "anon") + " " + .timestamp'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span><span class="p">|</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>cut<span class="w"> </span>-d<span class="s1">' '</span><span class="w"> </span>-f1<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-10
-
-<span class="c1"># High count from single IP = brute force</span>
+<p>fraiseql never sees passwords (your identity provider checks them), so a
+credential attack shows at the provider (Auth0 logs, anomaly detection). Against
+the API, it shows as many 401s from few clients:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># 401s per client address in the access log; a high count from one address</span>
+grep<span class="w"> </span><span class="s1">'" 401'</span><span class="w"> </span>access.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>awk<span class="w"> </span><span class="s1">'{print $1}'</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-rn<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-10
 </code></pre></div>
 <p><strong>Likely Causes</strong>:</p>
 <ul>
@@ -5311,98 +5237,100 @@ psql<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1
 <hr />
 <h2 id="resolution-steps">🔧 Resolution Steps<a class="headerlink" href="#resolution-steps" title="Permanent link">&para;</a></h2>
 <h3 id="for-token-expiration-issues-5-10-minutes">For Token Expiration Issues (5-10 minutes)<a class="headerlink" href="#for-token-expiration-issues-5-10-minutes" title="Permanent link">&para;</a></h3>
+<p>fraiseql validates tokens through the provider passed as <code>create_fraiseql_app(auth=...)</code>;
+it doesn't issue them. Token lifetimes and the refresh flow belong to the issuer:
+with Auth0 (<code>auth=Auth0Config(...)</code>), set the API's token expiration in the Auth0
+dashboard; with your own issuer, in its configuration.</p>
 <h4 id="1-increase-token-lifetime-if-too-short">1. Increase Token Lifetime (If Too Short)<a class="headerlink" href="#1-increase-token-lifetime-if-too-short" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="c1"># config/auth.py</span>
-<span class="n">TOKEN_LIFETIME_SECONDS</span> <span class="o">=</span> <span class="mi">3600</span>  <span class="c1"># Increase from 900 (15 min) to 3600 (1 hour)</span>
-<span class="n">REFRESH_TOKEN_LIFETIME_SECONDS</span> <span class="o">=</span> <span class="mi">86400</span>  <span class="c1"># 24 hours</span>
-</code></pre></div>
-<p><strong>Environment Variable</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_TOKEN_LIFETIME_SECONDS</span><span class="o">=</span><span class="m">3600</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_REFRESH_TOKEN_LIFETIME_SECONDS</span><span class="o">=</span><span class="m">86400</span>
-
-<span class="c1"># Restart application</span>
-systemctl<span class="w"> </span>restart<span class="w"> </span>fraiseql
-</code></pre></div>
-<h4 id="2-implement-token-refresh-endpoint">2. Implement Token Refresh Endpoint<a class="headerlink" href="#2-implement-token-refresh-endpoint" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">FraiseQL</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_access_token</span><span class="p">,</span> <span class="n">verify_refresh_token</span>
-
-<span class="n">app</span> <span class="o">=</span> <span class="n">FraiseQL</span><span class="p">()</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/auth/refresh"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">refresh_token</span><span class="p">(</span><span class="n">refresh_token</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="c1"># Verify refresh token</span>
-    <span class="n">payload</span> <span class="o">=</span> <span class="n">verify_refresh_token</span><span class="p">(</span><span class="n">refresh_token</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">payload</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">401</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">"Invalid refresh token"</span><span class="p">)</span>
-
-    <span class="c1"># Issue new access token</span>
-    <span class="n">new_access_token</span> <span class="o">=</span> <span class="n">create_access_token</span><span class="p">(</span>
-        <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"user_id"</span><span class="p">],</span>
-        <span class="n">expires_in</span><span class="o">=</span><span class="mi">3600</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"access_token"</span><span class="p">:</span> <span class="n">new_access_token</span><span class="p">,</span>
-        <span class="s2">"token_type"</span><span class="p">:</span> <span class="s2">"bearer"</span><span class="p">,</span>
-        <span class="s2">"expires_in"</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
-    <span class="p">}</span>
-</code></pre></div>
-<h4 id="3-implement-grace-period-for-token-expiry">3. Implement Grace Period for Token Expiry<a class="headerlink" href="#3-implement-grace-period-for-token-expiry" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">TokenValidator</span>
-
-<span class="c1"># Allow recently expired tokens (within 5 minutes)</span>
-<span class="n">validator</span> <span class="o">=</span> <span class="n">TokenValidator</span><span class="p">(</span>
-    <span class="n">grace_period_seconds</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># 5 minutes</span>
-<span class="p">)</span>
-
-<span class="c1"># Tokens expired &lt; 5 min ago still valid</span>
-</code></pre></div>
+<p>Raise the access token lifetime at the issuer (e.g. Auth0 &gt; APIs &gt; your API &gt;
+Token Expiration), then have clients log in again. Existing tokens keep their old
+<code>exp</code>.</p>
+<h4 id="2-make-sure-clients-refresh-tokens">2. Make Sure Clients Refresh Tokens<a class="headerlink" href="#2-make-sure-clients-refresh-tokens" title="Permanent link">&para;</a></h4>
+<p>The issuer's refresh endpoint (Auth0: <code>POST https://&lt;domain&gt;/oauth/token</code> with
+<code>grant_type=refresh_token</code>) returns a new access token; the client should call it
+before <code>exp</code>, or on a 401, and retry with the new token.</p>
+<h4 id="3-allow-a-little-clock-skew">3. Allow a Little Clock Skew<a class="headerlink" href="#3-allow-a-little-clock-skew" title="Permanent link">&para;</a></h4>
+<p>A provider of your own can accept tokens that expired a few seconds to minutes ago
+with PyJWT's <code>leeway</code> (the provider below takes <code>leeway_seconds</code>). Keep it small:
+it extends every token's life.</p>
 <h3 id="for-token-signature-issues-10-15-minutes">For Token Signature Issues (10-15 minutes)<a class="headerlink" href="#for-token-signature-issues-10-15-minutes" title="Permanent link">&para;</a></h3>
 <h4 id="1-verify-jwt-secret-consistency">1. Verify JWT Secret Consistency<a class="headerlink" href="#1-verify-jwt-secret-consistency" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check current secret (all instances must match!)</span>
-<span class="nb">echo</span><span class="w"> </span><span class="nv">$FRAISEQL_JWT_SECRET</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$JWT_SECRET</span>
 
 <span class="c1"># Update secret if needed (COORDINATED ROLLOUT REQUIRED)</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_JWT_SECRET</span><span class="o">=</span><span class="s2">"new-secret-key-at-least-32-chars-long"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">JWT_SECRET</span><span class="o">=</span><span class="s2">"new-secret-key-at-least-32-chars-long"</span>
 
 <span class="c1"># Restart all instances simultaneously</span>
 kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment<span class="w"> </span>fraiseql
 </code></pre></div>
 <h4 id="2-implement-key-rotation-with-grace-period">2. Implement Key Rotation with Grace Period<a class="headerlink" href="#2-implement-key-rotation-with-grace-period" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">JWTManager</span>
+<p>With Auth0, signing keys rotate through the tenant's JWKS, which <code>Auth0Provider</code>
+fetches, so there's nothing to do in fraiseql. A provider of your own that checks
+an HS256 secret can accept the previous secret while tokens signed with it are
+still alive:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
-<span class="c1"># Support multiple keys during rotation</span>
-<span class="n">jwt_manager</span> <span class="o">=</span> <span class="n">JWTManager</span><span class="p">(</span>
-    <span class="n">primary_secret</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"FRAISEQL_JWT_SECRET"</span><span class="p">),</span>
-    <span class="n">fallback_secrets</span><span class="o">=</span><span class="p">[</span>
-        <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"FRAISEQL_JWT_SECRET_OLD"</span><span class="p">),</span>  <span class="c1"># Accept old key during transition</span>
-    <span class="p">],</span>
-    <span class="n">grace_period_hours</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>  <span class="c1"># Accept old keys for 24 hours</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jwt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthProvider</span><span class="p">,</span> <span class="n">UserContext</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthenticationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_fraiseql_app</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RotatingJWTProvider</span><span class="p">(</span><span class="n">AuthProvider</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Validate HS256 tokens signed with the current or the previous secret."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secrets</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">leeway_seconds</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">secrets</span> <span class="o">=</span> <span class="p">[</span><span class="n">secret</span> <span class="k">for</span> <span class="n">secret</span> <span class="ow">in</span> <span class="n">secrets</span> <span class="k">if</span> <span class="n">secret</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">leeway_seconds</span> <span class="o">=</span> <span class="n">leeway_seconds</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">secret</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">secrets</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+                    <span class="n">token</span><span class="p">,</span> <span class="n">secret</span><span class="p">,</span> <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">"HS256"</span><span class="p">],</span> <span class="n">leeway</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">leeway_seconds</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">InvalidSignatureError</span><span class="p">:</span>
+                <span class="k">continue</span>  <span class="c1"># Try the next secret</span>
+            <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">InvalidTokenError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">AuthenticationError</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">raise</span> <span class="n">AuthenticationError</span><span class="p">(</span><span class="s2">"Invalid token signature"</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_user_from_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UserContext</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_token</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">UserContext</span><span class="p">(</span>
+            <span class="n">user_id</span><span class="o">=</span><span class="n">payload</span><span class="p">[</span><span class="s2">"sub"</span><span class="p">],</span>
+            <span class="n">roles</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"roles"</span><span class="p">,</span> <span class="p">[]),</span>
+            <span class="n">permissions</span><span class="o">=</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"permissions"</span><span class="p">,</span> <span class="p">[]),</span>
+        <span class="p">)</span>
+
+
+<span class="n">auth_provider</span> <span class="o">=</span> <span class="n">RotatingJWTProvider</span><span class="p">(</span>
+    <span class="n">secrets</span><span class="o">=</span><span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"JWT_SECRET"</span><span class="p">],</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"JWT_SECRET_OLD"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)],</span>
+    <span class="n">leeway_seconds</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
 <span class="p">)</span>
-
-<span class="c1"># Sign with primary key</span>
-<span class="n">token</span> <span class="o">=</span> <span class="n">jwt_manager</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
-
-<span class="c1"># Verify with primary OR fallback keys</span>
-<span class="n">payload</span> <span class="o">=</span> <span class="n">jwt_manager</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_fraiseql_app</span><span class="p">(</span>
+    <span class="n">database_url</span><span class="o">=</span><span class="s2">"postgresql://localhost/mydb"</span><span class="p">,</span>
+    <span class="n">types</span><span class="o">=</span><span class="p">[</span><span class="n">User</span><span class="p">],</span>
+    <span class="n">queries</span><span class="o">=</span><span class="p">[</span><span class="n">me</span><span class="p">],</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth_provider</span><span class="p">,</span>
+<span class="p">)</span>
 </code></pre></div>
+<p>With an auth provider, a request whose token fails validation (or that has none)
+gets a 401 <code>{"detail": "Authentication required"}</code>.</p>
 <p><strong>Rotation Process</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Step 1: Add new key as fallback (no restart needed)</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_JWT_SECRET_NEW</span><span class="o">=</span><span class="s2">"new-key-here"</span>
-
-<span class="c1"># Step 2: Wait 24 hours (all old tokens expire)</span>
-
-<span class="c1"># Step 3: Promote new key to primary</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_JWT_SECRET</span><span class="o">=</span><span class="s2">"</span><span class="nv">$FRAISEQL_JWT_SECRET_NEW</span><span class="s2">"</span>
-<span class="nb">export</span><span class="w"> </span><span class="nv">FRAISEQL_JWT_SECRET_OLD</span><span class="o">=</span><span class="s2">"</span><span class="nv">$FRAISEQL_JWT_SECRET</span><span class="s2">"</span>
-<span class="nb">unset</span><span class="w"> </span>FRAISEQL_JWT_SECRET_NEW
-
-<span class="c1"># Step 4: Restart application</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Step 1: Keep the current key as the old one, sign new tokens with the new key</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">JWT_SECRET_OLD</span><span class="o">=</span><span class="s2">"</span><span class="nv">$JWT_SECRET</span><span class="s2">"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">JWT_SECRET</span><span class="o">=</span><span class="s2">"new-key-here"</span>
 kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment<span class="w"> </span>fraiseql
 
-<span class="c1"># Step 5: Wait 24 hours, remove old key</span>
-<span class="nb">unset</span><span class="w"> </span>FRAISEQL_JWT_SECRET_OLD
+<span class="c1"># Step 2: Switch the issuer to the new key; wait until every token signed with the</span>
+<span class="c1"># old key has expired (the longest token lifetime)</span>
+
+<span class="c1"># Step 3: Remove the old key</span>
+<span class="nb">unset</span><span class="w"> </span>JWT_SECRET_OLD
+kubectl<span class="w"> </span>rollout<span class="w"> </span>restart<span class="w"> </span>deployment<span class="w"> </span>fraiseql
 </code></pre></div>
 <h4 id="3-fix-clock-skew-if-present">3. Fix Clock Skew (If Present)<a class="headerlink" href="#3-fix-clock-skew-if-present" title="Permanent link">&para;</a></h4>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check clock skew between services</span>
@@ -5417,49 +5345,32 @@ sudo<span class="w"> </span>systemctl<span class="w"> </span><span class="nb">en
 sudo<span class="w"> </span>systemctl<span class="w"> </span>start<span class="w"> </span>ntpd
 </code></pre></div>
 <h3 id="for-brute-force-attacks-5-minutes">For Brute Force Attacks (5 minutes)<a class="headerlink" href="#for-brute-force-attacks-5-minutes" title="Permanent link">&para;</a></h3>
+<p>fraiseql has no block list, account lockout or CAPTCHA: credentials are checked by
+your identity provider (Auth0 has brute-force protection and bot detection settings
+for this), and fraiseql only sees tokens.</p>
 <h4 id="1-block-attacking-ips">1. Block Attacking IPs<a class="headerlink" href="#1-block-attacking-ips" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlockList</span>
-
-<span class="c1"># Block IP immediately</span>
-<span class="k">await</span> <span class="n">BlockList</span><span class="o">.</span><span class="n">add_ip</span><span class="p">(</span>
-    <span class="n">ip_address</span><span class="o">=</span><span class="s2">"203.0.113.88"</span><span class="p">,</span>
-    <span class="n">duration_seconds</span><span class="o">=</span><span class="mi">86400</span><span class="p">,</span>  <span class="c1"># 24 hours</span>
-    <span class="n">reason</span><span class="o">=</span><span class="s2">"Brute force attack detected"</span>
-<span class="p">)</span>
-</code></pre></div>
-<p><strong>Via Firewall</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="c1"># Block at firewall level (more efficient)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Block at firewall level</span>
 sudo<span class="w"> </span>iptables<span class="w"> </span>-A<span class="w"> </span>INPUT<span class="w"> </span>-s<span class="w"> </span><span class="m">203</span>.0.113.88<span class="w"> </span>-j<span class="w"> </span>DROP
 
 <span class="c1"># Or use cloud provider firewall</span>
 <span class="c1"># AWS Security Group, GCP Firewall Rule, etc.</span>
 </code></pre></div>
-<h4 id="2-enable-account-lockout">2. Enable Account Lockout<a class="headerlink" href="#2-enable-account-lockout" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AccountLockout</span>
+<h4 id="2-rate-limit-authentication-endpoints">2. Rate Limit Authentication Endpoints<a class="headerlink" href="#2-rate-limit-authentication-endpoints" title="Permanent link">&para;</a></h4>
+<p>If the login endpoints are served by this app, limit them per client with
+<code>RateLimitMiddleware</code> (5 requests every 5 minutes on <code>/auth/*</code> with the defaults of
+<code>setup_rate_limiting</code>; see <a href="../rate-limiting-triggered/">Rate Limiting</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">RateLimit</span><span class="p">,</span> <span class="n">RateLimitRule</span><span class="p">,</span> <span class="n">setup_rate_limiting</span>
 
-<span class="c1"># Lock account after 5 failed attempts</span>
-<span class="n">lockout</span> <span class="o">=</span> <span class="n">AccountLockout</span><span class="p">(</span>
-    <span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-    <span class="n">lockout_duration_seconds</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>  <span class="c1"># 30 minutes</span>
-    <span class="n">window_seconds</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>  <span class="c1"># 5-minute window</span>
+<span class="n">setup_rate_limiting</span><span class="p">(</span>
+    <span class="n">app</span><span class="p">,</span>
+    <span class="n">custom_rules</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">RateLimitRule</span><span class="p">(</span>
+            <span class="n">path_pattern</span><span class="o">=</span><span class="s2">"/auth/*"</span><span class="p">,</span>
+            <span class="n">rate_limit</span><span class="o">=</span><span class="n">RateLimit</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">300</span><span class="p">),</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">"Too many login attempts"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">],</span>
 <span class="p">)</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_plugin</span><span class="p">(</span><span class="n">lockout</span><span class="p">)</span>
-
-<span class="c1"># Locked accounts require admin unlock or automatic expiry</span>
-</code></pre></div>
-<h4 id="3-implement-captcha-for-failed-attempts">3. Implement CAPTCHA for Failed Attempts<a class="headerlink" href="#3-implement-captcha-for-failed-attempts" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">CaptchaChallenge</span>
-
-<span class="c1"># Require CAPTCHA after 3 failed attempts</span>
-<span class="n">captcha</span> <span class="o">=</span> <span class="n">CaptchaChallenge</span><span class="p">(</span>
-    <span class="n">trigger_after_failures</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
-    <span class="n">captcha_provider</span><span class="o">=</span><span class="s2">"recaptcha"</span><span class="p">,</span>
-    <span class="n">site_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"RECAPTCHA_SITE_KEY"</span><span class="p">),</span>
-    <span class="n">secret_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"RECAPTCHA_SECRET_KEY"</span><span class="p">),</span>
-<span class="p">)</span>
-
-<span class="n">app</span><span class="o">.</span><span class="n">add_plugin</span><span class="p">(</span><span class="n">captcha</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="for-service-degradation-15-minutes">For Service Degradation (15 minutes)<a class="headerlink" href="#for-service-degradation-15-minutes" title="Permanent link">&para;</a></h3>
 <h4 id="1-check-external-dependencies">1. Check External Dependencies<a class="headerlink" href="#1-check-external-dependencies" title="Permanent link">&para;</a></h4>
@@ -5474,57 +5385,18 @@ curl<span class="w"> </span>-s<span class="w"> </span>https://oauth.provider.com
 <div class="highlight"><pre><span></span><code><span class="c1"># Check database connectivity</span>
 psql<span class="w"> </span>-c<span class="w"> </span><span class="s2">"SELECT 1"</span><span class="w"> </span><span class="nv">$DATABASE_URL</span>
 
-<span class="c1"># Check connection pool</span>
-curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/health/detailed<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.database
+<span class="c1"># Check that the app reaches the database (503 with the failing check if not)</span>
+curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/ready<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.checks
 </code></pre></div>
-<p><strong>Cache/Redis Health</strong>:</p>
+<p><strong>Cache/Redis Health</strong> (if the app uses Redis, e.g. for rate limit counters):</p>
 <div class="highlight"><pre><span></span><code><span class="c1"># Check Redis connectivity</span>
 redis-cli<span class="w"> </span>ping
-
-<span class="c1"># Check cache stats</span>
-curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/health/detailed<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.cache
 </code></pre></div>
-<h4 id="2-implement-fallback-authentication">2. Implement Fallback Authentication<a class="headerlink" href="#2-implement-fallback-authentication" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthManager</span>
-
-<span class="c1"># Fallback to local auth if OAuth unavailable</span>
-<span class="n">auth_manager</span> <span class="o">=</span> <span class="n">AuthManager</span><span class="p">(</span>
-    <span class="n">primary_provider</span><span class="o">=</span><span class="s2">"oauth"</span><span class="p">,</span>
-    <span class="n">fallback_provider</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span>
-    <span class="n">fallback_timeout_seconds</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/auth/login"</span><span class="p">)</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="n">credentials</span><span class="p">):</span>
-    <span class="k">try</span><span class="p">:</span>
-        <span class="c1"># Try OAuth first</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">auth_manager</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span>
-            <span class="n">credentials</span><span class="p">,</span>
-            <span class="n">provider</span><span class="o">=</span><span class="s2">"oauth"</span><span class="p">,</span>
-            <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
-        <span class="c1"># Fallback to local auth</span>
-        <span class="k">return</span> <span class="k">await</span> <span class="n">auth_manager</span><span class="o">.</span><span class="n">authenticate</span><span class="p">(</span>
-            <span class="n">credentials</span><span class="p">,</span>
-            <span class="n">provider</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span>
-        <span class="p">)</span>
-</code></pre></div>
-<h4 id="3-implement-circuit-breaker">3. Implement Circuit Breaker<a class="headerlink" href="#3-implement-circuit-breaker" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql.resilience</span><span class="w"> </span><span class="kn">import</span> <span class="n">CircuitBreaker</span>
-
-<span class="c1"># Prevent cascading failures</span>
-<span class="n">oauth_circuit</span> <span class="o">=</span> <span class="n">CircuitBreaker</span><span class="p">(</span>
-    <span class="n">failure_threshold</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>     <span class="c1"># Open after 5 failures</span>
-    <span class="n">timeout_seconds</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>      <span class="c1"># Stay open for 60 seconds</span>
-    <span class="n">expected_exception</span><span class="o">=</span><span class="ne">ConnectionError</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nd">@oauth_circuit</span><span class="o">.</span><span class="n">protected</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">oauth_authenticate</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
-    <span class="c1"># This will fail fast if circuit is open</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">oauth_provider</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
-</code></pre></div>
+<h4 id="2-ride-out-an-identity-provider-outage">2. Ride Out an Identity Provider Outage<a class="headerlink" href="#2-ride-out-an-identity-provider-outage" title="Permanent link">&para;</a></h4>
+<p>fraiseql has no fallback authentication or circuit breaker. <code>Auth0Provider</code> caches
+the JWKS signing keys it has fetched (<code>cache_jwks=True</code>, the default; the key set for
+an hour), so validating tokens already issued keeps working through a short Auth0
+outage. New logins wait for the provider to recover.</p>
 <hr />
 <h2 id="monitoring-alerts">📊 Monitoring &amp; Alerts<a class="headerlink" href="#monitoring-alerts" title="Permanent link">&para;</a></h2>
 <h3 id="prometheus-alert-rules">Prometheus Alert Rules<a class="headerlink" href="#prometheus-alert-rules" title="Permanent link">&para;</a></h3>
@@ -5533,106 +5405,61 @@ curl<span class="w"> </span>-s<span class="w"> </span>http://localhost:8000/heal
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">authentication</span>
 <span class="w">    </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
 <span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighAuthFailureRate</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">HighAuthRejectionRate</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">rate(fraiseql_auth_failures_total[5m]) &gt; 5</span>
+<span class="w">          </span><span class="no">sum(rate(fraiseql_http_requests_total{status="401"}[5m])) &gt; 5</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">authentication</span><span class="nv"> </span><span class="s">failure</span><span class="nv"> </span><span class="s">rate"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">auth</span><span class="nv"> </span><span class="s">failures/sec"</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"High</span><span class="nv"> </span><span class="s">rate</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">rejected</span><span class="nv"> </span><span class="s">(401)</span><span class="nv"> </span><span class="s">requests"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">rejections/sec"</span>
 
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">AuthenticationServiceDown</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MostRequestsRejected</span>
 <span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">(rate(fraiseql_auth_failures_total[5m])</span>
-<span class="w">          </span><span class="no">/ rate(fraiseql_http_requests_total[5m])) &gt; 0.5</span>
+<span class="w">          </span><span class="no">sum(rate(fraiseql_http_requests_total{status="401"}[5m]))</span>
+<span class="w">          </span><span class="no">/ sum(rate(fraiseql_http_requests_total[5m])) &gt; 0.5</span>
 <span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
 <span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
 <span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
 <span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"50%+</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">auth</span><span class="nv"> </span><span class="s">requests</span><span class="nv"> </span><span class="s">failing"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Possible</span><span class="nv"> </span><span class="s">auth</span><span class="nv"> </span><span class="s">service</span><span class="nv"> </span><span class="s">outage"</span>
-
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">BruteForceDetected</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">sum by (ip_address) (</span>
-<span class="w">            </span><span class="no">rate(fraiseql_auth_failures_total[5m])</span>
-<span class="w">          </span><span class="no">) &gt; 10</span>
-<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2m</span>
-<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">critical</span>
-<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Brute</span><span class="nv"> </span><span class="s">force</span><span class="nv"> </span><span class="s">attack</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$labels.ip_address</span><span class="nv"> </span><span class="s">}}"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">failed</span><span class="nv"> </span><span class="s">attempts/sec"</span>
-
-<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MassAccountLockout</span>
-<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-<span class="w">          </span><span class="no">rate(fraiseql_account_lockouts_total[5m]) &gt; 5</span>
-<span class="w">        </span><span class="nt">for</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
-<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">severity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">warning</span>
-<span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"Multiple</span><span class="nv"> </span><span class="s">accounts</span><span class="nv"> </span><span class="s">being</span><span class="nv"> </span><span class="s">locked"</span>
-<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"{{</span><span class="nv"> </span><span class="s">$value</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">accounts</span><span class="nv"> </span><span class="s">locked/sec</span><span class="nv"> </span><span class="s">-</span><span class="nv"> </span><span class="s">possible</span><span class="nv"> </span><span class="s">attack"</span>
+<span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">"50%+</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">requests</span><span class="nv"> </span><span class="s">rejected</span><span class="nv"> </span><span class="s">with</span><span class="nv"> </span><span class="s">401"</span>
+<span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">"Possible</span><span class="nv"> </span><span class="s">identity</span><span class="nv"> </span><span class="s">provider</span><span class="nv"> </span><span class="s">outage</span><span class="nv"> </span><span class="s">or</span><span class="nv"> </span><span class="s">signing</span><span class="nv"> </span><span class="s">key</span><span class="nv"> </span><span class="s">mismatch"</span>
 </code></pre></div>
+<p>Alerts per client address or per reason need your log stack (Loki, ELK): count the
+<code>auth.*</code> security events, and the 401s of the access log by client.</p>
 <h3 id="grafana-dashboard-panels">Grafana Dashboard Panels<a class="headerlink" href="#grafana-dashboard-panels" title="Permanent link">&para;</a></h3>
-<p><strong>1. Authentication Failure Rate</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<p><strong>1. Rejected Requests</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </code></pre></div>
-<p><strong>2. Failures by Reason</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">failure_reason</span><span class="o">)</span><span class="w"> </span><span class="o">(</span>
-<span class="w">  </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">)</span>
+<p><strong>2. Percentage of Requests Rejected</strong>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
+<span class="w">  </span><span class="o">/</span><span class="w"> </span><span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
 </code></pre></div>
-<p><strong>3. Top Failing Users</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">user_id</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="o">)</span>
-<span class="o">)</span>
-</code></pre></div>
-<p><strong>4. Top Failing IPs</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="k">topk</span><span class="o">(</span><span class="mi">10</span><span class="p">,</span>
-<span class="w">  </span><span class="k">sum</span><span class="w"> </span><span class="k">by</span><span class="w"> </span><span class="o">(</span><span class="nv">ip_address</span><span class="o">)</span><span class="w"> </span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="o">)</span>
-<span class="o">)</span>
-</code></pre></div>
-<p><strong>5. Auth Success Rate</strong>:</p>
-<div class="highlight"><pre><span></span><code><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_success_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-<span class="o">/</span><span class="w"> </span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_success_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)))</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span>
-</code></pre></div>
+<p><strong>3. Rejections by Event Type</strong> (log panel): the <code>fraiseql.security</code> events whose
+<code>event_type</code> starts with <code>auth.</code>, grouped by <code>event_type</code>.</p>
 <hr />
 <h2 id="verification">🔍 Verification<a class="headerlink" href="#verification" title="Permanent link">&para;</a></h2>
 <p>After applying fixes, verify authentication is working:</p>
 <h3 id="1-check-metrics">1. Check Metrics<a class="headerlink" href="#1-check-metrics" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Failure rate should decrease</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_failures_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
-
-<span class="c1"># Success rate should increase</span>
-<span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_auth_success_total</span><span class="p">[</span><span class="s">5m</span><span class="p">]</span><span class="o">)</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># Should decrease</span>
+<span class="k">sum</span><span class="o">(</span><span class="kr">rate</span><span class="o">(</span><span class="nv">fraiseql_http_requests_total</span><span class="p">{</span><span class="nl">status</span><span class="o">=</span><span class="p">"</span><span class="s">401</span><span class="p">"}[</span><span class="s">5m</span><span class="p">]</span><span class="o">))</span>
 </code></pre></div>
 <h3 id="2-test-authentication">2. Test Authentication<a class="headerlink" href="#2-test-authentication" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Test login</span>
-curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:8000/auth/login<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"username": "test", "password": "test123"}'</span>
-
-<span class="c1"># Should return token</span>
-<span class="c1"># {"access_token": "eyJ...", "token_type": "bearer"}</span>
-
-<span class="c1"># Test authenticated request</span>
-curl<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><span class="c1"># A token from your identity provider</span>
+curl<span class="w"> </span>-i<span class="w"> </span>http://localhost:8000/graphql<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ users { id } }"}'</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">"Content-Type: application/json"</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"query": "{ __typename }"}'</span>
 
-<span class="c1"># Should return 200 OK</span>
+<span class="c1"># Should return 200, not 401</span>
 </code></pre></div>
 <h3 id="3-check-logs">3. Check Logs<a class="headerlink" href="#3-check-logs" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># Verify successful authentications</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_success")'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
+<div class="highlight"><pre><span></span><code><span class="c1"># Successful validations (Auth0Provider)</span>
+grep<span class="w"> </span><span class="s1">'"auth.success"'</span><span class="w"> </span>security_events.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
 
-<span class="c1"># Verify no ongoing failures</span>
-jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.event == "security.auth_failure")'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>/var/log/fraiseql/app.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
+<span class="c1"># No ongoing rejections</span>
+grep<span class="w"> </span>-E<span class="w"> </span><span class="s1">'"auth\.(failure|token_expired|token_invalid)"'</span><span class="w"> </span>security_events.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-10
 </code></pre></div>
 <hr />
 <h2 id="post-incident-review">📝 Post-Incident Review<a class="headerlink" href="#post-incident-review" title="Permanent link">&para;</a></h2>
@@ -5673,7 +5500,7 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
 <hr />
 <h2 id="related-resources">📚 Related Resources<a class="headerlink" href="#related-resources" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="../../security/#authentication">Authentication Configuration</a></li>
+<li><a href="../../security/#authentication-security">Authentication Configuration</a></li>
 <li><a href="../rate-limiting-triggered/">Rate Limiting</a></li>
 <li><a href="../../security/">Security Hardening</a></li>
 </ul>
@@ -5782,10 +5609,10 @@ jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">'select(.ev
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

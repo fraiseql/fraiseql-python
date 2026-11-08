@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -4623,6 +4623,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#__typename-is-included-where-the-query-selects-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        __typename is included where the query selects it
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4831,10 +4842,38 @@
 <ul>
 <li>Concatenate JSON array</li>
 <li>Transform JSONB to GraphQL JSON</li>
-<li>Convert field names to camelCase</li>
-<li>Inject __typename</li>
+<li>Keep the selected fields only, each under its response key (alias)</li>
+<li>Write <code>__typename</code> where the query selects it</li>
 <li>Return UTF-8 bytes directly for HTTP</li>
 </ul>
+<h3 id="__typename-is-included-where-the-query-selects-it"><code>__typename</code> is included where the query selects it<a class="headerlink" href="#__typename-is-included-where-the-query-selects-it" title="Permanent link">&para;</a></h3>
+<p>A response built by the Rust pipeline holds exactly the selected fields, as the
+GraphQL spec requires: <code>__typename</code> too is written only where the query selects
+it, under its alias if it has one. A mutation selecting <code>post { id title }</code>
+returns <code>{"id": ..., "title": ...}</code>; <code>post { __typename id }</code> returns
+<code>{"__typename": "Post", "id": ...}</code>. This applies to query results (<code>db.find</code>,
+<code>db.find_one</code>, several root fields) and to mutation results, including nested
+entities. Clients that normalize by type (Apollo Client, urql's Graphcache,
+Relay) add <code>__typename</code> to the queries they send, so they get it.</p>
+<p>Where graphql-core completes the result instead (a <code>find</code> below the root, or a
+mutation outside HTTP mode), the data Rust hands it keeps <code>__typename</code> on every
+object of a known type: graphql-core reads it to resolve unions and interfaces,
+and leaves it out of the response where it isn't selected. Cascade entities
+(<code>cascade.updated</code>, <code>cascade.deleted</code>) keep the <code>__typename</code> their data has, the
+entity's type, as the GraphQL Cascade format defines it.</p>
+<p>A mutation entity's <code>__typename</code> comes from the SQL function's <code>entity_type</code>, a
+<code>__typename</code> key in the entity's data, or the schema type of the success type's
+entity field when that type is concrete (<code>location: Location</code>). When none of these
+applies, <code>__typename</code> is left out, and a warning names the SQL function once.</p>
+<p>For a field whose type is an interface or a union, the object behind it can be
+one of several types. FraiseQL never guesses the type from the schema there:
+<code>__typename</code> is included only when the data provides it (a <code>__typename</code> key in
+the JSONB).</p>
+<p>In a mutation entity, fragments under an interface or union field
+(<code>owner { ... on Person { name } ... on Org { title } }</code>) select the union of
+their fields for every object: a <code>Person</code> owner keeps <code>title</code> too if its data has
+one. Per-type filtering, which would keep only <code>name</code> for a <code>Person</code>, isn't done
+yet.</p>
 <h2 id="code-example">Code Example<a class="headerlink" href="#code-example" title="Permanent link">&para;</a></h2>
 <h3 id="python-side">Python Side<a class="headerlink" href="#python-side" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql</span>
@@ -4857,27 +4896,29 @@
     <span class="k">return</span> <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">"v_user"</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="under-the-hood">Under the Hood<a class="headerlink" href="#under-the-hood" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span class="c1"># In FraiseQLRepository.find():</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">find</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-    <span class="c1"># 1. Execute PostgreSQL query</span>
-    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">conn</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SELECT data FROM </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+<p><code>FraiseQLRepository.find()</code> reads the view's <code>data</code> column as JSON text, one string per
+row, and hands the strings to the Rust extension (shipped inside the <code>fraiseql</code> package)
+with the selection of the query; it returns the bytes as a <code>RustResponseBytes</code>, which
+the <code>/graphql</code> route sends as the HTTP response. The call, on its own (applications
+don't make it; <code>find</code> does):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fraiseql</span><span class="w"> </span><span class="kn">import</span> <span class="n">fraiseql_rs</span>
 
-    <span class="c1"># 2. Extract JSONB strings</span>
-    <span class="n">json_strings</span> <span class="o">=</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="s2">"data"</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+<span class="c1"># What the view's data column holds, one JSON string per row</span>
+<span class="n">json_strings</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'{"id": 1, "first_name": "Ada"}'</span><span class="p">]</span>
 
-    <span class="c1"># 3. Call Rust pipeline</span>
-    <span class="kn">import</span><span class="w"> </span><span class="nn">fraiseql_rs</span>
-
-    <span class="n">response_bytes</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_graphql_response</span><span class="p">(</span>
-        <span class="n">json_strings</span><span class="o">=</span><span class="n">json_strings</span><span class="p">,</span>
-        <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
-        <span class="n">type_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
-        <span class="n">field_paths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># 4. Return RustResponseBytes (FastAPI sends as HTTP response)</span>
-    <span class="k">return</span> <span class="n">RustResponseBytes</span><span class="p">(</span><span class="n">response_bytes</span><span class="p">)</span>
+<span class="n">response_bytes</span> <span class="o">=</span> <span class="n">fraiseql_rs</span><span class="o">.</span><span class="n">build_graphql_response</span><span class="p">(</span>
+    <span class="n">json_strings</span><span class="o">=</span><span class="n">json_strings</span><span class="p">,</span>
+    <span class="n">field_name</span><span class="o">=</span><span class="s2">"users"</span><span class="p">,</span>
+    <span class="n">type_name</span><span class="o">=</span><span class="s2">"User"</span><span class="p">,</span>
+    <span class="n">field_paths</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response_bytes</span><span class="p">)</span>
+<span class="c1"># b'{"data":{"users":[{"__typename":"User","id":1,"firstName":"Ada"}]}}'</span>
 </code></pre></div>
+<p>Without a selection, as here, every key is kept and the row gets its <code>__typename</code>.
+<code>find</code> passes the query's <code>field_selections</code>, and <code>inject_typename=False</code> when the
+response goes to the client as is (HTTP mode), so it holds exactly the selected fields,
+<code>__typename</code> included only where selected.</p>
 <h3 id="rust-side-fraiseql_rs-crate">Rust Side (fraiseql_rs crate)<a class="headerlink" href="#rust-side-fraiseql_rs-crate" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="cp">#[pyfunction]</span>
 <span class="k">pub</span><span class="w"> </span><span class="k">fn</span><span class="w"> </span><span class="nf">build_graphql_response</span><span class="p">(</span>
@@ -5024,10 +5065,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>

@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
       
       
 
@@ -5161,7 +5161,8 @@
 <h4 id="error-states">Error States<a class="headerlink" href="#error-states" title="Permanent link">&para;</a></h4>
 <p>FraiseQL recognizes specific error prefixes that map to HTTP status codes:</p>
 <ul>
-<li><code>failed:&lt;type&gt;</code> - Generic failure (500) - e.g., <code>validation:</code>, <code>failed:database_error</code></li>
+<li><code>failed:&lt;type&gt;</code> - Generic failure (500) - e.g., <code>failed:database_error</code>; <code>failed:validation</code>, <code>failed:not_found</code> etc. get the code of their reason</li>
+<li><code>validation:&lt;type&gt;</code> - Invalid input (422) - e.g., <code>validation:email</code></li>
 <li><code>unauthorized:&lt;type&gt;</code> - Authentication required (401) - e.g., <code>unauthorized:token_expired</code></li>
 <li><code>forbidden:&lt;type&gt;</code> - Insufficient permissions (403) - e.g., <code>forbidden:admin_only</code></li>
 <li><code>not_found:&lt;type&gt;</code> - Resource doesn't exist (404) - e.g., <code>not_found:user_missing</code></li>
@@ -5308,42 +5309,42 @@
 </tr>
 <tr>
 <td><code>noop:*</code></td>
-<td>200</td>
-<td>Success (no changes)</td>
+<td>422</td>
+<td>No changes (returns the error type)</td>
 <td>Idempotent operations, no fields changed</td>
 </tr>
 <tr>
-<td><code>unauthorized:*</code></td>
+<td><code>unauthorized:*</code>, <code>failed:unauthorized</code></td>
 <td>401</td>
 <td>Unauthorized</td>
 <td>Authentication required or token expired</td>
 </tr>
 <tr>
-<td><code>forbidden:*</code></td>
+<td><code>forbidden:*</code>, <code>failed:forbidden</code></td>
 <td>403</td>
 <td>Forbidden</td>
 <td>Authenticated but insufficient permissions</td>
 </tr>
 <tr>
-<td><code>not_found:*</code></td>
+<td><code>not_found:*</code>, <code>failed:not_found</code></td>
 <td>404</td>
 <td>Not Found</td>
 <td>Resource doesn't exist</td>
 </tr>
 <tr>
-<td><code>timeout:*</code></td>
+<td><code>timeout:*</code>, <code>failed:timeout</code></td>
 <td>408</td>
 <td>Request Timeout</td>
 <td>Operation timed out</td>
 </tr>
 <tr>
-<td><code>conflict:*</code></td>
+<td><code>conflict:*</code>, <code>failed:conflict</code>, <code>failed:duplicate</code></td>
 <td>409</td>
 <td>Conflict</td>
 <td>Duplicate key, version conflict</td>
 </tr>
 <tr>
-<td><code>validation:</code>, <code>failed:invalid</code></td>
+<td><code>validation:*</code>, <code>failed:validation</code></td>
 <td>422</td>
 <td>Unprocessable Entity</td>
 <td>Invalid input data</td>
@@ -5356,7 +5357,12 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Note</strong>: The Rust layer performs case-insensitive matching on status prefixes.</p>
+<p><strong>Note</strong>: The Rust layer performs case-insensitive matching on status prefixes.
+<code>failed:&lt;reason&gt;</code> is read like <code>&lt;reason&gt;:</code>, so the trinity helpers
+<code>mutation_validation_error</code>, <code>mutation_not_found</code> and <code>mutation_conflict</code>
+(<code>failed:validation</code>, <code>failed:not_found</code>, <code>failed:duplicate</code>) get 422, 404 and
+409. <code>mutation_conflict</code> with another <code>conflict_type</code> gives <code>failed:&lt;type&gt;</code>,
+which is 500 unless the type is one of these words.</p>
 <h3 id="frontend-handling-example">Frontend Handling Example<a class="headerlink" href="#frontend-handling-example" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><span class="kd">interface</span><span class="w"> </span><span class="nx">MutationResponse</span><span class="o">&lt;</span><span class="nx">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">__typename</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">;</span>
@@ -5607,10 +5613,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["search.suggest", "search.highlight", "navigation.tabs", "navigation.sections", "navigation.top", "toc.follow", "content.code.copy", "header.autohide"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.a5f9d56c.min.js"></script>
       
     
   </body>
